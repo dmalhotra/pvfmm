@@ -1,0 +1,23 @@
+* Code cleanup.
+
+* Documentation.
+
+* Support for Complex: Although we can use tensor kernels to do this, it will 
+be nice to support complex datatype. 
+
+* GPU support.
+
+
+------------ plots
+
+** building the function interpolation; 
+. test functions
+Gaussian, very pointed
+. order: o=5, o=9
+
+Polynomial (discontinuous not grid aligned (triangle))
+. order=5
+
+* gaussian and triangle
+. n/p is fixed, increase number of processors 8, 64, 512, 4096, 16384, 22656 
+

@@ -1,0 +1,167 @@
+Installation Instructions
+*************************
+
+   This file describes how to compile and install PvFMM.  To install
+PvFMM you will need atleast: MPI C++ compiler, BLAS and FFTW3 libraries.
+The following section describes the installation steps.
+
+
+Basic Installation
+==================
+
+   Briefly, the shell commands `./configure; make; make install' should
+configure, build, and install this package.
+
+   The simplest way to compile this package is:
+
+  1. `cd' to the directory containing the package's source code and type
+     `./configure' to configure the package for your system.
+
+     Running `configure' might take a while.  While running, it prints
+     some messages telling which features it is checking for.
+
+  2. Type `make' to compile the package.
+
+  3. The Doxygen source code documentation can be compiled using `make
+     doxygen-doc' and documentation of algorithms, pseudocodes and 
+     results can be compiled using `make pdf-doc'.
+
+  4. Type `make install' to install the programs and any data files and
+     documentation.  When installing into a prefix owned by root, it is
+     recommended that the package be configured and built as a regular
+     user, and only the `make install' phase executed with root
+     privileges.
+
+  5. You can remove the program binaries and object files from the
+     source code directory by typing `make clean'.  To also remove the
+     files that `configure' created (so you can compile the package for
+     a different kind of computer), type `make distclean'.  There is
+     also a `make maintainer-clean' target, but that is intended mainly
+     for the package's developers.  If you use it, you may have to get
+     all sorts of other programs in order to regenerate files that came
+     with the distribution.
+
+  6. To uninstall, `make uninstall'  removes the installation.
+
+
+Compilers and Options
+=====================
+
+   Some systems require unusual options for compilation or linking that
+the `configure' script does not know about.  In most cases, running
+`./configure' will specify what options need to be specified manually.
+
+   You can give `configure' initial values for configuration parameters
+by setting variables in the command line or in the environment.  Here
+is an example:
+
+     ./configure MPICXX="CC"
+
+
+Installation Names
+==================
+
+   By default, `make install' installs the package's library under
+`/usr/local/lib/pvfmm', header files under `/usr/local/include/pvfmm'
+and data files under '/usr/local/shared/pvfmm'.  You can specify an
+installation prefix other than `/usr/local' by giving `configure' the
+option `--prefix=PREFIX', where PREFIX must be an absolute file name.
+
+
+Troubleshooting
+===============
+Make sure that if you use special directories for compilers etc, that
+your LIBRARY_PATH enviroment variables are set correctly (e.g.,
+LD_LIBRARY_PATH on linux and DYLD_LIBRARY_PATH on macosx)
+
+
+Particular systems
+==================
+
+  Configure options for some systems on which this package was tested
+are given below:
+
+`Titan (ORNL)'
+     module load fftw
+     module swap PrgEnv-pgi PrgEnv-intel
+     ./configure MPICXX="CC" F77="ftn"
+
+`Stampede (TACC)'
+     module load fftw3
+     ./configure CXXFLAGS="-mavx -wd3218 -wd2571 -wd2570 -wd2568 -wd161" --with-fftw="$TACC_FFTW3_DIR" FLIBS=" "
+
+`Ronaldo (ICES)'
+     ./configure CXXFLAGS="-msse4" --with-fftw="$FFTW_DIR"
+
+'Cafu (ICES)'
+     ./configure CXXFLAGS="-mavx" --with-fftw="$FFTW_DIR"
+
+
+`configure' Invocation
+======================
+
+   `configure' recognizes the following options to control how it
+operates.
+
+`--help=short'
+     Print a summary of the options unique to this package's
+     `configure', and exit.
+
+`--prefix=DIR'
+     Use DIR as the installation prefix.
+
+`MPICXX=<MPI-compiler>'
+     Specify the MPI compiler and relevant flags.
+
+`CC=<C-compiler>'
+     Specify the C compiler and relevant flags.
+
+`F77=<Fortran-compiler>'
+     Specify the Fortran compiler and relevant flags.
+
+`NVCCFLAGS=<nvcc flags>'
+     Additional flags (eg: NVCCFLAGS="-arch=compute_30 -code=sm_30")
+
+`--with-openmp-flag=FLAGS'
+     FLAGS to enable OpenMP.
+
+`--with-fftw=DIR'         
+     Set FFTW installation directory to DIR
+
+`--with-fftw-include=DIR'
+     Set fftw3.h directory path to DIR
+
+`--with-fftw-lib=LIB'
+     Set FFTW library to LIB
+
+`--with-blas=<lib>'
+     Use BLAS library <lib>
+
+`--with-lapack=<lib>'
+     Use LAPACK library <lib>
+
+`--with-cuda=PATH'
+     Set to prefix where CUDA is installed [default=no]
+
+`--with-precomp-dir=DIR'
+     Set directory for precomputed data files to DIR. Default path is
+     `PVFMM_DIR' environment variable if defined, or the current
+     directory at execution.
+
+`CXXFLAGS=-DUSE_SSE'
+     To use SSE optimized imlementation of kernel functions.
+
+`configure' also accepts some other, not widely useful, options.  Run
+`configure --help' for more details.
+
+
+`make' Invocation
+======================
+
+   The following is a list of the available target for make:
+
+To compile the library: make
+To install the library: make install
+To compile all examples: make all-examples
+To compile documentation: make doxygen-doc pdf-doc
+

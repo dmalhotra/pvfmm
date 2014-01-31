@@ -1,0 +1,60 @@
+
+                             PvFMM README file
+
+PvFMM Version 1.0.0 is the latest release (January 2014)
+
+
+WHAT IS PvFMM?
+==============
+
+   PvFMM is a library for solving  certain types of elliptic partial
+   differential equations. 
+    
+   * We support Stokes, Poisson, and Helmholtz problems on the unit
+     cube, with free-space or periodic boundary conditions, with
+     constant or mildly varying coefficients. Our method is based on
+     volume potential integral equation formulation accelerated by the
+     Kernel Independent Fast Multipole Method. 
+
+
+HOW TO GET PvFMM
+================
+
+   For the latest release of PvFMM 
+       <URL: padas.ices.utexas.edu/pvmm.tgz>
+
+LICENSE
+=======
+
+   PvFMM is distributed under the LGPLv3 licence. See COPYING in
+   the top-level directory of the distribution. 
+
+INSTALLING PvFMM
+================
+
+   To install PvFMM, follow the steps in the INSTALL file, which is
+   located in the top directory of the source distribution. 
+
+
+USING PvFMM
+===========
+
+   The file examples/Makefile can be used as a template makefile for any
+   project using the library. In general the MakeVariables file should
+   be included in any makefile and CXXFLAGS_PVFMM and LDFLAGS_FMM should
+   be used to compile the code.
+
+   Two very simple examples illustrating usage of the library are available:
+      For particle N-body  : examples/src/example1.cpp
+      For volume potentials: examples/src/example2.cpp 
+
+   To compile these examples:
+      make examples/bin/example1
+      make examples/bin/example2
+
+   * The volume potentials example will take a long time, the first time
+     it is used, since it has to precompute quadrature rules. This data
+     is saved to a file and used for subsequent runs. See INSTALL for
+     the configure option '--with-precomp-dir=DIR' to set the default
+     path for precomputed data.
+

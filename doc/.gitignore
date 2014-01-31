@@ -1,0 +1,11 @@
+*~
+*.aux
+*.bbl
+*.pdf
+*.dvi
+*.blg
+*.log
+/def
+/doxygen
+/doc/Makefile
+/doc/Makefile.in

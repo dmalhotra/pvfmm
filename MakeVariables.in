@@ -1,0 +1,38 @@
+# Load this file inside your Makefile and use the variables CXXFLAGS_PVFMM and
+# LDFLAGS_PVFMM for compiling your code. You can use examples/Makefile as a
+# template makefile for your projects linking to this library.
+
+INSTALL_DIR_PVFMM = @prefix@
+TOP_SRCDIR_PVFMM = @abs_top_srcdir@
+PKG_SUBDIR_PVFMM = 
+
+# Compiler and flags.
+CXX_PVFMM = @MPICXX@
+INTEL_OFFLOAD_OK=@intel_offload_ok@
+
+# nvcc compiler and flags.
+NVCC_PVFMM = @NVCC@
+NVCCFLAGS_PVFMM = @NVCCFLAGS@ @CUDA_CFLAGS@
+
+CXXFLAGS_PVFMM = -O2 @CXXFLAGS@ -DALLTOALLV_FIX
+LDFLAGS_PVFMM = @LIBS@
+
+# The PVFMM library and headers..
+CXXFLAGS_PVFMM += -I$(TOP_SRCDIR_PVFMM)/include$(PKG_SUBDIR_PVFMM)
+LDFLAGS_PVFMM += -L$(TOP_SRCDIR_PVFMM)/lib$(PKG_SUBDIR_PVFMM) -lpvfmm
+
+# Add CUDA include and libs.
+CXXFLAGS_PVFMM += @CUDA_CFLAGS@
+LDFLAGS_PVFMM += @CUDA_LDFLAGS@
+
+# Add FFTW include and lib paths.
+CXXFLAGS_PVFMM += @FFTW_INCLUDE@ 
+LDFLAGS_PVFMM += @FFTW_LIB@  @FFTWF_LIB@ 
+
+# Add BLAS, LAPACK libs.
+LDFLAGS_PVFMM += @LAPACK_LIBS@ @BLAS_LIBS@ @FLIBS@ 
+
+# Add X include and lib paths.
+CXXFLAGS_PVFMM += @X_INCLUDES@
+LDFLAGS_PVFMM += @X_LIBS@ 
+LDFLAGS_PVFMM +=-ldl -lstdc++
