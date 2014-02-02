@@ -90,7 +90,7 @@ void fmm_test(size_t N, int mult_order, MPI_Comm comm){
     vec trg_sample_value;
     size_t n_trg_sample=0;
     { // Sample target points for verifications.
-      size_t n_skip=n_trg*n_src/1e9;
+      size_t n_skip=N*n_src/1e9;
       if(!n_skip) n_skip=1;
       for(size_t i=0;i<n_trg;i=i+n_skip){
         for(size_t j=0;j<COORD_DIM;j++)
@@ -105,6 +105,8 @@ void fmm_test(size_t N, int mult_order, MPI_Comm comm){
     vec trg_sample_value_(n_trg_sample*kernel_fn.ker_dim[1]);
     nbody(       src_coord,        src_value ,
           trg_sample_coord, trg_sample_value_, kernel_fn, comm);
+
+    // Compute error
     double max_err=0, max_val=0;
     double max_err_glb=0, max_val_glb=0;
     for(size_t i=0;i<n_trg_sample;i++){
@@ -133,10 +135,10 @@ int main(int argc, char **argv){
   // Read command line options.
   commandline_option_start(argc, argv, "\
   This example demonstrates solving a particle N-body problem,\n\
-with Laplace kernel, using the PvFMM library.\n");
+with Laplace Gradient kernel, using the PvFMM library.\n");
   commandline_option_start(argc, argv);
   omp_set_num_threads( atoi(commandline_option(argc, argv,  "-omp",     "1", false, "-omp  <int> = (1)    : Number of OpenMP threads."          )));
-  size_t   N=(size_t)strtod(commandline_option(argc, argv,    "-N",     "1",  true, "-N    <int>          : Number of target points."           ),NULL);
+  size_t   N=(size_t)strtod(commandline_option(argc, argv,    "-N",     "1",  true, "-N    <int>          : Number of source and target points."),NULL);
   int      m=       strtoul(commandline_option(argc, argv,    "-m",    "10", false, "-m    <int> = (10)   : Multipole order (+ve even integer)."),NULL,10);
   commandline_option_end(argc, argv);
 
