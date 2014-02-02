@@ -1,18 +1,20 @@
 /**
  * \file fmm_node.hpp
- * \author Dhairya Malhotra, dhairya.malhotra88@gmail.com
+ * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 12-11-2010
  * \brief This file contains the definition of the FMM_Node class.
  */
 
-#ifndef _FMM_NODE_HPP_
-#define _FMM_NODE_HPP_
+#ifndef _PVFMM_FMM_NODE_HPP_
+#define _PVFMM_FMM_NODE_HPP_
 
 #include <mpi.h>
 #include <iostream>
 #include <pvfmm_common.hpp>
 #include <mpi_node.hpp>
 #include <fmm_pts.hpp>
+
+namespace pvfmm{
 
 /**
  * \brief Base class for node of FMM_Tree.
@@ -168,6 +170,8 @@ class FMM_Node: public Node{
   Vector<char> pkd_data; //Temporary variable for storing packed data.
 };
 
+}//end namespace
+
 #include <fmm_node.txx>
 
-#endif
+#endif //_PVFMM_FMM_NODE_HPP_

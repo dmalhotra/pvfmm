@@ -1,9 +1,11 @@
 /**
  * \file mortonid.txx
- * \author Dhairya Malhotra, dhairya.malhotra88@gmail.com
+ * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 2-11-2011
  * \brief This file contains implementation of the class MortonId.
  */
+
+namespace pvfmm{
 
 inline MortonId::MortonId():x(0), y(0), z(0), depth(0){}
 
@@ -122,3 +124,4 @@ inline int MortonId::isAncestor(MortonId const & other) const {
   return other.depth>depth && other.getAncestor(depth)==*this;
 }
 
+}//end namespace

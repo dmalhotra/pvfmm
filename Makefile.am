@@ -9,7 +9,7 @@ include aminclude.am
 
 INSTALL_DIR = $(DESTDIR)$(datadir)/$(PACKAGE)
 EX_DIR = ./examples
-TMPDIR = ./tmp
+RESULT_DIR = ./result
 
 # the subdirectories of the project to go into
 #SUBDIRS = 
@@ -213,7 +213,7 @@ clean-doxygen:
 
 clean-local: clean-doxygen
 	cd $(EX_DIR) && $(MAKE) clean;
-	$(RM) -r $(TMPDIR)/*
+	$(RM) -r $(RESULT_DIR)/*
 	$(RM) *~ */*~ */*/*~
 
 #------------------------------------------------------------------------------

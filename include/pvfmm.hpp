@@ -1,6 +1,6 @@
 /**
  * \file pvfmm.hpp
- * \author Dhairya Malhotra, dhairya.malhotra88@gmail.com
+ * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 1-2-2014
  * \brief This file contains wrapper functions for PvFMM.
  */
@@ -17,10 +17,12 @@
 #include <fmm_node.hpp>
 #include <fmm_tree.hpp>
 
+namespace pvfmm{
+
 typedef FMM_Node<Cheb_Node<double> > ChebFMM_Node;
-typedef FMM_Cheb<ChebFMM_Node> ChebFMM;
-typedef FMM_Tree<ChebFMM> ChebFMM_Tree;
-typedef ChebFMM_Node::NodeData ChebFMM_Data;
+typedef FMM_Cheb<ChebFMM_Node>       ChebFMM;
+typedef FMM_Tree<ChebFMM>            ChebFMM_Tree;
+typedef ChebFMM_Node::NodeData       ChebFMM_Data;
 typedef void (*ChebFn)(double* , int , double*);
 
 ChebFMM_Tree* ChebFMM_CreateTree(int cheb_deg, int data_dim, ChebFn fn_ptr, std::vector<double>& trg_coord, MPI_Comm& comm,
@@ -92,9 +94,9 @@ void ChebFMM_Evaluate(ChebFMM_Tree* tree, std::vector<double>& trg_val, size_t l
 
 
 typedef FMM_Node<MPI_Node<double> > PtFMM_Node;
-typedef FMM_Pts<PtFMM_Node> PtFMM;
-typedef FMM_Tree<PtFMM> PtFMM_Tree;
-typedef PtFMM_Node::NodeData PtFMM_Data;
+typedef FMM_Pts<PtFMM_Node>         PtFMM;
+typedef FMM_Tree<PtFMM>             PtFMM_Tree;
+typedef PtFMM_Node::NodeData        PtFMM_Data;
 
 PtFMM_Tree* PtFMM_CreateTree(std::vector<double>& src_coord, std::vector<double>& src_value, std::vector<double>& trg_coord, MPI_Comm& comm,
                                  int max_pts=100, BoundaryType bndry=FreeSpace, int init_depth=0){
@@ -123,7 +125,32 @@ PtFMM_Tree* PtFMM_CreateTree(std::vector<double>& src_coord, std::vector<double>
   return tree;
 }
 
-void PtFMM_Evaluate(PtFMM_Tree* tree, std::vector<double>& trg_val, size_t loc_size=0){
+void PtFMM_Evaluate(PtFMM_Tree* tree, std::vector<double>& trg_val, size_t loc_size=0, std::vector<double>* src_val=NULL){
+  if(src_val){
+    std::vector<size_t> src_scatter_;
+    std::vector<PtFMM_Node*>& nodes=tree->GetNodeList();
+    for(size_t i=0;i<nodes.size();i++){
+      if(nodes[i]->IsLeaf() && !nodes[i]->IsGhost()){
+        Vector<size_t>& src_scatter=nodes[i]->src_scatter;
+        for(size_t j=0;j<src_scatter.Dim();j++) src_scatter_.push_back(src_scatter[j]);
+      }
+    }
+
+    Vector<double> src_value=*src_val;
+    Vector<size_t> src_scatter=src_scatter_;
+    par::ScatterForward(src_value,src_scatter,*tree->Comm());
+
+    size_t indx=0;
+    for(size_t i=0;i<nodes.size();i++){
+      if(nodes[i]->IsLeaf() && !nodes[i]->IsGhost()){
+        Vector<double>& src_value_=nodes[i]->src_value;
+        for(size_t j=0;j<src_value_.Dim();j++){
+          src_value_[j]=src_value[indx];
+          indx++;
+        }
+      }
+    }
+  }
   tree->RunFMM();
   Vector<double> trg_value;
   Vector<size_t> trg_scatter;
@@ -146,4 +173,6 @@ void PtFMM_Evaluate(PtFMM_Tree* tree, std::vector<double>& trg_val, size_t loc_s
   trg_val.assign(&trg_value[0],&trg_value[0]+trg_value.Dim());;
 }
 
-#endif
+}//end namespace
+
+#endif //_PVFMM_HPP_

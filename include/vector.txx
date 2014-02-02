@@ -1,6 +1,6 @@
 /**
  * \file vector.txx
- * \author Dhairya Malhotra, dhairya.malhotra88@gmail.com
+ * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 2-11-2011
  * \brief This file contains implementation of the class Vector.
  */
@@ -12,6 +12,8 @@
 #include <profile.hpp>
 #include <mem_utils.hpp>
 #include <device_wrapper.hpp>
+
+namespace pvfmm{
 
 template <class T>
 std::ostream& operator<<(std::ostream& output, const Vector<T>& V){
@@ -267,3 +269,4 @@ inline T& Vector<T>::operator[](size_t j) const{
   return data_ptr[j];
 }
 
+}//end namespace

@@ -1,6 +1,6 @@
 /**
  * \file mortonid.cpp
- * \author Dhairya Malhotra, dhairya.malhotra88@gmail.com
+ * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 2-11-2011
  * \brief This file contains implementation of the class MortonId.
  */
@@ -8,6 +8,8 @@
 #include <mortonid.hpp>
 #include <iostream>
 #include <cmath>
+
+namespace pvfmm{
 
 void MortonId::NbrList(std::vector<MortonId>& nbrs, unsigned char level, int periodic) const{
   nbrs.clear();
@@ -81,3 +83,4 @@ std::ostream& operator<<(std::ostream& out, const MortonId & mid){
   return out;
 }
 
+}//end namespace

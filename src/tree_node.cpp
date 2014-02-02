@@ -1,6 +1,6 @@
 /**
  * \file tree_node.cpp
- * \author Dhairya Malhotra, dhairya.malhotra88@gmail.com
+ * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 12-10-2010
  * \brief This file contains the implementation of the class TreeNode.
  */
@@ -8,6 +8,8 @@
 #include <tree_node.hpp>
 #include <assert.h>
 #include <iostream>
+
+namespace pvfmm{
 
 TreeNode::~TreeNode(){
   if(!child) return;
@@ -128,3 +130,5 @@ void TreeNode::SetStatus(int flag){
   if(parent && !(parent->GetStatus() & flag))
     parent->SetStatus(flag);
 }
+
+}//end namespace

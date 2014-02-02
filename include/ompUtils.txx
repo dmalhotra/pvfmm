@@ -3,6 +3,8 @@
 #include <iterator>
 #include <vector>
 
+namespace pvfmm{
+
 template <class T,class StrictWeakOrdering>
 void omp_par::merge(T A_,T A_last,T B_,T B_last,T C_,int p,StrictWeakOrdering comp){
   typedef typename std::iterator_traits<T>::difference_type _DiffType;
@@ -195,4 +197,4 @@ void omp_par::scan(T* A, T* B,I cnt){
   delete[] sum;
 }
 
-
+}//end namespace

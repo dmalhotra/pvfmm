@@ -1,13 +1,13 @@
 /**
  * \file mpi_tree.hpp
- * \author Dhairya Malhotra, dhairya.malhotra88@gmail.com
+ * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 12-11-2010
  * \brief This file contains the definition of a base class for a distributed
  * MPI tree.
  */
 
-#ifndef _MPI_TREE_HPP_
-#define _MPI_TREE_HPP_
+#ifndef _PVFMM_MPI_TREE_HPP_
+#define _PVFMM_MPI_TREE_HPP_
 
 #include <pvfmm_common.hpp>
 #include <mpi.h>
@@ -15,11 +15,11 @@
 #include <mortonid.hpp>
 #include <tree.hpp>
 
+namespace pvfmm{
+
 enum BoundaryType{
   FreeSpace,
-  Periodic,
-  Reflect,
-  NegReflect
+  Periodic
 };
 
 /**
@@ -129,7 +129,8 @@ class MPI_Tree: public Tree<TreeNode>{
 
 };
 
+}//end namespace
+
 #include <mpi_tree.txx>
 
-#endif
-
+#endif //_PVFMM_MPI_TREE_HPP_

@@ -1,5 +1,6 @@
 
-                             PvFMM README file
+                    PvFMM README File
+                    *****************
 
 PvFMM Version 1.0.0 is the latest release (January 2014)
 
@@ -7,7 +8,7 @@ PvFMM Version 1.0.0 is the latest release (January 2014)
 WHAT IS PvFMM?
 ==============
 
-   PvFMM is a library for solving  certain types of elliptic partial
+   PvFMM is a library for solving certain types of elliptic partial
    differential equations. 
     
    * We support Stokes, Poisson, and Helmholtz problems on the unit

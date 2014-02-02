@@ -1,15 +1,16 @@
 /**
  * \file mat_utils.hpp
- * \author Dhairya Malhotra, dhairya.malhotra88@gmail.com
+ * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 2-11-2011
  * \brief This file contains BLAS and LAPACK wrapper functions.
  */
 
-#ifndef _MAT_UTILS_
-#define _MAT_UTILS_
+#ifndef _PVFMM_MAT_UTILS_
+#define _PVFMM_MAT_UTILS_
 
 #include <cstdlib>
 
+namespace pvfmm{
 namespace mat{
 
   void gemm(char TransA, char TransB,  int M,  int N,  int K,  float alpha,  float *A,  int lda,  float *B,  int ldb,  float beta, float *C,  int ldc);
@@ -31,8 +32,9 @@ namespace mat{
   template <class T>
   void pinv(T* M, int n1, int n2, T eps, T* M_);
 
-};
+}//end namespace
+}//end namespace
 
 #include <mat_utils.txx>
 
-#endif
+#endif //_PVFMM_MAT_UTILS_

@@ -28,29 +28,29 @@ void fn_output(double* coord, int n, double* out){
 void fmm_test(size_t N, int mult_order, int cheb_deg, double tol, MPI_Comm comm){
 
   // Set kernel.
-  const Kernel<double>& kernel_fn=laplace_potn_d;
+  const pvfmm::Kernel<double>& kernel_fn=pvfmm::laplace_potn_d;
 
   // Construct tree.
   size_t max_pts=100;
   std::vector<double> trg_coord=point_distrib<double>(RandUnif,N,comm);
-  ChebFMM_Tree* tree=ChebFMM_CreateTree(cheb_deg, kernel_fn.ker_dim[0], fn_input,
-                                        trg_coord, comm, tol, max_pts, FreeSpace);
+  pvfmm::ChebFMM_Tree* tree=ChebFMM_CreateTree(cheb_deg, kernel_fn.ker_dim[0], fn_input,
+                                              trg_coord, comm, tol, max_pts, pvfmm::FreeSpace);
 
   // Load matrices.
-  ChebFMM* matrices=new ChebFMM;
-  matrices->Initialize(mult_order, cheb_deg, comm, &kernel_fn);
+  pvfmm::ChebFMM matrices;
+  matrices.Initialize(mult_order, cheb_deg, comm, &kernel_fn);
 
   // FMM Setup
-  tree->SetupFMM(matrices);
+  tree->SetupFMM(&matrices);
 
   // Run FMM
   std::vector<double> trg_value;
   size_t n_trg=trg_coord.size()/COORD_DIM;
-  ChebFMM_Evaluate(tree, trg_value, n_trg);
+  pvfmm::ChebFMM_Evaluate(tree, trg_value, n_trg);
 
   // Re-run FMM
   tree->ClearFMMData();
-  ChebFMM_Evaluate(tree, trg_value, n_trg);
+  pvfmm::ChebFMM_Evaluate(tree, trg_value, n_trg);
 
   {// Check error
     std::vector<double> trg_value_(n_trg*kernel_fn.ker_dim[1]);
@@ -69,7 +69,6 @@ void fmm_test(size_t N, int mult_order, int cheb_deg, double tol, MPI_Comm comm)
   }
 
   // Free memory
-  delete matrices;
   delete tree;
 }
 
@@ -91,6 +90,9 @@ with Laplace kernel, using the PvFMM library.\n");
 
   // Run FMM with above options.
   fmm_test(N, m,q, tol, comm);
+
+  //Output Profiling results.
+  pvfmm::Profile::print(&comm);
 
   // Shut down MPI
   MPI_Finalize();

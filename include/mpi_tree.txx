@@ -1,6 +1,6 @@
 /**
  * \file mpi_tree.txx
- * \author Dhairya Malhotra, dhairya.malhotra88@gmail.com
+ * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 12-11-2010
  * \brief This file contains the implementation of the class MPI_Tree.
  */
@@ -15,9 +15,10 @@
 #include <ompUtils.h>
 #include <profile.hpp>
 
+namespace pvfmm{
 
 /**
- * @author Dhairya Malhotra, dhairya.malhotra88@gmail.com
+ * @author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * @date 08 Feb 2011
  */
 inline int p2oLocal(Vector<MortonId> & nodes, Vector<MortonId>& leaves,
@@ -1582,3 +1583,4 @@ const std::vector<MortonId>& MPI_Tree<TreeNode>::GetMins(){
   return mins;
 }
 
+}//end namespace

@@ -1,17 +1,19 @@
 /**
  * \file tree_node.hpp
- * \author Dhairya Malhotra, dhairya.malhotra88@gmail.com
+ * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 12-10-2010
  * \brief This file contains the definition of a virtual base class for a tree
  * node.
  */
 
-#ifndef _TREE_NODE_HPP_
-#define _TREE_NODE_HPP_
+#ifndef _PVFMM_TREE_NODE_HPP_
+#define _PVFMM_TREE_NODE_HPP_
 
 #include <pvfmm_common.hpp>
 #include <assert.h>
 #include <cstring>
+
+namespace pvfmm{
 
 /**
  * \brief Virtual base class for tree node.
@@ -140,5 +142,6 @@ class TreeNode{
 
 };
 
-#endif
+}//end namespace
 
+#endif //_PVFMM_TREE_NODE_HPP_

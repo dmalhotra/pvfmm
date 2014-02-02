@@ -16,8 +16,7 @@ eval $max_time_;
 eval    $fname_;
 eval     $args_;
 
-export TMPDIR=${WORK_DIR}/tmp
-export RESULT_FNAME=${TMPDIR}/${RESULT_FNAME}
+export RESULT_FNAME=${RESULT_DIR}/${RESULT_FNAME}
 rm -f ${RESULT_FNAME}
 echo "#########################################################################################################" | tee -a ${RESULT_FNAME}
 echo "#         CPU + MIC Results :   Time (FLOP/s)          [CPU Only, CPU+MIC, CPU+MIC (async)]             #" | tee -a ${RESULT_FNAME}
@@ -78,9 +77,9 @@ for (( l=0; l<${#nodes[@]}; l++ )) ; do
   ( # Begin parallel subshell
   RESULT_FNAME=${RESULT_FNAME}_${l};
   # File name.
-  FNAME_NOMIC=${TMPDIR}/$(basename ${EXEC})_${fname[l]}.out;
-  FNAME_MIC=${TMPDIR}/$(basename ${EXEC})_mic_${fname[l]}.out;
-  FNAME_ASYNC=${TMPDIR}/$(basename ${EXEC})_async_${fname[l]}.out;
+  FNAME_NOMIC=${RESULT_DIR}/$(basename ${EXEC})_${fname[l]}.out;
+  FNAME_MIC=${RESULT_DIR}/$(basename ${EXEC})_mic_${fname[l]}.out;
+  FNAME_ASYNC=${RESULT_DIR}/$(basename ${EXEC})_async_${fname[l]}.out;
 
   subrow_cnt=0;
   for (( k=0; k<3; k++ )) ; do

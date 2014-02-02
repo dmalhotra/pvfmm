@@ -1,6 +1,6 @@
 /**
  * \file profile.cpp
- * \author Dhairya Malhotra, dhairya.malhotra88@gmail.com
+ * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 2-11-2011
  * \brief This file contains implementation of the class Profile.
  */
@@ -16,6 +16,8 @@
 #include <stack>
 #include <pvfmm_common.hpp>
 #include <profile.hpp>
+
+namespace pvfmm{
 
 void Profile::Add_FLOP(long long inc){
 #if __PROFILE__ >= 0
@@ -281,3 +283,4 @@ std::vector<long long> Profile::f_log;
 std::vector<long long> Profile::m_log;
 std::vector<long long> Profile::max_m_log;
 
+}//end namespace

@@ -1,9 +1,11 @@
 /**
  * \file fmm_node.txx
- * \author Dhairya Malhotra, dhairya.malhotra88@gmail.com
+ * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 12-11-2010
  * \brief This file contains the implementation of the FMM_Node class.
  */
+
+namespace pvfmm{
 
 template <class Node>
 FMM_Node<Node>::~FMM_Node(){
@@ -179,3 +181,5 @@ void FMM_Node<Node>::InitMultipole(PackedData data, bool own_data){
     fmm_data->InitMultipole(data, own_data);
   }
 };
+
+}//end namespace

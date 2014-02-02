@@ -1,5 +1,5 @@
-#ifndef __DTYPES_H_
-#define __DTYPES_H_
+#ifndef __PVFMM_DTYPES_H_
+#define __PVFMM_DTYPES_H_
 
 #include <mpi.h>
 #include <complex>
@@ -15,7 +15,8 @@
   classes can be added as required.
  */
 
-namespace par {
+namespace pvfmm{
+namespace par{
 
   /**
    * \class Mpi_datatype
@@ -85,6 +86,6 @@ namespace par {
   };
 
 } //end namespace
+} //end namespace
 
-#endif
-
+#endif //__PVFMM_DTYPES_H_

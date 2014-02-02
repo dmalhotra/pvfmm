@@ -16,7 +16,8 @@
 #include "ompUtils.h"
 #include <mpi.h>
 
-namespace par {
+namespace pvfmm{
+namespace par{
 
   template <typename T>
     int Mpi_Alltoallv_sparse(T* sendbuf, int* sendcnts, int* sdispls,
@@ -911,4 +912,4 @@ namespace par {
     }
 
 }//end namespace
-
+}//end namespace

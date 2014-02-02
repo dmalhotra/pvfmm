@@ -3,9 +3,9 @@
 make ${EXEC} -j
 if [ ! -f ${EXEC} ] ; then exit -1; fi;
 
-export TMPDIR=${WORK_DIR}/tmp
-mkdir -p ${TMPDIR}
-#find ${TMPDIR} -type f -size 0 -exec rm {} \;
+export RESULT_DIR=${WORK_DIR}/result
+mkdir -p ${RESULT_DIR}
+#find ${RESULT_DIR} -type f -size 0 -exec rm {} \;
 
 if command -v timeout >/dev/null; then
   export TIMEOUT="timeout";
@@ -63,13 +63,13 @@ export    fname_="$(declare -p    fname)";
 
 for (( k=0; k<${#nodes[@]}; k++ )) ; do
   if [ "${nodes[k]}" == ":" ] ||
-     [ -f ${TMPDIR}/$(basename ${EXEC})_${fname[k]}.out ]; then
+     [ -f ${RESULT_DIR}/$(basename ${EXEC})_${fname[k]}.out ]; then
     continue;
   fi;
   for (( j=0; j<$k; j++ )) ; do
     if [ "${nodes[k]}" == "${nodes[j]}" ] &&
        [ "${mpi_proc[k]}" == "${mpi_proc[j]}" ] &&
-       [ ! -f ${TMPDIR}/$(basename ${EXEC})_${fname[j]}.out ]; then
+       [ ! -f ${RESULT_DIR}/$(basename ${EXEC})_${fname[j]}.out ]; then
       continue 2;
     fi
   done;
@@ -77,7 +77,7 @@ for (( k=0; k<${#nodes[@]}; k++ )) ; do
   for (( j=0; j<${#nodes[@]}; j++ )) ; do
     if [ "${nodes[k]}" == "${nodes[j]}" ] &&
        [ "${mpi_proc[k]}" == "${mpi_proc[j]}" ] &&
-       [ ! -f ${TMPDIR}/$(basename ${EXEC})_${fname[j]}.out ]; then
+       [ ! -f ${RESULT_DIR}/$(basename ${EXEC})_${fname[j]}.out ]; then
       TOTAL_TIME=$(( ${TOTAL_TIME} + ${max_time[j]} ))
     fi
   done;
@@ -89,7 +89,7 @@ for (( k=0; k<${#nodes[@]}; k++ )) ; do
   export TESTCASE=${testcase[k]}; # Test case.
   export MULORDER=${m[k]};        # Multipole order.
   export CHBORDER=${q[k]};        # Chebyshev degree.
-  export    FNAME=${TMPDIR}/$(basename ${EXEC})_nds${NODES}_mpi${MPI_PROC}
+  export    FNAME=${RESULT_DIR}/$(basename ${EXEC})_nds${NODES}_mpi${MPI_PROC}
 
   #Submit Job
   case $HOSTNAME in
@@ -140,8 +140,8 @@ for (( k=0; k<${#nodes[@]}; k++ )) ; do
   for (( j=0; j<${#nodes[@]}; j++ )) ; do
     if [ "${nodes[k]}" == "${nodes[j]}" ] &&
        [ "${mpi_proc[k]}" == "${mpi_proc[j]}" ] &&
-       [ ! -f ${TMPDIR}/$(basename ${EXEC})_${fname[j]}.out ]; then
-      touch ${TMPDIR}/$(basename ${EXEC})_${fname[j]}.out;
+       [ ! -f ${RESULT_DIR}/$(basename ${EXEC})_${fname[j]}.out ]; then
+      touch ${RESULT_DIR}/$(basename ${EXEC})_${fname[j]}.out;
     fi
   done;
 done;

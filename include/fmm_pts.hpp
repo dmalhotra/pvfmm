@@ -1,13 +1,13 @@
 /**
  * \file fmm_pts.hpp
- * \author Dhairya Malhotra, dhairya.malhotra88@gmail.com
+ * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 3-07-2011
  * \brief This file contains the definition of the FMM_Pts class.
  * This handles all the translations for point sources and targets.
  */
 
-#ifndef _FMM_PTS_HPP_
-#define _FMM_PTS_HPP_
+#ifndef _PVFMM_FMM_PTS_HPP_
+#define _PVFMM_FMM_PTS_HPP_
 
 #include <pvfmm_common.hpp>
 #include <mpi.h>
@@ -16,6 +16,8 @@
 #include <interac_list.hpp>
 #include <kernel.hpp>
 #include <mpi_node.hpp>
+
+namespace pvfmm{
 
 /**
  * \brief This class contains FMM specific data that each node contains
@@ -224,7 +226,9 @@ class FMM_Pts{
 
 };
 
+}//end namespace
+
 #include <fmm_pts.txx>
 
-#endif
+#endif //_PVFMM_FMM_PTS_HPP_
 

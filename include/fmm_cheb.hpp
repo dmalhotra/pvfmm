@@ -1,13 +1,13 @@
 /**
  * \file fmm_cheb.hpp
- * \author Dhairya Malhotra, dhairya.malhotra88@gmail.com
+ * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 3-07-2011
  * \brief This file contains the definition of the FMM_Cheb class.
  * This handles all the translations through matrix multiplications.
  */
 
-#ifndef _FMM_CHEB_HPP_
-#define _FMM_CHEB_HPP_
+#ifndef _PVFMM_FMM_CHEB_HPP_
+#define _PVFMM_FMM_CHEB_HPP_
 
 #include <pvfmm_common.hpp>
 #include <mpi.h>
@@ -16,6 +16,8 @@
 #include <cheb_utils.hpp>
 #include <cheb_node.hpp>
 #include <fmm_pts.hpp>
+
+namespace pvfmm{
 
 template <class FMMNode>
 class FMM_Cheb: public FMM_Pts<FMMNode>{
@@ -126,7 +128,9 @@ class FMM_Cheb: public FMM_Pts<FMMNode>{
 
 };
 
+}//end namespace
+
 #include <fmm_cheb.txx>
 
-#endif
+#endif //_PVFMM_FMM_CHEB_HPP_
 

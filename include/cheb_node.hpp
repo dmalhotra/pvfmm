@@ -1,12 +1,12 @@
 /**
  * \file cheb_node.hpp
- * \author Dhairya Malhotra, dhairya.malhotra88@gmail.com
+ * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 1-22-2011
  * \brief This is a derived cheb class of MPI_Node.
  */
 
-#ifndef _CHEB_NODE_HPP_
-#define _CHEB_NODE_HPP_
+#ifndef _PVFMM_CHEB_NODE_HPP_
+#define _PVFMM_CHEB_NODE_HPP_
 
 #include <pvfmm_common.hpp>
 #include <assert.h>
@@ -14,6 +14,8 @@
 #include <mpi_node.hpp>
 #include <mortonid.hpp>
 #include <cheb_utils.hpp>
+
+namespace pvfmm{
 
 /**
  * \brief
@@ -184,7 +186,9 @@ class Cheb_Node: public MPI_Node<Real_t>{
   Vector<Real_t> cheb_coeff;
 };
 
+}//end namespace
+
 #include <cheb_node.txx>
 
-#endif
+#endif //_PVFMM_CHEB_NODE_HPP_
 

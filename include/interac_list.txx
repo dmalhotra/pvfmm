@@ -1,6 +1,6 @@
 /**
  * \file interac_list.txx
- * \author Dhairya Malhotra, dhairya.malhotra88@gmail.com
+ * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 6-11-2012
  * \brief This file contains the implementation of the InteracList class.
  * Handles the logic for different interaction lists, and determines the
@@ -12,6 +12,8 @@
 #include <tree_node.hpp>
 #include <precomp_mat.hpp>
 #include <ompUtils.h>
+
+namespace pvfmm{
 
 /**
  * \brief Initialize.
@@ -392,3 +394,5 @@ void InteracList<Node_t>::InitList(int max_r, int min_r, int step, Mat_Type t){
   }
 }
 #undef MAX_HASH
+
+}//end namespace

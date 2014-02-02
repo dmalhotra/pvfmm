@@ -27,7 +27,7 @@ for (( k=0; k<${#nodes[@]}; k++ )) ; do
 
     # CPU only
     EXEC_=${EXEC};
-    FNAME=${TMPDIR}/$(basename ${EXEC_})_${fname[k]}.out;
+    FNAME=${RESULT_DIR}/$(basename ${EXEC_})_${fname[k]}.out;
     if [ -f ${EXEC_} ] && [ ! -s ${FNAME} ] ; then
       printf '%*s\n\n' "100" ' ' | tr ' ' "#" | tee -a ${FNAME};
       printf "COMMAND: ${EXEC_} ${args[k]}\n" | tee -a ${FNAME};

@@ -1,12 +1,12 @@
 /**
  * \file device_wrapper.hpp
- * \author Dhairya Malhotra, dhairya.malhotra88@gmail.com
+ * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 6-5-2013
  * \brief This file contains definition of DeviceWrapper.
  */
 
-#ifndef _DEVICE_WRAPPER_HPP_
-#define _DEVICE_WRAPPER_HPP_
+#ifndef _PVFMM_DEVICE_WRAPPER_HPP_
+#define _PVFMM_DEVICE_WRAPPER_HPP_
 
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push,target(mic))
@@ -17,7 +17,7 @@
 #include <stdint.h>
 #include <pvfmm_common.hpp>
 
-// Generic Functions
+namespace pvfmm{
 
 namespace DeviceWrapper{
 
@@ -31,6 +31,8 @@ namespace DeviceWrapper{
 
   void wait(int lock_idx);
 
+}//end namespace
+
 
 
 /*
@@ -41,7 +43,7 @@ Note: Any MIC offload section should look like this:
 
     int wait_lock_idx=MIC_Lock::curr_lock();
     int lock_idx=MIC_Lock::get_lock();
-    #pragma offload target(mic:0) signal(&DeviceWrapper::MIC_Lock::lock_vec[lock_idx])
+    #pragma offload target(mic:0) signal(&MIC_Lock::lock_vec[lock_idx])
     {
       MIC_Lock::wait_lock(wait_lock_idx);
 
@@ -88,7 +90,8 @@ transfer, use:
       MIC_Lock(){}; // private constructor for static class.
       static int lock_idx;
   };
-}
+
+}//end namespace
 
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
@@ -96,4 +99,4 @@ transfer, use:
 
 #include <device_wrapper.txx>
 
-#endif
+#endif //_PVFMM_DEVICE_WRAPPER_HPP_

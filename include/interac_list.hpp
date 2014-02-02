@@ -1,18 +1,20 @@
 /**
  * \file interac_list.hpp
- * \author Dhairya Malhotra, dhairya.malhotra88@gmail.com
+ * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 6-11-2012
  * \brief This file contains the definition of the InteracList class.
  * Handles the logic for different interaction lists, and determines the
  * symmetry class for each interaction.
  */
 
-#ifndef _INTERAC_LIST_HPP_
-#define _INTERAC_LIST_HPP_
+#ifndef _PVFMM_INTERAC_LIST_HPP_
+#define _PVFMM_INTERAC_LIST_HPP_
 
 #include <pvfmm_common.hpp>
 #include <tree_node.hpp>
 #include <precomp_mat.hpp>
+
+namespace pvfmm{
 
 template <class Node_t>
 class InteracList{
@@ -96,7 +98,9 @@ class InteracList{
     PrecompMat<Real_t>* mat;                         //Handles storage of matrices.
 };
 
+}//end namespace
+
 #include <interac_list.txx>
 
-#endif
+#endif //_PVFMM_INTERAC_LIST_HPP_
 

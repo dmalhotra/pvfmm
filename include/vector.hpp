@@ -1,12 +1,12 @@
 /**
  * \file vector.hpp
- * \author Dhairya Malhotra, dhairya.malhotra88@gmail.com
+ * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 2-11-2011
  * \brief This file contains definition of the class Vector.
  */
 
-#ifndef _VECTOR_HPP_
-#define _VECTOR_HPP_
+#ifndef _PVFMM_VECTOR_HPP_
+#define _PVFMM_VECTOR_HPP_
 
 #include <vector>
 #include <iostream>
@@ -15,6 +15,8 @@
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push,target(mic))
 #endif
+
+namespace pvfmm{
 
 template <class T>
 class Vector{
@@ -89,10 +91,12 @@ class Vector{
   Device dev;
 };
 
+}//end namespace
+
 #include <vector.txx>
 
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
 #endif
 
-#endif
+#endif //_PVFMM_VECTOR_HPP_

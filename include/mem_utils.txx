@@ -1,6 +1,6 @@
 /**
  * \file mat_utils.txx
- * \author Dhairya Malhotra, dhairya.malhotra88@gmail.com
+ * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 11-5-2013
  * \brief This file contains implementation of mem_utils.hpp.
  */
@@ -12,6 +12,7 @@
 #include <fft_wrapper.hpp>
 #include <profile.hpp>
 
+namespace pvfmm{
 namespace mem{
 
 #ifdef __INTEL_OFFLOAD
@@ -86,5 +87,5 @@ namespace mem{
 #pragma offload_attribute(pop)
 #endif
 
-};
-
+}//end namespace
+}//end namespace

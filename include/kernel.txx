@@ -1,6 +1,6 @@
 /**
  * \file kernel.txx
- * \author Dhairya Malhotra, dhairya.malhotra88@gmail.com
+ * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 12-20-2011
  * \brief This file contains the implementation of the struct Kernel and also the
  * implementation of various kernels for FMM.
@@ -14,6 +14,8 @@
 #include <assert.h>
 #include <vector>
 #include <profile.hpp>
+
+namespace pvfmm{
 
 /**
  * \brief Constructor.
@@ -540,6 +542,9 @@ namespace
 #undef X
 #undef Y
 #undef Z
+
+#undef IDEAL_ALIGNMENT
+#undef DECL_SIMD_ALIGNED
 }
 #endif
 #endif
@@ -1618,6 +1623,9 @@ namespace
 #undef X
 #undef Y
 #undef Z
+
+#undef IDEAL_ALIGNMENT
+#undef DECL_SIMD_ALIGNED
 }
 #endif
 #endif
@@ -1941,3 +1949,4 @@ void helmholtz_grad(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_
   //TODO Implement this.
 }
 
+}//end namespace

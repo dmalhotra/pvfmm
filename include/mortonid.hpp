@@ -1,17 +1,20 @@
 /**
  * \file mortonid.hpp
- * \author Dhairya Malhotra, dhairya.malhotra88@gmail.com
+ * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 2-11-2011
  * \brief This file contains definition of the class MortonId.
  */
 
-#ifndef _MORTONID_HPP_
-#define _MORTONID_HPP_
+#ifndef _PVFMM_MORTONID_HPP_
+#define _PVFMM_MORTONID_HPP_
 
 #include <pvfmm_common.hpp>
 #include <iostream>
 #include <stdint.h>
 #include <vector>
+
+namespace pvfmm{
+
 #ifndef MAX_DEPTH
 #define MAX_DEPTH 30
 #endif
@@ -85,6 +88,8 @@ class MortonId{
 
 };
 
+}//end namespace
+
 #include <mortonid.txx>
 
-#endif
+#endif //_PVFMM_MORTONID_HPP_

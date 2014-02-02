@@ -191,10 +191,6 @@ AC_CONFIG_FILES([Makefile
                  doc/doc/Makefile])
 AC_OUTPUT
 
-
-# Make tmp directory. (otherwise ar throws an error on OS X)
-mkdir -p tmp
-
 echo "
 ------------------------------------------------------------------------------
 $PACKAGE-$VERSION library configuration:

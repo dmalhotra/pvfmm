@@ -1,12 +1,12 @@
 /**
  * \file matrix.hpp
- * \author Dhairya Malhotra, dhairya.malhotra88@gmail.com
+ * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 2-11-2011
  * \brief This file contains definition of the class Matrix.
  */
 
-#ifndef _MATRIX_HPP_
-#define _MATRIX_HPP_
+#ifndef _PVFMM_MATRIX_HPP_
+#define _PVFMM_MATRIX_HPP_
 
 #include <cstdlib>
 #include <vector>
@@ -16,6 +16,8 @@
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push,target(mic))
 #endif
+
+namespace pvfmm{
 
 template <class T>
 class Permutation;
@@ -156,10 +158,12 @@ class Permutation{
   Vector<T> scal;
 };
 
+}//end namespace
+
 #include <matrix.txx>
 
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
 #endif
 
-#endif
+#endif //_PVFMM_MATRIX_HPP_

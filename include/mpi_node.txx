@@ -1,12 +1,14 @@
 /**
  * \file mpi_node.cpp
- * \author Dhairya Malhotra, dhairya.malhotra88@gmail.com
+ * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 12-11-2010
  * \brief This file contains the implementation of the class MPI_Node.
  */
 
 #include <assert.h>
 #include <iostream>
+
+namespace pvfmm{
 
 template <class T>
 MPI_Node<T>::~MPI_Node(){
@@ -439,3 +441,5 @@ void MPI_Node<T>::VTU_Data(std::vector<Real_t>& coord, std::vector<Real_t>& valu
     M=M.Transpose();
   }
 }
+
+}//end namespace

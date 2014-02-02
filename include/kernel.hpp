@@ -1,13 +1,13 @@
 /**
  * \file kernel.hpp
- * \author Dhairya Malhotra, dhairya.malhotra88@gmail.com
+ * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 12-20-2011
  * \brief This file contains the definition of the struct Kernel and also the
  * implementation of various kernels for FMM.
  */
 
-#ifndef _FMM_KERNEL_HPP_
-#define _FMM_KERNEL_HPP_
+#ifndef _PVFMM_FMM_KERNEL_HPP_
+#define _PVFMM_FMM_KERNEL_HPP_
 
 #include <pvfmm_common.hpp>
 #include <string>
@@ -15,6 +15,8 @@
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push,target(mic))
 #endif
+
+namespace pvfmm{
 
 template <class T>
 struct Kernel{
@@ -219,6 +221,7 @@ const Kernel<double> ker_helmholtz     =BuildKernel<double, helmholtz_poten>("he
 int dim_helmholtz_grad[2]={2,6};
 const Kernel<double> ker_helmholtz_grad=BuildKernel<double, helmholtz_grad >("helmholtz_grad", 3, dim_helmholtz_grad);
 
+}//end namespace
 
 #include <kernel.txx>
 
@@ -226,5 +229,5 @@ const Kernel<double> ker_helmholtz_grad=BuildKernel<double, helmholtz_grad >("he
 #pragma offload_attribute(pop)
 #endif
 
-#endif
+#endif //_PVFMM_FMM_KERNEL_HPP_
 

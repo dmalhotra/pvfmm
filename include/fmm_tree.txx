@@ -1,6 +1,6 @@
 /**
  * \file fmm_tree.txx
- * \author Dhairya Malhotra, dhairya.malhotra88@gmail.com
+ * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 12-11-2010
  * \brief This file contains the implementation of the class FMM_Tree.
  */
@@ -8,6 +8,8 @@
 #include <assert.h>
 #include <fmm_node.hpp>
 #include <profile.hpp>
+
+namespace pvfmm{
 
 template <class FMM_Mat_t>
 void FMM_Tree<FMM_Mat_t>::Initialize(typename FMM_Node_t::NodeData* init_data) {
@@ -65,7 +67,7 @@ void FMM_Tree<FMM_Mat_t>::SetupFMM(FMM_Mat_t* fmm_mat_) {
 
   #ifdef __INTEL_OFFLOAD
   Profile::Tic("InitLocks",this->Comm(),false,3);
-  DeviceWrapper::MIC_Lock::init();
+  MIC_Lock::init();
   Profile::Toc();
   #endif
 
@@ -141,9 +143,9 @@ void FMM_Tree<FMM_Mat_t>::SetupFMM(FMM_Mat_t* fmm_mat_) {
 
   #ifdef __INTEL_OFFLOAD
   int wait_lock_idx=-1;
-  wait_lock_idx=DeviceWrapper::MIC_Lock::curr_lock();
+  wait_lock_idx=MIC_Lock::curr_lock();
   #pragma offload target(mic:0)
-  {DeviceWrapper::MIC_Lock::wait_lock(wait_lock_idx);}
+  {MIC_Lock::wait_lock(wait_lock_idx);}
   #endif
 
   }Profile::Toc();
@@ -166,12 +168,12 @@ void FMM_Tree<FMM_Mat_t>::ClearFMMData() {
     #ifdef __INTEL_OFFLOAD
     if(!fmm_mat->Homogen()){ // Wait
       int wait_lock_idx=-1;
-      wait_lock_idx=DeviceWrapper::MIC_Lock::curr_lock();
+      wait_lock_idx=MIC_Lock::curr_lock();
       #pragma offload target(mic:0)
-      {DeviceWrapper::MIC_Lock::wait_lock(wait_lock_idx);}
+      {MIC_Lock::wait_lock(wait_lock_idx);}
     }
     #endif
-    DeviceWrapper::MIC_Lock::init();
+    MIC_Lock::init();
   }
 
   }Profile::Toc();
@@ -582,9 +584,9 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
     if(!fmm_mat->Homogen()){ // Wait
       #ifdef __INTEL_OFFLOAD
       int wait_lock_idx=-1;
-      if(device) wait_lock_idx=DeviceWrapper::MIC_Lock::curr_lock();
+      if(device) wait_lock_idx=MIC_Lock::curr_lock();
       #pragma offload if(device) target(mic:0)
-      {if(device) DeviceWrapper::MIC_Lock::wait_lock(wait_lock_idx);}
+      {if(device) MIC_Lock::wait_lock(wait_lock_idx);}
       #endif
       Profile::Toc();
     }
@@ -669,3 +671,4 @@ void FMM_Tree<FMM_Mat_t>::Copy_FMMOutput() {
   }
 }
 
+}//end namespace

@@ -211,54 +211,54 @@ void fn_poten_t5(Real_t* coord, int n, Real_t* out){
 
 template <class Real_t>
 void fmm_test(int test_case, size_t N, bool unif, int mult_order, int cheb_deg, int depth, bool adap, Real_t tol, MPI_Comm comm){
-  typedef FMM_Node<Cheb_Node<Real_t> > FMMNode_t;
-  typedef FMM_Cheb<FMMNode_t> FMM_Mat_t;
-  typedef FMM_Tree<FMM_Mat_t> FMM_Tree_t;
+  typedef pvfmm::FMM_Node<pvfmm::Cheb_Node<Real_t> > FMMNode_t;
+  typedef pvfmm::FMM_Cheb<FMMNode_t> FMM_Mat_t;
+  typedef pvfmm::FMM_Tree<FMM_Mat_t> FMM_Tree_t;
 
   void (*fn_input_)(Real_t* , int , Real_t*)=NULL;
   void (*fn_poten_)(Real_t* , int , Real_t*)=NULL;
   void (*fn_grad_)(Real_t* , int , Real_t*)=NULL;
-  const Kernel<Real_t>* mykernel=NULL;
-  const Kernel<Real_t>* mykernel_grad=NULL;;
-  BoundaryType bndry;
+  const pvfmm::Kernel<Real_t>* mykernel=NULL;
+  const pvfmm::Kernel<Real_t>* mykernel_grad=NULL;;
+  pvfmm::BoundaryType bndry;
 
   switch (test_case){
     case 1:
       fn_input_=fn_input_t1<Real_t>;
       fn_poten_=fn_poten_t1<Real_t>;
       fn_grad_ =fn_grad_t1<Real_t>;
-      mykernel     =LaplaceKernel<Real_t>::potn_ker;
-      //mykernel_grad=LaplaceKernel<Real_t>::grad_ker;
-      bndry=Periodic;
+      mykernel     =pvfmm::LaplaceKernel<Real_t>::potn_ker;
+      //mykernel_grad=pvfmm::LaplaceKernel<Real_t>::grad_ker;
+      bndry=pvfmm::Periodic;
       break;
     case 2:
       fn_input_=fn_input_t2<Real_t>;
       fn_poten_=fn_poten_t2<Real_t>;
       fn_grad_ =fn_grad_t2<Real_t>;
-      mykernel     =LaplaceKernel<Real_t>::potn_ker;
-      //mykernel_grad=LaplaceKernel<Real_t>::grad_ker;
-      bndry=FreeSpace;
+      mykernel     =pvfmm::LaplaceKernel<Real_t>::potn_ker;
+      //mykernel_grad=pvfmm::LaplaceKernel<Real_t>::grad_ker;
+      bndry=pvfmm::FreeSpace;
       break;
     case 3:
       fn_input_=fn_input_t3<Real_t>;
       fn_poten_=fn_poten_t3<Real_t>;
-      mykernel     =&ker_stokes_vel;
-      //mykernel_grad=&ker_stokes_grad;
-      bndry=FreeSpace;
+      mykernel     =&pvfmm::ker_stokes_vel;
+      //mykernel_grad=&pvfmm::ker_stokes_grad;
+      bndry=pvfmm::FreeSpace;
       break;
     case 4:
       fn_input_=fn_input_t4<Real_t>;
       fn_poten_=fn_poten_t4<Real_t>;
-      mykernel     =&ker_biot_savart;
-      //mykernel_grad=&ker_biot_savart_grad;
-      bndry=FreeSpace;
+      mykernel     =&pvfmm::ker_biot_savart;
+      //mykernel_grad=&pvfmm::ker_biot_savart_grad;
+      bndry=pvfmm::FreeSpace;
       break;
     case 5:
       fn_input_=fn_input_t5<Real_t>;
       fn_poten_=fn_poten_t5<Real_t>;
-      mykernel     =&ker_helmholtz;
-      //mykernel_grad=&ker_helmholtz_grad;
-      bndry=FreeSpace;
+      mykernel     =&pvfmm::ker_helmholtz;
+      //mykernel_grad=&pvfmm::ker_helmholtz_grad;
+      bndry=pvfmm::FreeSpace;
       break;
     default:
       fn_input_=NULL;
@@ -306,7 +306,7 @@ void fmm_test(int test_case, size_t N, bool unif, int mult_order, int cheb_deg, 
     std::cout<<"Maximum points per octant: "<<tree_data.max_pts<<'\n';
     std::cout<<"Chebyshev Tolerance: "<<tree_data.tol<<'\n';
     std::cout<<"Maximum Tree Depth: "<<depth<<'\n';
-    std::cout<<"BoundaryType: "<<(bndry==Periodic?"Periodic":"FreeSpace")<<'\n';
+    std::cout<<"BoundaryType: "<<(bndry==pvfmm::Periodic?"Periodic":"FreeSpace")<<'\n';
   }
 
   //Initialize FMM_Mat.
@@ -321,7 +321,7 @@ void fmm_test(int test_case, size_t N, bool unif, int mult_order, int cheb_deg, 
     fmm_mat_grad->Initialize(mult_order,tree_data.cheb_deg,comm,mykernel_grad,mykernel);
   }
 
-  Profile::Tic("TreeSetup",&comm,true,1);
+  pvfmm::Profile::Tic("TreeSetup",&comm,true,1);
   {
     FMM_Tree_t* tree=new FMM_Tree_t(comm);
     tree->Initialize(&tree_data);
@@ -343,7 +343,7 @@ void fmm_test(int test_case, size_t N, bool unif, int mult_order, int cheb_deg, 
     delete tree;
     tree_data.pt_coord=pt_coord;
   }
-  Profile::Toc();
+  pvfmm::Profile::Toc();
 
   //Create Tree and initialize with input data.
   FMM_Tree_t* tree=new FMM_Tree_t(comm);
@@ -400,19 +400,19 @@ void fmm_test(int test_case, size_t N, bool unif, int mult_order, int cheb_deg, 
 
   //Check Tree.
   #ifndef NDEBUG
-  Profile::Tic("CheckTree",&comm,true,1);
+  pvfmm::Profile::Tic("CheckTree",&comm,true,1);
   tree->CheckTree();
-  Profile::Toc();
+  pvfmm::Profile::Toc();
   #endif
 
   //Find error in FMM output.
   CheckChebOutput<FMM_Tree_t>(tree, (typename TestFn<Real_t>::Fn_t) fn_poten_, mykernel->ker_dim[1], std::string("Output"));
 
   //Write2File
-  //tree->Write2File("tmp/output",0);
+  //tree->Write2File("result/output",0);
 
   if(fn_grad_!=NULL){ //Compute gradient.
-    Profile::Tic("FMM_Eval(Grad)",&comm,true,1);
+    pvfmm::Profile::Tic("FMM_Eval(Grad)",&comm,true,1);
     if(mykernel_grad!=NULL){
       tree->SetupFMM(fmm_mat_grad);
       tree->DownwardPass();
@@ -422,7 +422,7 @@ void fmm_test(int test_case, size_t N, bool unif, int mult_order, int cheb_deg, 
       #pragma omp parallel for
       for(size_t i=0;i<nlist.size();i++) nlist[i]->Gradient();
     }
-    Profile::Toc();
+    pvfmm::Profile::Toc();
 
     //Find error in FMM output (gradient).
     CheckChebOutput<FMM_Tree_t>(tree, (typename TestFn<Real_t>::Fn_t) fn_grad_, mykernel->ker_dim[1]*COORD_DIM, std::string("OutputGrad"));
@@ -459,12 +459,12 @@ int main(int argc, char **argv){
   commandline_option_end(argc, argv);
 
   // Run FMM with above options.
-  Profile::Tic("FMM_Test",&comm,true);
+  pvfmm::Profile::Tic("FMM_Test",&comm,true);
   fmm_test<double>(test, N,unif, m,q, d, adap,tol, comm);
-  Profile::Toc();
+  pvfmm::Profile::Toc();
 
   //Output Profiling results.
-  Profile::print(&comm);
+  pvfmm::Profile::print(&comm);
 
   // Shut down MPI
   MPI_Finalize();

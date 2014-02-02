@@ -1,12 +1,14 @@
 /**
  * \file tree.cpp
- * \author Dhairya Malhotra, dhairya.malhotra88@gmail.com
+ * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 12-11-2010
  * \brief This file contains the implementation of the class Tree.
  */
 
 #include <tree.hpp>
 #include <assert.h>
+
+namespace pvfmm{
 
 template <class TreeNode>
 Tree<TreeNode>::~Tree(){
@@ -129,3 +131,4 @@ std::vector<TreeNode*>& Tree<TreeNode>::GetNodeList(){
   return node_lst;
 }
 
+}//end namespace

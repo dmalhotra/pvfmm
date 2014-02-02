@@ -1,17 +1,19 @@
 /**
  * \file cheb_utils.hpp
- * \author Dhairya Malhotra, dhairya.malhotra88@gmail.com
+ * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 2-11-2011
  * \brief This file contains chebyshev related functions.
  */
 
-#ifndef _CHEB_UTILS_HPP_
-#define _CHEB_UTILS_HPP_
+#ifndef _PVFMM_CHEB_UTILS_HPP_
+#define _PVFMM_CHEB_UTILS_HPP_
 
 #include <pvfmm_common.hpp>
 #include <vector>
 #include <kernel.hpp>
 #include <vector.hpp>
+
+namespace pvfmm{
 
 /**
  * \brief Returns the sum of the absolute value of coeffecients of the highest
@@ -81,7 +83,9 @@ void cheb_curl(T* A, int deg, T* B);
 template <class T>
 void cheb_img(T* A, T* B, int cheb_deg, int dir, bool neg_);
 
+}//end namespace
+
 #include <cheb_utils.txx>
 
-#endif
+#endif //_PVFMM_CHEB_UTILS_HPP_
 

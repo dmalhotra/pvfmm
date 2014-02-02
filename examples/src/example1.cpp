@@ -8,8 +8,8 @@
 typedef std::vector<double> vec;
 
 void nbody(vec& src_coord, vec& src_value,
-           vec& trg_coord, vec& trg_value, 
-					 const Kernel<double>& kernel_fn, MPI_Comm& comm){
+           vec& trg_coord, vec& trg_value,
+					 const pvfmm::Kernel<double>& kernel_fn, MPI_Comm& comm){
   int np, rank;
   MPI_Comm_size(comm, &np);
   MPI_Comm_rank(comm, &rank);
@@ -27,7 +27,7 @@ void nbody(vec& src_coord, vec& src_value,
     std::vector<int> recv_cnts(np);
     MPI_Allgather(&send_cnt    , 1, MPI_INT,
                   &recv_cnts[0], 1, MPI_INT, comm);
-    omp_par::scan(&recv_cnts[0], &recv_disp[0], np);
+    pvfmm::omp_par::scan(&recv_cnts[0], &recv_disp[0], np);
     MPI_Allgatherv(&trg_coord[0]    , send_cnt                    , MPI_DOUBLE,
                    &glb_trg_coord[0], &recv_cnts[0], &recv_disp[0], MPI_DOUBLE, comm);
   }
@@ -52,8 +52,8 @@ void nbody(vec& src_coord, vec& src_value,
 void fmm_test(size_t N, int mult_order, MPI_Comm comm){
 
   // Set kernel.
-  const Kernel<double>& kernel_fn    =laplace_grad_d;
-  const Kernel<double>& kernel_fn_aux=laplace_potn_d;
+  const pvfmm::Kernel<double>& kernel_fn    =pvfmm::laplace_grad_d;
+  const pvfmm::Kernel<double>& kernel_fn_aux=pvfmm::laplace_potn_d;
 
   // Create target and source vectors.
   vec trg_coord=point_distrib<double>(RandUnif,N,comm);
@@ -67,14 +67,14 @@ void fmm_test(size_t N, int mult_order, MPI_Comm comm){
 
   // Construct tree.
   size_t max_pts=100;
-  PtFMM_Tree* tree=PtFMM_CreateTree(src_coord, src_value, trg_coord, comm, max_pts, FreeSpace);
+  pvfmm::PtFMM_Tree* tree=PtFMM_CreateTree(src_coord, src_value, trg_coord, comm, max_pts, pvfmm::FreeSpace);
 
   // Load matrices.
-  PtFMM* matrices=new PtFMM;
-  matrices->Initialize(mult_order, comm, &kernel_fn, &kernel_fn_aux);
+  pvfmm::PtFMM matrices;
+  matrices.Initialize(mult_order, comm, &kernel_fn, &kernel_fn_aux);
 
   // FMM Setup
-  tree->SetupFMM(matrices);
+  tree->SetupFMM(&matrices);
 
   // Run FMM
   vec trg_value;
@@ -82,7 +82,8 @@ void fmm_test(size_t N, int mult_order, MPI_Comm comm){
 
   // Re-run FMM
   tree->ClearFMMData();
-  PtFMM_Evaluate(tree, trg_value, n_trg);
+  for(size_t i=0;i<src_value.size();i++) src_value[i]=drand48();
+  PtFMM_Evaluate(tree, trg_value, n_trg, &src_value);
 
   {// Check error
     vec trg_sample_coord;
@@ -122,7 +123,6 @@ void fmm_test(size_t N, int mult_order, MPI_Comm comm){
   }
 
   // Free memory
-  delete matrices;
   delete tree;
 }
 
@@ -144,7 +144,7 @@ with Laplace kernel, using the PvFMM library.\n");
   fmm_test(N, m, comm);
 
   //Output Profiling results.
-  Profile::print(&comm);
+  pvfmm::Profile::print(&comm);
 
   // Shut down MPI
   MPI_Finalize();

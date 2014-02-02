@@ -1,12 +1,12 @@
 /**
  * \file mat_utils.hpp
- * \author Dhairya Malhotra, dhairya.malhotra88@gmail.com
+ * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 2-11-2011
- * \brief This file contains BLAS and LAPACK wrapper functions.
+ * \brief This file contains FFTW3 wrapper functions.
  */
 
-#ifndef _FFT_WRAPPER_
-#define _FFT_WRAPPER_
+#ifndef _PVFMM_FFT_WRAPPER_
+#define _PVFMM_FFT_WRAPPER_
 
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push,target(mic))
@@ -16,6 +16,8 @@
 #ifdef FFTW3_MKL
 #include <fftw3_mkl.h>
 #endif
+
+namespace pvfmm{
 
 template<class T>
 struct FFTW_t{};
@@ -100,9 +102,11 @@ struct FFTW_t<float>{
 };
 #endif
 
+}//end namespace
+
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
 #endif
 
-#endif
+#endif //_PVFMM_FFT_WRAPPER_
 

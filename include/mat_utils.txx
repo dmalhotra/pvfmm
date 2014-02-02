@@ -1,6 +1,6 @@
 /**
  * \file mat_utils.txx
- * \author Dhairya Malhotra, dhairya.malhotra88@gmail.com
+ * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 2-11-2011
  * \brief This file contains BLAS and LAPACK wrapper functions.
  */
@@ -14,6 +14,7 @@
 #include <lapack.h>
 #include <fft_wrapper.hpp>
 
+namespace pvfmm{
 namespace mat{
 
   inline void gemm(char TransA, char TransB,  int M,  int N,  int K,  float alpha,  float *A,  int lda,  float *B,  int ldb,  float beta, float *C,  int ldc){
@@ -86,5 +87,6 @@ namespace mat{
     gemm('T','T',n,m,k,1.0,&tVT[0],k,&tU[0],m,0.0,M_,n);
   }
 
-};
+}//end namespace
+}//end namespace
 

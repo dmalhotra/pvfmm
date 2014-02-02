@@ -1,6 +1,6 @@
 /**
  * \file matrix.txx
- * \author Dhairya Malhotra, dhairya.malhotra88@gmail.com
+ * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 2-11-2011
  * \brief This file contains inplementation of the class Matrix.
  */
@@ -11,6 +11,8 @@
 #include <typeinfo>
 #include <profile.hpp>
 #include <mat_utils.hpp>
+
+namespace pvfmm{
 
 template <class T>
 std::ostream& operator<<(std::ostream& output, const Matrix<T>& M){
@@ -552,3 +554,4 @@ Matrix<T> operator*(const Matrix<T>& M, const Permutation<T>& P){
   return M_r;
 }
 
+}//end namespace

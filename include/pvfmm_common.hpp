@@ -1,6 +1,6 @@
 /**
  * \file pvfmm_common.hpp
- * \author Dhairya Malhotra, dhairya.malhotra88@gmail.com
+ * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 12-10-2010
  * \brief This file contains common definitions.
  */
@@ -52,5 +52,4 @@
 #define ASSERT_WITH_MSG(cond, msg)
 #endif
 
-
-#endif
+#endif //_PVFMM_COMMON_HPP_

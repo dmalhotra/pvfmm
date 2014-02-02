@@ -1,5 +1,5 @@
-#ifndef _FMM_GLL_HPP_
-#define _FMM_GLL_HPP_
+#ifndef _PVFMM_FMM_GLL_HPP_
+#define _PVFMM_FMM_GLL_HPP_
 
 #include <mpi.h>
 
@@ -45,4 +45,4 @@ extern "C" {
 }
 #endif
 
-#endif
+#endif //_PVFMM_FMM_GLL_HPP_

@@ -1,17 +1,19 @@
 /**
  * \file tree.hpp
- * \author Dhairya Malhotra, dhairya.malhotra88@gmail.com
+ * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 12-11-2010
  * \brief This file contains the definition of the base class for a tree.
  */
 
 // TODO Add Euler Tour based parallel traversal.
 
-#ifndef _TREE_HPP_
-#define _TREE_HPP_
+#ifndef _PVFMM_TREE_HPP_
+#define _PVFMM_TREE_HPP_
 
 #include <pvfmm_common.hpp>
 #include <iostream>
+
+namespace pvfmm{
 
 /**
  * \brief Base class for tree.
@@ -92,7 +94,8 @@ class Tree{
   std::vector<TreeNode*> node_lst;
 };
 
+}//end namespace
+
 #include <tree.txx>
 
-#endif
-
+#endif //_PVFMM_TREE_HPP_

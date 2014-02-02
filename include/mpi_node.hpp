@@ -1,19 +1,21 @@
 /**
  * \file mpi_node.hpp
- * \author Dhairya Malhotra, dhairya.malhotra88@gmail.com
+ * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 12-10-2010
  * \brief This file contains the definition of a virtual base class for a
  * locally essential tree node.
  */
 
-#ifndef _MPI_NODE_HPP_
-#define _MPI_NODE_HPP_
+#ifndef _PVFMM_MPI_NODE_HPP_
+#define _PVFMM_MPI_NODE_HPP_
 
 #include <pvfmm_common.hpp>
 #include <assert.h>
 #include <tree_node.hpp>
 #include <mortonid.hpp>
 #include <vector.hpp>
+
+namespace pvfmm{
 
 /**
  * \brief A structure for storing packed data for transmitting a node to
@@ -178,7 +180,8 @@ class MPI_Node: public TreeNode{
   Vector<char> packed_data;
 };
 
+}//end namespace
+
 #include <mpi_node.txx>
 
-#endif
-
+#endif //_PVFMM_MPI_NODE_HPP_

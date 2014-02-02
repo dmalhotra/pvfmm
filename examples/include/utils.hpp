@@ -1,6 +1,6 @@
 /**
  * \file utils.hpp
- * \author Dhairya Malhotra, dhairya.malhotra88@gmail.com
+ * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 1-1-2011
  */
 
@@ -13,19 +13,11 @@
 #include <fmm_tree.hpp>
 
 template <class FMM_Mat_t>
-void CheckFMMOutput(FMM_Tree<FMM_Mat_t>* mytree, Kernel<typename FMM_Mat_t::Real_t>* mykernel);
+void CheckFMMOutput(pvfmm::FMM_Tree<FMM_Mat_t>* mytree, pvfmm::Kernel<typename FMM_Mat_t::Real_t>* mykernel);
 
 template <class Real_t>
-struct TestFn;
-
-template <>
-struct TestFn<double>{
-  typedef void (*Fn_t)(double* c, int n, double* out);
-};
-
-template <>
-struct TestFn<float>{
-  typedef void (*Fn_t)(float* c, int n, float* out);
+struct TestFn{
+  typedef void (*Fn_t)(Real_t* c, int n, Real_t* out);
 };
 
 template <class FMMTree_t>

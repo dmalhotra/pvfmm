@@ -1,6 +1,6 @@
 /**
  * \file precomp_mat.txx
- * \author Dhairya Malhotra, dhairya.malhotra88@gmail.com
+ * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 3-07-2011
  * \brief This file contains the implementation of the PrecompMat class.
  * Handles storage of precomputed translation matrices.
@@ -9,10 +9,13 @@
 #include <sys/stat.h>
 #include <stdint.h>
 
+namespace pvfmm{
+
+#define PRECOMP_MIN_DEPTH 40
 template <class T>
 PrecompMat<T>::PrecompMat(bool homogen, int max_d): homogeneous(homogen), max_depth(max_d){
 
-  if(!homogen) mat.resize((max_d+MIN_DEPTH)*Type_Count); //For each U,V,W,X
+  if(!homogen) mat.resize((max_d+PRECOMP_MIN_DEPTH)*Type_Count); //For each U,V,W,X
   else mat.resize(Type_Count);
   for(size_t i=0;i<mat.size();i++)
     mat[i].resize(500);
@@ -29,7 +32,7 @@ PrecompMat<T>::PrecompMat(bool homogen, int max_d): homogeneous(homogen), max_de
 
 template <class T>
 Matrix<T>& PrecompMat<T>::Mat(int l, Mat_Type type, size_t indx){
-  int level=(homogeneous?0:l+MIN_DEPTH);
+  int level=(homogeneous?0:l+PRECOMP_MIN_DEPTH);
   #pragma omp critical (PrecompMAT)
   if(indx>=mat[level*Type_Count+type].size()){
     mat[level*Type_Count+type].resize(indx+1);
@@ -66,7 +69,7 @@ Permutation<T>& PrecompMat<T>::Perm(Mat_Type type, size_t indx){
 
 template <class T>
 size_t PrecompMat<T>::CompactData(int l, Mat_Type type, Matrix<char>& comp_data, size_t offset){
-  std::vector<Matrix<T> >& mat_=mat[(homogeneous?0:l+MIN_DEPTH)*Type_Count+type];
+  std::vector<Matrix<T> >& mat_=mat[(homogeneous?0:l+PRECOMP_MIN_DEPTH)*Type_Count+type];
   size_t mat_cnt=mat_.size();
   size_t indx_size=0;
   size_t mem_size=0;
@@ -264,7 +267,7 @@ void PrecompMat<T>::LoadFile(const char* fname, MPI_Comm comm){
     homogeneous=tmp;
     int max_depth_;
     max_depth_=*(int*)f_ptr; f_ptr+=sizeof(int);
-    size_t mat_size=(size_t)Type_Count*(homogeneous?1:max_depth_+MIN_DEPTH);
+    size_t mat_size=(size_t)Type_Count*(homogeneous?1:max_depth_+PRECOMP_MIN_DEPTH);
     if(mat.size()<mat_size){
       max_depth=max_depth_;
       mat.resize(mat_size);
@@ -294,7 +297,8 @@ void PrecompMat<T>::LoadFile(const char* fname, MPI_Comm comm){
   Profile::Toc();
 }
 
-#undef MY_READ
+#undef MY_FREAD
+#undef PRECOMP_MIN_DEPTH
 
 template <class T>
 std::vector<T>& PrecompMat<T>::RelativeTrgCoord(){
@@ -306,3 +310,4 @@ bool PrecompMat<T>::Homogen(){
   return homogeneous;
 }
 
+}//end namespace

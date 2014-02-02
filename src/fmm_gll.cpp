@@ -11,10 +11,10 @@
 #include <cheb_utils.hpp>
 #include <vector.hpp>
 
-typedef FMM_Node<Cheb_Node<double> > FMMNode_t;
-typedef FMM_Cheb<FMMNode_t> FMM_Mat_t;
+typedef pvfmm::FMM_Node<pvfmm::Cheb_Node<double> > FMMNode_t;
+typedef pvfmm::FMM_Cheb<FMMNode_t> FMM_Mat_t;
+typedef pvfmm::FMM_Tree<FMM_Mat_t> FMM_Tree_t;
 typedef FMM_Mat_t::FMMData FMM_Data_t;
-typedef FMM_Tree<FMM_Mat_t> FMM_Tree_t;
 
 extern "C" {
 
@@ -34,32 +34,32 @@ extern "C" {
       fmm_data->gll_nodes=new std::vector<double>(gll_order+1);
       std::vector<double>& gll_nodes=*((std::vector<double>*)fmm_data->gll_nodes);
       std::vector<double> w(gll_order+1);
-      gll_quadrature(gll_order, &gll_nodes[0], &w[0]);
+      pvfmm::gll_quadrature(gll_order, &gll_nodes[0], &w[0]);
     }
 
     for(int ker_indx=0;ker_indx<2;ker_indx++)
     { // Initialize Matrices
       FMM_Mat_t* fmm_mat;
-      Kernel<double>* mykernel;
+      pvfmm::Kernel<double>* mykernel;
       FMM_Tree_t* mytree;
 
       if(ker_indx==0){
-        Profile::Tic("Init:Biot-Savart",&fmm_data->comm,true,3);
+        pvfmm::Profile::Tic("Init:Biot-Savart",&fmm_data->comm,true,3);
         fmm_data->fmm_mat_biotsavart=new FMM_Mat_t;
         fmm_mat=((FMM_Mat_t*)fmm_data->fmm_mat_biotsavart);
 
-        fmm_data->kernel_biotsavart=&ker_biot_savart;
-        mykernel=(Kernel<double>*)fmm_data->kernel_biotsavart;
+        fmm_data->kernel_biotsavart=&pvfmm::ker_biot_savart;
+        mykernel=(pvfmm::Kernel<double>*)fmm_data->kernel_biotsavart;
 
         fmm_data->tree_biotsavart=new FMM_Tree_t(fmm_data->comm);
         mytree=((FMM_Tree_t*)fmm_data->tree_biotsavart);
       }else{
-        Profile::Tic("Init:LaplaceGrad",&fmm_data->comm,true,3);
+        pvfmm::Profile::Tic("Init:LaplaceGrad",&fmm_data->comm,true,3);
         fmm_data->fmm_mat_laplace_grad=new FMM_Mat_t;
         fmm_mat=((FMM_Mat_t*)fmm_data->fmm_mat_laplace_grad);
 
-        fmm_data->kernel_laplace_grad=LaplaceKernel<double>::grad_ker;
-        mykernel=(Kernel<double>*)fmm_data->kernel_laplace_grad;
+        fmm_data->kernel_laplace_grad=pvfmm::LaplaceKernel<double>::grad_ker;
+        mykernel=(pvfmm::Kernel<double>*)fmm_data->kernel_laplace_grad;
 
         fmm_data->tree_laplace_grad=new FMM_Tree_t(fmm_data->comm);
         mytree=((FMM_Tree_t*)fmm_data->tree_laplace_grad);
@@ -94,38 +94,38 @@ extern "C" {
       mydata.input_fn=NULL;
 
       //Initialize FMM_Mat.
-      Profile::Tic("InitMat",&fmm_data->comm,true,5);
+      pvfmm::Profile::Tic("InitMat",&fmm_data->comm,true,5);
       fmm_mat->Initialize(fmm_data->multipole_order,mydata.cheb_deg,fmm_data->comm,mykernel);
-      Profile::Toc();
+      pvfmm::Profile::Toc();
 
       //Create Tree and initialize with input data.
-      Profile::Tic("Tree Construction",&fmm_data->comm,true,5);
+      pvfmm::Profile::Tic("Tree Construction",&fmm_data->comm,true,5);
       mytree->Initialize(&mydata);
-      Profile::Toc();
+      pvfmm::Profile::Toc();
 
       //Initialize FMM Tree
-      Profile::Tic("Init FMM Tree",&fmm_data->comm,true,5);
-      BoundaryType bndry=Periodic;//FreeSpace;
+      pvfmm::Profile::Tic("Init FMM Tree",&fmm_data->comm,true,5);
+      pvfmm::BoundaryType bndry=pvfmm::Periodic;//pvfmm::FreeSpace;
       mytree->InitFMM_Tree(false,bndry);
-      Profile::Toc();
+      pvfmm::Profile::Toc();
 
 #ifndef NDEBUG
       //Check Tree.
-      Profile::Tic("Check Tree",&fmm_data->comm,true,5);
+      pvfmm::Profile::Tic("Check Tree",&fmm_data->comm,true,5);
       mytree->CheckTree();
-      Profile::Toc();
+      pvfmm::Profile::Toc();
 
-      Profile::Tic("FMM Eval",&fmm_data->comm,true,1);
+      pvfmm::Profile::Tic("FMM Eval",&fmm_data->comm,true,1);
       mytree->SetupFMM(fmm_mat);
       mytree->RunFMM();
-      Profile::Toc();
+      pvfmm::Profile::Toc();
 #endif
 
-      Profile::Toc();
+      pvfmm::Profile::Toc();
     }
 
 #ifndef NDEBUG
-    Profile::print(&fmm_data->comm);
+    pvfmm::Profile::print(&fmm_data->comm);
 #endif
   }
 
@@ -150,25 +150,25 @@ extern "C" {
     int cheb_order=fmm_data->cheb_order;
     FMM_Mat_t& fmm_mat=*((FMM_Mat_t*)fmm_data->fmm_mat_biotsavart);
     FMM_Tree_t& mytree=*((FMM_Tree_t*)fmm_data->tree_biotsavart);
-    Kernel<double>* mykernel=((Kernel<double>*)fmm_data->kernel_biotsavart);
-    BoundaryType bndry=Periodic;//FreeSpace;
+    pvfmm::Kernel<double>* mykernel=((pvfmm::Kernel<double>*)fmm_data->kernel_biotsavart);
+    pvfmm::BoundaryType bndry=pvfmm::Periodic;//pvfmm::FreeSpace;
 
     // Find out number of OMP thereads.
     int omp_p=omp_get_max_threads();
 
-    Profile::Tic("Construct Tree",&fmm_data->comm,true,1);
-    //Construct MortonId from node_coord and node_depth.
-    std::vector<MortonId> nodes(node_cnt);
+    pvfmm::Profile::Tic("Construct Tree",&fmm_data->comm,true,1);
+    //Construct pvfmm::MortonId from node_coord and node_depth.
+    std::vector<pvfmm::MortonId> nodes(node_cnt);
     double s=0.25/(1UL<<MAX_DEPTH);
     for(size_t i=0;i<node_cnt;i++)
-      nodes[i]=MortonId(node_coord[i*3+0]+s,node_coord[i*3+1]+s,node_coord[i*3+2]+s,node_depth[i]);
+      nodes[i]=pvfmm::MortonId(node_coord[i*3+0]+s,node_coord[i*3+1]+s,node_coord[i*3+2]+s,node_depth[i]);
 
     // Construct tree from morton id.
     size_t node_iter=0;
     std::vector<FMMNode_t*> tree_nodes;
     FMMNode_t* node=static_cast<FMMNode_t*>(mytree.PreorderFirst());
     while(node!=NULL && node_iter<node_cnt){
-      MortonId mid=node->GetMortonId();
+      pvfmm::MortonId mid=node->GetMortonId();
       if(mid.isAncestor(nodes[node_iter])){
         node->SetGhost(false);
         node->Subdivide();
@@ -196,14 +196,14 @@ extern "C" {
     size_t n_cheb_coeff=(cheb_order+1)*(cheb_order+2)*(cheb_order+3)/6;
     #pragma omp parallel for
     for(int i=0;i<omp_p;i++){
-      Vector<double> buff;
+      pvfmm::Vector<double> buff;
       size_t start=i*node_cnt/omp_p;
       size_t end=(i+1)*node_cnt/omp_p;
       for(size_t j=start;j<end;j++){
         FMMNode_t* node=tree_nodes[j];
         node->DataDOF()=mykernel->ker_dim[0];
         buff.Resize(n_gll_coeff*node->DataDOF());
-        gll2cheb<double,double>(&(node_gll_data[j][0]), gll_order, node->DataDOF(), &(buff[0]));
+        pvfmm::gll2cheb<double,double>(&(node_gll_data[j][0]), gll_order, node->DataDOF(), &(buff[0]));
 
         node->ChebData().Resize(n_cheb_coeff*node->DataDOF());
         double* cheb_out=&(node->ChebData()[0]);
@@ -224,8 +224,8 @@ extern "C" {
     }
 
     // Set avg to zero for Periodic boundary condition
-    std::vector<Vector<double> > cheb_w(node_cnt); //Copy vorticity.
-    if(bndry==Periodic){
+    std::vector<pvfmm::Vector<double> > cheb_w(node_cnt); //Copy vorticity.
+    if(bndry==pvfmm::Periodic){
       std::vector<double> avg_w(mykernel->ker_dim[0],0);
       for(size_t j=0;j<node_cnt;j++){
         FMMNode_t* node=tree_nodes[j];
@@ -241,7 +241,7 @@ extern "C" {
         cheb_w[j]=node->ChebData();
       }
     }
-    Profile::Toc();
+    pvfmm::Profile::Toc();
 
 #ifndef NDEBUG
     double max_w=0; // |w|_inf
@@ -252,25 +252,25 @@ extern "C" {
           max_w=node_gll_data[j][k];
 
     //Check Tree.
-    Profile::Tic("Check Tree",&fmm_data->comm,true,1);
+    pvfmm::Profile::Tic("Check Tree",&fmm_data->comm,true,1);
     mytree.CheckTree();
-    Profile::Toc();
+    pvfmm::Profile::Toc();
 
     //Report divergence.
     gll_div(fmm_data, node_cnt, node_coord, node_depth, node_gll_data);
 #endif
 
     //FMM Evaluate.
-    Profile::Tic("FMM Eval",&fmm_data->comm,true,1);
+    pvfmm::Profile::Tic("FMM Eval",&fmm_data->comm,true,1);
     mytree.SetupFMM(&fmm_mat);
     mytree.RunFMM();
-    Profile::Toc();
+    pvfmm::Profile::Toc();
 
     //Copy FMM output to tree Data.
     mytree.Copy_FMMOutput();
 
     //Set average velocity to zero.
-    if(bndry==Periodic){
+    if(bndry==pvfmm::Periodic){
       std::vector<double> avg_v(mykernel->ker_dim[1],0);
       for(size_t j=0;j<node_cnt;j++){
         FMMNode_t* node=tree_nodes[j];
@@ -299,7 +299,7 @@ extern "C" {
 #endif
 
     // Construct GLL data from FMM output.
-    Profile::Tic("Output",&fmm_data->comm,true,1);
+    pvfmm::Profile::Tic("Output",&fmm_data->comm,true,1);
     node=static_cast<FMMNode_t*>(mytree.PreorderFirst());
     std::vector<double> corner_val(8*mykernel->ker_dim[1],0);
     std::vector<double> corner_val_loc(8*mykernel->ker_dim[1],0);
@@ -319,7 +319,7 @@ extern "C" {
       size_t start=i*node_cnt/omp_p;
       size_t end=(i+1)*node_cnt/omp_p;
       for(size_t j=start;j<end;j++){
-        Vector<double> gll_data((gll_order+1)*(gll_order+1)*(gll_order+1)*mykernel->ker_dim[1],&node_gll_data[j][0],false);
+        pvfmm::Vector<double> gll_data((gll_order+1)*(gll_order+1)*(gll_order+1)*mykernel->ker_dim[1],&node_gll_data[j][0],false);
         cheb_eval(tree_nodes[j]->ChebData(), cheb_order, gll_nodes, gll_nodes, gll_nodes, gll_data);
 
         size_t indx=0;
@@ -336,23 +336,23 @@ extern "C" {
         }
       }
     }
-    Profile::Toc();
+    pvfmm::Profile::Toc();
 
 #ifndef NDEBUG
     //Compute |v|_inf
     double max_v=0;
     for(size_t j=0;j<node_cnt;j++){
-      Vector<double> gll_data((gll_order+1)*(gll_order+1)*(gll_order+1)*mykernel->ker_dim[1],&node_gll_data[j][0],false);
+      pvfmm::Vector<double> gll_data((gll_order+1)*(gll_order+1)*(gll_order+1)*mykernel->ker_dim[1],&node_gll_data[j][0],false);
       for(size_t k=0;k<gll_data.Dim();k++)
         if(max_v<fabs(gll_data[k])) max_v=gll_data[k];
     }
 
     //Compute |v^2|_l1
     double l2=0;
-    Profile::Tic("L2-norm",&fmm_data->comm,true,1);
-    std::vector<double> cheb_pts=cheb_nodes<double>(cheb_order*2, 1);
-    Vector<double> integ_data((2*cheb_order+1)*(2*cheb_order+1)*(2*cheb_order+1)*mykernel->ker_dim[1]);
-    Vector<double> integ_coeff((2*cheb_order+1)*(2*cheb_order+1)*(2*cheb_order+1)*mykernel->ker_dim[1]);
+    pvfmm::Profile::Tic("L2-norm",&fmm_data->comm,true,1);
+    std::vector<double> cheb_pts=pvfmm::cheb_nodes<double>(cheb_order*2, 1);
+    pvfmm::Vector<double> integ_data((2*cheb_order+1)*(2*cheb_order+1)*(2*cheb_order+1)*mykernel->ker_dim[1]);
+    pvfmm::Vector<double> integ_coeff((2*cheb_order+1)*(2*cheb_order+1)*(2*cheb_order+1)*mykernel->ker_dim[1]);
     for(size_t j=0;j<node_cnt;j++){
       double s=pow(0.5,tree_nodes[j]->Depth()*3);
       cheb_eval(tree_nodes[j]->ChebData(), cheb_order, cheb_pts, cheb_pts, cheb_pts, integ_data);
@@ -374,18 +374,18 @@ extern "C" {
       }
 
       for(size_t i=0;i<integ_data.Dim();i++) integ_data[i]*=integ_data[i];
-      cheb_approx<double,double>(&integ_data[0], 2*cheb_order, mykernel->ker_dim[1], &integ_coeff[0]);
+      pvfmm::cheb_approx<double,double>(&integ_data[0], 2*cheb_order, mykernel->ker_dim[1], &integ_coeff[0]);
       l2+=s*integ_coeff[0*(2*cheb_order+1)*(2*cheb_order+2)*(2*cheb_order+3)/6];
       l2+=s*integ_coeff[1*(2*cheb_order+1)*(2*cheb_order+2)*(2*cheb_order+3)/6];
       l2+=s*integ_coeff[2*(2*cheb_order+1)*(2*cheb_order+2)*(2*cheb_order+3)/6];
     }
-    Profile::Toc();
+    pvfmm::Profile::Toc();
 
     //Compute |w - curl v|_inf
     double w_err=0;
-    Profile::Tic("Curl",&fmm_data->comm,true,1);
-    Vector<double> buff0(n_cheb_coeff*mykernel->ker_dim[0]);
-    Vector<double> buff1((gll_order+1)*(gll_order+1)*(gll_order+1)*mykernel->ker_dim[0]);
+    pvfmm::Profile::Tic("Curl",&fmm_data->comm,true,1);
+    pvfmm::Vector<double> buff0(n_cheb_coeff*mykernel->ker_dim[0]);
+    pvfmm::Vector<double> buff1((gll_order+1)*(gll_order+1)*(gll_order+1)*mykernel->ker_dim[0]);
     for(size_t j=0;j<node_cnt;j++){
       tree_nodes[j]->Curl();
       for(size_t k=0;k<cheb_w[j].Dim();k++)
@@ -394,7 +394,7 @@ extern "C" {
       for(size_t k=0;k<buff1.Dim();k++)
         if(w_err<fabs(buff1[k])) w_err=fabs(buff1[k]);
     }
-    Profile::Toc();
+    pvfmm::Profile::Toc();
 
     //Display norms.
     double glb_l2=0;
@@ -414,7 +414,7 @@ extern "C" {
 #endif
 
 #ifndef NDEBUG
-    Profile::print(&fmm_data->comm);
+    pvfmm::Profile::print(&fmm_data->comm);
 #endif
   }
 
@@ -423,25 +423,25 @@ extern "C" {
     int cheb_order=fmm_data->cheb_order;
     FMM_Mat_t& fmm_mat=*((FMM_Mat_t*)fmm_data->fmm_mat_laplace_grad);
     FMM_Tree_t& mytree=*((FMM_Tree_t*)fmm_data->tree_laplace_grad);
-    Kernel<double>* mykernel=((Kernel<double>*)fmm_data->kernel_laplace_grad);
-    BoundaryType bndry=Periodic;//FreeSpace;
+    pvfmm::Kernel<double>* mykernel=((pvfmm::Kernel<double>*)fmm_data->kernel_laplace_grad);
+    pvfmm::BoundaryType bndry=pvfmm::Periodic;//pvfmm::FreeSpace;
 
     // Find out number of OMP thereads.
     int omp_p=omp_get_max_threads();
 
-    Profile::Tic("Construct Tree",&fmm_data->comm,true,1);
-    //Construct MortonId from node_coord and node_depth.
-    std::vector<MortonId> nodes(node_cnt);
+    pvfmm::Profile::Tic("Construct Tree",&fmm_data->comm,true,1);
+    //Construct pvfmm::MortonId from node_coord and node_depth.
+    std::vector<pvfmm::MortonId> nodes(node_cnt);
     double s=0.25/(1UL<<MAX_DEPTH);
     for(size_t i=0;i<node_cnt;i++)
-      nodes[i]=MortonId(node_coord[i*3+0]+s,node_coord[i*3+1]+s,node_coord[i*3+2]+s,node_depth[i]);
+      nodes[i]=pvfmm::MortonId(node_coord[i*3+0]+s,node_coord[i*3+1]+s,node_coord[i*3+2]+s,node_depth[i]);
 
     // Construct tree from morton id.
     size_t node_iter=0;
     std::vector<FMMNode_t*> tree_nodes;
     FMMNode_t* node=static_cast<FMMNode_t*>(mytree.PreorderFirst());
     while(node!=NULL && node_iter<node_cnt){
-      MortonId mid=node->GetMortonId();
+      pvfmm::MortonId mid=node->GetMortonId();
       if(mid.isAncestor(nodes[node_iter])){
         node->SetGhost(false);
         node->Subdivide();
@@ -469,14 +469,14 @@ extern "C" {
     size_t n_cheb_coeff=(cheb_order+1)*(cheb_order+2)*(cheb_order+3)/6;
     #pragma omp parallel for
     for(int i=0;i<omp_p;i++){
-      Vector<double> buff;
+      pvfmm::Vector<double> buff;
       size_t start=i*node_cnt/omp_p;
       size_t end=(i+1)*node_cnt/omp_p;
       for(size_t j=start;j<end;j++){
         FMMNode_t* node=tree_nodes[j];
         node->DataDOF()=mykernel->ker_dim[0];
         buff.Resize(n_gll_coeff*node->DataDOF());
-        gll2cheb<double,double>(&(node_gll_data[j][0]), gll_order, node->DataDOF(), &(buff[0]));
+        pvfmm::gll2cheb<double,double>(&(node_gll_data[j][0]), gll_order, node->DataDOF(), &(buff[0]));
 
         node->ChebData().Resize(n_cheb_coeff*node->DataDOF());
         double* cheb_out=&(node->ChebData()[0]);
@@ -496,8 +496,8 @@ extern "C" {
     }
 
     // Set avg to zero for Periodic boundary condition
-    std::vector<Vector<double> > cheb_rho(node_cnt); //Copy vorticity.
-    if(bndry==Periodic){
+    std::vector<pvfmm::Vector<double> > cheb_rho(node_cnt); //Copy vorticity.
+    if(bndry==pvfmm::Periodic){
       std::vector<double> avg_rho(mykernel->ker_dim[0],0);
       for(size_t j=0;j<node_cnt;j++){
         FMMNode_t* node=tree_nodes[j];
@@ -513,26 +513,26 @@ extern "C" {
         cheb_rho[j]=node->ChebData();
       }
     }
-    Profile::Toc();
+    pvfmm::Profile::Toc();
 
 #ifndef NDEBUG
     //Check Tree.
-    Profile::Tic("Check Tree",&fmm_data->comm,true,1);
+    pvfmm::Profile::Tic("Check Tree",&fmm_data->comm,true,1);
     mytree.CheckTree();
-    Profile::Toc();
+    pvfmm::Profile::Toc();
 #endif
 
     //FMM Evaluate.
-    Profile::Tic("FMM Eval",&fmm_data->comm,true,1);
+    pvfmm::Profile::Tic("FMM Eval",&fmm_data->comm,true,1);
     mytree.SetupFMM(&fmm_mat);
     mytree.RunFMM();
-    Profile::Toc();
+    pvfmm::Profile::Toc();
 
     //Copy FMM output to tree Data.
     mytree.Copy_FMMOutput();
 
     //Set average (grad phi) to zero. (Optional)
-    if(bndry==Periodic){
+    if(bndry==pvfmm::Periodic){
       std::vector<double> avg_gradphi(mykernel->ker_dim[1],0);
       for(size_t j=0;j<node_cnt;j++){
         FMMNode_t* node=tree_nodes[j];
@@ -560,27 +560,27 @@ extern "C" {
 #endif
 
     // Construct GLL data from FMM output.
-    Profile::Tic("Output",&fmm_data->comm,true,1);
+    pvfmm::Profile::Tic("Output",&fmm_data->comm,true,1);
     std::vector<double>& gll_nodes=*((std::vector<double>*)fmm_data->gll_nodes);
     #pragma omp parallel for
     for(int i=0;i<omp_p;i++){
-      Vector<double> buff;
-      Vector<double> buff1;
+      pvfmm::Vector<double> buff;
+      pvfmm::Vector<double> buff1;
       size_t start=i*node_cnt/omp_p;
       size_t end=(i+1)*node_cnt/omp_p;
       for(size_t j=start;j<end;j++){
-        Vector<double> gll_data((gll_order+1)*(gll_order+1)*(gll_order+1)*mykernel->ker_dim[1],&node_gll_data[j][0],false);
+        pvfmm::Vector<double> gll_data((gll_order+1)*(gll_order+1)*(gll_order+1)*mykernel->ker_dim[1],&node_gll_data[j][0],false);
         cheb_eval(tree_nodes[j]->ChebData(), cheb_order, gll_nodes, gll_nodes, gll_nodes, gll_data);
       }
     }
-    Profile::Toc();
+    pvfmm::Profile::Toc();
 
 #ifndef NDEBUG
     //Compute |rho - div grad phi|_inf
     double resid_err=0;
-    Profile::Tic("Divergence",&fmm_data->comm,true,1);
-    Vector<double> buff0(n_cheb_coeff*mykernel->ker_dim[0]);
-    Vector<double> buff1((gll_order+1)*(gll_order+1)*(gll_order+1)*mykernel->ker_dim[0]);
+    pvfmm::Profile::Tic("Divergence",&fmm_data->comm,true,1);
+    pvfmm::Vector<double> buff0(n_cheb_coeff*mykernel->ker_dim[0]);
+    pvfmm::Vector<double> buff1((gll_order+1)*(gll_order+1)*(gll_order+1)*mykernel->ker_dim[0]);
     for(size_t j=0;j<node_cnt;j++){
       tree_nodes[j]->Divergence();
       for(size_t k=0;k<cheb_rho[j].Dim();k++)
@@ -589,7 +589,7 @@ extern "C" {
       for(size_t k=0;k<buff1.Dim();k++)
         if(resid_err<fabs(buff1[k])) resid_err=fabs(buff1[k]);
     }
-    Profile::Toc();
+    pvfmm::Profile::Toc();
 
     //Display norms.
     double glb_max_resid_err=0;
@@ -600,7 +600,7 @@ extern "C" {
 #endif
 
 #ifndef NDEBUG
-    Profile::print(&fmm_data->comm);
+    pvfmm::Profile::print(&fmm_data->comm);
 #endif
   }
 
@@ -612,13 +612,13 @@ extern "C" {
     int dim=3;
     int gll_order=fmm_data->gll_order;
     int cheb_order=fmm_data->cheb_order;
-    Kernel<double>* mykernel=((Kernel<double>*)fmm_data->kernel_biotsavart);
+    pvfmm::Kernel<double>* mykernel=((pvfmm::Kernel<double>*)fmm_data->kernel_biotsavart);
 
     // Find out number of OMP thereads.
     int omp_p=omp_get_max_threads();
 
     //Compute divergence.
-    Profile::Tic("Div",&fmm_data->comm,true,1);
+    pvfmm::Profile::Tic("Div",&fmm_data->comm,true,1);
     size_t n_gll_coeff=(gll_order+1)*(gll_order+2)*(gll_order+3)/6;
     size_t n_cheb_coeff=(cheb_order+1)*(cheb_order+2)*(cheb_order+3)/6;
     std::vector<double>& gll_nodes=*((std::vector<double>*)fmm_data->gll_nodes);
@@ -626,12 +626,12 @@ extern "C" {
     for(int i=0;i<omp_p;i++){
       size_t start=i*node_cnt/omp_p;
       size_t end=(i+1)*node_cnt/omp_p;
-      Vector<double> buff(n_gll_coeff*mykernel->ker_dim[0]);
-      Vector<double> cheb_coeff(n_cheb_coeff*mykernel->ker_dim[0]);
-      Vector<double> cheb_div_coeff(n_cheb_coeff*mykernel->ker_dim[0]/dim);
+      pvfmm::Vector<double> buff(n_gll_coeff*mykernel->ker_dim[0]);
+      pvfmm::Vector<double> cheb_coeff(n_cheb_coeff*mykernel->ker_dim[0]);
+      pvfmm::Vector<double> cheb_div_coeff(n_cheb_coeff*mykernel->ker_dim[0]/dim);
       for(size_t j=start;j<end;j++){
         //Build Chebyshev approximation.
-        gll2cheb<double,double>(&(node_gll_data[j][0]), gll_order, mykernel->ker_dim[0], &(buff[0]));
+        pvfmm::gll2cheb<double,double>(&(node_gll_data[j][0]), gll_order, mykernel->ker_dim[0], &(buff[0]));
 
         //Truncate higher order terms.
         int indx_in=0;
@@ -650,20 +650,20 @@ extern "C" {
         //Compute Divergence.
         double scale=(1<<node_depth[j]);
         for(int k=0;k<mykernel->ker_dim[0];k=k+dim)
-          cheb_div<double>(&cheb_coeff[n_cheb_coeff*k], cheb_order, &cheb_div_coeff[n_cheb_coeff*(k/dim)]);
+          pvfmm::cheb_div<double>(&cheb_coeff[n_cheb_coeff*k], cheb_order, &cheb_div_coeff[n_cheb_coeff*(k/dim)]);
         for(size_t i=0;i<cheb_div_coeff.Dim();i++) cheb_div_coeff[i]*=scale;
-        Vector<double> gll_data((gll_order+1)*(gll_order+1)*(gll_order+1)*1,&node_gll_data[j][0],false);
+        pvfmm::Vector<double> gll_data((gll_order+1)*(gll_order+1)*(gll_order+1)*1,&node_gll_data[j][0],false);
         cheb_eval(cheb_div_coeff, cheb_order, gll_nodes, gll_nodes, gll_nodes, gll_data);
 
       }
     }
-    Profile::Toc();
+    pvfmm::Profile::Toc();
 
 #ifndef NDEBUG
     //Maximum divergence.
     double w_div=0;
     for(size_t j=0;j<node_cnt;j++){
-      Vector<double> gll_data((gll_order+1)*(gll_order+1)*(gll_order+1)*1,&node_gll_data[j][0],false);
+      pvfmm::Vector<double> gll_data((gll_order+1)*(gll_order+1)*(gll_order+1)*1,&node_gll_data[j][0],false);
       for(size_t k=0;k<gll_data.Dim();k++)
         if(w_div<fabs(gll_data[k])) w_div=fabs(gll_data[k]);
     }
@@ -679,25 +679,25 @@ extern "C" {
     int cheb_order=fmm_data->cheb_order;
     FMM_Mat_t& fmm_mat=*((FMM_Mat_t*)fmm_data->fmm_mat_biotsavart);
     FMM_Tree_t& mytree=*((FMM_Tree_t*)fmm_data->tree_biotsavart);
-    Kernel<double>* mykernel=((Kernel<double>*)fmm_data->kernel_biotsavart);
-    BoundaryType bndry=Periodic;//FreeSpace;
+    pvfmm::Kernel<double>* mykernel=((pvfmm::Kernel<double>*)fmm_data->kernel_biotsavart);
+    pvfmm::BoundaryType bndry=pvfmm::Periodic;//pvfmm::FreeSpace;
 
     // Find out number of OMP thereads.
     int omp_p=omp_get_max_threads();
 
-    Profile::Tic("Construct Tree",&fmm_data->comm,true,1);
-    //Construct MortonId from node_coord and node_depth.
-    std::vector<MortonId> nodes(node_cnt);
+    pvfmm::Profile::Tic("Construct Tree",&fmm_data->comm,true,1);
+    //Construct pvfmm::MortonId from node_coord and node_depth.
+    std::vector<pvfmm::MortonId> nodes(node_cnt);
     double s=0.25/(1UL<<MAX_DEPTH);
     for(size_t i=0;i<node_cnt;i++)
-      nodes[i]=MortonId(node_coord[i*3+0]+s,node_coord[i*3+1]+s,node_coord[i*3+2]+s,node_depth[i]);
+      nodes[i]=pvfmm::MortonId(node_coord[i*3+0]+s,node_coord[i*3+1]+s,node_coord[i*3+2]+s,node_depth[i]);
 
     // Construct tree from morton id.
     size_t node_iter=0;
     std::vector<FMMNode_t*> tree_nodes;
     FMMNode_t* node=static_cast<FMMNode_t*>(mytree.PreorderFirst());
     while(node!=NULL && node_iter<node_cnt){
-      MortonId mid=node->GetMortonId();
+      pvfmm::MortonId mid=node->GetMortonId();
       if(mid.isAncestor(nodes[node_iter])){
         node->SetGhost(false);
         node->Subdivide();
@@ -725,14 +725,14 @@ extern "C" {
     size_t n_cheb_coeff=(cheb_order+1)*(cheb_order+2)*(cheb_order+3)/6;
     #pragma omp parallel for
     for(int i=0;i<omp_p;i++){
-      Vector<double> buff;
+      pvfmm::Vector<double> buff;
       size_t start=i*node_cnt/omp_p;
       size_t end=(i+1)*node_cnt/omp_p;
       for(size_t j=start;j<end;j++){
         FMMNode_t* node=tree_nodes[j];
         node->DataDOF()=mykernel->ker_dim[0];
         buff.Resize(n_gll_coeff*node->DataDOF());
-        gll2cheb<double,double>(&(node_gll_data[j][0]), gll_order, node->DataDOF(), &(buff[0]));
+        pvfmm::gll2cheb<double,double>(&(node_gll_data[j][0]), gll_order, node->DataDOF(), &(buff[0]));
 
         node->ChebData().Resize(n_cheb_coeff*node->DataDOF());
         double* cheb_out=&(node->ChebData()[0]);
@@ -752,7 +752,7 @@ extern "C" {
     }
 
     // Set avg to zero for Periodic boundary condition
-    if(bndry==Periodic){
+    if(bndry==pvfmm::Periodic){
       std::vector<double> avg_w(mykernel->ker_dim[0],0);
       for(size_t j=0;j<node_cnt;j++){
         FMMNode_t* node=tree_nodes[j];
@@ -767,26 +767,26 @@ extern "C" {
           node->ChebData()[k*n_cheb_coeff]-=glb_avg_w[k];
       }
     }
-    Profile::Toc();
+    pvfmm::Profile::Toc();
 
 #ifndef NDEBUG
     //Check Tree.
-    Profile::Tic("Check Tree",&fmm_data->comm,true,1);
+    pvfmm::Profile::Tic("Check Tree",&fmm_data->comm,true,1);
     mytree.CheckTree();
-    Profile::Toc();
+    pvfmm::Profile::Toc();
 #endif
 
     //FMM Evaluate.
-    Profile::Tic("FMM Eval",&fmm_data->comm,true,1);
+    pvfmm::Profile::Tic("FMM Eval",&fmm_data->comm,true,1);
     mytree.SetupFMM(&fmm_mat);
     mytree.RunFMM();
-    Profile::Toc();
+    pvfmm::Profile::Toc();
 
     //Copy FMM output to tree Data.
     mytree.Copy_FMMOutput();
 
     //Set average velocity to zero.
-    if(bndry==Periodic){
+    if(bndry==pvfmm::Periodic){
       std::vector<double> avg_v(mykernel->ker_dim[1],0);
       for(size_t j=0;j<node_cnt;j++){
         FMMNode_t* node=tree_nodes[j];
@@ -815,7 +815,7 @@ extern "C" {
 #endif
 
     // Construct GLL data from FMM output.
-    Profile::Tic("Output",&fmm_data->comm,true,1);
+    pvfmm::Profile::Tic("Output",&fmm_data->comm,true,1);
     std::vector<double>& gll_nodes=*((std::vector<double>*)fmm_data->gll_nodes);
     #pragma omp parallel for
     for(int i=0;i<omp_p;i++){
@@ -823,14 +823,14 @@ extern "C" {
       size_t end=(i+1)*node_cnt/omp_p;
       for(size_t j=start;j<end;j++){
         tree_nodes[j]->Curl();
-        Vector<double> gll_data((gll_order+1)*(gll_order+1)*(gll_order+1)*mykernel->ker_dim[1],&node_gll_data[j][0],false);
+        pvfmm::Vector<double> gll_data((gll_order+1)*(gll_order+1)*(gll_order+1)*mykernel->ker_dim[1],&node_gll_data[j][0],false);
         cheb_eval(tree_nodes[j]->ChebData(), cheb_order+1, gll_nodes, gll_nodes, gll_nodes, gll_data);
       }
     }
-    Profile::Toc();
+    pvfmm::Profile::Toc();
 
 #ifndef NDEBUG
-    Profile::print(&fmm_data->comm);
+    pvfmm::Profile::print(&fmm_data->comm);
 #endif
   }
 
@@ -851,14 +851,14 @@ extern "C" {
 
     #pragma omp parallel for
     for(int i=0;i<omp_p;i++){
-      Vector<double> cheb_in (n_cheb_in );
-      Vector<double> cheb_out(n_cheb_out);
-      Vector<double> error(gll_order+1);
+      pvfmm::Vector<double> cheb_in (n_cheb_in );
+      pvfmm::Vector<double> cheb_out(n_cheb_out);
+      pvfmm::Vector<double> error(gll_order+1);
 
       size_t start=i*node_cnt/omp_p;
       size_t end=(i+1)*node_cnt/omp_p;
       for(size_t j=start;j<end;j++){
-        gll2cheb<double,double>(&(node_gll_data[j][0]), gll_order, 1, &(cheb_in[0]));
+        pvfmm::gll2cheb<double,double>(&(node_gll_data[j][0]), gll_order, 1, &(cheb_in[0]));
 
         error.SetZero();
         int indx_in=0;
@@ -909,7 +909,7 @@ extern "C" {
           //std::cout<<A<<' '<<B<<'\n';
         }
 
-        Vector<double> gll_data(n_gll,&node_gll_data[j][0],false);
+        pvfmm::Vector<double> gll_data(n_gll,&node_gll_data[j][0],false);
         cheb_eval(cheb_out, cheb_order, gll_nodes, gll_nodes, gll_nodes, gll_data);
       }
     }
@@ -920,25 +920,25 @@ extern "C" {
     int gll_order=fmm_data->gll_order;
     int cheb_order=fmm_data->cheb_order;
     FMM_Tree_t& mytree=*((FMM_Tree_t*)fmm_data->tree_biotsavart);
-    Kernel<double>* mykernel=((Kernel<double>*)fmm_data->kernel_biotsavart);
-    BoundaryType bndry=Periodic;//FreeSpace;
+    pvfmm::Kernel<double>* mykernel=((pvfmm::Kernel<double>*)fmm_data->kernel_biotsavart);
+    pvfmm::BoundaryType bndry=pvfmm::Periodic;//pvfmm::FreeSpace;
 
     // Find out number of OMP thereads.
     int omp_p=omp_get_max_threads();
 
-    Profile::Tic("Construct Tree",&fmm_data->comm,true,1);
-    //Construct MortonId from node_coord and node_depth.
-    std::vector<MortonId> nodes(node_cnt);
+    pvfmm::Profile::Tic("Construct Tree",&fmm_data->comm,true,1);
+    //Construct pvfmm::MortonId from node_coord and node_depth.
+    std::vector<pvfmm::MortonId> nodes(node_cnt);
     double s=0.25/(1UL<<MAX_DEPTH);
     for(size_t i=0;i<node_cnt;i++)
-      nodes[i]=MortonId(node_coord[i*3+0]+s,node_coord[i*3+1]+s,node_coord[i*3+2]+s,node_depth[i]);
+      nodes[i]=pvfmm::MortonId(node_coord[i*3+0]+s,node_coord[i*3+1]+s,node_coord[i*3+2]+s,node_depth[i]);
 
     // Construct tree from morton id.
     size_t node_iter=0;
     std::vector<FMMNode_t*> tree_nodes;
     FMMNode_t* node=static_cast<FMMNode_t*>(mytree.PreorderFirst());
     while(node!=NULL && node_iter<node_cnt){
-      MortonId mid=node->GetMortonId();
+      pvfmm::MortonId mid=node->GetMortonId();
       node->DataDOF()=mykernel->ker_dim[0];
       if(mid.isAncestor(nodes[node_iter])){
         node->SetGhost(false);
@@ -966,13 +966,13 @@ extern "C" {
     size_t n_cheb_coeff=(cheb_order+1)*(cheb_order+2)*(cheb_order+3)/6;
     #pragma omp parallel for
     for(int i=0;i<omp_p;i++){
-      Vector<double> buff;
+      pvfmm::Vector<double> buff;
       size_t start=i*node_cnt/omp_p;
       size_t end=(i+1)*node_cnt/omp_p;
       for(size_t j=start;j<end;j++){
         FMMNode_t* node=tree_nodes[j];
         buff.Resize(n_gll_coeff*node->DataDOF());
-        gll2cheb<double,double>(&(node_gll_data[j][0]), gll_order, node->DataDOF(), &(buff[0]));
+        pvfmm::gll2cheb<double,double>(&(node_gll_data[j][0]), gll_order, node->DataDOF(), &(buff[0]));
 
         node->ChebData().Resize(n_cheb_coeff*node->DataDOF());
         double* cheb_out=&(node->ChebData()[0]);
@@ -993,25 +993,25 @@ extern "C" {
 
 #ifndef NDEBUG
     //Check Tree.
-    Profile::Tic("Check Tree",&fmm_data->comm,true,1);
+    pvfmm::Profile::Tic("Check Tree",&fmm_data->comm,true,1);
     mytree.CheckTree();
-    Profile::Toc();
+    pvfmm::Profile::Toc();
 #endif
 
     // Get neighbour data.
-    Profile::Tic("ConstructLET",&fmm_data->comm,true,1);
+    pvfmm::Profile::Tic("ConstructLET",&fmm_data->comm,true,1);
     mytree.ConstructLET(bndry);
-    Profile::Toc();
+    pvfmm::Profile::Toc();
 
     // Interpolate across nearby octants.
-    Profile::Tic("Interpolate",&fmm_data->comm,true,1);
+    pvfmm::Profile::Tic("Interpolate",&fmm_data->comm,true,1);
     double alpha=1.25;
     FMMNode_t* r_node=static_cast<FMMNode_t*>(mytree.RootNode());
-    Matrix<double> cheb_data(node_cnt, n_cheb_coeff*mykernel->ker_dim[0]);
+    pvfmm::Matrix<double> cheb_data(node_cnt, n_cheb_coeff*mykernel->ker_dim[0]);
     #pragma omp parallel for
     for(int i=0;i<omp_p;i++){
       std::vector<double> x1(cheb_order+1);
-      std::vector<double> cheb_pts1=cheb_nodes<double>(cheb_order+1,1);
+      std::vector<double> cheb_pts1=pvfmm::cheb_nodes<double>(cheb_order+1,1);
       for(int k=0;k<=cheb_order;k++) x1[k]=(cheb_pts1[k]-0.5)*2.0/alpha;
 
       std::vector<double> x2(2*(cheb_order+1));
@@ -1021,13 +1021,13 @@ extern "C" {
       std::vector<double> y2_(2*(cheb_order+1));
       std::vector<double> z2_(2*(cheb_order+1));
       std::vector<int> px(2*(cheb_order+1)), py(2*(cheb_order+1)), pz(2*(cheb_order+1));
-      std::vector<double> cheb_pts2=cheb_nodes<double>(2*cheb_order,1);
+      std::vector<double> cheb_pts2=pvfmm::cheb_nodes<double>(2*cheb_order,1);
 
-      Vector<double> buff0 ( 2*(cheb_order+1)* 2*(cheb_order+1)   * 2*(cheb_order+1)      *mykernel->ker_dim[0]);
-      Vector<double> buff0_( 2*(cheb_order+1)* 2*(cheb_order+1)   * 2*(cheb_order+1)      *mykernel->ker_dim[0]);
-      Vector<double> buff1 ((2*(cheb_order+1)*(2*(cheb_order+1)+1)*(2*(cheb_order+1)+2)/6)*mykernel->ker_dim[0]);
-      Vector<double> buff2( (cheb_order+1)*(cheb_order+1)*(cheb_order+1)   *mykernel->ker_dim[0]);
-      Vector<double> buff3(((cheb_order+1)*(cheb_order+2)*(cheb_order+3)/6)*mykernel->ker_dim[0]);
+      pvfmm::Vector<double> buff0 ( 2*(cheb_order+1)* 2*(cheb_order+1)   * 2*(cheb_order+1)      *mykernel->ker_dim[0]);
+      pvfmm::Vector<double> buff0_( 2*(cheb_order+1)* 2*(cheb_order+1)   * 2*(cheb_order+1)      *mykernel->ker_dim[0]);
+      pvfmm::Vector<double> buff1 ((2*(cheb_order+1)*(2*(cheb_order+1)+1)*(2*(cheb_order+1)+2)/6)*mykernel->ker_dim[0]);
+      pvfmm::Vector<double> buff2( (cheb_order+1)*(cheb_order+1)*(cheb_order+1)   *mykernel->ker_dim[0]);
+      pvfmm::Vector<double> buff3(((cheb_order+1)*(cheb_order+2)*(cheb_order+3)/6)*mykernel->ker_dim[0]);
 
       size_t start=i*node_cnt/omp_p;
       size_t end=(i+1)*node_cnt/omp_p;
@@ -1063,33 +1063,33 @@ extern "C" {
             buff0[px[k2]+(py[k1]+(pz[k0]+l*2*(cheb_order+1))*2*(cheb_order+1))*2*(cheb_order+1)];
         }
 
-        cheb_approx<double,double>(&buff0_[0], 2*cheb_order+1, mykernel->ker_dim[0], &buff1[0]);
+        pvfmm::cheb_approx<double,double>(&buff0_[0], 2*cheb_order+1, mykernel->ker_dim[0], &buff1[0]);
 
         //TODO: Truncate?
 
         cheb_eval(buff1, 2*cheb_order+1, x1, x1, x1, buff2);
-        cheb_approx<double,double>(&buff2[0],   cheb_order, mykernel->ker_dim[0], &buff3[0]);
+        pvfmm::cheb_approx<double,double>(&buff2[0],   cheb_order, mykernel->ker_dim[0], &buff3[0]);
         node->ChebData()=buff3;
       }
     }
-    Profile::Toc();
+    pvfmm::Profile::Toc();
 
     // Cheb2GLL.
-    Profile::Tic("Cheb2GLL",&fmm_data->comm,true,1);
+    pvfmm::Profile::Tic("Cheb2GLL",&fmm_data->comm,true,1);
     std::vector<double>& gll_nodes=*((std::vector<double>*)fmm_data->gll_nodes);
     #pragma omp parallel for
     for(int i=0;i<omp_p;i++){
       size_t start=i*node_cnt/omp_p;
       size_t end=(i+1)*node_cnt/omp_p;
       for(size_t j=start;j<end;j++){
-        Vector<double> gll_data((gll_order+1)*(gll_order+1)*(gll_order+1)*mykernel->ker_dim[1],&node_gll_data[j][0],false);
+        pvfmm::Vector<double> gll_data((gll_order+1)*(gll_order+1)*(gll_order+1)*mykernel->ker_dim[1],&node_gll_data[j][0],false);
         cheb_eval(tree_nodes[j]->ChebData(), cheb_order, gll_nodes, gll_nodes, gll_nodes, gll_data);
       }
     }
-    Profile::Toc();
+    pvfmm::Profile::Toc();
 
 #ifndef NDEBUG
-    Profile::print(&fmm_data->comm);
+    pvfmm::Profile::print(&fmm_data->comm);
 #endif
   }
 

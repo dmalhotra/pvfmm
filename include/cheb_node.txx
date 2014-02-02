@@ -1,6 +1,6 @@
 /**
  * \file cheb_node.cpp
- * \author Dhairya Malhotra, dhairya.malhotra88@gmail.com
+ * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 1-22-2010
  * \brief This file contains the implementation of the class Cheb_Node.
  */
@@ -9,6 +9,8 @@
 #include <matrix.hpp>
 #include <omp.h>
 #include <cheb_utils.hpp>
+
+namespace pvfmm{
 
 template <class Real_t>
 Cheb_Node<Real_t>::~Cheb_Node(){}
@@ -339,3 +341,4 @@ void Cheb_Node<Real_t>::read_val(std::vector<Real_t> x,std::vector<Real_t> y, st
   }
 }
 
+}//end namespace

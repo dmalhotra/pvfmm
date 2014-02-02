@@ -14,7 +14,6 @@ MKDIRS = mkdir -p
 BINDIR = ./bin
 SRCDIR = ./src
 OBJDIR = ./obj
-TMPDIR = ./tmp
 INCDIR = ./include
 
 TARGET_BIN = \

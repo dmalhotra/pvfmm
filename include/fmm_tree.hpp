@@ -1,18 +1,20 @@
 /**
  * \file fmm_tree.hpp
- * \author Dhairya Malhotra, dhairya.malhotra88@gmail.com
+ * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 12-11-2010
  * \brief This file contains the definition of the FMM_Tree class.
  */
 
-#ifndef _FMM_TREE_HPP_
-#define _FMM_TREE_HPP_
+#ifndef _PVFMM_FMM_TREE_HPP_
+#define _PVFMM_FMM_TREE_HPP_
 
 #include <iostream>
 #include <mpi.h>
 #include <pvfmm_common.hpp>
 #include <mpi_tree.hpp>
 #include <fmm_node.hpp>
+
+namespace pvfmm{
 
 /**
  * \brief Base class for FMM tree.
@@ -99,7 +101,9 @@ class FMM_Tree: public MPI_Tree<typename FMM_Mat_t::FMMNode_t>{
   std::vector<SetupData<Real_t> > setup_data;
 };
 
+}//end namespace
+
 #include <fmm_tree.txx>
 
-#endif
+#endif //_PVFMM_FMM_TREE_HPP_
 

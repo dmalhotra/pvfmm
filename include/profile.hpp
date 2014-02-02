@@ -1,12 +1,12 @@
 /**
  * \file profile.hpp
- * \author Dhairya Malhotra, dhairya.malhotra88@gmail.com
+ * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 2-11-2011
  * \brief This file contains definition of the class Profile.
  */
 
-#ifndef _PROFILE_HPP_
-#define _PROFILE_HPP_
+#ifndef _PVFMM_PROFILE_HPP_
+#define _PVFMM_PROFILE_HPP_
 
 #include <mpi.h>
 #include <iostream>
@@ -18,6 +18,8 @@
 #ifndef __PROFILE__
 #define __PROFILE__ -1
 #endif
+
+namespace pvfmm{
 
 class Profile{
   public:
@@ -54,5 +56,6 @@ class Profile{
   static std::vector<long long> max_m_log;
 };
 
-#endif
+}//end namespace
 
+#endif //_PVFMM_PROFILE_HPP_

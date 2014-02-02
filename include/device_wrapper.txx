@@ -1,12 +1,14 @@
 /**
  * \file device_wrapper.txx
- * \author Dhairya Malhotra, dhairya.malhotra88@gmail.com
+ * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 6-5-2013
  * \brief This file contains implementation of DeviceWrapper.
  */
 
 #include <vector.hpp>
 #include <device_wrapper.hpp>
+
+namespace pvfmm{
 
 namespace DeviceWrapper{
 
@@ -144,7 +146,6 @@ namespace DeviceWrapper{
 
 }
 
-namespace DeviceWrapper{
 
   // Implementation of MIC_Lock
 
@@ -225,5 +226,4 @@ namespace DeviceWrapper{
   Vector<char>::Device MIC_Lock::lock_vec_;
   int MIC_Lock::lock_idx;
 
-}
-
+}//end namespace

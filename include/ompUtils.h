@@ -1,7 +1,8 @@
-#ifndef _OMP_UTILS_H_
-#define _OMP_UTILS_H_
+#ifndef _PVFMM_OMP_UTILS_H_
+#define _PVFMM_OMP_UTILS_H_
 
-namespace omp_par {
+namespace pvfmm{
+namespace omp_par{
 
   template <class T,class StrictWeakOrdering>
     void merge(T A_,T A_last,T B_,T B_last,T C_,int p,StrictWeakOrdering comp);
@@ -18,9 +19,9 @@ namespace omp_par {
   template <class T, class I>
     void scan(T* A, T* B,I cnt);
 
-}
+}//end namespace
+}//end namespace
 
 #include "ompUtils.txx"
 
-#endif
-
+#endif //_PVFMM_OMP_UTILS_H_

@@ -1,6 +1,6 @@
 /**
  * \file cheb_utils.txx
- * \author Dhairya Malhotra, dhairya.malhotra88@gmail.com
+ * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 2-11-2011
  * \brief This file contains chebyshev related functions.
  */
@@ -9,6 +9,8 @@
 #include <algorithm>
 #include <matrix.hpp>
 #include <legendre_rule.hpp>
+
+namespace pvfmm{
 
 /**
  * \brief Returns the values of all chebyshev polynomials up to degree d,
@@ -1067,3 +1069,4 @@ void cheb_img(T* A, T* B, int deg, int dir, bool neg_){
   }
 }
 
+}//end namespace

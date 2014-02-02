@@ -1,4 +1,3 @@
-
 /**
   @file parUtils.h
   @brief A set of parallel utilities.
@@ -9,8 +8,8 @@
   @author Dhairya Malhotra, dhairya.malhotra@gmail.com
   */
 
-#ifndef __PAR_UTILS_H_
-#define __PAR_UTILS_H_
+#ifndef __PVFMM_PAR_UTILS_H_
+#define __PVFMM_PAR_UTILS_H_
 
 #include "mpi.h"
 #include <vector>
@@ -22,7 +21,8 @@
   @author Hari Sundar
   @brief Collection of Generic Parallel Functions: Sorting, Partitioning, Searching,...
   */
-namespace par {
+namespace pvfmm{
+namespace par{
 
   /**
     @author Rahul S. Sampath
@@ -109,8 +109,8 @@ namespace par {
         const MPI_Comm& comm, size_t loc_size=0);
 
 }//end namespace
+}//end namespace
 
 #include "parUtils.txx"
 
-#endif
-
+#endif //__PVFMM_PAR_UTILS_H_
