@@ -64,6 +64,7 @@ template <class T>
 void MPI_Node<T>::SetCoord(MortonId& mid){
   assert(coord);
   mid.GetCoord(coord);
+  depth=mid.GetDepth();
 }
 
 template <class T>
