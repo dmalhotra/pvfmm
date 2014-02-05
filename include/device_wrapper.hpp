@@ -12,6 +12,12 @@
 #pragma offload_attribute(push,target(mic))
 #endif
 
+// Cuda Header
+#if defined(PVFMM_HAVE_CUDA)
+#include <cuda_runtime_api.h>
+#include <cublas_v2.h>
+#endif
+
 #include <cstdlib>
 #include <cassert>
 #include <stdint.h>
@@ -90,6 +96,23 @@ transfer, use:
       MIC_Lock(){}; // private constructor for static class.
       static int lock_idx;
   };
+
+  #if defined(PVFMM_HAVE_CUDA)
+  #define NUM_STREAM 2
+  class CUDA_Lock {
+    public:
+      static void init();
+      static void terminate();
+      static cudaStream_t *acquire_stream(int idx);
+      static cublasHandle_t *acquire_handle();
+      static void wait(int idx);
+    private:
+      CUDA_Lock();
+      static cudaStream_t stream[NUM_STREAM];
+      static cublasHandle_t handle;
+      static bool cuda_init;
+  };
+  #endif
 
 }//end namespace
 

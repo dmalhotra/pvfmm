@@ -301,6 +301,18 @@ void Matrix<T>::DGEMM(Matrix<T>& M_r, const Matrix<T>& A, const Matrix<T>& B, T 
       1.0,B.data_ptr,B.dim[1],A.data_ptr,A.dim[1],beta,M_r.data_ptr,M_r.dim[1]);
 }
 
+// cublasXgemm wrapper
+#if defined(PVFMM_HAVE_CUDA)
+template <class T>
+void Matrix<T>::CUBLASXGEMM(Matrix<T>& M_r, const Matrix<T>& A, const Matrix<T>& B, T beta){
+  assert(A.dim[1]==B.dim[0]);
+  assert(M_r.dim[0]==A.dim[0]);
+  assert(M_r.dim[1]==B.dim[1]);
+  mat::cublasxgemm('N','N',B.dim[1],A.dim[0],A.dim[1],
+      1.0,B.data_ptr,B.dim[1],A.data_ptr,A.dim[1],beta,M_r.data_ptr,M_r.dim[1]);
+}
+#endif
+
 #define myswap(t,a,b) {t c=a;a=b;b=c;}
 template <class T>
 void Matrix<T>::RowPerm(const Permutation<T>& P){

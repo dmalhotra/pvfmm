@@ -98,6 +98,9 @@ class Matrix{
 
   static void DGEMM(Matrix<T>& M_r, const Matrix<T>& A, const Matrix<T>& B, T beta=0.0);
 
+  // cublasXgemm wrapper
+  static void CUBLASXGEMM(Matrix<T>& M_r, const Matrix<T>& A, const Matrix<T>& B, T beta=0.0);
+
   void RowPerm(const Permutation<T>& P);
   void ColPerm(const Permutation<T>& P);
 

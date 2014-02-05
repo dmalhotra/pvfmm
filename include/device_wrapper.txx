@@ -3,14 +3,64 @@
  * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 6-5-2013
  * \brief This file contains implementation of DeviceWrapper.
+ *
+ * Modified:
+ *   editor Chenhan D. Yu
+ *   date Juan-28-2014
+ *   Add Cuda support. Error handle is available if needed.
  */
 
 #include <vector.hpp>
 #include <device_wrapper.hpp>
 
+// CUDA Stream
+#if defined(PVFMM_HAVE_CUDA)
+#endif
+
 namespace pvfmm{
 
 namespace DeviceWrapper{
+
+  // CUDA functions
+  inline uintptr_t alloc_device_cuda(size_t len) {
+    char *dev_ptr;
+    #if defined(PVFMM_HAVE_CUDA)
+    cudaError_t error;
+    error = cudaMalloc((void**)&dev_ptr, len);
+    #endif
+    return (uintptr_t)dev_ptr;
+  }
+
+  inline void free_device_cuda(char *dev_ptr) {
+    #if defined(PVFMM_HAVE_CUDA)
+    cudaFree(dev_ptr);
+    #endif
+  }
+
+  inline int host2device_cuda(char *host_ptr, char *dev_ptr, size_t len) {
+    #if defined(PVFMM_HAVE_CUDA)
+    cudaError_t error;
+    cudaStream_t *stream = CUDA_Lock::acquire_stream(0);
+    error = cudaHostRegister(host_ptr, len, cudaHostRegisterPortable);
+    error = cudaMemcpyAsync(dev_ptr, host_ptr, len, cudaMemcpyHostToDevice, *stream);
+    if (error != cudaSuccess) return -1;
+    else return (int)len;
+    #endif
+    return -1;
+  }
+
+  inline int device2host_cuda(char *dev_ptr, char *host_ptr, size_t len) {
+    #if defined(PVFMM_HAVE_CUDA)
+    cudaError_t error;
+    cudaStream_t *stream = CUDA_Lock::acquire_stream(0);
+    error = cudaHostRegister(host_ptr, len, cudaHostRegisterPortable);
+    error = cudaMemcpyAsync(host_ptr, dev_ptr, len, cudaMemcpyDeviceToHost, *stream);
+    if (error != cudaSuccess) return -1;
+    else return (int)len;
+    #endif
+    return -1;
+  }
+
 
   // MIC functions
 
@@ -101,6 +151,8 @@ namespace DeviceWrapper{
   inline uintptr_t alloc_device(char* dev_handle, size_t len){
     #ifdef __INTEL_OFFLOAD
     return alloc_device_mic(dev_handle,len);
+    #elif defined(PVFMM_HAVE_CUDA)
+    return alloc_device_cuda(len);
     #else
     uintptr_t dev_ptr=(uintptr_t)NULL;
     {dev_ptr=(uintptr_t)dev_handle;}
@@ -111,6 +163,8 @@ namespace DeviceWrapper{
   inline void free_device(char* dev_handle, uintptr_t dev_ptr){
     #ifdef __INTEL_OFFLOAD
     free_device_mic(dev_handle,dev_ptr);
+    #elif defined(PVFMM_HAVE_CUDA)
+    free_device_cuda((char*)dev_ptr);
     #else
     ;
     #endif
@@ -120,6 +174,9 @@ namespace DeviceWrapper{
     int lock_idx=-1;
     #ifdef __INTEL_OFFLOAD
     lock_idx=host2device_mic(host_ptr,dev_handle,dev_ptr,len);
+    #elif defined(PVFMM_HAVE_CUDA)
+    //lock_idx is len if success.
+    lock_idx=host2device_cuda(host_ptr,(char*)dev_ptr,len);
     #else
     ;
     #endif
@@ -130,6 +187,9 @@ namespace DeviceWrapper{
     int lock_idx=-1;
     #ifdef __INTEL_OFFLOAD
     lock_idx=device2host_mic(dev_handle,dev_ptr, host_ptr, len);
+    #elif defined(PVFMM_HAVE_CUDA)
+    //lock_idx is len if success.
+    lock_idx=device2host_cuda((char*)dev_ptr, host_ptr, len);
     #else
     ;
     #endif
@@ -225,5 +285,57 @@ namespace DeviceWrapper{
   Vector<char> MIC_Lock::lock_vec;
   Vector<char>::Device MIC_Lock::lock_vec_;
   int MIC_Lock::lock_idx;
+
+
+
+  // Implementation of Simple CUDA_Lock
+
+  #if defined(PVFMM_HAVE_CUDA)
+  CUDA_Lock::CUDA_Lock () {
+    cuda_init = false;
+  }
+
+  inline void CUDA_Lock::init () {
+    cudaError_t error;
+    cublasStatus_t status;
+    if (!cuda_init) {
+      for (int i = 0; i < NUM_STREAM; i++) {
+        error = cudaStreamCreate(&(stream[i]));
+      }
+      status = cublasCreate(&handle);
+      status = cublasSetStream(handle, stream[0]);
+      cuda_init = true;
+    }
+  }
+
+  inline void CUDA_Lock::terminate () {
+    cudaError_t error;
+    cublasStatus_t status;
+    if (!cuda_init) init();
+    for (int i = 0; i < NUM_STREAM; i++) {
+      error = cudaStreamDestroy(stream[i]);
+    }
+    status = cublasDestroy(handle);
+    cuda_init = false;
+  }
+
+  inline cudaStream_t *CUDA_Lock::acquire_stream (int idx) {
+    if (!cuda_init) init();
+    if (idx < NUM_STREAM) return &(stream[idx]);
+    else return NULL;
+  }
+
+  inline cublasHandle_t *CUDA_Lock::acquire_handle () {
+    if (!cuda_init) init();
+    return &handle; 
+  }
+
+  inline void CUDA_Lock::wait (int idx) {
+    cudaError_t error;
+    if (!cuda_init) init();
+    if (idx < NUM_STREAM) error = cudaStreamSynchronize(stream[idx]);
+  }
+
+  #endif
 
 }//end namespace
