@@ -297,6 +297,8 @@ void MPI_Tree<TreeNode>::Initialize(typename Node_t::NodeData* init_data){
 
 template <class TreeNode>
 void MPI_Tree<TreeNode>::CoarsenTree(){
+  int myrank;
+  MPI_Comm_rank(*Comm(),&myrank);
 
   //Redistribute.
   {
@@ -305,7 +307,7 @@ void MPI_Tree<TreeNode>::CoarsenTree(){
       if(n->IsLeaf() && !n->IsGhost()) break;
       n=this->PostorderNxt(n);
     }
-    while(true){
+    while(myrank){
       Node_t* n_parent=(Node_t*)n->Parent();
       Node_t* n_      =         n_parent;
       while(n_ && !n_->IsLeaf()){
