@@ -142,7 +142,7 @@ EOF
    CXXFLAGS=${ax_save_CXXFLAGS}
    LIBS=${ax_save_LIBS}
 
-   AC_DEFINE(HAVE_CUDA,1,[Define if we have FFTW])
+   AC_DEFINE(HAVE_CUDA,1,[Define if we have CUDA])
 fi
 
 
