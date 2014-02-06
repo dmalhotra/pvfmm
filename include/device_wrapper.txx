@@ -23,7 +23,7 @@ namespace DeviceWrapper{
 
   // CUDA functions
   inline uintptr_t alloc_device_cuda(size_t len) {
-    char *dev_ptr;
+    char *dev_ptr=NULL;
     #if defined(PVFMM_HAVE_CUDA)
     cudaError_t error;
     error = cudaMalloc((void**)&dev_ptr, len);
@@ -327,7 +327,7 @@ namespace DeviceWrapper{
 
   inline cublasHandle_t *CUDA_Lock::acquire_handle () {
     if (!cuda_init) init();
-    return &handle; 
+    return &handle;
   }
 
   inline void CUDA_Lock::wait (int idx) {
@@ -335,6 +335,10 @@ namespace DeviceWrapper{
     if (!cuda_init) init();
     if (idx < NUM_STREAM) error = cudaStreamSynchronize(stream[idx]);
   }
+
+  cudaStream_t CUDA_Lock::stream[NUM_STREAM];
+  cublasHandle_t CUDA_Lock::handle;
+  bool CUDA_Lock::cuda_init;
 
   #endif
 
