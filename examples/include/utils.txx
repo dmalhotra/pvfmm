@@ -164,7 +164,8 @@ void CheckChebOutput(FMMTree_t* mytree, typename TestFn<typename FMMTree_t::Real
           }
         }
       }
-      err_avg[tid]/=n_pts;
+      for(size_t k=0;k<dof*fn_dof;k++)
+        err_avg[tid*dof*fn_dof+k]/=n_pts;
     }
     for(size_t tid=1;tid<omp_p;tid++)
       for(size_t k=0;k<dof*fn_dof;k++)
