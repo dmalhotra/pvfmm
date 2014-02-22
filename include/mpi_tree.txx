@@ -268,7 +268,7 @@ void MPI_Tree<TreeNode>::Initialize(typename Node_t::NodeData* init_data){
 
       size_t idx=a;
       Node_t* n=FindNode(lin_oct[idx], false);
-      if(i==0) n=rnode;
+      if(a==0) n=rnode;
       while(n!=NULL && (idx<b || i==omp_p-1)){
         n->SetGhost(false);
         MortonId dn=n->GetMortonId();
