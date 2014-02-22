@@ -183,10 +183,11 @@ template <class Real_t>
 void FMM_Data<Real_t>::InitMultipole(PackedData p0, bool own_data){
   Real_t* data=(Real_t*)p0.data;
   size_t n=p0.length/sizeof(Real_t);
+  if(n==0) return;
   if(own_data){
-    if(n>0) upward_equiv=Vector<Real_t>(n, &data[0], false);
+    upward_equiv=Vector<Real_t>(n, &data[0], false);
   }else{
-    if(n>0) upward_equiv.ReInit(n, &data[0], false);
+    upward_equiv.ReInit(n, &data[0], false);
   }
 }
 

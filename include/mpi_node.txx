@@ -354,7 +354,11 @@ void MPI_Node<T>::Unpack(PackedData p0, bool own_data){
     if(pt_coord[j]){
       Vector<Real_t>& vec=*pt_coord[j];
       size_t vec_sz=(((size_t*)data_ptr)[0]); data_ptr+=sizeof(size_t);
-      vec.ReInit(vec_sz,(Real_t*)data_ptr,own_data);
+      if(own_data){
+        vec=Vector<Real_t>(vec_sz,(Real_t*)data_ptr,false);
+      }else{
+        vec.ReInit(vec_sz,(Real_t*)data_ptr,false);
+      }
       data_ptr+=vec_sz*sizeof(Real_t);
     }else{
       assert(!((size_t*)data_ptr)[0]);
@@ -363,7 +367,11 @@ void MPI_Node<T>::Unpack(PackedData p0, bool own_data){
     if(pt_value[j]){
       Vector<Real_t>& vec=*pt_value[j];
       size_t vec_sz=(((size_t*)data_ptr)[0]); data_ptr+=sizeof(size_t);
-      vec.ReInit(vec_sz,(Real_t*)data_ptr,own_data);
+      if(own_data){
+        vec=Vector<Real_t>(vec_sz,(Real_t*)data_ptr,false);
+      }else{
+        vec.ReInit(vec_sz,(Real_t*)data_ptr,false);
+      }
       data_ptr+=vec_sz*sizeof(Real_t);
     }else{
       assert(!((size_t*)data_ptr)[0]);
@@ -372,7 +380,11 @@ void MPI_Node<T>::Unpack(PackedData p0, bool own_data){
     if(pt_scatter[j]){
       Vector<size_t>& vec=*pt_scatter[j];
       size_t vec_sz=(((size_t*)data_ptr)[0]); data_ptr+=sizeof(size_t);
-      vec.ReInit(vec_sz,(size_t*)data_ptr,own_data);
+      if(own_data){
+        vec=Vector<size_t>(vec_sz,(size_t*)data_ptr,false);
+      }else{
+        vec.ReInit(vec_sz,(size_t*)data_ptr,false);
+      }
       data_ptr+=vec_sz*sizeof(size_t);
     }else{
       assert(!((size_t*)data_ptr)[0]);
