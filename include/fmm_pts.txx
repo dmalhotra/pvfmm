@@ -342,6 +342,7 @@ Permutation<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::PrecompPerm(Mat_Type ty
     }
     case U2U_Type:
     {
+      P=PrecompPerm(D2D_Type, perm_indx);
       break;
     }
     case D2D_Type:
@@ -1378,6 +1379,8 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
           for(size_t i=0;i<n_out;i++){
             Real_t scaling_=0.0;
             if(!this->Homogen()) scaling_=1.0;
+            else if(interac_type==S2U_Type) scaling_=pow(0.5, COORD_DIM                                *((FMMNode*)nodes_out[i])->Depth());
+            else if(interac_type==U2U_Type) scaling_=1.0;
             else if(interac_type==D2D_Type) scaling_=1.0;
             else if(interac_type==D2T_Type) scaling_=pow(0.5,          -setup_data.kernel->poten_scale *((FMMNode*)nodes_out[i])->Depth());
             else if(interac_type== U0_Type) scaling_=pow(0.5,(COORD_DIM-setup_data.kernel->poten_scale)*((FMMNode*)nodes_out[i])->Depth());
@@ -1722,145 +1725,92 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
 
 
 template <class FMMNode>
-void FMM_Pts<FMMNode>::InitMultipole(FMMNode** node, size_t n, int level){
-  if(n==0) return;
-  int dof=1;
+void FMM_Pts<FMMNode>::Source2UpSetup(SetupData<Real_t>&  setup_data, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device){
+  { // Set setup_data
+    setup_data.level=level;
+    setup_data.kernel=&aux_kernel;
+    setup_data.interac_type.resize(1);
+    setup_data.interac_type[0]=S2U_Type;
 
-  //Get the upward-check surface.
-  std::vector<Real_t> uc_coord[MAX_DEPTH+1];
-  size_t uc_cnt;
-  {
-    Real_t c[3]={0,0,0};
-    for(int i=0;i<=MAX_DEPTH;i++)
-      uc_coord[i]=u_check_surf(MultipoleOrder(),c,i);
-    uc_cnt=uc_coord[0].size()/COORD_DIM;
+    setup_data. input_data=&buff[4];
+    setup_data.output_data=&buff[0];
+    setup_data. coord_data=&buff[6];
+    Vector<FMMNode_t*>& nodes_in =n_list[4];
+    Vector<FMMNode_t*>& nodes_out=n_list[0];
+
+    setup_data.nodes_in .clear();
+    setup_data.nodes_out.clear();
+    for(size_t i=0;i<nodes_in .Dim();i++) if(nodes_in [i]->Depth()==level   || level==-1) setup_data.nodes_in .push_back(nodes_in [i]);
+    for(size_t i=0;i<nodes_out.Dim();i++) if(nodes_out[i]->Depth()==level   || level==-1) setup_data.nodes_out.push_back(nodes_out[i]);
   }
 
-  //Read matrices.
+  std::vector<void*>& nodes_in =setup_data.nodes_in ;
+  std::vector<void*>& nodes_out=setup_data.nodes_out;
+  std::vector<Vector<Real_t>*>&  input_vector=setup_data. input_vector;  input_vector.clear();
+  std::vector<Vector<Real_t>*>& output_vector=setup_data.output_vector; output_vector.clear();
+  for(size_t i=0;i<nodes_in .size();i++){
+    input_vector .push_back(&((FMMNode*)nodes_in [i])->src_coord);
+    input_vector .push_back(&((FMMNode*)nodes_in [i])->src_value);
+    input_vector .push_back(&((FMMNode*)nodes_in [i])->surf_coord);
+    input_vector .push_back(&((FMMNode*)nodes_in [i])->surf_value);
+  }
+  for(size_t i=0;i<nodes_out.size();i++){
+    output_vector.push_back(&upwd_check_surf[((FMMNode*)nodes_out[i])->Depth()]);
+    output_vector.push_back(&((FMMData*)((FMMNode*)nodes_out[i])->FMMData())->upward_equiv);
+  }
+
+  //Upward check to upward equivalent matrix.
   Matrix<Real_t>& M_uc2ue = this->mat->Mat(level, UC2UE_Type, 0);
-
-  //Compute multipole expansion.
-  #pragma omp parallel
-  {
-    int omp_p=omp_get_num_threads();
-    int pid = omp_get_thread_num();
-    size_t a=(pid*n)/omp_p;
-    size_t b=((pid+1)*n)/omp_p;
-
-    Matrix<Real_t> u_check(dof, M_uc2ue.Dim(0));
-    for (size_t j=a;j<b;j++){
-      Vector<Real_t>& upward_equiv=node[j]->FMMData()->upward_equiv;
-      assert(upward_equiv.Dim()==M_uc2ue.Dim(1)*dof);
-      Matrix<Real_t> u_equiv(dof,M_uc2ue.Dim(1),&upward_equiv[0],false);
-      u_equiv.SetZero(); // TODO: Do in setup
-
-      //Compute multipole expansion form point sources.
-      size_t      pt_cnt=node[j]->src_coord.Dim()/COORD_DIM;
-      size_t surf_pt_cnt=node[j]->surf_coord.Dim()/COORD_DIM;
-      if(pt_cnt+surf_pt_cnt>0){
-        //Relative coord of upward check surf.
-        Real_t* c=node[j]->Coord();
-        std::vector<Real_t> uc_coord1(uc_cnt*COORD_DIM);
-        for(size_t i=0;i<uc_cnt;i++) for(int k=0;k<COORD_DIM;k++)
-            uc_coord1[i*COORD_DIM+k]=uc_coord[node[j]->Depth()][i*COORD_DIM+k]+c[k];
-        Profile::Add_FLOP((long long)uc_cnt*(long long)COORD_DIM);
-
-        //Compute upward check potential.
-        u_check.SetZero();
-        if(pt_cnt>0)
-          aux_kernel.ker_poten(&node[j]->src_coord[0], pt_cnt,
-                               &node[j]->src_value[0], dof,
-                               &uc_coord1[0], uc_cnt, u_check[0]);
-        if(surf_pt_cnt>0)
-          aux_kernel.dbl_layer_poten(&node[j]->surf_coord[0], surf_pt_cnt,
-                                     &node[j]->surf_value[0], dof,
-                                     &uc_coord1[0], uc_cnt, u_check[0]);
-
-        //Rearrange data.
-        {
-          Matrix<Real_t> M_tmp(M_uc2ue.Dim(0)/aux_kernel.ker_dim[1],aux_kernel.ker_dim[1]*dof, &u_check[0][0], false);
-          M_tmp=M_tmp.Transpose();
-          for(int i=0;i<dof;i++){
-            Matrix<Real_t> M_tmp1(aux_kernel.ker_dim[1], M_uc2ue.Dim(0)/aux_kernel.ker_dim[1], &u_check[i][0], false);
-            M_tmp1=M_tmp1.Transpose();
-          }
-        }
-
-        //Compute UC2UE (vector-matrix multiply).
-        Matrix<Real_t>::DGEMM(u_equiv,u_check,M_uc2ue,1.0);
-      }
-
-      //Adjusting for scale.
-      if(Homogen()){
-        Real_t scale_factor=pow(0.5,  node[j]->Depth()*aux_kernel.poten_scale);
-        for(size_t i=0;i<upward_equiv.Dim();i++)
-          upward_equiv[i]*=scale_factor;
-      }
-    }
+  this->SetupInteracPts(setup_data, false, true, &M_uc2ue,device);
+  { // Resize device buffer
+    size_t n=setup_data.output_data->Dim(0)*setup_data.output_data->Dim(1)*sizeof(Real_t);
+    if(this->dev_buffer.Dim()<n) this->dev_buffer.Resize(n);
   }
 }
 
 template <class FMMNode>
-void FMM_Pts<FMMNode>::Up2Up(FMMNode** nodes, size_t n, int level){
-  if(n==0) return;
-  int dof=1;
-  size_t n_eq=this->interac_list.ClassMat(level,U2U_Type,0).Dim(1);
-  size_t mat_cnt=interac_list.ListCount(U2U_Type);
-
-  //For all non-leaf, non-ghost nodes.
-  #pragma omp parallel
-  {
-    int omp_p=omp_get_num_threads();
-    int pid = omp_get_thread_num();
-    size_t a=(pid*n)/omp_p;
-    size_t b=((pid+1)*n)/omp_p;
-    size_t cnt;
-
-    //Initialize this node's upward equivalent data
-    for(size_t i=a;i<b;i++){
-      Vector<Real_t>& upward_equiv=nodes[i]->FMMData()->upward_equiv;
-      assert(upward_equiv.Dim()==dof*n_eq);
-      upward_equiv.SetZero(); // TODO: Do in setup
-      UNUSED(upward_equiv);
-      UNUSED(n_eq);
-    }
-
-    for(size_t mat_indx=0;mat_indx<mat_cnt;mat_indx++){
-      Matrix<Real_t>& M = this->mat->Mat(level, U2U_Type, mat_indx);
-      if(M.Dim(0)!=0 && M.Dim(1)!=0){
-        cnt=0;
-        for(size_t i=a;i<b;i++)
-        if(/*!nodes[i]->IsGhost() && */!nodes[i]->IsLeaf()) if(((FMMNode*)nodes[i]->Child(mat_indx))->FMMData()->upward_equiv.Dim()>0) cnt++;
-
-        Matrix<Real_t> src_vec(cnt*dof,M.Dim(0));
-        Matrix<Real_t> trg_vec(cnt*dof,M.Dim(1));
-
-        //Get child's multipole expansion.
-        cnt=0;
-        for(size_t i=a;i<b;i++)
-        if(/*!nodes[i]->IsGhost() && */!nodes[i]->IsLeaf()) if(((FMMNode*)nodes[i]->Child(mat_indx))->FMMData()->upward_equiv.Dim()>0){
-          Vector<Real_t>& child_equiv=static_cast<FMMNode*>(nodes[i]->Child(mat_indx))->FMMData()->upward_equiv;
-          mem::memcopy(&(src_vec[cnt*dof][0]), &(child_equiv[0]), dof*M.Dim(0)*sizeof(Real_t));
-          cnt++;
-        }
-        Matrix<Real_t>::DGEMM(trg_vec,src_vec,M);
-
-        cnt=0;
-        size_t vec_len=M.Dim(1)*dof;
-        for(size_t i=a;i<b;i++)
-        if(/*!nodes[i]->IsGhost() && */!nodes[i]->IsLeaf()) if(((FMMNode*)nodes[i]->Child(mat_indx))->FMMData()->upward_equiv.Dim()>0){
-          Vector<Real_t>& upward_equiv=nodes[i]->FMMData()->upward_equiv;
-          assert(upward_equiv.Dim()==vec_len);
-
-          Matrix<Real_t> equiv  (1,vec_len,&upward_equiv[0],false);
-          Matrix<Real_t> equiv_ (1,vec_len,trg_vec[cnt*dof],false);
-          equiv+=equiv_;
-          cnt++;
-        }
-      }
-    }
-  }
+void FMM_Pts<FMMNode>::Source2Up(SetupData<Real_t>&  setup_data, bool device){
+  //Add Source2Up contribution.
+  this->EvalListPts(setup_data, device);
 }
+
+
+template <class FMMNode>
+void FMM_Pts<FMMNode>::Up2UpSetup(SetupData<Real_t>& setup_data, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device){
+  { // Set setup_data
+    setup_data.level=level;
+    setup_data.kernel=&aux_kernel;
+    setup_data.interac_type.resize(1);
+    setup_data.interac_type[0]=U2U_Type;
+
+    setup_data. input_data=&buff[0];
+    setup_data.output_data=&buff[0];
+    Vector<FMMNode_t*>& nodes_in =n_list[0];
+    Vector<FMMNode_t*>& nodes_out=n_list[0];
+
+    setup_data.nodes_in .clear();
+    setup_data.nodes_out.clear();
+    for(size_t i=0;i<nodes_in .Dim();i++) if(nodes_in [i]->Depth()==level+1) setup_data.nodes_in .push_back(nodes_in [i]);
+    for(size_t i=0;i<nodes_out.Dim();i++) if(nodes_out[i]->Depth()==level  ) setup_data.nodes_out.push_back(nodes_out[i]);
+  }
+
+  std::vector<void*>& nodes_in =setup_data.nodes_in ;
+  std::vector<void*>& nodes_out=setup_data.nodes_out;
+  std::vector<Vector<Real_t>*>&  input_vector=setup_data. input_vector;  input_vector.clear();
+  std::vector<Vector<Real_t>*>& output_vector=setup_data.output_vector; output_vector.clear();
+  for(size_t i=0;i<nodes_in .size();i++)  input_vector.push_back(&((FMMData*)((FMMNode*)nodes_in [i])->FMMData())->upward_equiv);
+  for(size_t i=0;i<nodes_out.size();i++) output_vector.push_back(&((FMMData*)((FMMNode*)nodes_out[i])->FMMData())->upward_equiv);
+
+  SetupInterac(setup_data,device);
+}
+
+template <class FMMNode>
+void FMM_Pts<FMMNode>::Up2Up     (SetupData<Real_t>& setup_data, bool device){
+  //Add Up2Up contribution.
+  EvalList(setup_data, device);
+}
+
+
 
 template <class FMMNode>
 void FMM_Pts<FMMNode>::PeriodicBC(FMMNode* node){
@@ -2838,7 +2788,8 @@ void FMM_Pts<FMMNode>::SetupInteracPts(SetupData<Real_t>& setup_data, bool shift
           trg_value[i]=(size_t)(&output_vector[i*2+1][0][0]-output_data[0]);
 
           if(!this->Homogen()) scaling[i]=1.0;
-          else if(interac_type==X_Type) scaling[i]=pow(0.5, setup_data.kernel->poten_scale *((FMMNode*)nodes_out[i])->Depth());
+          else if(interac_type==S2U_Type) scaling[i]=pow(0.5, setup_data.kernel->poten_scale *((FMMNode*)nodes_out[i])->Depth());
+          else if(interac_type==  X_Type) scaling[i]=pow(0.5, setup_data.kernel->poten_scale *((FMMNode*)nodes_out[i])->Depth());
         }
       }
     }

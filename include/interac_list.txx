@@ -96,6 +96,25 @@ std::vector<Node_t*> InteracList<Node_t>::BuildList(Node_t* n, Mat_Type t){
 
   switch (t){
 
+    case S2U_Type:
+    {
+      if(!n->IsGhost() && n->IsLeaf()) interac_list[0]=n;
+      break;
+    }
+    case U2U_Type:
+    {
+      if(n->IsGhost() || n->IsLeaf()) return interac_list;
+      for(int j=0;j<n_child;j++){
+        rel_coord[0]=-1+(j & 1?2:0);
+        rel_coord[1]=-1+(j & 2?2:0);
+        rel_coord[2]=-1+(j & 4?2:0);
+        int c_hash = coord_hash(rel_coord);
+        int idx=hash_lut[t][c_hash];
+        Node_t* chld=(Node_t*)n->Child(j);
+        if(idx>=0 && !chld->IsGhost()) interac_list[idx]=chld;
+      }
+      break;
+    }
     case D2D_Type:
     {
       if(n->IsGhost() || n->Parent()==NULL) return interac_list;

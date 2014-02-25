@@ -709,56 +709,39 @@ void FMM_Cheb<FMMNode>::CollectNodeData(std::vector<FMMNode*>& node, std::vector
 
 
 template <class FMMNode>
-void FMM_Cheb<FMMNode>::InitMultipole(FMMNode** node, size_t n, int level){
-  if(n==0) return;
-  FMM_Pts<FMMNode>::InitMultipole(node,n,level);
+void FMM_Cheb<FMMNode>::Source2UpSetup(SetupData<Real_t>& setup_data, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device){
+  FMM_Pts<FMMNode>::Source2UpSetup(setup_data, buff, n_list, level, device);
 
-  int dim=3; //Only supporting 3D
-  int dof=1;
+  { // Set setup_data
+    setup_data.level=level;
+    setup_data.kernel=&this->aux_kernel;
+    setup_data.interac_type.resize(1);
+    setup_data.interac_type[0]=S2U_Type;
 
-  #pragma omp parallel
-  {
-    int omp_p=omp_get_num_threads();
-    int pid = omp_get_thread_num();
-    size_t a=(pid*n)/omp_p;
-    size_t b=((pid+1)*n)/omp_p;
-    size_t cnt;
+    setup_data. input_data=&buff[4];
+    setup_data.output_data=&buff[0];
+    Vector<FMMNode_t*>& nodes_in =n_list[4];
+    Vector<FMMNode_t*>& nodes_out=n_list[0];
 
-    Matrix<Real_t>& M = this->mat->Mat(level, S2U_Type, 0);
-    if(M.Dim(0)!=0 && M.Dim(1)!=0){
-      cnt=0;
-      for(size_t i=a;i<b;i++)
-      if(node[i]->ChebData().Dim()>0) cnt++;
-
-      Matrix<Real_t> src_vec(cnt*dof,M.Dim(0));
-      Matrix<Real_t> trg_vec(cnt*dof,M.Dim(1));
-
-      cnt=0;
-      for(size_t i=a;i<b;i++)
-      if(node[i]->ChebData().Dim()>0){
-        Vector<Real_t>& cheb_in=node[i]->ChebData();
-        assert(cheb_in.Dim()==dof*M.Dim(0));
-        mem::memcopy(&(src_vec[cnt*dof][0]), &(cheb_in[0]), dof*M.Dim(0)*sizeof(Real_t));
-        cnt++;
-      }
-      Matrix<Real_t>::DGEMM(trg_vec,src_vec,M);
-
-      cnt=0;
-      size_t vec_len=M.Dim(1)*dof;
-      for(size_t i=a;i<b;i++)
-      if(node[i]->ChebData().Dim()>0){
-        Real_t scale_factor=(this->Homogen()?pow(0.5,dim*node[i]->Depth()):1.0);
-        Real_t* trg_vec_=trg_vec[cnt*dof];
-
-        Vector<Real_t>& upward_equiv=((FMMData*)node[i]->FMMData())->upward_equiv;
-        assert(upward_equiv.Dim()==vec_len);
-        for(size_t j=0;j<vec_len;j++)
-          upward_equiv[j]+=trg_vec_[j]*scale_factor;
-        cnt++;
-      }
-      Profile::Add_FLOP(2*cnt*vec_len);
-    }
+    setup_data.nodes_in .clear();
+    setup_data.nodes_out.clear();
+    for(size_t i=0;i<nodes_in .Dim();i++) if(nodes_in [i]->Depth()==level   || level==-1) setup_data.nodes_in .push_back(nodes_in [i]);
+    for(size_t i=0;i<nodes_out.Dim();i++) if(nodes_out[i]->Depth()==level   || level==-1) setup_data.nodes_out.push_back(nodes_out[i]);
   }
+
+  std::vector<void*>& nodes_in =setup_data.nodes_in ;
+  std::vector<void*>& nodes_out=setup_data.nodes_out;
+  std::vector<Vector<Real_t>*>&  input_vector=setup_data. input_vector;  input_vector.clear();
+  std::vector<Vector<Real_t>*>& output_vector=setup_data.output_vector; output_vector.clear();
+  for(size_t i=0;i<nodes_in .size();i++)  input_vector.push_back(&(          ((FMMNode*)nodes_in [i])           )->ChebData()  );
+  for(size_t i=0;i<nodes_out.size();i++) output_vector.push_back(&((FMMData*)((FMMNode*)nodes_out[i])->FMMData())->upward_equiv);
+
+  this->SetupInterac(setup_data,device);
+}
+template <class FMMNode>
+void FMM_Cheb<FMMNode>::Source2Up     (SetupData<Real_t>& setup_data, bool device){
+  //Add Source2Up contribution.
+  this->EvalList(setup_data, device);
 }
 
 
@@ -788,7 +771,7 @@ void FMM_Cheb<FMMNode>::X_ListSetup(SetupData<Real_t>& setup_data, std::vector<M
   std::vector<void*>& nodes_out=setup_data.nodes_out;
   std::vector<Vector<Real_t>*>&  input_vector=setup_data. input_vector;  input_vector.clear();
   std::vector<Vector<Real_t>*>& output_vector=setup_data.output_vector; output_vector.clear();
-  for(size_t i=0;i<nodes_in .size();i++)  input_vector.push_back(&           ((FMMNode*)nodes_in [i])->ChebData());
+  for(size_t i=0;i<nodes_in .size();i++)  input_vector.push_back(&(          ((FMMNode*)nodes_in [i])           )->ChebData()  );
   for(size_t i=0;i<nodes_out.size();i++) output_vector.push_back(&((FMMData*)((FMMNode*)nodes_out[i])->FMMData())->dnward_equiv);
 
   this->SetupInterac(setup_data,device);
@@ -831,7 +814,7 @@ void FMM_Cheb<FMMNode>::W_ListSetup(SetupData<Real_t>& setup_data, std::vector<M
   std::vector<Vector<Real_t>*>&  input_vector=setup_data. input_vector;  input_vector.clear();
   std::vector<Vector<Real_t>*>& output_vector=setup_data.output_vector; output_vector.clear();
   for(size_t i=0;i<nodes_in .size();i++)  input_vector.push_back(&((FMMData*)((FMMNode*)nodes_in [i])->FMMData())->upward_equiv);
-  for(size_t i=0;i<nodes_out.size();i++) output_vector.push_back(&((FMMData*)((FMMNode*)nodes_out[i])->FMMData())->cheb_out);
+  for(size_t i=0;i<nodes_out.size();i++) output_vector.push_back(&((FMMData*)((FMMNode*)nodes_out[i])->FMMData())->cheb_out    );
 
   this->SetupInterac(setup_data,device);
   { // Resize device buffer
@@ -875,8 +858,8 @@ void FMM_Cheb<FMMNode>::U_ListSetup(SetupData<Real_t>& setup_data, std::vector<M
   std::vector<void*>& nodes_out=setup_data.nodes_out;
   std::vector<Vector<Real_t>*>&  input_vector=setup_data. input_vector;  input_vector.clear();
   std::vector<Vector<Real_t>*>& output_vector=setup_data.output_vector; output_vector.clear();
-  for(size_t i=0;i<nodes_in .size();i++)  input_vector.push_back(&           ((FMMNode*)nodes_in [i])->ChebData());
-  for(size_t i=0;i<nodes_out.size();i++) output_vector.push_back(&((FMMData*)((FMMNode*)nodes_out[i])->FMMData())->cheb_out);
+  for(size_t i=0;i<nodes_in .size();i++)  input_vector.push_back(&(          ((FMMNode*)nodes_in [i])           )->ChebData());
+  for(size_t i=0;i<nodes_out.size();i++) output_vector.push_back(&((FMMData*)((FMMNode*)nodes_out[i])->FMMData())->cheb_out  );
 
   this->SetupInterac(setup_data,device);
   { // Resize device buffer
@@ -918,14 +901,14 @@ void FMM_Cheb<FMMNode>::Down2TargetSetup(SetupData<Real_t>& setup_data, std::vec
   std::vector<Vector<Real_t>*>&  input_vector=setup_data. input_vector;  input_vector.clear();
   std::vector<Vector<Real_t>*>& output_vector=setup_data.output_vector; output_vector.clear();
   for(size_t i=0;i<nodes_in .size();i++)  input_vector.push_back(&((FMMData*)((FMMNode*)nodes_in [i])->FMMData())->dnward_equiv);
-  for(size_t i=0;i<nodes_out.size();i++) output_vector.push_back(&((FMMData*)((FMMNode*)nodes_out[i])->FMMData())->cheb_out);
+  for(size_t i=0;i<nodes_out.size();i++) output_vector.push_back(&((FMMData*)((FMMNode*)nodes_out[i])->FMMData())->cheb_out    );
 
   this->SetupInterac(setup_data,device);
 }
 
 template <class FMMNode>
 void FMM_Cheb<FMMNode>::Down2Target     (SetupData<Real_t>& setup_data, bool device){
-  //Add X_List contribution.
+  //Add Down2Target contribution.
   this->EvalList(setup_data, device);
 }
 

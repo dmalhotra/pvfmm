@@ -138,13 +138,15 @@ class FMM_Pts{
    * \brief Initialize multipole expansions for the given array of leaf nodes
    * at a given level.
    */
-  virtual void InitMultipole(FMMNode**, size_t n, int level);
+  virtual void Source2UpSetup(SetupData<Real_t>&  setup_data, std::vector<Matrix<Real_t> >& node_data, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device);
+  virtual void Source2Up     (SetupData<Real_t>&  setup_data, bool device=false);
 
   /**
    * \brief Initialize multipole expansions for the given array of non-leaf
    * nodes from that of its children.
    */
-  virtual void Up2Up(FMMNode**, size_t n, int level);
+  virtual void Up2UpSetup(SetupData<Real_t>&  setup_data, std::vector<Matrix<Real_t> >& node_data, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device);
+  virtual void Up2Up     (SetupData<Real_t>&  setup_data, bool device=false);
 
   virtual void PeriodicBC(FMMNode* node);
 

@@ -71,7 +71,8 @@ class FMM_Cheb: public FMM_Pts<FMMNode>{
    * \brief Initialize multipole expansions for the given array of leaf nodes
    * at a given level.
    */
-  virtual void InitMultipole(FMMNode**, size_t n, int level);
+  virtual void Source2UpSetup(SetupData<Real_t>& setup_data, std::vector<Matrix<Real_t> >& node_data, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device);
+  virtual void Source2Up     (SetupData<Real_t>& setup_data, bool device=false);
 
   /**
    * \brief Compute X-List intractions.
