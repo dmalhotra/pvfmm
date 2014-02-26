@@ -88,7 +88,7 @@ are given below:
 
 `Stampede (TACC)'
      module load fftw3 cuda
-     ./configure CXXFLAGS="-mavx -wd3218 -wd2571 -wd2570 -wd2568 -wd161" --with-fftw="$TACC_FFTW3_DIR" FLIBS=" " --with-cuda="$TACC_CUDA_DIR"
+     ./configure CXXFLAGS="-mavx -wd3218 -wd2570" --with-fftw="$TACC_FFTW3_DIR" FLIBS=" " --with-cuda="$TACC_CUDA_DIR"
 
 `Ronaldo (ICES)'
      ./configure CXXFLAGS="-msse4" --with-fftw="$FFTW_DIR"
