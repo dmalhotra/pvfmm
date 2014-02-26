@@ -8,11 +8,11 @@
 #include <matrix.hpp>
 #include <vector.hpp>
 
-namespace pvfmm {
+//namespace pvfmm {
 
 // external functions
-void in_perm_d (uintptr_t, uintptr_t, uintptr_t, uintptr_t, size_t, size_t, size_t, cudaStream_t*);
-void out_perm_d (uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t, size_t, size_t, size_t, cudaStream_t*);
+extern "C" void in_perm_d (uintptr_t, uintptr_t, uintptr_t, uintptr_t, size_t, size_t, size_t, cudaStream_t*);
+extern "C" void out_perm_d (uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t, size_t, size_t, size_t, cudaStream_t*);
 
 template <class Real_t>
 class cuda_func {
@@ -37,7 +37,7 @@ void cuda_func<Real_t>::in_perm_h (
 {
   cudaStream_t *stream;
   //stream = DeviceWrapper::CUDA_Lock::acquire_stream(0);
-  stream = CUDA_Lock::acquire_stream(0);
+  stream = pvfmm::CUDA_Lock::acquire_stream(0);
   /*
   intptr_t precomp_data_d = precomp_data[0];
   intptr_t input_perm_d = input_perm[0];
@@ -60,10 +60,10 @@ void cuda_func<Real_t>::out_perm_h (
 {
   cudaStream_t *stream;
   //stream = DeviceWrapper::CUDA_Lock::acquire_stream(0);
-  stream = CUDA_Lock::acquire_stream(0);
+  stream = pvfmm::CUDA_Lock::acquire_stream(0);
   out_perm_d(scaling, precomp_data, output_perm, output_data, buff_out, interac_indx, M_dim1, vec_cnt, stream);
 }
 
-};
+//};
 
 #endif //_CUDA_FUNC_HPP_

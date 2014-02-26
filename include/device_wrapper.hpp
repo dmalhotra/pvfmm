@@ -101,13 +101,13 @@ transfer, use:
   #define NUM_STREAM 2
   class CUDA_Lock {
     public:
+      CUDA_Lock();
       static void init();
       static void terminate();
       static cudaStream_t *acquire_stream(int idx);
       static cublasHandle_t *acquire_handle();
       static void wait(int idx);
     private:
-      CUDA_Lock();
       static cudaStream_t stream[NUM_STREAM];
       static cublasHandle_t handle;
       static bool cuda_init;

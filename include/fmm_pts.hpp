@@ -17,6 +17,10 @@
 #include <kernel.hpp>
 #include <mpi_node.hpp>
 
+#if defined(PVFMM_HAVE_CUDA)
+#include <cuda_func.hpp>
+#endif
+
 namespace pvfmm{
 
 /**

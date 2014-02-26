@@ -91,7 +91,8 @@ lib_libfmm_a_HEADERS = \
 									include/parUtils.txx \
 									include/precomp_mat.txx \
 									include/tree.txx \
-									include/vector.txx
+									include/vector.txx \
+									include/cuda_func.hpp
 
 #nodist_lib_libpvfmm_a_HEADERS = \
 #									include/pvfmm_config.h
@@ -105,6 +106,14 @@ lib_libpvfmm_a_SOURCES = \
 									src/profile.cpp \
 									src/tree_node.cpp
 
+if NVCC_OK
+
+lib_libpvfmm_a_SOURCES = \
+									$(lib_libpvfmm_a_HEADERS) \
+									src/cuda_func.cu
+
+endif
+
 dist_noinst_SCRIPTS = autogen.sh
 
 core: $(pkglib_LIBRARIES)
@@ -117,8 +126,8 @@ all: #all-docs all-examples
 
 if NVCC_OK
 
-%.o : %.cu
-	$(NVCC) $(NVCCFLAGS) $< -o $@
+.cu.o :
+	$(NVCC) $(NVCCFLAGS) ${INCLUDE_PVFMM} -c $< -o $@
 
 endif
 

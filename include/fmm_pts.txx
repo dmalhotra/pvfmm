@@ -5,6 +5,8 @@
  * \brief This file contains the implementation of the FMM_Pts class.
  */
 
+#include <stdio.h>
+
 #include <mpi.h>
 #include <set>
 #include <sstream>
@@ -1547,6 +1549,7 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
     if(device) MIC_Lock::wait_lock(wait_lock_idx);
     #endif
 
+    std::cout << "cuda_func::in_perm_h()" << '\n';
     //Compute interaction from Chebyshev source density.
     { // interactions
       int omp_p=omp_get_max_threads();
@@ -1560,6 +1563,12 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
         char* buff_out=&buff[vec_cnt*dof*M_dim0*sizeof(Real_t)];
 
         // Input permutation.
+		/*
+        #if defined(PVFMM_HAVE_CUDA)
+        cuda_func<Real_t>::in_perm_h (precomp_data.dev_ptr, (uintptr_t) input_perm[0], input_data.dev_ptr,
+            (uintptr_t) buff_in, interac_indx, M_dim0, vec_cnt);
+        #else
+		*/
         #pragma omp parallel for
         for(int tid=0;tid<omp_p;tid++){
           size_t a=( tid   *vec_cnt)/omp_p;
@@ -1609,6 +1618,7 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
             #endif
           }
         }
+        //#endif
 
         size_t vec_cnt0=0;
         for(size_t j=interac_blk_dsp;j<interac_blk_dsp+interac_blk[k];){
@@ -1616,6 +1626,15 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
           size_t interac_mat0=interac_mat[j];
           for(;j<interac_blk_dsp+interac_blk[k] && interac_mat[j]==interac_mat0;j++) vec_cnt1+=interac_cnt[j];
           Matrix<Real_t> M(M_dim0, M_dim1, (Real_t*)(precomp_data[0]+interac_mat0), false);
+		  /*
+          #if defined(PVFMM_HAVE_CUDA)
+          {
+            Matrix<Real_t> Ms(dof*vec_cnt1, M_dim0, (Real_t*)(buff_in +M_dim0*vec_cnt0*dof*sizeof(Real_t)), false);
+            Matrix<Real_t> Mt(dof*vec_cnt1, M_dim1, (Real_t*)(buff_out+M_dim1*vec_cnt0*dof*sizeof(Real_t)), false);
+            Matrix<Real_t>::CUBLASXGEMM(Mt,Ms,M);
+          }
+          #else
+		  */
           #ifdef __MIC__
           {
             Matrix<Real_t> Ms(dof*vec_cnt1, M_dim0, (Real_t*)(buff_in +M_dim0*vec_cnt0*dof*sizeof(Real_t)), false);
@@ -1632,10 +1651,17 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
             Matrix<Real_t>::DGEMM(Mt,Ms,M);
           }
           #endif
+          //#endif
           vec_cnt0+=vec_cnt1;
         }
 
         // Output permutation.
+		/*
+        #if defined(PVFMM_HAVE_CUDA)
+        cuda_func<Real_t>::out_perm_h ((uintptr_t) scaling[0], precomp_data.dev_ptr, (uintptr_t) output_perm[0], output_data.dev_ptr,
+            (uintptr_t) buff_out, interac_indx, M_dim1, vec_cnt);
+        #else
+		*/
         #pragma omp parallel for
         for(int tid=0;tid<omp_p;tid++){
           size_t a=( tid   *vec_cnt)/omp_p;
@@ -1697,6 +1723,7 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
             #endif
           }
         }
+        //#endif
 
         interac_indx+=vec_cnt;
         interac_blk_dsp+=interac_blk[k];
@@ -2993,6 +3020,8 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
     return;
   }
 
+  std::cout << "EvalListPts, device = " << device << '\n';
+
   Profile::Tic("Host2Device",&this->comm,false,25);
   typename Vector<char>::Device          buff;
   //typename Matrix<char>::Device  precomp_data;
@@ -3016,6 +3045,8 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
     if(setup_data. output_data!=NULL) output_data =*setup_data. output_data;
   }
   Profile::Toc();
+
+  std::cout << "EvalListPts, end allocation. " << '\n'; 
 
   size_t ptr_single_layer_kernel=(size_t)setup_data.kernel->ker_poten;
   size_t ptr_double_layer_kernel=(size_t)setup_data.kernel->dbl_layer_poten;
@@ -3049,15 +3080,21 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
     Vector< Vector<Real_t> > shift_coord;
     { // Set interac_data.
       char* data_ptr=&interac_data[0][0];
+    
+      std::cout << "EvalListPts, converting device ptr to char* " << '\n';
 
       /*data_size=((size_t*)data_ptr)[0];*/ data_ptr+=sizeof(size_t);
       /*ker_dim0=((size_t*)data_ptr)[0];*/ data_ptr+=sizeof(size_t);
       ker_dim1=((size_t*)data_ptr)[0]; data_ptr+=sizeof(size_t);
       dof     =((size_t*)data_ptr)[0]; data_ptr+=sizeof(size_t);
 
+      std::cout << "EvalListPts, device ptr evaluation " << '\n';
+
       trg_interac_cnt.ReInit(((size_t*)data_ptr)[0],(size_t*)(data_ptr+sizeof(size_t)),false);
       data_ptr+=sizeof(size_t)+trg_interac_cnt.Dim()*sizeof(size_t);
       n_out=trg_interac_cnt.Dim();
+
+      std::cout << "EvalListPts, 1.st ReInit " << '\n';
 
       trg_coord.ReInit(((size_t*)data_ptr)[0],(size_t*)(data_ptr+sizeof(size_t)),false);
       data_ptr+=sizeof(size_t)+trg_coord.Dim()*sizeof(size_t);
@@ -3096,6 +3133,8 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
     #ifdef __INTEL_OFFLOAD
     if(device) MIC_Lock::wait_lock(wait_lock_idx);
     #endif
+  
+    std::cout << "EvalListPts, end reallocation." << '\n';
 
     //Compute interaction from point sources.
     { // interactions

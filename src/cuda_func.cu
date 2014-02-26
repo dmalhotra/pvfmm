@@ -4,10 +4,10 @@
 
 /* Case: double */
 __global__ void in_perm_k (
-  uintptr_t *precomp_data,
-  uintptr_t *input_perm,
-  uintptr_t *input_data,
-  uintptr_t *buff_in,
+  void *precomp_data,
+  size_t *input_perm,
+  void *input_data,
+  void *buff_in,
   size_t interac_indx,
   size_t M_dim0,
   size_t vec_cnt )
@@ -16,23 +16,24 @@ __global__ void in_perm_k (
   int tid = blockIdx.x*blockDim.x + threadIdx.x;
 
   /* Convert to ptr. */
-  int *perm = (int*) (precomp_data[0] + input_perm[(interac_indx + tid)*4 + 0]);
-  double *scal = (double*) (precomp_data[0] + input_perm[(interac_indx + tid)*4 + 1]);
+/*
+  int *perm = (int*) (precomp_data + input_perm[(interac_indx + tid)*4 + 0]);
+  double *scal = (double*) (precomp_data + input_perm[(interac_indx + tid)*4 + 1]);
   double *v_in = (double*) (input_data[0] + input_perm[(interac_indx + tid)*4 + 3]);
   double *v_out = (double*) (buff_in + input_perm[(interac_indx + tid)*4 + 2]);
-
+*/
   if (tid < vec_cnt) {
     /* PRAM Model: assuming as many threads as we need. */
-    for (int j = 0; j < M_dim0; j++) v_out[j] = v_in[perm[j]]*scal[j];
+    //for (int j = 0; j < M_dim0; j++) v_out[j] = v_in[perm[j]]*scal[j];
   }
 }
 
 __global__ void out_perm_k (
-  uintptr_t *scaling,
-  uintptr_t *precomp_data,
-  uintptr_t *output_perm,
-  uintptr_t *output_data,
-  uintptr_t *buff_out,
+  double *scaling,
+  void *precomp_data,
+  size_t *output_perm,
+  void *output_data,
+  void *buff_out,
   size_t interac_indx,
   size_t M_dim1,
   size_t vec_cnt )
@@ -56,21 +57,24 @@ __global__ void out_perm_k (
   if (tid < vec_cnt) {
     /* PRAM Model: assuming as many threads as we need. */
     for(int i = a; i < b; i++) { // Compute permutations.
+/*
       double scaling_factor = scaling[interac_indx + i];
-      int *perm = (int*) (precomp_data[0] + output_perm[(interac_indx + i)*4 + 0]);
-      double *scal = (double*) (precomp_data[0] + output_perm[(interac_indx + i)*4 + 1]);
+      int *perm = (int*) (precomp_data + output_perm[(interac_indx + i)*4 + 0]);
+      double *scal = (double*) (precomp_data + output_perm[(interac_indx + i)*4 + 1]);
       double *v_in = (double*) (buff_out + output_perm[(interac_indx + i)*4 + 3]);
-      double *v_out = (double*) (output_data[0] + output_perm[(interac_indx + i)*4 + 2]);
+      double *v_out = (double*) (output_data + output_perm[(interac_indx + i)*4 + 2]);
       for (int j = 0; j < M_dim1; j++) v_out[j] += v_in[perm[j]]*scal[j]*scaling_factor;
+*/
     }
   }
 }
 
+extern "C" 
 void in_perm_d (
-  uintptr_t *precomp_data,
-  uintptr_t *input_perm,
-  uintptr_t *input_data,
-  uintptr_t *buff_in,
+  uintptr_t precomp_data,
+  uintptr_t input_perm,
+  uintptr_t input_data,
+  uintptr_t buff_in,
   size_t interac_indx,
   size_t M_dim0,
   size_t vec_cnt,
@@ -79,15 +83,21 @@ void in_perm_d (
   int n_thread, n_block;
   n_thread = DEFAULT_NUM_THREAD;
   n_block = vec_cnt/n_thread;
-  in_perm_k<<<n_thread, n_block, 0, *stream>>>(precomp_data, input_perm, input_data, buff_in, interac_indx, M_dim0, vec_cnt);
+  void *precomp_data_d = (void *) precomp_data;
+  size_t *input_perm_d = (size_t *) input_perm;
+  void *input_data_d = (void *) input_data;
+  void *buff_in_d = (void *) buff_in;
+  in_perm_k<<<n_thread, n_block, 0, *stream>>>(precomp_data_d, input_perm_d, input_data_d,
+    buff_in_d, interac_indx, M_dim0, vec_cnt);
 }
 
+extern "C"
 void out_perm_d (
-  uintptr_t *scaling,
-  uintptr_t *precomp_data,
-  uintptr_t *output_perm,
-  uintptr_t *output_data,
-  uintptr_t *buff_out,
+  uintptr_t scaling,
+  uintptr_t precomp_data,
+  uintptr_t output_perm,
+  uintptr_t output_data,
+  uintptr_t buff_out,
   size_t interac_indx,
   size_t M_dim0,
   size_t vec_cnt,
@@ -96,5 +106,11 @@ void out_perm_d (
   int n_thread, n_block;
   n_thread = DEFAULT_NUM_THREAD;
   n_block = vec_cnt/n_thread;
-  out_perm_k<<<n_thread, n_block, 0, *stream>>>(scaling, precomp_data, output_perm, output_data, buff_out, interac_indx, M_dim0, vec_cnt);
+  double *scaling_d = (double *) scaling;
+  void *precomp_data_d = (void *) precomp_data;
+  size_t *output_perm_d = (size_t *) output_perm;
+  void *output_data_d = (void *) output_data;
+  void *buff_out_d = (void *) buff_out;
+  out_perm_k<<<n_thread, n_block, 0, *stream>>>(scaling_d, precomp_data_d, output_perm_d, 
+    output_data_d, buff_out_d, interac_indx, M_dim0, vec_cnt);
 }
