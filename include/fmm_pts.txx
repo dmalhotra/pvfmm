@@ -1469,6 +1469,100 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
 }
 
 template <class FMMNode>
+void FMM_Pts<FMMNode>::EvalList_cuda(SetupData<Real_t>& setup_data) {
+  typename Vector<char>::Device          buff;
+  typename Matrix<char>::Device  precomp_data;
+  //typename Matrix<char>::Device  interac_data;
+  Matrix<char> interac_data;
+  typename Matrix<char>::Device  interac_data_d;
+  typename Matrix<Real_t>::Device  input_data;
+  typename Matrix<Real_t>::Device output_data;
+
+  /* Take CPU pointer first. */
+  {
+    buff        =       this-> cpu_buffer;
+    precomp_data=*setup_data.precomp_data;
+    interac_data= setup_data.interac_data;
+    input_data  =*setup_data.  input_data;
+    output_data =*setup_data. output_data;
+  }
+  {
+    interac_data_d = setup_data.interac_data.AllocDevice(false);
+  }
+  {
+    size_t data_size, M_dim0, M_dim1, dof;
+	size_t len_interac_blk, len_interac_cnt, len_interac_mat, len_input_perm,
+		   len_output_perm, len_scaling;
+    char *interac_blk;
+    char *interac_cnt;
+    char *interac_mat;
+    char *input_perm;
+    char *output_perm;
+    char *scaling;
+	{
+      char* data_ptr=&interac_data[0][0];
+      char *dev_ptr;
+
+	  /* Take GPU initial pointer for later computation. */
+	  dev_ptr = (char*)interac_data_d.dev_ptr;
+
+      data_size=((size_t*)data_ptr)[0]; data_ptr+=data_size;
+      data_size=((size_t*)data_ptr)[0]; data_ptr+=sizeof(size_t);
+      M_dim0   =((size_t*)data_ptr)[0]; data_ptr+=sizeof(size_t);
+      M_dim1   =((size_t*)data_ptr)[0]; data_ptr+=sizeof(size_t);
+      dof      =((size_t*)data_ptr)[0]; data_ptr+=sizeof(size_t);
+
+	  /* Update CPU and GPU pointers at the same time. */
+      len_interac_blk = ((size_t*)data_ptr)[0];
+	  interac_blk = dev_ptr + sizeof(size_t);
+      data_ptr += sizeof(size_t) + sizeof(size_t)*len_interac_blk;
+      dev_ptr  += sizeof(size_t) + sizeof(size_t)*len_interac_blk;
+
+      len_interac_cnt = ((size_t*)data_ptr)[0];
+	  interac_cnt = dev_ptr + sizeof(size_t);
+      data_ptr += sizeof(size_t) + sizeof(size_t)*len_interac_cnt;
+      dev_ptr  += sizeof(size_t) + sizeof(size_t)*len_interac_cnt;
+      
+	  len_interac_mat = ((size_t*)data_ptr)[0];
+	  interac_mat = dev_ptr + sizeof(size_t);
+      data_ptr += sizeof(size_t) + sizeof(size_t)*len_interac_mat;
+      dev_ptr  += sizeof(size_t) + sizeof(size_t)*len_interac_mat;
+
+	  len_input_perm = ((size_t*)data_ptr)[0];
+	  input_perm = dev_ptr + sizeof(size_t);
+      data_ptr += sizeof(size_t) + sizeof(size_t)*len_input_perm;
+      dev_ptr  += sizeof(size_t) + sizeof(size_t)*len_input_perm;
+
+	  len_output_perm = ((size_t*)data_ptr)[0];
+	  output_perm = dev_ptr + sizeof(size_t);
+      data_ptr += sizeof(size_t) + sizeof(size_t)*len_output_perm;
+      dev_ptr  += sizeof(size_t) + sizeof(size_t)*len_output_perm;
+
+	  len_scaling = ((size_t*)data_ptr)[0];
+	  scaling = dev_ptr + sizeof(size_t);
+      data_ptr += sizeof(size_t) + sizeof(size_t)*len_scaling;
+      dev_ptr  += sizeof(size_t) + sizeof(size_t)*len_scaling;
+	}
+	{
+      size_t interac_indx = 0;
+      size_t interac_blk_dsp = 0;
+      for (size_t k = 0; k < len_interac_blk; k++) {
+        size_t vec_cnt = 0;
+        for (size_t j = interac_blk_dsp; j < interac_blk_dsp + interac_blk[k]; j++) 
+		  vec_cnt += interac_cnt[j];
+
+        char *buff_in =&buff[0];
+        char *buff_out=&buff[vec_cnt*dof*M_dim0*sizeof(Real_t)];
+
+        cuda_func<Real_t>::in_perm_h (precomp_data.dev_ptr, (uintptr_t) input_perm[0], 
+			input_data.dev_ptr, (uintptr_t) buff_in, interac_indx, M_dim0, vec_cnt);
+	  }
+	}
+  }
+}
+
+
+template <class FMMNode>
 void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
   if(setup_data.interac_data.Dim(0)==0 || setup_data.interac_data.Dim(1)==0){
     Profile::Tic("Host2Device",&this->comm,false,25);
@@ -1477,6 +1571,11 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
     Profile::Toc();
     return;
   }
+
+#if defined(PVFMM_HAVE_CUDA)
+  EvalList_cuda(setup_data);
+  return;
+#endif
 
   Profile::Tic("Host2Device",&this->comm,false,25);
   typename Vector<char>::Device          buff;
@@ -1549,7 +1648,6 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
     if(device) MIC_Lock::wait_lock(wait_lock_idx);
     #endif
 
-    std::cout << "cuda_func::in_perm_h()" << '\n';
     //Compute interaction from Chebyshev source density.
     { // interactions
       int omp_p=omp_get_max_threads();
@@ -1562,13 +1660,6 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
         char* buff_in =&buff[0];
         char* buff_out=&buff[vec_cnt*dof*M_dim0*sizeof(Real_t)];
 
-        // Input permutation.
-		/*
-        #if defined(PVFMM_HAVE_CUDA)
-        cuda_func<Real_t>::in_perm_h (precomp_data.dev_ptr, (uintptr_t) input_perm[0], input_data.dev_ptr,
-            (uintptr_t) buff_in, interac_indx, M_dim0, vec_cnt);
-        #else
-		*/
         #pragma omp parallel for
         for(int tid=0;tid<omp_p;tid++){
           size_t a=( tid   *vec_cnt)/omp_p;
@@ -1618,7 +1709,6 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
             #endif
           }
         }
-        //#endif
 
         size_t vec_cnt0=0;
         for(size_t j=interac_blk_dsp;j<interac_blk_dsp+interac_blk[k];){
@@ -3261,7 +3351,7 @@ void FMM_Pts<FMMNode>::X_ListSetup(SetupData<Real_t>&  setup_data, std::vector<M
 template <class FMMNode>
 void FMM_Pts<FMMNode>::X_List     (SetupData<Real_t>&  setup_data, bool device){
   //Add X_List contribution.
-  this->EvalListPts(setup_data, device);
+  //this->EvalListPts(setup_data, device);
 }
 
 
@@ -3311,7 +3401,7 @@ void FMM_Pts<FMMNode>::W_ListSetup(SetupData<Real_t>&  setup_data, std::vector<M
 template <class FMMNode>
 void FMM_Pts<FMMNode>::W_List     (SetupData<Real_t>&  setup_data, bool device){
   //Add W_List contribution.
-  this->EvalListPts(setup_data, device);
+  //this->EvalListPts(setup_data, device);
 }
 
 
@@ -3363,7 +3453,7 @@ void FMM_Pts<FMMNode>::U_ListSetup(SetupData<Real_t>& setup_data, std::vector<Ma
 template <class FMMNode>
 void FMM_Pts<FMMNode>::U_List     (SetupData<Real_t>&  setup_data, bool device){
   //Add U_List contribution.
-  this->EvalListPts(setup_data, device);
+  //this->EvalListPts(setup_data, device);
 }
 
 
@@ -3413,7 +3503,7 @@ void FMM_Pts<FMMNode>::Down2TargetSetup(SetupData<Real_t>&  setup_data, std::vec
 template <class FMMNode>
 void FMM_Pts<FMMNode>::Down2Target(SetupData<Real_t>&  setup_data, bool device){
   //Add Down2Target contribution.
-  this->EvalListPts(setup_data, device);
+  //this->EvalListPts(setup_data, device);
 }
 
 

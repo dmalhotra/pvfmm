@@ -17,10 +17,6 @@
 #include <kernel.hpp>
 #include <mpi_node.hpp>
 
-#if defined(PVFMM_HAVE_CUDA)
-#include <cuda_func.hpp>
-#endif
-
 namespace pvfmm{
 
 /**
@@ -134,6 +130,7 @@ class FMM_Pts{
   void SetupPrecomp(SetupData<Real_t>& setup_data, bool device=false);
   void SetupInterac(SetupData<Real_t>& setup_data, bool device=false);
   void EvalList    (SetupData<Real_t>& setup_data, bool device=false); // Run on CPU by default.
+  void EvalList_cuda(SetupData<Real_t>& setup_data);
 
   void SetupInteracPts(SetupData<Real_t>& setup_data, bool shift_src, bool shift_trg, Matrix<Real_t>* M, bool device);
   void EvalListPts    (SetupData<Real_t>& setup_data, bool device=false); // Run on CPU by default.
@@ -232,6 +229,9 @@ class FMM_Pts{
 
 }//end namespace
 
+#if defined(PVFMM_HAVE_CUDA)
+#include <cuda_func.hpp>
+#endif
 #include <fmm_pts.txx>
 
 #endif //_PVFMM_FMM_PTS_HPP_
