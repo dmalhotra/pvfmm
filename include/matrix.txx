@@ -308,8 +308,8 @@ void Matrix<T>::CUBLASXGEMM(Matrix<T>& M_r, const Matrix<T>& A, const Matrix<T>&
   assert(A.dim[1]==B.dim[0]);
   assert(M_r.dim[0]==A.dim[0]);
   assert(M_r.dim[1]==B.dim[1]);
-  mat::cublasXgemm('N','N',B.dim[1],A.dim[0],A.dim[1],
-      1.0,B.data_ptr,B.dim[1],A.data_ptr,A.dim[1],beta,M_r.data_ptr,M_r.dim[1]);
+  mat::cublasXgemm('N', 'N', B.dim[1], A.dim[0], A.dim[1],
+      1.0, B.data_ptr, B.dim[1], A.data_ptr, A.dim[1], beta, M_r.data_ptr, M_r.dim[1]);
 }
 #endif
 

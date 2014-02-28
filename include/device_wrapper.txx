@@ -28,7 +28,8 @@ namespace DeviceWrapper{
 	std::cout << "cudaMalloc();" << '\n';
     cudaError_t error;
     error = cudaMalloc((void**)&dev_ptr, len);
-	std::cout << cudaGetErrorString(error) << '\n';
+	std::cout << cudaGetErrorString(error) << ", " << (uintptr_t) dev_ptr << " - " 
+	  << (uintptr_t) dev_ptr + len << '\n';
     #endif
     return (uintptr_t)dev_ptr;
   }
@@ -42,7 +43,7 @@ namespace DeviceWrapper{
 
   inline int host2device_cuda(char *host_ptr, char *dev_ptr, size_t len) {
     #if defined(PVFMM_HAVE_CUDA)
-	std::cout << "cudaHostRegister(), cudaMemcpyAsync(HostToDevice);" << '\n';
+	//std::cout << "cudaHostRegister(), cudaMemcpyAsync(HostToDevice);" << '\n';
     cudaError_t error;
     cudaStream_t *stream = CUDA_Lock::acquire_stream(0);
     error = cudaHostRegister(host_ptr, len, cudaHostRegisterPortable);
@@ -55,7 +56,7 @@ namespace DeviceWrapper{
 
   inline int device2host_cuda(char *dev_ptr, char *host_ptr, size_t len) {
     #if defined(PVFMM_HAVE_CUDA)
-	std::cout << "cudaHostRegister(), cudaMemcpyAsync(DeviceToHost);" << '\n';
+	//std::cout << "cudaHostRegister(), cudaMemcpyAsync(DeviceToHost);" << '\n';
     cudaError_t error;
     cudaStream_t *stream = CUDA_Lock::acquire_stream(0);
     error = cudaHostRegister(host_ptr, len, cudaHostRegisterPortable);

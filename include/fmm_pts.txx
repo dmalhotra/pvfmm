@@ -1470,41 +1470,42 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
 
 template <class FMMNode>
 void FMM_Pts<FMMNode>::EvalList_cuda(SetupData<Real_t>& setup_data) {
-  typename Vector<char>::Device          buff;
-  typename Matrix<char>::Device  precomp_data;
-  //typename Matrix<char>::Device  interac_data;
-  Matrix<char> interac_data;
-  typename Matrix<char>::Device  interac_data_d;
-  typename Matrix<Real_t>::Device  input_data;
-  typename Matrix<Real_t>::Device output_data;
+  typename Vector<char>::Device buff_d;
+  typename Matrix<char>::Device precomp_data_d;
+  typename Matrix<char>::Device interac_data;
+  typename Matrix<char>::Device interac_data_d;
+  typename Matrix<Real_t>::Device input_data_d;
+  typename Matrix<Real_t>::Device output_data_d;
 
   /* Take CPU pointer first. */
   {
-    buff        =       this-> cpu_buffer;
-    precomp_data=*setup_data.precomp_data;
     interac_data= setup_data.interac_data;
-    input_data  =*setup_data.  input_data;
-    output_data =*setup_data. output_data;
   }
+  /* Take GPU pointer now. */
   {
+    buff_d = this->dev_buffer.AllocDevice(false);
+    precomp_data_d = setup_data.precomp_data->AllocDevice(false);
     interac_data_d = setup_data.interac_data.AllocDevice(false);
+    input_data_d = setup_data.input_data->AllocDevice(false);
+    output_data_d = setup_data.output_data->AllocDevice(false);
   }
   {
     size_t data_size, M_dim0, M_dim1, dof;
 	size_t len_interac_blk, len_interac_cnt, len_interac_mat, len_input_perm,
 		   len_output_perm, len_scaling;
-    char *interac_blk;
-    char *interac_cnt;
-    char *interac_mat;
-    char *input_perm;
-    char *output_perm;
-    char *scaling;
+	/* CPU pointers */
+    //char *interac_blk, *interac_cnt, *interac_mat;
+    Vector<size_t> interac_blk;
+    Vector<size_t> interac_cnt;
+    Vector<size_t> interac_mat;
+	/* GPU pointers */
+    char *input_perm_d, *output_perm_d, *scaling_d;
 	{
       char* data_ptr=&interac_data[0][0];
       char *dev_ptr;
 
 	  /* Take GPU initial pointer for later computation. */
-	  dev_ptr = (char*)interac_data_d.dev_ptr;
+	  dev_ptr = (char *) interac_data_d.dev_ptr;
 
       data_size=((size_t*)data_ptr)[0]; data_ptr+=data_size;
       data_size=((size_t*)data_ptr)[0]; data_ptr+=sizeof(size_t);
@@ -1513,49 +1514,107 @@ void FMM_Pts<FMMNode>::EvalList_cuda(SetupData<Real_t>& setup_data) {
       dof      =((size_t*)data_ptr)[0]; data_ptr+=sizeof(size_t);
 
 	  /* Update CPU and GPU pointers at the same time. */
-      len_interac_blk = ((size_t*)data_ptr)[0];
-	  interac_blk = dev_ptr + sizeof(size_t);
+      len_interac_blk = ((size_t *) data_ptr)[0];
+	  /* CPU pointer */
+      interac_blk.ReInit(((size_t*)data_ptr)[0],(size_t*)(data_ptr+sizeof(size_t)),false);
+	  //interac_blk = data_ptr + sizeof(size_t);
       data_ptr += sizeof(size_t) + sizeof(size_t)*len_interac_blk;
       dev_ptr  += sizeof(size_t) + sizeof(size_t)*len_interac_blk;
 
       len_interac_cnt = ((size_t*)data_ptr)[0];
-	  interac_cnt = dev_ptr + sizeof(size_t);
+	  /* CPU pointer */
+      interac_cnt.ReInit(((size_t*)data_ptr)[0],(size_t*)(data_ptr+sizeof(size_t)),false);
+	  //interac_cnt = data_ptr + sizeof(size_t);
       data_ptr += sizeof(size_t) + sizeof(size_t)*len_interac_cnt;
       dev_ptr  += sizeof(size_t) + sizeof(size_t)*len_interac_cnt;
       
-	  len_interac_mat = ((size_t*)data_ptr)[0];
-	  interac_mat = dev_ptr + sizeof(size_t);
+	  len_interac_mat = ((size_t *) data_ptr)[0];
+	  /* CPU pointer */
+      interac_mat.ReInit(((size_t*)data_ptr)[0],(size_t*)(data_ptr+sizeof(size_t)),false);
+	  //interac_mat = data_ptr + sizeof(size_t);
       data_ptr += sizeof(size_t) + sizeof(size_t)*len_interac_mat;
       dev_ptr  += sizeof(size_t) + sizeof(size_t)*len_interac_mat;
 
-	  len_input_perm = ((size_t*)data_ptr)[0];
-	  input_perm = dev_ptr + sizeof(size_t);
+	  len_input_perm = ((size_t *) data_ptr)[0];
+	  /* GPU pointer */
+	  input_perm_d = dev_ptr + sizeof(size_t);
       data_ptr += sizeof(size_t) + sizeof(size_t)*len_input_perm;
       dev_ptr  += sizeof(size_t) + sizeof(size_t)*len_input_perm;
 
-	  len_output_perm = ((size_t*)data_ptr)[0];
-	  output_perm = dev_ptr + sizeof(size_t);
+	  len_output_perm = ((size_t *) data_ptr)[0];
+	  /* GPU pointer */
+	  output_perm_d = dev_ptr + sizeof(size_t);
       data_ptr += sizeof(size_t) + sizeof(size_t)*len_output_perm;
       dev_ptr  += sizeof(size_t) + sizeof(size_t)*len_output_perm;
 
-	  len_scaling = ((size_t*)data_ptr)[0];
-	  scaling = dev_ptr + sizeof(size_t);
+	  len_scaling = ((size_t *) data_ptr)[0];
+	  /* GPU pointer */
+	  scaling_d = dev_ptr + sizeof(size_t);
       data_ptr += sizeof(size_t) + sizeof(size_t)*len_scaling;
       dev_ptr  += sizeof(size_t) + sizeof(size_t)*len_scaling;
 	}
 	{
       size_t interac_indx = 0;
       size_t interac_blk_dsp = 0;
+
+	  std::cout << "Before Loop. " << '\n';
+
       for (size_t k = 0; k < len_interac_blk; k++) {
         size_t vec_cnt = 0;
+
         for (size_t j = interac_blk_dsp; j < interac_blk_dsp + interac_blk[k]; j++) 
-		  vec_cnt += interac_cnt[j];
+		    vec_cnt += interac_cnt[j];
 
-        char *buff_in =&buff[0];
-        char *buff_out=&buff[vec_cnt*dof*M_dim0*sizeof(Real_t)];
+		/* Computer GPU buffer pointer. */
+        char *buff_in, *buff_out;
+		buff_in = (char *) buff_d.dev_ptr;
+        buff_out = (char *) buff_d.dev_ptr + vec_cnt*dof*M_dim0*sizeof(Real_t);
+/*
+	    std::cout << "GPU pointer check: " << '\n';
+	    std::cout << "precomp_data_d: " << precomp_data_d.dev_ptr << '\n';
+	    std::cout << "input_perm_d:" << (uintptr_t) input_perm_d << '\n';
+	    std::cout << "input_data_d: " << input_data_d.dev_ptr << '\n';
+	    std::cout << "buff_in:" << (uintptr_t) buff_in << '\n';
+	    std::cout << "CPU value check: " << '\n';
+		std::cout << "sizeof(int): " << sizeof(int) << ", sizeof(size_t): " << sizeof(size_t) << '\n'; 
+		std::cout << "sizeof(unsigned long int): " << sizeof(unsigned long int) << '\n'; 
+		std::cout << "interac_indx: " << (int) interac_indx << '\n';
+		std::cout << "M_dim0: " << M_dim0 << '\n';
+		std::cout << "vec_cnt: " << vec_cnt << '\n';
+*/
+		/* GPU Kernel call */
+		/*
+        cuda_func<Real_t>::in_perm_h (precomp_data_d.dev_ptr, (uintptr_t) input_perm_d, 
+			input_data_d.dev_ptr, (uintptr_t) buff_in, interac_indx,  M_dim0, vec_cnt);
+			*/
+        cuda_func<Real_t>::in_perm_h ((char *)precomp_data_d.dev_ptr, input_perm_d, 
+			(char *) input_data_d.dev_ptr, buff_in, interac_indx,  M_dim0, vec_cnt);
+	    std::cout << "End GPU input permutation, " << '\n';
 
-        cuda_func<Real_t>::in_perm_h (precomp_data.dev_ptr, (uintptr_t) input_perm[0], 
-			input_data.dev_ptr, (uintptr_t) buff_in, interac_indx, M_dim0, vec_cnt);
+        size_t vec_cnt0 = 0;
+        for (size_t j = interac_blk_dsp; j < interac_blk_dsp + interac_blk[k];) {
+          size_t vec_cnt1 = 0;
+          size_t interac_mat0 = interac_mat[j];
+
+          for (; j < interac_blk_dsp + interac_blk[k] && interac_mat[j] == interac_mat0; j++) 
+			vec_cnt1 += interac_cnt[j];
+
+		  /* Check the constructor process for GPU matrix. Not sure interac_mat0's size! */
+          Matrix<Real_t> M(M_dim0, M_dim1, (Real_t*)(precomp_data_d.dev_ptr + interac_mat0), false);
+          Matrix<Real_t> Ms(dof*vec_cnt1, M_dim0, (Real_t*)(buff_in + M_dim0*vec_cnt0*dof*sizeof(Real_t)), false);
+          Matrix<Real_t> Mt(dof*vec_cnt1, M_dim1, (Real_t*)(buff_out + M_dim1*vec_cnt0*dof*sizeof(Real_t)), false);
+	      std::cout << "buff_in:" << (uintptr_t) (buff_in + M_dim0*vec_cnt0*dof*sizeof(Real_t)) << '\n';
+	      std::cout << "buff_out:" << (uintptr_t) (buff_out + M_dim1*vec_cnt0*dof*sizeof(Real_t)) << '\n';
+          Matrix<Real_t>::CUBLASXGEMM(Mt,Ms,M);
+
+          vec_cnt0 += vec_cnt1;
+        }
+
+        cuda_func<Real_t>::out_perm_h (scaling_d, (char *) precomp_data_d.dev_ptr, output_perm_d, 
+			(char *) output_data_d.dev_ptr, buff_out, interac_indx, M_dim1, vec_cnt);
+
+        interac_indx += vec_cnt;
+        interac_blk_dsp += interac_blk[k];
 	  }
 	}
   }
@@ -1716,15 +1775,6 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
           size_t interac_mat0=interac_mat[j];
           for(;j<interac_blk_dsp+interac_blk[k] && interac_mat[j]==interac_mat0;j++) vec_cnt1+=interac_cnt[j];
           Matrix<Real_t> M(M_dim0, M_dim1, (Real_t*)(precomp_data[0]+interac_mat0), false);
-		  /*
-          #if defined(PVFMM_HAVE_CUDA)
-          {
-            Matrix<Real_t> Ms(dof*vec_cnt1, M_dim0, (Real_t*)(buff_in +M_dim0*vec_cnt0*dof*sizeof(Real_t)), false);
-            Matrix<Real_t> Mt(dof*vec_cnt1, M_dim1, (Real_t*)(buff_out+M_dim1*vec_cnt0*dof*sizeof(Real_t)), false);
-            Matrix<Real_t>::CUBLASXGEMM(Mt,Ms,M);
-          }
-          #else
-		  */
           #ifdef __MIC__
           {
             Matrix<Real_t> Ms(dof*vec_cnt1, M_dim0, (Real_t*)(buff_in +M_dim0*vec_cnt0*dof*sizeof(Real_t)), false);
@@ -1741,17 +1791,9 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
             Matrix<Real_t>::DGEMM(Mt,Ms,M);
           }
           #endif
-          //#endif
           vec_cnt0+=vec_cnt1;
         }
 
-        // Output permutation.
-		/*
-        #if defined(PVFMM_HAVE_CUDA)
-        cuda_func<Real_t>::out_perm_h ((uintptr_t) scaling[0], precomp_data.dev_ptr, (uintptr_t) output_perm[0], output_data.dev_ptr,
-            (uintptr_t) buff_out, interac_indx, M_dim1, vec_cnt);
-        #else
-		*/
         #pragma omp parallel for
         for(int tid=0;tid<omp_p;tid++){
           size_t a=( tid   *vec_cnt)/omp_p;
@@ -1813,7 +1855,6 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
             #endif
           }
         }
-        //#endif
 
         interac_indx+=vec_cnt;
         interac_blk_dsp+=interac_blk[k];

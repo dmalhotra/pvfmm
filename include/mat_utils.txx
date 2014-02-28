@@ -33,30 +33,31 @@ namespace mat{
 
 #if defined(PVFMM_HAVE_CUDA)
 // cublasDgemm wrapper
-  inline void cublasXgemm(char TransA, char TransB,  int M,  int N,  int K,  double alpha,  double *A,  int lda,  double *B,  int ldb,  double beta, double *C,  int ldc){
+  inline void cublasXgemm(char TransA, char TransB, int M, int N, int K, double alpha, 
+	  double *A, int lda, double *B, int ldb, double beta, double *C, int ldc){
     cublasOperation_t cublasTransA, cublasTransB;
     cublasStatus_t status;
     cublasHandle_t *handle;
     handle = CUDA_Lock::acquire_handle();
     /* Need exeception handling if (handle) */
     if (TransA == 'T' || TransA == 't') cublasTransA = CUBLAS_OP_T;
-    else if (TransA == 'N' || TransA == 'n') cublasTransA = CUBLAS_OP_T;
+    else if (TransA == 'N' || TransA == 'n') cublasTransA = CUBLAS_OP_N;
     if (TransB == 'T' || TransB == 't') cublasTransB = CUBLAS_OP_T;
-    else if (TransB == 'N' || TransB == 'n') cublasTransB = CUBLAS_OP_T;
+    else if (TransB == 'N' || TransB == 'n') cublasTransB = CUBLAS_OP_N;
     status = cublasDgemm(*handle, cublasTransA, cublasTransB, M, N, K, &alpha, A, lda, B, ldb, &beta, C, ldc);
   }
 
-// cublasDgemm wrapper
-  inline void cublasXgemm(char TransA, char TransB,  int M,  int N,  int K,  float alpha,  float *A,  int lda,  float *B,  int ldb,  float beta, float *C,  int ldc){
+// cublasSgemm wrapper
+  inline void cublasXgemm(char TransA, char TransB, int M, int N, int K, float alpha,  
+	  float *A, int lda, float *B, int ldb, float beta, float *C, int ldc) {
     cublasOperation_t cublasTransA, cublasTransB;
     cublasStatus_t status;
     cublasHandle_t *handle;
     handle = CUDA_Lock::acquire_handle();
-    /* Need exeception handling if (handle) */
     if (TransA == 'T' || TransA == 't') cublasTransA = CUBLAS_OP_T;
-    else if (TransA == 'N' || TransA == 'n') cublasTransA = CUBLAS_OP_T;
+    else if (TransA == 'N' || TransA == 'n') cublasTransA = CUBLAS_OP_N;
     if (TransB == 'T' || TransB == 't') cublasTransB = CUBLAS_OP_T;
-    else if (TransB == 'N' || TransB == 'n') cublasTransB = CUBLAS_OP_T;
+    else if (TransB == 'N' || TransB == 'n') cublasTransB = CUBLAS_OP_N;
     status = cublasSgemm(*handle, cublasTransA, cublasTransB, M, N, K, &alpha, A, lda, B, ldb, &beta, C, ldc);
   }
 #endif

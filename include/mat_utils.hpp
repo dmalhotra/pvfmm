@@ -19,7 +19,6 @@ namespace mat{
 
   // cublasXgemm wrapper
   void cublasXgemm(char TransA, char TransB,  int M,  int N,  int K,  float alpha,  float *A,  int lda,  float *B,  int ldb,  float beta, float *C,  int ldc);
-
   void cublasXgemm(char TransA, char TransB,  int M,  int N,  int K,  double alpha,  double *A,  int lda,  double *B,  int ldb,  double beta, double *C,  int ldc);
 
   void svd(char *JOBU, char *JOBVT, int *M, int *N, float *A, int *LDA,
