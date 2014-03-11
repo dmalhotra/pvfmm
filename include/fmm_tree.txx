@@ -484,12 +484,14 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
   std::vector<FMM_Node_t*> leaf_nodes;
   int max_depth=0;
   { // Build leaf node list
+    int max_depth_loc=0;
     std::vector<FMM_Node_t*>& nodes=this->GetNodeList();
     for(size_t i=0;i<nodes.size();i++){
       FMM_Node_t* n=nodes[i];
       if(!n->IsGhost() && n->IsLeaf()) leaf_nodes.push_back(n);
-      if(n->Depth()>max_depth) max_depth=n->Depth();
+      if(n->Depth()>max_depth_loc) max_depth_loc=n->Depth();
     }
+    MPI_Allreduce(&max_depth_loc, &max_depth, 1, MPI_INT, MPI_MAX, *this->Comm());
   }
   Profile::Toc();
 

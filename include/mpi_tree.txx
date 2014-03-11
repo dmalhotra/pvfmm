@@ -1319,7 +1319,7 @@ void MPI_Tree<TreeNode>::ConstructLET(BoundaryType bndry){
           srctrg_ptr.push_back(p.data);
           srctrg_ptr.push_back(data_ptr);
           send_length+=p.length+sizeof(size_t);
-          assert(send_length<=(int)send_buff_vec.size()); //TODO: resize if needed.
+          assert((size_t)send_length<=send_buff_vec.size()); //TODO: resize if needed.
         }
         if(!node_flag1[i]){ // Free memory slot.
           //assert(node_flag0[0]);
@@ -1347,8 +1347,8 @@ void MPI_Tree<TreeNode>::ConstructLET(BoundaryType bndry){
     if(extra_partner) MPI_Sendrecv(&extra_send_length,1,MPI_INT,split_p,0,&extra_recv_length,1,MPI_INT,split_p,0,*Comm(),&status);
 
     //SendRecv data.
-    assert(send_length                  <=(int)send_buff_vec.size()); send_buff=&send_buff_vec[0];
-    assert(recv_length+extra_recv_length<=(int)recv_buff_vec.size()); recv_buff=&recv_buff_vec[0];
+    assert((size_t)send_length                  <=send_buff_vec.size()); send_buff=&send_buff_vec[0];
+    assert((size_t)recv_length+extra_recv_length<=recv_buff_vec.size()); recv_buff=&recv_buff_vec[0];
     MPI_Sendrecv                  (send_buff,send_length,MPI_BYTE,partner,0, recv_buff             ,      recv_length,MPI_BYTE,partner,0,*Comm(),&status);
     if(extra_partner) MPI_Sendrecv(     NULL,          0,MPI_BYTE,split_p,0,&recv_buff[recv_length],extra_recv_length,MPI_BYTE,split_p,0,*Comm(),&status);
 

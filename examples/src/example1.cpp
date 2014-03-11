@@ -66,7 +66,7 @@ void fmm_test(size_t N, int mult_order, MPI_Comm comm){
   for(size_t i=0;i<src_value.size();i++) src_value[i]=drand48();
 
   // Construct tree.
-  size_t max_pts=100;
+  size_t max_pts=300;
   pvfmm::PtFMM_Tree* tree=PtFMM_CreateTree(src_coord, src_value, trg_coord, comm, max_pts, pvfmm::FreeSpace);
 
   // Load matrices.

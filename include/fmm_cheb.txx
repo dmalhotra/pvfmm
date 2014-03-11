@@ -397,6 +397,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
 
     case S2U_Type:
     {
+      if(this->MultipoleOrder()==0) break;
       Real_t r=pow(0.5,level);
       Real_t c[3]={0,0,0};
 
@@ -427,6 +428,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
     }
     case D2T_Type:
     {
+      if(this->MultipoleOrder()==0) break;
       Matrix<Real_t>& M_s2t=FMM_Pts<FMMNode>::Precomp(level, type, mat_indx);
       int n_trg=M_s2t.Dim(1)/this->kernel.ker_dim[1];
 
@@ -572,6 +574,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
     }
     case W_Type:
     {
+      if(this->MultipoleOrder()==0) break;
       Matrix<Real_t>& M_s2t=FMM_Pts<FMMNode>::Precomp(level, type, mat_indx);
       int n_trg=M_s2t.Dim(1)/this->kernel.ker_dim[1];
 
@@ -591,6 +594,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
     }
     case X_Type:
     {
+      if(this->MultipoleOrder()==0) break;
       // Coord of target points
       Real_t s=pow(0.5,level-1);
       int* coord=this->interac_list.RelativeCoord(type,mat_indx);
@@ -710,6 +714,7 @@ void FMM_Cheb<FMMNode>::CollectNodeData(std::vector<FMMNode*>& node, std::vector
 
 template <class FMMNode>
 void FMM_Cheb<FMMNode>::Source2UpSetup(SetupData<Real_t>& setup_data, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device){
+  if(this->MultipoleOrder()==0) return;
   FMM_Pts<FMMNode>::Source2UpSetup(setup_data, buff, n_list, level, device);
 
   { // Set setup_data
@@ -748,6 +753,7 @@ void FMM_Cheb<FMMNode>::Source2Up     (SetupData<Real_t>& setup_data, bool devic
 
 template <class FMMNode>
 void FMM_Cheb<FMMNode>::X_ListSetup(SetupData<Real_t>& setup_data, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device){
+  if(this->MultipoleOrder()==0) return;
   FMM_Pts<FMMNode>::X_ListSetup(setup_data, buff, n_list, level, device);
 
   { // Set setup_data
@@ -792,6 +798,7 @@ void FMM_Cheb<FMMNode>::X_List     (SetupData<Real_t>& setup_data, bool device){
 
 template <class FMMNode>
 void FMM_Cheb<FMMNode>::W_ListSetup(SetupData<Real_t>& setup_data, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device){
+  if(this->MultipoleOrder()==0) return;
   { // Set setup_data
     setup_data.level=level;
     setup_data.kernel=&this->kernel;
@@ -879,6 +886,7 @@ void FMM_Cheb<FMMNode>::U_List     (SetupData<Real_t>& setup_data, bool device){
 
 template <class FMMNode>
 void FMM_Cheb<FMMNode>::Down2TargetSetup(SetupData<Real_t>& setup_data, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device){
+  if(this->MultipoleOrder()==0) return;
   { // Set setup_data
     setup_data.level=level;
     setup_data.kernel=&this->kernel;

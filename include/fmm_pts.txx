@@ -457,6 +457,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
 
     case UC2UE_Type:
     {
+      if(MultipoleOrder()==0) break;
       // Coord of upward check surface
       Real_t c[3]={0,0,0};
       std::vector<Real_t> uc_coord=u_check_surf(MultipoleOrder(),c,level);
@@ -476,6 +477,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
     }
     case DC2DE_Type:
     {
+      if(MultipoleOrder()==0) break;
       // Coord of downward check surface
       Real_t c[3]={0,0,0};
       std::vector<Real_t> check_surf=d_check_surf(MultipoleOrder(),c,level);
@@ -499,6 +501,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
     }
     case U2U_Type:
     {
+      if(MultipoleOrder()==0) break;
       // Coord of upward check surface
       Real_t c[3]={0,0,0};
       std::vector<Real_t> check_surf=u_check_surf(MultipoleOrder(),c,level);
@@ -522,6 +525,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
     }
     case D2D_Type:
     {
+      if(MultipoleOrder()==0) break;
       // Coord of downward check surface
       Real_t s=pow(0.5,level+1);
       int* coord=interac_list.RelativeCoord(type,mat_indx);
@@ -545,6 +549,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
     }
     case D2T_Type:
     {
+      if(MultipoleOrder()==0) break;
       std::vector<Real_t>& rel_trg_coord=mat->RelativeTrgCoord();
 
       // Coord of target points
@@ -579,6 +584,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
     }
     case V_Type:
     {
+      if(MultipoleOrder()==0) break;
       int n1=MultipoleOrder()*2;
       int n3 =n1*n1*n1;
       int n3_=n1*n1*(n1/2+1);
@@ -625,6 +631,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
     }
     case V1_Type:
     {
+      if(MultipoleOrder()==0) break;
       size_t mat_cnt =interac_list.ListCount( V_Type);
       for(size_t k=0;k<mat_cnt;k++) Precomp(level, V_Type, k);
 
@@ -669,6 +676,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
     }
     case W_Type:
     {
+      if(MultipoleOrder()==0) break;
       std::vector<Real_t>& rel_trg_coord=mat->RelativeTrgCoord();
 
       // Coord of target points
@@ -696,6 +704,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
     }
     case BC_Type:
     {
+      if(MultipoleOrder()==0) break;
       size_t mat_cnt_m2m=interac_list.ListCount(U2U_Type);
       size_t n_surf=(6*(MultipoleOrder()-1)*(MultipoleOrder()-1)+2);  //Total number of points.
       if((M.Dim(0)!=n_surf*aux_ker_dim[0] || M.Dim(1)!=n_surf*aux_ker_dim[1]) && level==0){
@@ -950,7 +959,6 @@ void FMM_Pts<FMMNode>::PrecompAll(Mat_Type type, int level){
     //#pragma omp parallel for //lets use fine grained parallelism
     for(size_t mat_indx=0;mat_indx<mat_cnt;mat_indx++){
       Matrix<Real_t>& M0=interac_list.ClassMat(level,(Mat_Type)type,mat_indx);
-      assert(M0.Dim(0)>0 && M0.Dim(1)>0);
       Permutation<Real_t>& pr=interac_list.Perm_R(level, (Mat_Type)type, mat_indx);
       Permutation<Real_t>& pc=interac_list.Perm_C(level, (Mat_Type)type, mat_indx);
       if(pr.Dim()!=M0.Dim(0) || pc.Dim()!=M0.Dim(1)) Precomp(level, (Mat_Type)type, mat_indx);
@@ -1726,6 +1734,7 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
 
 template <class FMMNode>
 void FMM_Pts<FMMNode>::Source2UpSetup(SetupData<Real_t>&  setup_data, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device){
+  if(this->MultipoleOrder()==0) return;
   { // Set setup_data
     setup_data.level=level;
     setup_data.kernel=&aux_kernel;
@@ -1777,6 +1786,7 @@ void FMM_Pts<FMMNode>::Source2Up(SetupData<Real_t>&  setup_data, bool device){
 
 template <class FMMNode>
 void FMM_Pts<FMMNode>::Up2UpSetup(SetupData<Real_t>& setup_data, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device){
+  if(this->MultipoleOrder()==0) return;
   { // Set setup_data
     setup_data.level=level;
     setup_data.kernel=&aux_kernel;
@@ -1814,6 +1824,7 @@ void FMM_Pts<FMMNode>::Up2Up     (SetupData<Real_t>& setup_data, bool device){
 
 template <class FMMNode>
 void FMM_Pts<FMMNode>::PeriodicBC(FMMNode* node){
+  if(this->MultipoleOrder()==0) return;
   Matrix<Real_t>& M = Precomp(0, BC_Type, 0);
 
   assert(node->FMMData()->upward_equiv.Dim()>0);
@@ -2362,6 +2373,7 @@ void VListHadamard(size_t dof, size_t M_dim, size_t ker_dim0, size_t ker_dim1, V
 
 template <class FMMNode>
 void FMM_Pts<FMMNode>::V_ListSetup(SetupData<Real_t>&  setup_data, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device){
+  if(this->MultipoleOrder()==0) return;
   if(level==0) return;
   { // Set setup_data
     setup_data.level=level;
@@ -2711,6 +2723,7 @@ void FMM_Pts<FMMNode>::V_List     (SetupData<Real_t>&  setup_data, bool device){
 
 template <class FMMNode>
 void FMM_Pts<FMMNode>::Down2DownSetup(SetupData<Real_t>& setup_data, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device){
+  if(this->MultipoleOrder()==0) return;
   { // Set setup_data
     setup_data.level=level;
     setup_data.kernel=&aux_kernel;
@@ -3129,6 +3142,7 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
 
 template <class FMMNode>
 void FMM_Pts<FMMNode>::X_ListSetup(SetupData<Real_t>&  setup_data, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device){
+  if(this->MultipoleOrder()==0) return;
   { // Set setup_data
     setup_data.level=level;
     setup_data.kernel=&aux_kernel;
@@ -3181,6 +3195,7 @@ void FMM_Pts<FMMNode>::X_List     (SetupData<Real_t>&  setup_data, bool device){
 
 template <class FMMNode>
 void FMM_Pts<FMMNode>::W_ListSetup(SetupData<Real_t>&  setup_data, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device){
+  if(this->MultipoleOrder()==0) return;
   { // Set setup_data
     setup_data.level=level;
     setup_data.kernel=&kernel;
@@ -3283,6 +3298,7 @@ void FMM_Pts<FMMNode>::U_List     (SetupData<Real_t>&  setup_data, bool device){
 
 template <class FMMNode>
 void FMM_Pts<FMMNode>::Down2TargetSetup(SetupData<Real_t>&  setup_data, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device){
+  if(this->MultipoleOrder()==0) return;
   { // Set setup_data
     setup_data.level=level;
     setup_data.kernel=&kernel;

@@ -117,7 +117,7 @@ for (( k=0; k<${#nodes[@]}; k++ )) ; do
         qsub -l nodes=${NODES}:ppn=$((${MPI_PROC}/${NODES})) \
              -o ${FNAME}.out -e ${FNAME}.err \
              -l walltime=${TOTAL_TIME} \
-             ./scripts/.job.qsub
+             ./scripts/.job.ronaldo
       ;;
     *) # none of the known machines
       if command -v qsub >/dev/null; then # Portable Batch System
