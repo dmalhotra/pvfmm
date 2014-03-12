@@ -15,8 +15,6 @@
 #define NULL 0
 #endif
 
-//#define LAZY_MAT_COMP //TODO: Implement this.
-
 //Disable assert checks.
 //#define NDEBUG
 

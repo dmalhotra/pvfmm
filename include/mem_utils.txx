@@ -25,9 +25,9 @@ namespace mem{
     assert(alignment <= 0x8000);
     size_t size=size_*sizeof(T);
     uintptr_t r = (uintptr_t)malloc(size + --alignment + 2);
-    assert(r!=0);
+    //if (!r) return NULL;
+    ASSERT_WITH_MSG(r!=0, "malloc failed.");
     uintptr_t o = (uintptr_t)(r + 2 + alignment) & ~(uintptr_t)alignment;
-    if (!r) return NULL;
     ((uint16_t*)o)[-1] = (uint16_t)(o-r);
     return (T*)o;
     //return (T*)fftw_malloc(size);

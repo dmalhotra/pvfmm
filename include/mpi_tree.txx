@@ -1121,6 +1121,11 @@ bool MPI_Tree<TreeNode>::CheckTree(){
   MPI_Comm_rank(*Comm(),&myrank);
   MPI_Comm_size(*Comm(),&np);
   std::vector<MortonId> mins=GetMins();
+
+  std::stringstream st;
+  st<<"PID_"<<myrank<<" : ";
+  std::string str;
+
   Node_t* n=this->PostorderFirst();
   while(n!=NULL){
     if(myrank<np-1) if(n->GetMortonId().getDFD()>=mins[myrank+1])break;
@@ -1140,7 +1145,8 @@ bool MPI_Tree<TreeNode>::CheckTree(){
   }
   while(n!=NULL){
     if(n->IsLeaf() && !n->IsGhost()){
-      assert(false);
+      st<<"non-ghost leaf node "<<n->GetMortonId()<<"; after last node.";
+      str=st.str(); ASSERT_WITH_MSG(false,str.c_str());
     }
     n=this->PostorderNxt(n);
   }
@@ -1259,17 +1265,11 @@ void MPI_Tree<TreeNode>::ConstructLET(BoundaryType bndry){
   //std::cout<<"Shared = "<<shared_nodes.size()<<'\n';
 
   // Pack shared nodes.
-#ifdef NDEBUG
   static std::vector<char> shrd_buff_vec0(omp_p*64l*1024l*1024l);
   static std::vector<char> shrd_buff_vec1(omp_p*128l*1024l*1024l);
   static std::vector<char> send_buff_vec(omp_p*64l*1024l*1024l); char* send_buff;
   static std::vector<char> recv_buff_vec(omp_p*64l*1024l*1024l); char* recv_buff;
-#else
-  std::vector<char> shrd_buff_vec0(omp_p*64l*1024l*1024l);
-  std::vector<char> shrd_buff_vec1(omp_p*128l*1024l*1024l);
-  std::vector<char> send_buff_vec(omp_p*64l*1024l*1024l); char* send_buff;
-  std::vector<char> recv_buff_vec(omp_p*64l*1024l*1024l); char* recv_buff;
-#endif
+
   std::vector<PackedData> shrd_data;
   size_t max_data_size=0;
   {
