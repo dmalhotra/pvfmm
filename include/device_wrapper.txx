@@ -28,8 +28,10 @@ namespace DeviceWrapper{
 	std::cout << "cudaMalloc();" << '\n';
     cudaError_t error;
     error = cudaMalloc((void**)&dev_ptr, len);
-	std::cout << cudaGetErrorString(error) << ", " << (uintptr_t) dev_ptr << " - " 
-	  << (uintptr_t) dev_ptr + len << '\n';
+	std::cout << cudaGetErrorString(error) << ", "
+	  << (uintptr_t) dev_ptr << " - " 
+	  << (uintptr_t) dev_ptr + len 
+	  << "(" << len << ")" << '\n';
     #endif
     return (uintptr_t)dev_ptr;
   }
@@ -46,9 +48,16 @@ namespace DeviceWrapper{
 	//std::cout << "cudaHostRegister(), cudaMemcpyAsync(HostToDevice);" << '\n';
     cudaError_t error;
     cudaStream_t *stream = CUDA_Lock::acquire_stream(0);
-    error = cudaHostRegister(host_ptr, len, cudaHostRegisterPortable);
-    error = cudaMemcpyAsync(dev_ptr, host_ptr, len, cudaMemcpyHostToDevice, *stream);
-    if (error != cudaSuccess) return -1;
+    //error = cudaHostRegister(host_ptr, len, cudaHostRegisterPortable);
+    //if (error != cudaSuccess) std::cout << "cudaHostRegister(): " << cudaGetErrorString(error) << '\n';
+    //error = cudaMemcpyAsync(dev_ptr, host_ptr, len, cudaMemcpyHostToDevice, *stream);
+    error = cudaMemcpy(dev_ptr, host_ptr, len, cudaMemcpyHostToDevice);
+    if (error != cudaSuccess) {
+	  std::cout << "cudaMemcpyAsync(HostToDevice): " << cudaGetErrorString(error) << ", " 
+		<< (uintptr_t) dev_ptr << ", len: "
+	    << len << '\n';	
+	  return -1;
+	}
     else return (int)len;
     #endif
     return -1;
@@ -59,9 +68,16 @@ namespace DeviceWrapper{
 	//std::cout << "cudaHostRegister(), cudaMemcpyAsync(DeviceToHost);" << '\n';
     cudaError_t error;
     cudaStream_t *stream = CUDA_Lock::acquire_stream(0);
-    error = cudaHostRegister(host_ptr, len, cudaHostRegisterPortable);
-    error = cudaMemcpyAsync(host_ptr, dev_ptr, len, cudaMemcpyDeviceToHost, *stream);
-    if (error != cudaSuccess) return -1;
+    //error = cudaHostRegister(host_ptr, len, cudaHostRegisterPortable);
+    //if (error != cudaSuccess) std::cout << "cudaHostRegister(): " << cudaGetErrorString(error) << '\n';
+    //error = cudaMemcpyAsync(host_ptr, dev_ptr, len, cudaMemcpyDeviceToHost, *stream);
+    error = cudaMemcpy(host_ptr, dev_ptr, len, cudaMemcpyDeviceToHost);
+    if (error != cudaSuccess) {
+	  std::cout << "cudaMemcpyAsnc(DeviceToHost): " << cudaGetErrorString(error) << ", " 
+		<< (uintptr_t) dev_ptr << ", len: "
+	    << len << '\n';	
+	  return -1;
+	}
     else return (int)len;
     #endif
     return -1;
@@ -309,7 +325,7 @@ namespace DeviceWrapper{
         error = cudaStreamCreate(&(stream[i]));
       }
       status = cublasCreate(&handle);
-      status = cublasSetStream(handle, stream[0]);
+      //status = cublasSetStream(handle, stream[0]);
       cuda_init = true;
     }
   }

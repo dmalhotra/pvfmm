@@ -33,6 +33,8 @@ class cuda_func {
 		size_t interac_indx, size_t M_dim0, size_t vec_cnt);
     static void out_perm_h (char *scaling, char *precomp_data, char *output_perm, char *output_data, char *buff_out, 
 		size_t interac_indx, size_t M_dim0, size_t vec_cnt);
+	static void compare_h (Real_t *gold, Real_t *mine, size_t n);
+	static void compare_h (size_t *gold, size_t *mine, size_t n);
 };
 
 template <class Real_t>
@@ -82,4 +84,29 @@ void cuda_func<Real_t>::out_perm_h (
 	  interac_indx, M_dim1, vec_cnt, stream);
 }
 
+template <class Real_t>
+void cuda_func<Real_t>::compare_h (
+  Real_t *gold,
+  Real_t *mine,
+  size_t n )
+{
+  for (int i = 0; i < n; i++) 
+    if (gold[i] != mine[i]) {
+      std::cout << "compare_h(): " << i << ", gold[i]: " << gold[i] << ", mine[i]: " << mine[i] << '\n';
+	  break;
+	} 
+}
+
+template <class Real_t>
+void cuda_func<Real_t>::compare_h (
+  size_t *gold,
+  size_t *mine,
+  size_t n )
+{
+  for (int i = 0; i < n; i++) 
+    if (gold[i] != mine[i]) {
+      std::cout << "compare_h(): " << i << ", gold[i]: " << gold[i] << ", mine[i]: " << mine[i] << '\n';
+	  break;
+	} 
+}
 #endif //_CUDA_FUNC_HPP_

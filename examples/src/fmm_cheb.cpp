@@ -229,7 +229,8 @@ void fmm_test(int test_case, size_t N, bool unif, int mult_order, int cheb_deg, 
       fn_grad_ =fn_grad_t1<Real_t>;
       mykernel     =pvfmm::LaplaceKernel<Real_t>::potn_ker;
       //mykernel_grad=pvfmm::LaplaceKernel<Real_t>::grad_ker;
-      bndry=pvfmm::Periodic;
+      //bndry=pvfmm::Periodic;
+      bndry=pvfmm::FreeSpace;
       break;
     case 2:
       fn_input_=fn_input_t2<Real_t>;
@@ -409,7 +410,7 @@ void fmm_test(int test_case, size_t N, bool unif, int mult_order, int cheb_deg, 
   CheckChebOutput<FMM_Tree_t>(tree, (typename TestFn<Real_t>::Fn_t) fn_poten_, mykernel->ker_dim[1], std::string("Output"));
 
   //Write2File
-  //tree->Write2File("result/output",0);
+  tree->Write2File("result/output",0);
 
   if(fn_grad_!=NULL){ //Compute gradient.
     pvfmm::Profile::Tic("FMM_Eval(Grad)",&comm,true,1);
