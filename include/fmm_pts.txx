@@ -1470,19 +1470,27 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
 
 template <class FMMNode>
 void FMM_Pts<FMMNode>::EvalList_cuda(SetupData<Real_t>& setup_data) {
+  Vector<char> dummy(1);
+  dummy.AllocDevice(true);
+  typename Vector<char>::Device buff;
   typename Vector<char>::Device buff_d;
+  typename Matrix<char>::Device precomp_data;
   typename Matrix<char>::Device precomp_data_d;
   typename Matrix<char>::Device interac_data;
   typename Matrix<char>::Device interac_data_d;
+  typename Matrix<Real_t>::Device input_data;
   typename Matrix<Real_t>::Device input_data_d;
+  typename Matrix<Real_t>::Device output_data;
   typename Matrix<Real_t>::Device output_data_d;
 
-  /* Return without any computation */
-  //return;
 
   /* Take CPU pointer first. */
   {
+    buff        =       this-> cpu_buffer;
+    precomp_data=*setup_data.precomp_data;
     interac_data= setup_data.interac_data;
+    input_data  =*setup_data.  input_data;
+    output_data =*setup_data. output_data;
   }
   /* Take GPU pointer now. */
   {
@@ -1494,21 +1502,24 @@ void FMM_Pts<FMMNode>::EvalList_cuda(SetupData<Real_t>& setup_data) {
   }
   {
     size_t data_size, M_dim0, M_dim1, dof;
-	size_t len_interac_blk, len_interac_cnt, len_interac_mat, len_input_perm,
-		   len_output_perm, len_scaling;
-	/* CPU pointers */
-    //char *interac_blk, *interac_cnt, *interac_mat;
+
+    /* CPU pointers */
     Vector<size_t> interac_blk;
     Vector<size_t> interac_cnt;
     Vector<size_t> interac_mat;
-	/* GPU pointers */
+    Vector<size_t> input_perm;
+    Vector<size_t> output_perm;
+    Vector<Real_t> scaling;
+
+    /* GPU pointers */
     char *input_perm_d, *output_perm_d, *scaling_d;
-	{
+
+    {
       char* data_ptr=&interac_data[0][0];
       char *dev_ptr;
 
-	  /* Take GPU initial pointer for later computation. */
-	  dev_ptr = (char *) interac_data_d.dev_ptr;
+      /* Take GPU initial pointer for later computation. */
+      dev_ptr = (char *) interac_data_d.dev_ptr;
 
       data_size=((size_t*)data_ptr)[0]; data_ptr+=data_size;      dev_ptr += data_size;
       data_size=((size_t*)data_ptr)[0]; data_ptr+=sizeof(size_t); dev_ptr += sizeof(size_t);
@@ -1516,74 +1527,90 @@ void FMM_Pts<FMMNode>::EvalList_cuda(SetupData<Real_t>& setup_data) {
       M_dim1   =((size_t*)data_ptr)[0]; data_ptr+=sizeof(size_t); dev_ptr += sizeof(size_t);
       dof      =((size_t*)data_ptr)[0]; data_ptr+=sizeof(size_t); dev_ptr += sizeof(size_t);
 
-	  /* Update CPU and GPU pointers at the same time. */
-      len_interac_blk = ((size_t *) data_ptr)[0];
-	  /* CPU pointer */
+      /* Update CPU and GPU pointers at the same time. */
+      /* CPU pointer */
       interac_blk.ReInit(((size_t*)data_ptr)[0],(size_t*)(data_ptr+sizeof(size_t)),false);
-      data_ptr += sizeof(size_t) + sizeof(size_t)*len_interac_blk;
-      dev_ptr  += sizeof(size_t) + sizeof(size_t)*len_interac_blk;
+      data_ptr += sizeof(size_t) + sizeof(size_t)*interac_blk.Dim();
+      dev_ptr  += sizeof(size_t) + sizeof(size_t)*interac_blk.Dim();
 
-      len_interac_cnt = ((size_t*)data_ptr)[0];
-	  /* CPU pointer */
+      //len_interac_cnt = ((size_t*)data_ptr)[0];
+      /* CPU pointer */
       interac_cnt.ReInit(((size_t*)data_ptr)[0],(size_t*)(data_ptr+sizeof(size_t)),false);
-      data_ptr += sizeof(size_t) + sizeof(size_t)*len_interac_cnt;
-      dev_ptr  += sizeof(size_t) + sizeof(size_t)*len_interac_cnt;
-      
-	  len_interac_mat = ((size_t *) data_ptr)[0];
-	  /* CPU pointer */
+      data_ptr += sizeof(size_t) + sizeof(size_t)*interac_cnt.Dim();
+      dev_ptr  += sizeof(size_t) + sizeof(size_t)*interac_cnt.Dim();
+
+      //len_interac_mat = ((size_t *) data_ptr)[0];
+      /* CPU pointer */
       interac_mat.ReInit(((size_t*)data_ptr)[0],(size_t*)(data_ptr+sizeof(size_t)),false);
-      data_ptr += sizeof(size_t) + sizeof(size_t)*len_interac_mat;
-      dev_ptr  += sizeof(size_t) + sizeof(size_t)*len_interac_mat;
+      data_ptr += sizeof(size_t) + sizeof(size_t)*interac_mat.Dim();
+      dev_ptr  += sizeof(size_t) + sizeof(size_t)*interac_mat.Dim();
 
-	  len_input_perm = ((size_t *) data_ptr)[0];
-	  /* GPU pointer */
-	  input_perm_d = dev_ptr + sizeof(size_t);
-      data_ptr += sizeof(size_t) + sizeof(size_t)*len_input_perm;
-      dev_ptr  += sizeof(size_t) + sizeof(size_t)*len_input_perm;
+      input_perm.ReInit(((size_t*)data_ptr)[0],(size_t*)(data_ptr+sizeof(size_t)),false);
+      /* GPU pointer */
+      input_perm_d = dev_ptr + sizeof(size_t);
+      data_ptr += sizeof(size_t) + sizeof(size_t)*input_perm.Dim();
+      dev_ptr  += sizeof(size_t) + sizeof(size_t)*input_perm.Dim();
 
-	  len_output_perm = ((size_t *) data_ptr)[0];
-	  /* GPU pointer */
-	  output_perm_d = dev_ptr + sizeof(size_t);
-      data_ptr += sizeof(size_t) + sizeof(size_t)*len_output_perm;
-      dev_ptr  += sizeof(size_t) + sizeof(size_t)*len_output_perm;
+      output_perm.ReInit(((size_t*)data_ptr)[0],(size_t*)(data_ptr+sizeof(size_t)),false);
+      /* GPU pointer */
+      output_perm_d = dev_ptr + sizeof(size_t);
+      data_ptr += sizeof(size_t) + sizeof(size_t)*output_perm.Dim();
+      dev_ptr  += sizeof(size_t) + sizeof(size_t)*output_perm.Dim();
 
-	  len_scaling = ((size_t *) data_ptr)[0];
-	  /* GPU pointer */
-	  scaling_d = dev_ptr + sizeof(size_t);
-      data_ptr += sizeof(size_t) + sizeof(size_t)*len_scaling;
-      dev_ptr  += sizeof(size_t) + sizeof(size_t)*len_scaling;
-	}
+      scaling.ReInit(((size_t*)data_ptr)[0],(Real_t*)(data_ptr+sizeof(size_t)),false);
+      /* GPU pointer */
+      scaling_d = dev_ptr + sizeof(size_t);
+      data_ptr += sizeof(size_t) + sizeof(size_t)*scaling.Dim();
+      dev_ptr  += sizeof(size_t) + sizeof(size_t)*scaling.Dim();
+    }
 
 	/* Call synchronization here to make sure all data has been copied. */
 	//CUDA_Lock::wait(0);
 
-	{
+    {
       size_t interac_indx = 0;
       size_t interac_blk_dsp = 0;
       cudaError_t error;
 
-	  std::cout << "Before Loop. " << '\n';
+      //std::cout << "Before Loop. " << '\n';
 
-      for (size_t k = 0; k < len_interac_blk; k++) {
+      for (size_t k = 0; k < interac_blk.Dim(); k++) {
         size_t vec_cnt = 0;
 
+        //std::cout << "interac_blk[0] : " << interac_blk[k] << '\n';
         for (size_t j = interac_blk_dsp; j < interac_blk_dsp + interac_blk[k]; j++) 
-		    vec_cnt += interac_cnt[j];
+          vec_cnt += interac_cnt[j];
 
-		/* Computer GPU buffer pointer. */
-        char *buff_in, *buff_out;
-		buff_in = (char *) buff_d.dev_ptr;
-        buff_out = (char *) buff_d.dev_ptr + vec_cnt*dof*M_dim0*sizeof(Real_t);
+        /* CPU Version */
+        char* buff_in =&buff[0];
+        char* buff_out=&buff[vec_cnt*dof*M_dim0*sizeof(Real_t)];
 
+        for(int i = 0; i < vec_cnt; i++) {
+          const PERM_INT_T*  perm=(PERM_INT_T*)(precomp_data[0]+input_perm[(interac_indx+i)*4+0]);
+          const     Real_t*  scal=(    Real_t*)(precomp_data[0]+input_perm[(interac_indx+i)*4+1]);
+          const     Real_t* v_in =(    Real_t*)(  input_data[0]+input_perm[(interac_indx+i)*4+3]);
+          Real_t*           v_out=(    Real_t*)(     buff_in   +input_perm[(interac_indx+i)*4+2]);
 
-		/* GPU Kernel call */	
-		cuda_func<Real_t>::in_perm_h ((char *)precomp_data_d.dev_ptr, input_perm_d, 
-			(char *) input_data_d.dev_ptr, buff_in, interac_indx,  M_dim0, vec_cnt);
-		
-		//CUDA_Lock::wait(0); 
-		error = cudaGetLastError();
+          if (i == 1) std::cout << "cpu input_perm[0, 1, 2] : " 
+            << input_perm[(interac_indx + i - 1)*4 + 2] 
+            << input_perm[(interac_indx + i    )*4 + 2] 
+            << input_perm[(interac_indx + i + 1)*4 + 2] 
+            << '\n';
+          for(size_t j = 0; j < M_dim0; j++) {
+            //v_out[j] = v_in[perm[j]]*scal[j];
+          }
+        }
+
+        /* GPU Kernel call */	
+        char *buff_in_d = (char *) buff_d.dev_ptr;
+        char *buff_out_d = (char *) (buff_d.dev_ptr + vec_cnt*dof*M_dim0*sizeof(Real_t));
+        cuda_func<Real_t>::in_perm_h ((char *)precomp_data_d.dev_ptr, input_perm_d, 
+            (char *) input_data_d.dev_ptr, buff_in_d, interac_indx,  M_dim0, vec_cnt);
+
+        //CUDA_Lock::wait(0); 
+        error = cudaGetLastError();
         if (error != cudaSuccess) 
-	       std::cout << "in_perm_h(): " << cudaGetErrorString(error) << '\n';
+          std::cout << "in_perm_h(): " << cudaGetErrorString(error) << '\n';
 
         size_t vec_cnt0 = 0;
         for (size_t j = interac_blk_dsp; j < interac_blk_dsp + interac_blk[k];) {
@@ -1591,34 +1618,70 @@ void FMM_Pts<FMMNode>::EvalList_cuda(SetupData<Real_t>& setup_data) {
           size_t interac_mat0 = interac_mat[j];
 
           for (; j < interac_blk_dsp + interac_blk[k] && interac_mat[j] == interac_mat0; j++) 
-			vec_cnt1 += interac_cnt[j];
+            vec_cnt1 += interac_cnt[j];
 
-		  /* Check the constructor process for GPU matrix. Not sure interac_mat0's size! */
-          Matrix<Real_t> M(M_dim0, M_dim1, (Real_t*)(precomp_data_d.dev_ptr + interac_mat0), false);
-          Matrix<Real_t> Ms(dof*vec_cnt1, M_dim0, (Real_t*)(buff_in + M_dim0*vec_cnt0*dof*sizeof(Real_t)), false);
-          Matrix<Real_t> Mt(dof*vec_cnt1, M_dim1, (Real_t*)(buff_out + M_dim1*vec_cnt0*dof*sizeof(Real_t)), false);
-	      //std::cout << "buff_in:" << (uintptr_t) (buff_in + M_dim0*vec_cnt0*dof*sizeof(Real_t)) << '\n';
-	      //std::cout << "buff_out:" << (uintptr_t) (buff_out + M_dim1*vec_cnt0*dof*sizeof(Real_t)) << '\n';
-          Matrix<Real_t>::CUBLASXGEMM(Mt,Ms,M);
+          /* Compare buff_in */
+          std::cout << M_dim0*vec_cnt0*dof*sizeof(Real_t) << '\n';
+          /*
+          cuda_func<Real_t>::compare_h(
+              (Real_t *) (buff_in   + M_dim0*vec_cnt0*dof*sizeof(Real_t)), 
+              (Real_t *) (buff_in_d + M_dim0*vec_cnt0*dof*sizeof(Real_t)), 
+              dof*vec_cnt1*M_dim0);
+*/
+          /* GPU Gemm */
+          Matrix<Real_t> M_d(M_dim0, M_dim1, (Real_t*)(precomp_data_d.dev_ptr + interac_mat0), false);
+          Matrix<Real_t> Ms_d(dof*vec_cnt1, M_dim0, (Real_t*)(buff_in_d +  M_dim0*vec_cnt0*dof*sizeof(Real_t)), false);
+          Matrix<Real_t> Mt_d(dof*vec_cnt1, M_dim1, (Real_t*)(buff_out_d + M_dim1*vec_cnt0*dof*sizeof(Real_t)), false);
+          Matrix<Real_t>::CUBLASXGEMM(Mt_d, Ms_d, M_d);
+
+          /* CPU Gemm */
+          /*
+          Matrix<Real_t> M(M_dim0, M_dim1, (Real_t*)(precomp_data[0]+interac_mat0), false);
+          Matrix<Real_t> Ms(dof*vec_cnt1, M_dim0, (Real_t*)(buff_in +M_dim0*vec_cnt0*dof*sizeof(Real_t)), false);
+          Matrix<Real_t> Mt(dof*vec_cnt1, M_dim1, (Real_t*)(buff_out+M_dim1*vec_cnt0*dof*sizeof(Real_t)), false);
+          Matrix<Real_t>::DGEMM(Mt,Ms,M);
+          */
+          //if (dof*vec_cnt1) std::cout << "cublasxgemm(" << dof*vec_cnt1 << ", " << M_dim1 << ")" << '\n';
+          
+/*
+          cuda_func<Real_t>::compare_h(
+              (Real_t *) (buff_out   + M_dim1*vec_cnt0*dof*sizeof(Real_t)), 
+              (Real_t *) (buff_out_d + M_dim1*vec_cnt0*dof*sizeof(Real_t)), 
+              dof*vec_cnt1*M_dim1);
+*/
+          std::cout << '\n';
 
           vec_cnt0 += vec_cnt1;
         }
-		//CUDA_Lock::wait(0);
-		error = cudaGetLastError();
+
+        //CUDA_Lock::wait(0);
+        error = cudaGetLastError();
         if (error != cudaSuccess) 
-	       std::cout << "cublasXgemm(): " << cudaGetErrorString(error) << '\n';
+          std::cout << "cublasXgemm(): " << cudaGetErrorString(error) << '\n';
+
+        for(int i = 0; i < vec_cnt; i++) {
+          Real_t scaling_factor=scaling[interac_indx+i];
+          const PERM_INT_T*  perm=(PERM_INT_T*)(precomp_data[0]+output_perm[(interac_indx+i)*4+0]);
+          const     Real_t*  scal=(    Real_t*)(precomp_data[0]+output_perm[(interac_indx+i)*4+1]);
+          const     Real_t* v_in =(    Real_t*)(    buff_out   +output_perm[(interac_indx+i)*4+2]);
+          Real_t*           v_out=(    Real_t*)( output_data[0]+output_perm[(interac_indx+i)*4+3]);
+          for(size_t j=0;j<M_dim1;j++ ){
+            //v_out[j]+=v_in[perm[j]]*scal[j]*scaling_factor;
+          }
+        }
         cuda_func<Real_t>::out_perm_h (scaling_d, (char *) precomp_data_d.dev_ptr, output_perm_d, 
-			(char *) output_data_d.dev_ptr, buff_out, interac_indx, M_dim1, vec_cnt);
-		//CUDA_Lock::wait(0); 
-		error = cudaGetLastError();
+            (char *) output_data_d.dev_ptr, buff_out_d, interac_indx, M_dim1, vec_cnt);
+        //CUDA_Lock::wait(0); 
+        error = cudaGetLastError();
         if (error != cudaSuccess) 
-	       std::cout << "out_perm_h(): " << cudaGetErrorString(error) << '\n';
+          std::cout << "out_perm_h(): " << cudaGetErrorString(error) << '\n';
 
         interac_indx += vec_cnt;
         interac_blk_dsp += interac_blk[k];
-	  }
-	}
+      }
+    }
   }
+  dummy.Device2Host();
 }
 
 

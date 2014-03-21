@@ -24,23 +24,25 @@ namespace DeviceWrapper{
   // CUDA functions
   inline uintptr_t alloc_device_cuda(size_t len) {
     char *dev_ptr=NULL;
-    #if defined(PVFMM_HAVE_CUDA)
-	std::cout << "cudaMalloc();" << '\n';
+#if defined(PVFMM_HAVE_CUDA)
+    //std::cout << "cudaMalloc();" << '\n';
     cudaError_t error;
     error = cudaMalloc((void**)&dev_ptr, len);
-	std::cout << cudaGetErrorString(error) << ", "
-	  << (uintptr_t) dev_ptr << " - " 
-	  << (uintptr_t) dev_ptr + len 
-	  << "(" << len << ")" << '\n';
-    #endif
+    /*
+    std::cout << cudaGetErrorString(error) << ", "
+      << (uintptr_t) dev_ptr << " - " 
+      << (uintptr_t) dev_ptr + len 
+      << "(" << len << ")" << '\n';
+      */
+#endif
     return (uintptr_t)dev_ptr;
   }
 
   inline void free_device_cuda(char *dev_ptr) {
-    #if defined(PVFMM_HAVE_CUDA)
-	std::cout << "cudaFree();" << '\n';
+#if defined(PVFMM_HAVE_CUDA)
+    //std::cout << "cudaFree();" << '\n';
     cudaFree(dev_ptr);
-    #endif
+#endif
   }
 
   inline int host2device_cuda(char *host_ptr, char *dev_ptr, size_t len) {
@@ -57,7 +59,7 @@ namespace DeviceWrapper{
 		<< (uintptr_t) dev_ptr << ", len: "
 	    << len << '\n';	
 	  return -1;
-	}
+	  }
     else return (int)len;
     #endif
     return -1;

@@ -229,8 +229,8 @@ void fmm_test(int test_case, size_t N, bool unif, int mult_order, int cheb_deg, 
       fn_grad_ =fn_grad_t1<Real_t>;
       mykernel     =pvfmm::LaplaceKernel<Real_t>::potn_ker;
       //mykernel_grad=pvfmm::LaplaceKernel<Real_t>::grad_ker;
-      //bndry=pvfmm::Periodic;
-      bndry=pvfmm::FreeSpace;
+      bndry=pvfmm::Periodic;
+      //bndry=pvfmm::FreeSpace;
       break;
     case 2:
       fn_input_=fn_input_t2<Real_t>;

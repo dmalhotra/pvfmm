@@ -39,11 +39,11 @@ namespace mat{
     cublasStatus_t status;
     cublasHandle_t *handle;
     handle = CUDA_Lock::acquire_handle();
-    /* Need exeception handling if (handle) */
     if (TransA == 'T' || TransA == 't') cublasTransA = CUBLAS_OP_T;
     else if (TransA == 'N' || TransA == 'n') cublasTransA = CUBLAS_OP_N;
     if (TransB == 'T' || TransB == 't') cublasTransB = CUBLAS_OP_T;
     else if (TransB == 'N' || TransB == 'n') cublasTransB = CUBLAS_OP_N;
+    if (N) std::cout << "cublasDgemm (" << M << ", " << N << ", " << K << ");" << '\n';
     status = cublasDgemm(*handle, cublasTransA, cublasTransB, M, N, K, &alpha, A, lda, B, ldb, &beta, C, ldc);
   }
 
@@ -58,6 +58,7 @@ namespace mat{
     else if (TransA == 'N' || TransA == 'n') cublasTransA = CUBLAS_OP_N;
     if (TransB == 'T' || TransB == 't') cublasTransB = CUBLAS_OP_T;
     else if (TransB == 'N' || TransB == 'n') cublasTransB = CUBLAS_OP_N;
+    if (N) std::cout << "cublasSgemm (" << M << ", " << N << ", " << K << ");" << '\n';
     status = cublasSgemm(*handle, cublasTransA, cublasTransB, M, N, K, &alpha, A, lda, B, ldb, &beta, C, ldc);
   }
 #endif
