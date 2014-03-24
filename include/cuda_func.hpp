@@ -14,9 +14,10 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-  void test_d(uintptr_t, uintptr_t, uintptr_t, uintptr_t, int, cudaStream_t*);
+  void texture_bind_d (char*, size_t);
+  void texture_unbind_d ();
   void in_perm_d (char*, size_t*, char*, char*, size_t, size_t, size_t, cudaStream_t*);
-  void out_perm_d (double*, char*, size_t*, char*, char*, size_t, size_t, size_t, cudaStream_t*);
+  void out_perm_d (double*, char*, size_t*, char*, char*, size_t, size_t, size_t, cudaStream_t*, size_t*, size_t*, size_t);
 #ifdef __cplusplus
 }
 #endif
@@ -24,12 +25,20 @@ extern "C" {
 template <class Real_t>
 class cuda_func {
   public:
+    static void texture_bind_h (char *ptr_d, size_t len);
+    static void texture_unbind_h ();
     static void in_perm_h (char *precomp_data, char *input_perm, char *input_data, char *buff_in, 
         size_t interac_indx, size_t M_dim0, size_t vec_cnt);
     static void out_perm_h (char *scaling, char *precomp_data, char *output_perm, char *output_data, char *buff_out, 
-        size_t interac_indx, size_t M_dim0, size_t vec_cnt);
+        size_t interac_indx, size_t M_dim0, size_t vec_cnt, size_t *tmp_a, size_t *tmp_b, size_t counter);
     static void compare_h (Real_t *gold, Real_t *mine, size_t n);
 };
+
+template <class Real_t>
+void cuda_func<Real_t>::texture_bind_h (char *ptr_d, size_t len) { texture_bind_d(ptr_d, len); };
+
+template <class Real_t>
+void cuda_func<Real_t>::texture_unbind_h () { texture_unbind_d(); };
 
 template <class Real_t>
 void cuda_func<Real_t>::in_perm_h (
@@ -56,13 +65,23 @@ void cuda_func<Real_t>::out_perm_h (
   char *buff_out,
   size_t interac_indx,
   size_t M_dim1,
-  size_t vec_cnt )
+  size_t vec_cnt,
+  size_t *tmp_a,
+  size_t *tmp_b,
+  size_t counter )
 {
   cudaStream_t *stream;
   stream = pvfmm::CUDA_Lock::acquire_stream(0);
+  size_t *a_d, *b_d;
+  cudaMalloc((void**)&a_d, sizeof(size_t)*counter);
+  cudaMalloc((void**)&b_d, sizeof(size_t)*counter);
+  cudaMemcpy(a_d, tmp_a, sizeof(size_t)*counter, cudaMemcpyHostToDevice);
+  cudaMemcpy(b_d, tmp_b, sizeof(size_t)*counter, cudaMemcpyHostToDevice);
   out_perm_d((double *) scaling, precomp_data, (size_t *) output_perm, output_data, buff_out, 
-	  interac_indx, M_dim1, vec_cnt, stream);
-}
+	  interac_indx, M_dim1, vec_cnt, stream, a_d, b_d, counter);
+  cudaFree(a_d);
+  cudaFree(b_d);
+};
 
 template <class Real_t>
 void cuda_func<Real_t>::compare_h (
@@ -84,6 +103,6 @@ void cuda_func<Real_t>::compare_h (
 	  } 
   }
   free(mine_h);
-}
+};
 
 #endif //_CUDA_FUNC_HPP_

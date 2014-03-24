@@ -1574,6 +1574,8 @@ void FMM_Pts<FMMNode>::EvalList_cuda(SetupData<Real_t>& setup_data) {
 
       //std::cout << "Before Loop. " << '\n';
 
+      //cuda_func<Real_t>::texture_bind_h (input_perm_d, input_perm.Dim());
+
       for (size_t k = 0; k < interac_blk.Dim(); k++) {
         size_t vec_cnt = 0;
 
@@ -1582,6 +1584,7 @@ void FMM_Pts<FMMNode>::EvalList_cuda(SetupData<Real_t>& setup_data) {
           vec_cnt += interac_cnt[j];
 
         /* CPU Version */
+        /*
         char* buff_in =&buff[0];
         char* buff_out=&buff[vec_cnt*dof*M_dim0*sizeof(Real_t)];
 
@@ -1597,9 +1600,10 @@ void FMM_Pts<FMMNode>::EvalList_cuda(SetupData<Real_t>& setup_data) {
             << input_perm[(interac_indx + i + 1)*4 + 2] 
             << '\n';
           for(size_t j = 0; j < M_dim0; j++) {
-            //v_out[j] = v_in[perm[j]]*scal[j];
+            v_out[j] = v_in[perm[j]]*scal[j];
           }
         }
+        */
 
         /* GPU Kernel call */	
         char *buff_in_d = (char *) buff_d.dev_ptr;
@@ -1621,7 +1625,7 @@ void FMM_Pts<FMMNode>::EvalList_cuda(SetupData<Real_t>& setup_data) {
             vec_cnt1 += interac_cnt[j];
 
           /* Compare buff_in */
-          std::cout << M_dim0*vec_cnt0*dof*sizeof(Real_t) << '\n';
+          //std::cout << M_dim0*vec_cnt0*dof*sizeof(Real_t) << '\n';
           /*
           cuda_func<Real_t>::compare_h(
               (Real_t *) (buff_in   + M_dim0*vec_cnt0*dof*sizeof(Real_t)), 
@@ -1649,7 +1653,7 @@ void FMM_Pts<FMMNode>::EvalList_cuda(SetupData<Real_t>& setup_data) {
               (Real_t *) (buff_out_d + M_dim1*vec_cnt0*dof*sizeof(Real_t)), 
               dof*vec_cnt1*M_dim1);
 */
-          std::cout << '\n';
+          //std::cout << '\n';
 
           vec_cnt0 += vec_cnt1;
         }
@@ -1659,6 +1663,34 @@ void FMM_Pts<FMMNode>::EvalList_cuda(SetupData<Real_t>& setup_data) {
         if (error != cudaSuccess) 
           std::cout << "cublasXgemm(): " << cudaGetErrorString(error) << '\n';
 
+        size_t *tmp_a, *tmp_b;
+        size_t counter = 0;
+        size_t last = -1;
+        if (vec_cnt > 0) {
+          int i;
+          cudaMallocHost((void**)&tmp_a, sizeof(size_t)*vec_cnt);
+          cudaMallocHost((void**)&tmp_b, sizeof(size_t)*vec_cnt);
+          tmp_a[0] = 0;
+          for (i = 1; i < vec_cnt; i++) {
+            if (output_perm[(interac_indx + i)*4 + 3] != last) {
+              last = output_perm[(interac_indx + i)*4 + 3];
+              tmp_b[counter] = i;
+              counter ++;
+              tmp_a[counter] = i;
+            }
+          }
+          tmp_b[counter] = i;
+          for (i = 0; i < 12; i++) std::cout << tmp_a[i] << ", ";
+          std::cout << '\n';
+          for (i = 0; i < 12; i++) std::cout << tmp_b[i] << ", ";
+          std::cout << '\n';
+          for (i = 0; i < counter; i++) {
+            if (tmp_a[i] == tmp_b[i]) std::cout << tmp_a[i] << ", " << tmp_b[i] << '\n';
+          }
+          std::cout << counter << '\n';
+        }
+
+        /*
         for(int i = 0; i < vec_cnt; i++) {
           Real_t scaling_factor=scaling[interac_indx+i];
           const PERM_INT_T*  perm=(PERM_INT_T*)(precomp_data[0]+output_perm[(interac_indx+i)*4+0]);
@@ -1666,11 +1698,18 @@ void FMM_Pts<FMMNode>::EvalList_cuda(SetupData<Real_t>& setup_data) {
           const     Real_t* v_in =(    Real_t*)(    buff_out   +output_perm[(interac_indx+i)*4+2]);
           Real_t*           v_out=(    Real_t*)( output_data[0]+output_perm[(interac_indx+i)*4+3]);
           for(size_t j=0;j<M_dim1;j++ ){
-            //v_out[j]+=v_in[perm[j]]*scal[j]*scaling_factor;
+            v_out[j]+=v_in[perm[j]]*scal[j]*scaling_factor;
           }
         }
+        */
+
         cuda_func<Real_t>::out_perm_h (scaling_d, (char *) precomp_data_d.dev_ptr, output_perm_d, 
-            (char *) output_data_d.dev_ptr, buff_out_d, interac_indx, M_dim1, vec_cnt);
+            (char *) output_data_d.dev_ptr, buff_out_d, interac_indx, M_dim1, vec_cnt, tmp_a, tmp_b, counter);
+        if (vec_cnt > 0) {
+          cudaFreeHost(tmp_a);
+          cudaFreeHost(tmp_b);
+        }
+
         //CUDA_Lock::wait(0); 
         error = cudaGetLastError();
         if (error != cudaSuccess) 
@@ -1679,6 +1718,8 @@ void FMM_Pts<FMMNode>::EvalList_cuda(SetupData<Real_t>& setup_data) {
         interac_indx += vec_cnt;
         interac_blk_dsp += interac_blk[k];
       }
+
+      //cuda_func<Real_t>::texture_unbind_h ();
     }
   }
   dummy.Device2Host();
