@@ -1665,11 +1665,15 @@ void FMM_Pts<FMMNode>::EvalList_cuda(SetupData<Real_t>& setup_data) {
 
         size_t *tmp_a, *tmp_b;
         size_t counter = 0;
-        size_t last = -1;
+        //size_t last = -1;
         if (vec_cnt > 0) {
+          size_t last = output_perm[interac_indx*4 + 3];
           int i;
           cudaMallocHost((void**)&tmp_a, sizeof(size_t)*vec_cnt);
           cudaMallocHost((void**)&tmp_b, sizeof(size_t)*vec_cnt);
+          for (i = 0; i < 12; i++) std::cout << output_perm[(interac_indx + i)*4 + 3] << ", ";
+          std::cout << '\n';
+
           tmp_a[0] = 0;
           for (i = 1; i < vec_cnt; i++) {
             if (output_perm[(interac_indx + i)*4 + 3] != last) {
@@ -1680,6 +1684,7 @@ void FMM_Pts<FMMNode>::EvalList_cuda(SetupData<Real_t>& setup_data) {
             }
           }
           tmp_b[counter] = i;
+          counter ++;
           for (i = 0; i < 12; i++) std::cout << tmp_a[i] << ", ";
           std::cout << '\n';
           for (i = 0; i < 12; i++) std::cout << tmp_b[i] << ", ";
@@ -1705,6 +1710,7 @@ void FMM_Pts<FMMNode>::EvalList_cuda(SetupData<Real_t>& setup_data) {
 
         cuda_func<Real_t>::out_perm_h (scaling_d, (char *) precomp_data_d.dev_ptr, output_perm_d, 
             (char *) output_data_d.dev_ptr, buff_out_d, interac_indx, M_dim1, vec_cnt, tmp_a, tmp_b, counter);
+
         if (vec_cnt > 0) {
           cudaFreeHost(tmp_a);
           cudaFreeHost(tmp_b);
