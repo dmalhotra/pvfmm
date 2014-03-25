@@ -40,39 +40,23 @@ __global__ void in_perm_k (
   size_t M_dim0,
   size_t vec_cnt )
 {
-  /* 1-dim thread Id. */
-  int tid = blockIdx.x*blockDim.x + threadIdx.x;
+  extern __shared__ double s[];
+  //__shared__ double s[680];
 
-  if (tid < vec_cnt) {
-    /* Convert to ptr. */
-    
-    size_t *perm  = (size_t *) (precomp_data + input_perm[(interac_indx + tid)*4 + 0]);
-    double *scal  = (double *) (precomp_data + input_perm[(interac_indx + tid)*4 + 1]);
-    double *v_in  = (double *) (input_data ) + input_perm[(interac_indx + tid)*4 + 3];
-    double *v_out = (double *) (buff_in      + input_perm[(interac_indx + tid)*4 + 2]);
+  /* Specifing range. */
+  int a = ( blockIdx.x     *vec_cnt)/gridDim.x;
+  int b = ((blockIdx.x + 1)*vec_cnt)/gridDim.x;
 
-    /*
-    size_t *perm  = (size_t *) (precomp_data + tex1Dfetch(tex_in_perm, (interac_indx + tid)*4 + 0));
-    double *scal  = (double *) (precomp_data + tex1Dfetch(tex_in_perm, (interac_indx + tid)*4 + 1));
-    double *v_in  = (double *) (input_data ) + tex1Dfetch(tex_in_perm, (interac_indx + tid)*4 + 3);
-    double *v_out = (double *) (buff_in      + tex1Dfetch(tex_in_perm, (interac_indx + tid)*4 + 2));
-    */
-
-    /* PRAM Model: assuming as many threads as we need. */
-    for (size_t j = 0; j < M_dim0; j++) {
-      v_out[j] = v_in[perm[j]]*scal[j];
-    }
-    /*
-    if (tid == 1) {
-      printf("v_out[0] = {%f, %f, %f}\n", (float) v_out[0], (float) v_out[1], (float) v_out[2]);
-      printf("input_perm[%d, %d, %d] = {%d, %d, %d}\n", tid - 1, tid, tid + 1,
-        (int) input_perm[(interac_indx + tid - 1)*4 + 2],
-        (int) input_perm[(interac_indx + tid    )*4 + 2],
-        (int) input_perm[(interac_indx + tid + 1)*4 + 2]);
-    }
-    */
+  for(int i = a; i < b; i++) { // Compute permutations.
+    size_t *perm  = (size_t *) (precomp_data + input_perm[(interac_indx + i)*4 + 0]);
+    double *scal  = (double *) (precomp_data + input_perm[(interac_indx + i)*4 + 1]);
+    double *v_in  = (double *) (input_data ) + input_perm[(interac_indx + i)*4 + 3];
+    double *v_out = (double *) (buff_in      + input_perm[(interac_indx + i)*4 + 2]);
+    for (size_t j = threadIdx.x; j < M_dim0; j+=blockDim.x) s[j] = v_in[j];
+    __syncthreads();
+    for (size_t j = threadIdx.x; j < M_dim0; j+=blockDim.x) v_out[j] = s[perm[j]]*scal[j];
+    __syncthreads();
   }
-  //__syncthreads();
 };
 
 __global__ void out_perm_2d_k (
@@ -149,44 +133,39 @@ __global__ void out_perm_k (
   char *buff_out,
   size_t interac_indx,
   size_t M_dim1,
-  size_t vec_cnt,
-  size_t *a_d,
-  size_t *b_d,
-  size_t counter )
+  size_t vec_cnt )
 {
-  /* 1-dim thread Id. */
-  int tid = blockIdx.x*blockDim.x + threadIdx.x;
+  extern __shared__ double s[];
+  //__shared__ double s[680];
+  for (size_t j = threadIdx.x; j < M_dim1; j+=blockDim.x) s[j] = 0;
 
   /* Specifing range. */
-  int a = a_d[tid];
-  int b = b_d[tid];
-  /*
-  int a = (tid*vec_cnt)/vec_cnt;
-  int b = ((tid + 1)*vec_cnt)/vec_cnt;
+  int a = ( blockIdx.x     *vec_cnt)/gridDim.x;
+  int b = ((blockIdx.x + 1)*vec_cnt)/gridDim.x;
 
-  if (tid > 0 && a < vec_cnt) {
+  if (blockIdx.x > 0             && a < vec_cnt) { // Find 'a' independent of other threads.
     size_t out_ptr = output_perm[(interac_indx + a)*4 + 3];
-    if (tid > 0) while (a < vec_cnt && out_ptr == output_perm[(interac_indx + a)*4 + 3]) a++;
+    if (blockIdx.x >             0) while (a < vec_cnt && out_ptr == output_perm[(interac_indx + a)*4 + 3]) a++;
   }
-  if (tid < vec_cnt - 1 &&  - 1 && b < vec_cnt) {
+  if (blockIdx.x < gridDim.x - 1 && b < vec_cnt) { // Find 'b' independent of other threads.
     size_t out_ptr = output_perm[(interac_indx + b)*4 + 3];
-    if (tid < vec_cnt - 1) while (b < vec_cnt && out_ptr == output_perm[(interac_indx + b)*4 + 3]) b++;
+    if (blockIdx.x < gridDim.x - 1) while (b < vec_cnt && out_ptr == output_perm[(interac_indx + b)*4 + 3]) b++;
   }
-  */
 
-  //if (tid < vec_cnt) {
-  if (tid < counter) {
-    /* PRAM Model: assuming as many threads as we need. */
-    for(int i = a; i < b; i++) { // Compute permutations.
-      double scaling_factor = scaling[interac_indx + i];
-      size_t *perm = (size_t*) (precomp_data + output_perm[(interac_indx + i)*4 + 0]);
-      double *scal = (double*) (precomp_data + output_perm[(interac_indx + i)*4 + 1]);
-      double *v_in = (double*) (buff_out     + output_perm[(interac_indx + i)*4 + 2]);
-      double *v_out = (double*) (output_data)+ output_perm[(interac_indx + i)*4 + 3];
-      for (int j = 0; j < M_dim1; j++) v_out[j] += v_in[perm[j]]*scal[j]*scaling_factor;
+  for(int i = a; i < b; i++) { // Compute permutations.
+    double scaling_factor = scaling[interac_indx + i];
+    size_t *perm = (size_t*) (precomp_data + output_perm[(interac_indx + i)*4 + 0]);
+    double *scal = (double*) (precomp_data + output_perm[(interac_indx + i)*4 + 1]);
+    double *v_in = (double*) (buff_out     + output_perm[(interac_indx + i)*4 + 2]);
+    double *v_out = (double*) (output_data)+ output_perm[(interac_indx + i)*4 + 3];
+    for (size_t j = threadIdx.x; j < M_dim1; j+=blockDim.x) s[j] += v_in[perm[j]]*scal[j]*scaling_factor;
+    if(output_perm[(interac_indx + i)*4 + 3]!=output_perm[(interac_indx + i+1)*4 + 3]){
+      for (size_t j = threadIdx.x; j < M_dim1; j+=blockDim.x){
+        v_out[j]+=s[j];
+        s[j] = 0;
+      }
     }
   }
-  //__syncthreads();
 };
 
 extern "C" { 
@@ -224,14 +203,12 @@ void in_perm_d (
       (int) vec_cnt, (int) M_dim0, n_block, n_thread);
   */
   cudaEventRecord(beg, 0);
-  /*
-  in_perm_k<<<n_block, n_thread>>>(precomp_data, input_perm, input_data, buff_in, 
+  in_perm_k<<<1024, 256, M_dim0*sizeof(double)>>>(precomp_data, input_perm, input_data, buff_in, 
       interac_indx, M_dim0, vec_cnt);
-      */
-  dim3 dimBlock(16, 32);
-  dim3 dimGrid(M_dim0/16 + 1, vec_cnt/32 + 1);
-  in_perm_2d_k<<<dimGrid, dimBlock>>>(precomp_data, input_perm, input_data, buff_in, 
-      interac_indx, M_dim0, vec_cnt);
+//  dim3 dimBlock(16, 32);
+//  dim3 dimGrid(M_dim0/16 + 1, vec_cnt/32 + 1);
+//  in_perm_2d_k<<<dimGrid, dimBlock>>>(precomp_data, input_perm, input_data, buff_in, 
+//      interac_indx, M_dim0, vec_cnt);
   cudaEventRecord(end, 0);
   cudaEventSynchronize(end);
   cudaEventElapsedTime(&time_ms, beg, end);
@@ -271,15 +248,14 @@ void out_perm_d (
       (int) vec_cnt, (int) M_dim1, n_block, n_thread);
       */
   cudaEventRecord(beg, 0);
-  /*
-  out_perm_k<<<n_block, n_thread>>>(scaling, precomp_data, output_perm, output_data, buff_out, 
-    interac_indx, M_dim1, vec_cnt, a_d, b_d, counter);
-    */
+
+  out_perm_k<<<1024, 256, M_dim1*sizeof(double)>>>(scaling, precomp_data, output_perm, output_data, buff_out, 
+    interac_indx, M_dim1, vec_cnt);
   
-  dim3 dimBlock(16, 32);
-  dim3 dimGrid(M_dim1/8 + 1, vec_cnt/64 + 1);
-  out_perm_2d_k<<<dimGrid, dimBlock>>>(scaling, precomp_data, output_perm, output_data, buff_out, 
-    interac_indx, M_dim1, vec_cnt, a_d, b_d, counter);
+//  dim3 dimBlock(16, 32);
+//  dim3 dimGrid(M_dim1/8 + 1, vec_cnt/64 + 1);
+//  out_perm_2d_k<<<dimGrid, dimBlock>>>(scaling, precomp_data, output_perm, output_data, buff_out, 
+//    interac_indx, M_dim1, vec_cnt, a_d, b_d, counter);
     
   cudaEventRecord(end, 0);
   cudaEventSynchronize(end);
