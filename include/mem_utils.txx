@@ -24,7 +24,7 @@ namespace mem{
   T* aligned_malloc_f(size_t size_, size_t alignment){
     assert(alignment <= 0x8000);
     size_t size=size_*sizeof(T);
-    uintptr_t r = (uintptr_t)malloc(size + --alignment + 2);
+    uintptr_t r = (uintptr_t)malloc(size + --alignment + 2);   
     assert(r!=0);
     uintptr_t o = (uintptr_t)(r + 2 + alignment) & ~(uintptr_t)alignment;
     if (!r) return NULL;

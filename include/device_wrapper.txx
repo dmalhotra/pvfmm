@@ -50,10 +50,12 @@ namespace DeviceWrapper{
 	//std::cout << "cudaHostRegister(), cudaMemcpyAsync(HostToDevice);" << '\n';
     cudaError_t error;
     cudaStream_t *stream = CUDA_Lock::acquire_stream(0);
+
     //error = cudaHostRegister(host_ptr, len, cudaHostRegisterPortable);
     //if (error != cudaSuccess) std::cout << "cudaHostRegister(): " << cudaGetErrorString(error) << '\n';
-    //error = cudaMemcpyAsync(dev_ptr, host_ptr, len, cudaMemcpyHostToDevice, *stream);
-    error = cudaMemcpy(dev_ptr, host_ptr, len, cudaMemcpyHostToDevice);
+    error = cudaMemcpyAsync(dev_ptr, host_ptr, len, cudaMemcpyHostToDevice, *stream);
+
+    //error = cudaMemcpy(dev_ptr, host_ptr, len, cudaMemcpyHostToDevice);
     if (error != cudaSuccess) {
 	  std::cout << "cudaMemcpyAsync(HostToDevice): " << cudaGetErrorString(error) << ", " 
 		<< (uintptr_t) dev_ptr << ", len: "
@@ -70,10 +72,14 @@ namespace DeviceWrapper{
 	//std::cout << "cudaHostRegister(), cudaMemcpyAsync(DeviceToHost);" << '\n';
     cudaError_t error;
     cudaStream_t *stream = CUDA_Lock::acquire_stream(0);
+
     //error = cudaHostRegister(host_ptr, len, cudaHostRegisterPortable);
     //if (error != cudaSuccess) std::cout << "cudaHostRegister(): " << cudaGetErrorString(error) << '\n';
-    //error = cudaMemcpyAsync(host_ptr, dev_ptr, len, cudaMemcpyDeviceToHost, *stream);
+    error = cudaMemcpyAsync(host_ptr, dev_ptr, len, cudaMemcpyDeviceToHost, *stream);
+/*
+    CUDA_Lock::wait(0);
     error = cudaMemcpy(host_ptr, dev_ptr, len, cudaMemcpyDeviceToHost);
+    */
     if (error != cudaSuccess) {
 	  std::cout << "cudaMemcpyAsnc(DeviceToHost): " << cudaGetErrorString(error) << ", " 
 		<< (uintptr_t) dev_ptr << ", len: "
@@ -176,6 +182,9 @@ namespace DeviceWrapper{
     #ifdef __INTEL_OFFLOAD
     return alloc_device_mic(dev_handle,len);
     #elif defined(PVFMM_HAVE_CUDA)
+    cudaError_t error;
+    error = cudaHostRegister(dev_handle, len, cudaHostRegisterPortable);
+    //if (error != cudaSuccess) std::cout << "cudaHostRegister(): " << cudaGetErrorString(error) << '\n';
     return alloc_device_cuda(len);
     #else
     uintptr_t dev_ptr=(uintptr_t)NULL;
@@ -188,6 +197,9 @@ namespace DeviceWrapper{
     #ifdef __INTEL_OFFLOAD
     free_device_mic(dev_handle,dev_ptr);
     #elif defined(PVFMM_HAVE_CUDA)
+    cudaError_t error;
+    error = cudaHostUnregister(dev_handle);
+    //if (error != cudaSuccess) std::cout << "cudaHostUnregister(): " << cudaGetErrorString(error) << '\n';
     free_device_cuda((char*)dev_ptr);
     #else
     ;
@@ -223,6 +235,8 @@ namespace DeviceWrapper{
   inline void wait(int lock_idx){
     #ifdef __INTEL_OFFLOAD
     wait_mic(lock_idx);
+    #elif defined(PVFMM_HAVE_CUDA)
+    CUDA_Lock::wait(0);
     #else
     ;
     #endif
@@ -327,7 +341,7 @@ namespace DeviceWrapper{
         error = cudaStreamCreate(&(stream[i]));
       }
       status = cublasCreate(&handle);
-      //status = cublasSetStream(handle, stream[0]);
+      status = cublasSetStream(handle, stream[0]);
       cuda_init = true;
     }
   }

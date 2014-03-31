@@ -43,7 +43,7 @@ namespace mat{
     else if (TransA == 'N' || TransA == 'n') cublasTransA = CUBLAS_OP_N;
     if (TransB == 'T' || TransB == 't') cublasTransB = CUBLAS_OP_T;
     else if (TransB == 'N' || TransB == 'n') cublasTransB = CUBLAS_OP_N;
-    if (N) std::cout << "cublasDgemm (" << M << ", " << N << ", " << K << ");" << '\n';
+    //if (N) std::cout << "cublasDgemm (" << M << ", " << N << ", " << K << ");" << '\n';
     status = cublasDgemm(*handle, cublasTransA, cublasTransB, M, N, K, &alpha, A, lda, B, ldb, &beta, C, ldc);
   }
 

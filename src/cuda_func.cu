@@ -193,22 +193,29 @@ void in_perm_d (
   int n_thread, n_block;
   n_thread = DEFAULT_NUM_THREAD;
   n_block = vec_cnt/n_thread + 1;
-
+/*
   cudaEvent_t beg, end;
   cudaEventCreate(&beg);
   cudaEventCreate(&end);
+  */
   //cudaBindTexture(0, tex_in_perm, input_perm, );
   /*
   printf("in_perm_k : vec_cnt: %d, M_dim0: %d, n_block: %d, n_thread: %d\n", 
       (int) vec_cnt, (int) M_dim0, n_block, n_thread);
   */
-  cudaEventRecord(beg, 0);
+  //cudaEventRecord(beg, 0);
+  /*
   in_perm_k<<<1024, 256, M_dim0*sizeof(double)>>>(precomp_data, input_perm, input_data, buff_in, 
+      interac_indx, M_dim0, vec_cnt);
+      */
+  in_perm_k<<<1024, 256, M_dim0*sizeof(double), *stream>>>(precomp_data, input_perm, input_data, buff_in, 
       interac_indx, M_dim0, vec_cnt);
 //  dim3 dimBlock(16, 32);
 //  dim3 dimGrid(M_dim0/16 + 1, vec_cnt/32 + 1);
 //  in_perm_2d_k<<<dimGrid, dimBlock>>>(precomp_data, input_perm, input_data, buff_in, 
 //      interac_indx, M_dim0, vec_cnt);
+//      
+      /*
   cudaEventRecord(end, 0);
   cudaEventSynchronize(end);
   cudaEventElapsedTime(&time_ms, beg, end);
@@ -216,6 +223,7 @@ void in_perm_d (
     
   cudaEventDestroy(beg);
   cudaEventDestroy(end);
+  */
 };
 
 void out_perm_d (
@@ -240,23 +248,27 @@ void out_perm_d (
   //n_block = vec_cnt/n_thread + 1;
   n_block = counter/n_thread + 1;
 
-  cudaEvent_t beg, end;
-  cudaEventCreate(&beg);
-  cudaEventCreate(&end);
+//  cudaEvent_t beg, end;
+//  cudaEventCreate(&beg);
+//  cudaEventCreate(&end);
   /*
   printf("out_perm_k : vec_cnt: %d, M_dim0: %d, n_block: %d, n_thread: %d\n", 
       (int) vec_cnt, (int) M_dim1, n_block, n_thread);
       */
-  cudaEventRecord(beg, 0);
-
+//  cudaEventRecord(beg, 0);
+/*
   out_perm_k<<<1024, 256, M_dim1*sizeof(double)>>>(scaling, precomp_data, output_perm, output_data, buff_out, 
+    interac_indx, M_dim1, vec_cnt);
+    */
+  out_perm_k<<<1024, 256, M_dim1*sizeof(double), *stream>>>(scaling, precomp_data, output_perm, output_data, buff_out, 
     interac_indx, M_dim1, vec_cnt);
   
 //  dim3 dimBlock(16, 32);
 //  dim3 dimGrid(M_dim1/8 + 1, vec_cnt/64 + 1);
 //  out_perm_2d_k<<<dimGrid, dimBlock>>>(scaling, precomp_data, output_perm, output_data, buff_out, 
 //    interac_indx, M_dim1, vec_cnt, a_d, b_d, counter);
-    
+
+  /*
   cudaEventRecord(end, 0);
   cudaEventSynchronize(end);
   cudaEventElapsedTime(&time_ms, beg, end);
@@ -264,6 +276,7 @@ void out_perm_d (
     
   cudaEventDestroy(beg);
   cudaEventDestroy(end);
+  */
 };
 
 }

@@ -73,14 +73,18 @@ void cuda_func<Real_t>::out_perm_h (
   cudaStream_t *stream;
   stream = pvfmm::CUDA_Lock::acquire_stream(0);
   size_t *a_d, *b_d;
+  /*
   cudaMalloc((void**)&a_d, sizeof(size_t)*counter);
   cudaMalloc((void**)&b_d, sizeof(size_t)*counter);
   cudaMemcpy(a_d, tmp_a, sizeof(size_t)*counter, cudaMemcpyHostToDevice);
   cudaMemcpy(b_d, tmp_b, sizeof(size_t)*counter, cudaMemcpyHostToDevice);
+  */
   out_perm_d((double *) scaling, precomp_data, (size_t *) output_perm, output_data, buff_out, 
 	  interac_indx, M_dim1, vec_cnt, stream, a_d, b_d, counter);
+  /*
   cudaFree(a_d);
   cudaFree(b_d);
+  */
 };
 
 template <class Real_t>

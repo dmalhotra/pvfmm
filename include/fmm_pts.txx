@@ -1470,8 +1470,8 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
 
 template <class FMMNode>
 void FMM_Pts<FMMNode>::EvalList_cuda(SetupData<Real_t>& setup_data) {
-  Vector<char> dummy(1);
-  dummy.AllocDevice(true);
+  //Vector<char> dummy(1);
+  //dummy.AllocDevice(true);
   typename Vector<char>::Device buff;
   typename Vector<char>::Device buff_d;
   typename Matrix<char>::Device precomp_data;
@@ -1608,6 +1608,7 @@ void FMM_Pts<FMMNode>::EvalList_cuda(SetupData<Real_t>& setup_data) {
         /* GPU Kernel call */	
         char *buff_in_d = (char *) buff_d.dev_ptr;
         char *buff_out_d = (char *) (buff_d.dev_ptr + vec_cnt*dof*M_dim0*sizeof(Real_t));
+
         cuda_func<Real_t>::in_perm_h ((char *)precomp_data_d.dev_ptr, input_perm_d, 
             (char *) input_data_d.dev_ptr, buff_in_d, interac_indx,  M_dim0, vec_cnt);
 
@@ -1728,7 +1729,10 @@ void FMM_Pts<FMMNode>::EvalList_cuda(SetupData<Real_t>& setup_data) {
       //cuda_func<Real_t>::texture_unbind_h ();
     }
   }
-  dummy.Device2Host();
+  //dummy.Device2Host();
+
+  /* Sync. */
+	//CUDA_Lock::wait(0);
 }
 
 
