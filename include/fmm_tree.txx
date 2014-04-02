@@ -101,8 +101,8 @@ void FMM_Tree<FMM_Mat_t>::SetupFMM(FMM_Mat_t* fmm_mat_) {
   fmm_mat->CollectNodeData(all_nodes, node_data_buff, node_lists);
   Profile::Toc();
 
-  setup_data.resize(6*MAX_DEPTH);
-  precomp_lst.resize(6);
+  setup_data.resize(8*MAX_DEPTH);
+  precomp_lst.resize(8);
 
   Profile::Tic("UListSetup",this->Comm(),false,3);
   for(size_t i=0;i<MAX_DEPTH;i++){
@@ -131,13 +131,26 @@ void FMM_Tree<FMM_Mat_t>::SetupFMM(FMM_Mat_t* fmm_mat_) {
   Profile::Tic("D2DSetup",this->Comm(),false,3);
   for(size_t i=0;i<MAX_DEPTH;i++){
     setup_data[i+MAX_DEPTH*4].precomp_data=&precomp_lst[4];
-    fmm_mat->Down2DownSetup(setup_data[i+MAX_DEPTH*4],node_data_buff,node_lists,i, device);
+    fmm_mat->Down2DownSetup(setup_data[i+MAX_DEPTH*4],node_data_buff,node_lists,i, /*device*/ false);
   }
   Profile::Toc();
   Profile::Tic("D2TSetup",this->Comm(),false,3);
   for(size_t i=0;i<MAX_DEPTH;i++){
     setup_data[i+MAX_DEPTH*5].precomp_data=&precomp_lst[5];
-    fmm_mat->Down2TargetSetup(setup_data[i+MAX_DEPTH*5],node_data_buff,node_lists,fmm_mat->Homogen()?(i==0?-1:MAX_DEPTH+1):i, device);
+    fmm_mat->Down2TargetSetup(setup_data[i+MAX_DEPTH*5],node_data_buff,node_lists,fmm_mat->Homogen()?(i==0?-1:MAX_DEPTH+1):i, /*device*/ false);
+  }
+  Profile::Toc();
+
+  Profile::Tic("S2USetup",this->Comm(),false,3);
+  for(size_t i=0;i<MAX_DEPTH;i++){
+    setup_data[i+MAX_DEPTH*6].precomp_data=&precomp_lst[6];
+    fmm_mat->Source2UpSetup(setup_data[i+MAX_DEPTH*6],node_data_buff,node_lists,fmm_mat->Homogen()?(i==0?-1:MAX_DEPTH+1):i, /*device*/ false);
+  }
+  Profile::Toc();
+  Profile::Tic("U2USetup",this->Comm(),false,3);
+  for(size_t i=0;i<MAX_DEPTH;i++){
+    setup_data[i+MAX_DEPTH*7].precomp_data=&precomp_lst[7];
+    fmm_mat->Up2UpSetup(setup_data[i+MAX_DEPTH*7],node_data_buff,node_lists,i, /*device*/ false);
   }
   Profile::Toc();
 
@@ -212,38 +225,23 @@ void FMM_Tree<FMM_Mat_t>::RunFMM() {
 
 template <class FMM_Mat_t>
 void FMM_Tree<FMM_Mat_t>::UpwardPass() {
-  std::vector<FMM_Node_t*> all_leaf_nodes;
-  std::vector<std::vector<FMM_Node_t*> > nodes(MAX_DEPTH+1);
-  std::vector<std::vector<FMM_Node_t*> > leaf_nodes(MAX_DEPTH+1);
-  std::vector<FMM_Node_t*> all_nodes=this->GetNodeList();
-  for(size_t i=0;i<all_nodes.size();i++){
-    FMM_Node_t* n=all_nodes[i];
-    if(!n->IsGhost()){
-      if(!n->IsLeaf())
-        nodes[n->Depth()].push_back(n);
-      else{
-        all_leaf_nodes.push_back(n);
-        leaf_nodes[n->Depth()].push_back(n);
-      }
-    }
-  }
+  bool device=true;
 
   //Upward Pass (initialize all leaf nodes)
-  if(fmm_mat->Homogen()){
-    size_t k=all_leaf_nodes.size();
-    fmm_mat->InitMultipole(&(all_leaf_nodes[0]),k,0);
-  }else{ //Level by level
-    for(int i=MAX_DEPTH;i>=0;i--){
-      size_t k=leaf_nodes[i].size();
-      fmm_mat->InitMultipole(&(leaf_nodes[i][0]),k,i);
-    }
+  Profile::Tic("S2U",this->Comm(),false,5);
+  for(int i=0; i<(fmm_mat->Homogen()?1:MAX_DEPTH); i++){ // Source2Up
+    if(!fmm_mat->Homogen()) fmm_mat->SetupPrecomp(setup_data[i+MAX_DEPTH*6],/*device*/ false);
+    fmm_mat->Source2Up(setup_data[i+MAX_DEPTH*6]);
   }
+  Profile::Toc();
 
   //Upward Pass (level by level)
-  for(int i=MAX_DEPTH;i>=0;i--){
-    size_t k=nodes[i].size();
-    fmm_mat->Up2Up(&(nodes[i][0]),k,i);
+  Profile::Tic("U2U",this->Comm(),false,5);
+  for(int i=MAX_DEPTH-1; i>=0; i--){ // Up2Up
+    if(!fmm_mat->Homogen()) fmm_mat->SetupPrecomp(setup_data[i+MAX_DEPTH*7],/*device*/ false);
+    fmm_mat->Up2Up(setup_data[i+MAX_DEPTH*7]);
   }
+  Profile::Toc();
 }
 
 
@@ -262,6 +260,8 @@ void FMM_Tree<FMM_Mat_t>::BuildInteracLists() {
       for(size_t i=a;i<b;i++){
         FMM_Node_t* n=n_list[i];
         n->interac_list.resize(Type_Count);
+        n->interac_list[S2U_Type]=interac_list.BuildList(n,S2U_Type);
+        n->interac_list[U2U_Type]=interac_list.BuildList(n,U2U_Type);
         n->interac_list[D2D_Type]=interac_list.BuildList(n,D2D_Type);
         n->interac_list[D2T_Type]=interac_list.BuildList(n,D2T_Type);
         n->interac_list[U0_Type]=interac_list.BuildList(n,U0_Type);
@@ -484,12 +484,14 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
   std::vector<FMM_Node_t*> leaf_nodes;
   int max_depth=0;
   { // Build leaf node list
+    int max_depth_loc=0;
     std::vector<FMM_Node_t*>& nodes=this->GetNodeList();
     for(size_t i=0;i<nodes.size();i++){
       FMM_Node_t* n=nodes[i];
       if(!n->IsGhost() && n->IsLeaf()) leaf_nodes.push_back(n);
-      if(n->Depth()>max_depth) max_depth=n->Depth();
+      if(n->Depth()>max_depth_loc) max_depth_loc=n->Depth();
     }
+    MPI_Allreduce(&max_depth_loc, &max_depth, 1, MPI_INT, MPI_MAX, *this->Comm());
   }
   Profile::Toc();
 
@@ -619,14 +621,14 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
 
   Profile::Tic("D2D",this->Comm(),false,5);
   for(size_t i=0; i<=max_depth; i++){ // Down2Down
-    if(!fmm_mat->Homogen()) fmm_mat->SetupPrecomp(setup_data[i+MAX_DEPTH*4],device);
+    if(!fmm_mat->Homogen()) fmm_mat->SetupPrecomp(setup_data[i+MAX_DEPTH*4],/*device*/ false);
     fmm_mat->Down2Down(setup_data[i+MAX_DEPTH*4]);
   }
   Profile::Toc();
 
   Profile::Tic("D2T",this->Comm(),false,5);
   for(int i=0; i<=(fmm_mat->Homogen()?0:max_depth); i++){ // Down2Target
-    if(!fmm_mat->Homogen()) fmm_mat->SetupPrecomp(setup_data[i+MAX_DEPTH*5],device);
+    if(!fmm_mat->Homogen()) fmm_mat->SetupPrecomp(setup_data[i+MAX_DEPTH*5],/*device*/ false);
     fmm_mat->Down2Target(setup_data[i+MAX_DEPTH*5]);
   }
   Profile::Toc();

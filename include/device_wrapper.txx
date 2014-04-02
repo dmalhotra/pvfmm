@@ -22,73 +22,52 @@ namespace pvfmm{
 namespace DeviceWrapper{
 
   // CUDA functions
-  inline uintptr_t alloc_device_cuda(size_t len) {
+  inline uintptr_t alloc_device_cuda(char* dev_handle, size_t len) {
     char *dev_ptr=NULL;
 #if defined(PVFMM_HAVE_CUDA)
-    //std::cout << "cudaMalloc();" << '\n';
     cudaError_t error;
+    error = cudaHostRegister(dev_handle, len, cudaHostRegisterPortable);
+    if(error != cudaSuccess){
+      std::cout<<len<<"\n";
+    }
+    assert(error == cudaSuccess);
     error = cudaMalloc((void**)&dev_ptr, len);
-    /*
-    std::cout << cudaGetErrorString(error) << ", "
-      << (uintptr_t) dev_ptr << " - " 
-      << (uintptr_t) dev_ptr + len 
-      << "(" << len << ")" << '\n';
-      */
+    assert(error == cudaSuccess);
 #endif
     return (uintptr_t)dev_ptr;
   }
 
-  inline void free_device_cuda(char *dev_ptr) {
+  inline void free_device_cuda(char* dev_handle, uintptr_t dev_ptr) {
 #if defined(PVFMM_HAVE_CUDA)
-    //std::cout << "cudaFree();" << '\n';
-    cudaFree(dev_ptr);
+    if(dev_handle==NULL || dev_ptr==0) return;
+    cudaError_t error;
+    error = cudaHostUnregister(dev_handle);
+    if (error != cudaSuccess)
+      std::cout<<cudaGetErrorString(error)<< '\n';
+    assert(error == cudaSuccess);
+    error = cudaFree((char*)dev_ptr);
+    assert(error == cudaSuccess);
 #endif
   }
 
   inline int host2device_cuda(char *host_ptr, char *dev_ptr, size_t len) {
     #if defined(PVFMM_HAVE_CUDA)
-	//std::cout << "cudaHostRegister(), cudaMemcpyAsync(HostToDevice);" << '\n';
     cudaError_t error;
     cudaStream_t *stream = CUDA_Lock::acquire_stream(0);
-
-    //error = cudaHostRegister(host_ptr, len, cudaHostRegisterPortable);
-    //if (error != cudaSuccess) std::cout << "cudaHostRegister(): " << cudaGetErrorString(error) << '\n';
     error = cudaMemcpyAsync(dev_ptr, host_ptr, len, cudaMemcpyHostToDevice, *stream);
-
-    //error = cudaMemcpy(dev_ptr, host_ptr, len, cudaMemcpyHostToDevice);
-    if (error != cudaSuccess) {
-	  std::cout << "cudaMemcpyAsync(HostToDevice): " << cudaGetErrorString(error) << ", " 
-		<< (uintptr_t) dev_ptr << ", len: "
-	    << len << '\n';	
-	  return -1;
-	  }
-    else return (int)len;
+    assert(error == cudaSuccess);
+    return 0;
     #endif
-    return -1;
   }
 
   inline int device2host_cuda(char *dev_ptr, char *host_ptr, size_t len) {
     #if defined(PVFMM_HAVE_CUDA)
-	//std::cout << "cudaHostRegister(), cudaMemcpyAsync(DeviceToHost);" << '\n';
     cudaError_t error;
     cudaStream_t *stream = CUDA_Lock::acquire_stream(0);
-
-    //error = cudaHostRegister(host_ptr, len, cudaHostRegisterPortable);
-    //if (error != cudaSuccess) std::cout << "cudaHostRegister(): " << cudaGetErrorString(error) << '\n';
     error = cudaMemcpyAsync(host_ptr, dev_ptr, len, cudaMemcpyDeviceToHost, *stream);
-/*
-    CUDA_Lock::wait(0);
-    error = cudaMemcpy(host_ptr, dev_ptr, len, cudaMemcpyDeviceToHost);
-    */
-    if (error != cudaSuccess) {
-	  std::cout << "cudaMemcpyAsnc(DeviceToHost): " << cudaGetErrorString(error) << ", " 
-		<< (uintptr_t) dev_ptr << ", len: "
-	    << len << '\n';	
-	  return -1;
-	}
-    else return (int)len;
+    assert(error == cudaSuccess);
+    return 0;
     #endif
-    return -1;
   }
 
 
@@ -182,10 +161,7 @@ namespace DeviceWrapper{
     #ifdef __INTEL_OFFLOAD
     return alloc_device_mic(dev_handle,len);
     #elif defined(PVFMM_HAVE_CUDA)
-    cudaError_t error;
-    error = cudaHostRegister(dev_handle, len, cudaHostRegisterPortable);
-    //if (error != cudaSuccess) std::cout << "cudaHostRegister(): " << cudaGetErrorString(error) << '\n';
-    return alloc_device_cuda(len);
+    return alloc_device_cuda(dev_handle,len);
     #else
     uintptr_t dev_ptr=(uintptr_t)NULL;
     {dev_ptr=(uintptr_t)dev_handle;}
@@ -197,10 +173,7 @@ namespace DeviceWrapper{
     #ifdef __INTEL_OFFLOAD
     free_device_mic(dev_handle,dev_ptr);
     #elif defined(PVFMM_HAVE_CUDA)
-    cudaError_t error;
-    error = cudaHostUnregister(dev_handle);
-    //if (error != cudaSuccess) std::cout << "cudaHostUnregister(): " << cudaGetErrorString(error) << '\n';
-    free_device_cuda((char*)dev_ptr);
+    free_device_cuda(dev_handle,dev_ptr);
     #else
     ;
     #endif
@@ -211,7 +184,6 @@ namespace DeviceWrapper{
     #ifdef __INTEL_OFFLOAD
     lock_idx=host2device_mic(host_ptr,dev_handle,dev_ptr,len);
     #elif defined(PVFMM_HAVE_CUDA)
-    //lock_idx is len if success.
     lock_idx=host2device_cuda(host_ptr,(char*)dev_ptr,len);
     #else
     ;
@@ -224,7 +196,6 @@ namespace DeviceWrapper{
     #ifdef __INTEL_OFFLOAD
     lock_idx=device2host_mic(dev_handle,dev_ptr, host_ptr, len);
     #elif defined(PVFMM_HAVE_CUDA)
-    //lock_idx is len if success.
     lock_idx=device2host_cuda((char*)dev_ptr, host_ptr, len);
     #else
     ;
@@ -259,9 +230,9 @@ namespace DeviceWrapper{
     lock_idx=0;
     lock_vec.Resize(NUM_LOCKS);
     lock_vec.SetZero();
-    lock_vec_=lock_vec.AllocDevice(false);
     {for(size_t i=0;i<NUM_LOCKS;i++) lock_vec [i]=1;}
     #ifdef __INTEL_OFFLOAD
+    lock_vec_=lock_vec.AllocDevice(false);
     #pragma offload target(mic:0)
     {for(size_t i=0;i<NUM_LOCKS;i++) lock_vec_[i]=1;}
     #endif
