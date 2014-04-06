@@ -130,16 +130,16 @@ template <class T>
 void Matrix<T>::Device2Host(T* host_ptr){
   dev.lock_idx=DeviceWrapper::device2host((char*)data_ptr,dev.dev_ptr,(char*)(host_ptr==NULL?data_ptr:host_ptr),dim[0]*dim[1]*sizeof(T));
 #if defined(PVFMM_HAVE_CUDA)
-  //cudaEventCreate(&lock);
-  //cudaEventRecord(lock, 0);
+  cudaEventCreate(&lock);
+  cudaEventRecord(lock, 0);
 #endif
 }
 
 template <class T>
 void Matrix<T>::Device2HostWait(){
 #if defined(PVFMM_HAVE_CUDA)
-  //cudaEventSynchronize(lock);
-  //cudaEventDestroy(lock);
+  cudaEventSynchronize(lock);
+  cudaEventDestroy(lock);
 #endif
   DeviceWrapper::wait(dev.lock_idx);
   dev.lock_idx=-1;

@@ -212,7 +212,7 @@ namespace DeviceWrapper{
     #ifdef __INTEL_OFFLOAD
     wait_mic(lock_idx);
     #elif defined(PVFMM_HAVE_CUDA)
-    CUDA_Lock::wait(0);
+    //CUDA_Lock::wait(0);
     #else
     ;
     #endif
