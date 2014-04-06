@@ -120,6 +120,9 @@ class Matrix{
 
   Device dev;
   Vector<char> dev_sig;
+#if defined(PVFMM_HAVE_CUDA)
+  cudaEvent_t lock;
+#endif
 };
 
 

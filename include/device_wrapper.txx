@@ -27,11 +27,12 @@ namespace DeviceWrapper{
 #if defined(PVFMM_HAVE_CUDA)
     cudaError_t error;
     error = cudaHostRegister(dev_handle, len, cudaHostRegisterPortable);
-    if(error != cudaSuccess){
-      std::cout<<len<<"\n";
-    }
+    if (error != cudaSuccess)
+      std::cout<<cudaGetErrorString(error)<< '\n';
     assert(error == cudaSuccess);
     error = cudaMalloc((void**)&dev_ptr, len);
+    if (error != cudaSuccess)
+      std::cout<<cudaGetErrorString(error)<< '\n';
     assert(error == cudaSuccess);
 #endif
     return (uintptr_t)dev_ptr;
@@ -55,6 +56,8 @@ namespace DeviceWrapper{
     cudaError_t error;
     cudaStream_t *stream = CUDA_Lock::acquire_stream(0);
     error = cudaMemcpyAsync(dev_ptr, host_ptr, len, cudaMemcpyHostToDevice, *stream);
+    if (error != cudaSuccess)
+      std::cout<<cudaGetErrorString(error)<< '\n';
     assert(error == cudaSuccess);
     return 0;
     #endif
@@ -65,6 +68,8 @@ namespace DeviceWrapper{
     cudaError_t error;
     cudaStream_t *stream = CUDA_Lock::acquire_stream(0);
     error = cudaMemcpyAsync(host_ptr, dev_ptr, len, cudaMemcpyDeviceToHost, *stream);
+    if (error != cudaSuccess)
+      std::cout<<cudaGetErrorString(error)<< '\n';
     assert(error == cudaSuccess);
     return 0;
     #endif
