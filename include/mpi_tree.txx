@@ -1234,6 +1234,7 @@ inline void IsShared(std::vector<PackedData>& nodes, MortonId* m1, MortonId* m2,
 //#define PREFETCH_T0(addr,nrOfBytesAhead) _mm_prefetch(((char *)(addr))+nrOfBytesAhead,_MM_HINT_T0)
 template <class TreeNode>
 void MPI_Tree<TreeNode>::ConstructLET(BoundaryType bndry){
+#if 0
   int num_p,rank;
   MPI_Comm_size(*Comm(),&num_p);
   MPI_Comm_rank(*Comm(),&rank );
@@ -1429,6 +1430,519 @@ void MPI_Tree<TreeNode>::ConstructLET(BoundaryType bndry){
 #ifndef NDEBUG
   CheckTree();
 #endif
+#endif
+
+  Profile::Tic("LET_Sparse", &comm, true, 5);
+  ConstructLET_Sparse(bndry);
+  Profile::Toc();
+}
+
+template <class TreeNode>
+void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
+  typedef int MPI_size_t;
+  struct CommData{
+    MortonId mid;
+    TreeNode* node;
+    size_t pkd_length;
+
+    size_t   usr_cnt;
+    MortonId usr_mid[COLLEAGUE_COUNT];
+    size_t   usr_pid[COLLEAGUE_COUNT];
+  };
+
+  int num_p,rank;
+  MPI_Comm_size(*Comm(),&num_p);
+  MPI_Comm_rank(*Comm(),&rank );
+  if(num_p==1) return;
+
+  int omp_p=omp_get_max_threads();
+  std::vector<MortonId> mins=GetMins();
+
+  // Allocate Memory.
+  static std::vector<char> shrd_buff_vec0(omp_p*64l*1024l*1024l); // TODO: Build memory manager for such allocations.
+  static std::vector<char> shrd_buff_vec1(omp_p*64l*1024l*1024l); // TODO: Build memory manager for such allocations.
+  static std::vector<char> send_buff;
+  static std::vector<char> recv_buff;
+
+  Profile::Tic("SharedNodes", &comm, true, 5); //----
+  CommData* node_comm_data=NULL; // CommData for all nodes.
+  std::vector<void*> shared_data; // CommData for shared nodes.
+  std::vector<par::SortPair<size_t,size_t> > pid_node_pair; // <pid, shared_data index> list
+  { // Set node_comm_data
+    MortonId mins_r0=mins[         rank+0         ].getDFD();
+    MortonId mins_r1=mins[std::min(rank+1,num_p-1)].getDFD();
+
+    std::vector<TreeNode*> nodes=this->GetNodeList();
+    node_comm_data=new CommData[nodes.size()];
+    #pragma omp parallel for
+    for(size_t tid=0;tid<omp_p;tid++){
+      std::vector<MortonId> nbr_lst;
+      size_t a=(nodes.size()* tid   )/omp_p;
+      size_t b=(nodes.size()*(tid+1))/omp_p;
+      for(size_t i=a;i<b;i++){
+        bool shared=false;
+        CommData& comm_data=node_comm_data[i];
+        comm_data.node=nodes[i];
+        comm_data.mid=comm_data.node->GetMortonId();
+        comm_data.usr_cnt=0;
+
+        if(comm_data.node->IsGhost()) continue;
+        if(comm_data.node->Depth()==0) continue;
+        //if(comm_data.mid.getDFD()<mins_r0 && comm_data.mid.NextId().getDFD()<mins_r1) continue;
+
+        comm_data.mid.NbrList(nbr_lst,comm_data.node->Depth()-1, bndry==Periodic);
+        comm_data.usr_cnt=nbr_lst.size();
+        for(size_t j=0;j<nbr_lst.size();j++){
+          MortonId usr_mid=nbr_lst[j];
+          MortonId usr_mid_dfd=usr_mid.getDFD();
+          comm_data.usr_mid[j]=usr_mid;
+          if(usr_mid_dfd<mins_r0 || (rank+1<num_p && usr_mid_dfd>=mins[rank+1])){ // Find the user pid.
+            size_t usr_pid=std::upper_bound(&mins[0],&mins[num_p],usr_mid_dfd)-&mins[0]-1;
+            if(comm_data.mid.NextId().getDFD()>mins[usr_pid].getDFD() && (usr_pid+1==num_p || comm_data.mid.getDFD()<mins[usr_pid+1].getDFD())){
+              // This node is non-ghost on usr_pid, so we don't need to send this to usr_pid.
+              usr_pid=rank;
+            }
+            comm_data.usr_pid[j]=usr_pid;
+          }else comm_data.usr_pid[j]=rank;
+          if(!shared){ // Check if this node needs to be transferred.
+            if(comm_data.usr_pid[j]!=rank || (rank+1<num_p && usr_mid.NextId().getDFD()>mins_r1) ){
+              shared=true;
+            }
+          }
+        }
+        #pragma omp critical (ADD_SHARED)
+        if(shared){
+          for(size_t j=0;j<comm_data.usr_cnt;j++)
+          if(comm_data.usr_pid[j]!=rank){
+            bool unique_pid=true;
+            for(size_t k=0;k<j;k++){
+              if(comm_data.usr_pid[j]==comm_data.usr_pid[k]){
+                unique_pid=false;
+                break;
+              }
+            }
+            if(unique_pid){
+              par::SortPair<size_t,size_t> p;
+              p.key=comm_data.usr_pid[j];
+              p.data=shared_data.size();
+              pid_node_pair.push_back(p);
+            }
+          }
+          shared_data.push_back(&comm_data);
+        }
+        {// old code - commented
+////        for(size_t j=0;j<nbr_lst.size();j++){
+////          if(nbr_lst[j]<mins[rank] || (rank+1<num_p && nbr_lst[j]>=mins[rank+1])){
+////            prc_lst.push_back(std::lower_bound(&mins[0],&mins[num_p],nbr_lst[j])-&mins[0]);
+////          }else prc_lst.push_back(rank);
+////          for(size_t k=0;k<prc_lst.size()-1;k++){
+////            if(prc_lst[k]==prc_lst.back()){
+////              prc_lst.pop_back();
+////              break;
+////            }
+////          }
+////        }
+////        for(size_t j=0;j<prc_lst.size();j++){
+////          par::SortPair<size_t, TreeNode*> proc_node_pair;
+////          par::SortPair<size_t, MortonId > proc_mort_pair;
+////          proc_node_pair.key=prc_lst[j]; proc_node_pair.data=nodes  [i];
+////          proc_mort_pair.key=prc_lst[j]; proc_mort_pair.data=mid_lst[j];
+////          #pragma omp critical (ADD_PAIR)
+////          {
+////            node_usr.push_back(p);
+////          }
+////        }
+        }
+      }
+    }
+    omp_par::merge_sort(&pid_node_pair[0], &pid_node_pair[pid_node_pair.size()]);
+    //std::cout<<rank<<' '<<shared_data.size()<<' '<<pid_node_pair.size()<<'\n';
+  }
+  Profile::Toc();
+
+  Profile::Tic("PackNodes", &comm, true, 5); //----
+  std::vector<PackedData> pkd_data(shared_data.size()); // PackedData for all shared nodes.
+  { // Pack shared nodes.
+    char* data_ptr=&shrd_buff_vec0[0];
+    for(size_t i=0;i<shared_data.size();i++){
+      PackedData& p=pkd_data[i];
+      CommData& comm_data=*(CommData*)shared_data[i];
+      PackedData p0=comm_data.node->Pack(true,data_ptr,sizeof(CommData));
+      p.data=data_ptr; p.length=sizeof(CommData)+p0.length;
+      comm_data.pkd_length=p.length;
+
+      ((CommData*)data_ptr)[0]=comm_data;
+      shared_data[i]=data_ptr;
+      data_ptr+=p.length;
+      assert(data_ptr<=&(*shrd_buff_vec0.end())); //TODO: resize if needed.
+    }
+
+    // now CommData is stored in shrd_buff_vec0.
+    delete[] node_comm_data;
+    node_comm_data=NULL;
+  }
+  Profile::Toc();
+
+  Profile::Tic("SendBuff", &comm, true, 5); //----
+  std::vector<MPI_size_t> send_size(num_p,0);
+  std::vector<MPI_size_t> send_disp(num_p,0);
+  if(pid_node_pair.size()){ // Build send_buff.
+    std::vector<size_t> size(pid_node_pair.size(),0);
+    std::vector<size_t> disp(pid_node_pair.size(),0);
+    #pragma omp parallel for
+    for(size_t i=0;i<pid_node_pair.size();i++){
+      size[i]=pkd_data[pid_node_pair[i].data].length;
+    }
+    omp_par::scan(&size[0],&disp[0],pid_node_pair.size());
+
+    // Resize send_buff.
+    if(send_buff.size()<size[pid_node_pair.size()-1]+disp[pid_node_pair.size()-1]){
+      send_buff.resize(size[pid_node_pair.size()-1]+disp[pid_node_pair.size()-1]);
+    }
+
+    // Copy data to send_buff.
+    #pragma omp parallel for
+    for(size_t i=0;i<pid_node_pair.size();i++){
+      PackedData& p=pkd_data[pid_node_pair[i].data];
+      mem::memcopy(&send_buff[disp[i]], p.data, p.length);
+    }
+
+    // Compute send_size, send_disp.
+    #if 0 // This is too complicated
+    {
+      // Compute send_disp.
+      #pragma omp parallel for
+      for(size_t tid=0;tid<omp_p;tid++){
+        size_t a=(pid_node_pair.size()* tid   )/omp_p;
+        size_t b=(pid_node_pair.size()*(tid+1))/omp_p;
+        size_t p0=pid_node_pair[a  ].key;
+        size_t p1=pid_node_pair[b-1].key;
+        if(tid>    0) while(a<pid_node_pair.size() && p0==pid_node_pair[a].key) a++;
+        if(tid<omp_p) while(b<pid_node_pair.size() && p1==pid_node_pair[b].key) b++;
+        for(size_t i=a;i<b;i++){
+          send_size[pid_node_pair[i].key]+=size[i];
+          if(p0!=pid_node_pair[i].key){
+            for(size_t j=p0+1;j<=pid_node_pair[i].key;j++){
+              send_disp[j]=disp[i];
+            }
+            p0=pid_node_pair[i].key;
+          }
+        }
+      }
+      for(size_t i=pid_node_pair[pid_node_pair.size()-1].key+1;i<num_p;i++){
+        send_disp[i]=size[pid_node_pair.size()-1]+disp[pid_node_pair.size()-1];
+      }
+
+      // Compute send_size.
+      #pragma omp parallel for
+      for(size_t i=0;i<num_p-1;i++){
+        send_size[i]=send_disp[i+1]-send_disp[i];
+      }
+      send_size[num_p-1]=size[pid_node_pair.size()-1]+disp[pid_node_pair.size()-1]-send_disp[num_p-1];
+    }
+    #else
+    {
+      // Compute send_size.
+      #pragma omp parallel for
+      for(size_t tid=0;tid<omp_p;tid++){
+        size_t a=(pid_node_pair.size()* tid   )/omp_p;
+        size_t b=(pid_node_pair.size()*(tid+1))/omp_p;
+        size_t p0=pid_node_pair[a  ].key;
+        size_t p1=pid_node_pair[b-1].key;
+        if(tid>    0) while(a<pid_node_pair.size() && p0==pid_node_pair[a].key) a++;
+        if(tid<omp_p) while(b<pid_node_pair.size() && p1==pid_node_pair[b].key) b++;
+        for(size_t i=a;i<b;i++){
+          send_size[pid_node_pair[i].key]+=size[i];
+        }
+      }
+
+      // Compute send_disp.
+      omp_par::scan(&send_size[0],&send_disp[0],num_p);
+    }
+    #endif
+  }
+  Profile::Toc();
+
+  Profile::Tic("A2A_Sparse", &comm, true, 5);
+  size_t recv_length=0;
+  { // Allocate recv_buff.
+    std::vector<MPI_size_t> recv_size(num_p,0);
+    std::vector<MPI_size_t> recv_disp(num_p,0);
+    MPI_Alltoall(&send_size[0], 1, par::Mpi_datatype<MPI_size_t>::value(),
+                 &recv_size[0], 1, par::Mpi_datatype<MPI_size_t>::value(), *Comm());
+    omp_par::scan(&recv_size[0],&recv_disp[0],num_p);
+    recv_length=recv_size[num_p-1]+recv_disp[num_p-1];
+    if(recv_buff.size()<recv_length){
+      recv_buff.resize(recv_length);
+    }
+    par::Mpi_Alltoallv_sparse(&send_buff[0], &send_size[0], &send_disp[0],
+                              &recv_buff[0], &recv_size[0], &recv_disp[0], *Comm());
+  }
+  Profile::Toc();
+
+  Profile::Tic("Unpack", &comm, true, 5); //----
+  std::vector<void*> recv_data; // CommData for received nodes.
+  { // Unpack received octants.
+    for(size_t i=0; i<recv_length;){
+      CommData& comm_data=*(CommData*)&recv_buff[i];
+      recv_data.push_back(&comm_data);
+      i+=comm_data.pkd_length;
+    }
+
+    int nchld=(1UL<<this->Dim()); // Number of children.
+    std::vector<Node_t*> recv_nodes(recv_data.size());
+    for(size_t i=0;i<recv_data.size();i++){ // Find shared nodes.
+      CommData& comm_data=*(CommData*)recv_data[i];
+      MortonId& mid=comm_data.mid;
+      Node_t* srch_node=this->RootNode();
+      while(srch_node->GetMortonId()!=mid){
+        Node_t* ch_node;
+        if(srch_node->IsLeaf()){
+          srch_node->SetGhost(true);
+          srch_node->Subdivide();
+        }
+        for(int j=nchld-1;j>=0;j--){
+          ch_node=(Node_t*)srch_node->Child(j);
+          if(ch_node->GetMortonId()<=mid){
+            srch_node=ch_node;
+            break;
+          }
+        }
+      }
+      recv_nodes[i]=srch_node;
+    }
+    #pragma omp parallel for
+    for(size_t i=0;i<recv_data.size();i++){
+      assert(recv_nodes[i]->IsGhost());
+      CommData& comm_data=*(CommData*)recv_data[i];
+
+      PackedData p;
+      p.data=((char*)recv_data[i])+sizeof(CommData);
+      p.length=comm_data.pkd_length-sizeof(CommData);
+      recv_nodes[i]->Unpack(p);
+    }
+  }
+  Profile::Toc();
+
+  Profile::Tic("Broadcast", &comm, true, 5); //----
+  { // Broadcast octants.
+    std::vector<MortonId> shrd_mid;
+    if(rank+1<num_p){ // Set shrd_mid.
+      MortonId m=mins[rank+1];
+      while(m.GetDepth()>0 && m.getDFD()>=mins[rank+1]){
+        m=m.getAncestor(m.GetDepth()-1);
+      }
+
+      size_t d=m.GetDepth()+1;
+      shrd_mid.resize(d);
+      for(size_t i=0;i<d;i++){
+        shrd_mid[i]=m.getAncestor(i);
+      }
+    }
+
+    std::vector<void*> shrd_data; // CommData for shared nodes.
+    char* data_ptr=&shrd_buff_vec1[0];
+    { // Copy data to shrd_buff_vec1 and Set shrd_data
+      for(size_t i=0;i<shared_data.size();i++){
+        CommData& comm_data=*(CommData*)shared_data[i];
+        assert(comm_data.mid.GetDepth()>0);
+        size_t d=comm_data.mid.GetDepth()-1;
+        if(d<shrd_mid.size())
+        for(size_t j=0;j<comm_data.usr_cnt;j++){
+          if(comm_data.usr_mid[j]==shrd_mid[d]){
+            assert(data_ptr+comm_data.pkd_length<=&(*shrd_buff_vec1.end())); //TODO: resize if needed.
+            mem::memcopy(data_ptr, &comm_data, comm_data.pkd_length);
+            shrd_data.push_back(data_ptr);
+            data_ptr+=comm_data.pkd_length;
+            break;
+          }
+        }
+      }
+      for(size_t i=0;i<recv_data.size();i++){
+        CommData& comm_data=*(CommData*)recv_data[i];
+        assert(comm_data.mid.GetDepth()>0);
+        size_t d=comm_data.mid.GetDepth()-1;
+        if(d<shrd_mid.size())
+        for(size_t j=0;j<comm_data.usr_cnt;j++){
+          if(comm_data.usr_mid[j]==shrd_mid[d]){
+            assert(data_ptr+comm_data.pkd_length<=&(*shrd_buff_vec1.end())); //TODO: resize if needed.
+            mem::memcopy(data_ptr, &comm_data, comm_data.pkd_length);
+            shrd_data.push_back(data_ptr);
+            data_ptr+=comm_data.pkd_length;
+            break;
+          }
+        }
+      }
+    }
+
+    size_t pid_shift=1;
+    while(pid_shift<num_p){
+      MPI_size_t recv_pid=(rank>=pid_shift?rank-pid_shift:rank);
+      MPI_size_t send_pid=(rank+pid_shift<num_p?rank+pid_shift:rank);
+
+      MPI_size_t send_length=0;
+      if(send_pid!=rank){ // Send data for send_pid
+        std::vector<void*> send_data;
+        std::vector<size_t> send_size;
+        for(size_t i=0; i<shrd_data.size();i++){
+          CommData& comm_data=*(CommData*)shrd_data[i];
+          size_t d=comm_data.mid.GetDepth()-1;
+          bool shared=(d<shrd_mid.size() && shrd_mid[d].NextId().getDFD()>mins[send_pid].getDFD());
+          shared=shared && ((send_pid+1<num_p && comm_data.mid.getDFD()>=mins[send_pid+1].getDFD()) || comm_data.mid.NextId().getDFD()<=mins[send_pid].getDFD()); // this node is non-ghost on send_pid. /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+          if(shared) for(size_t j=0;j<comm_data.usr_cnt;j++){ // if send_pid already has this node then skip
+            if(comm_data.usr_pid[j]==send_pid){
+              shared=false;
+              break;
+            }
+          }
+          if(!shared) continue;
+
+          send_data.push_back(&comm_data);
+          send_size.push_back(comm_data.pkd_length);
+        }
+        std::vector<size_t> send_disp(send_data.size(),0);
+        omp_par::scan(&send_size[0],&send_disp[0],send_data.size());
+        if(send_data.size()>0) send_length=send_size.back()+send_disp.back();
+
+        // Resize send_buff.
+        if(send_buff.size()<send_length){
+          send_buff.resize(send_length);
+        }
+
+        // Copy data to send_buff.
+        #pragma omp parallel for
+        for(size_t i=0;i<send_data.size();i++){
+          CommData& comm_data=*(CommData*)send_data[i];
+          mem::memcopy(&send_buff[send_disp[i]], &comm_data, comm_data.pkd_length);
+        }
+      }
+
+      MPI_size_t recv_length=0;
+      { // Send-Recv data
+        MPI_Request request;
+        MPI_Status status;
+        if(recv_pid!=rank) MPI_Irecv(&recv_length, 1, par::Mpi_datatype<MPI_size_t>::value(),recv_pid, 1, *Comm(), &request);
+        if(send_pid!=rank) MPI_Send (&send_length, 1, par::Mpi_datatype<MPI_size_t>::value(),send_pid, 1, *Comm());
+        if(recv_pid!=rank) MPI_Wait(&request, &status);
+
+        // Resize recv_buff
+        if(recv_buff.size()<recv_length){
+          recv_buff.resize(recv_length);
+        }
+
+        if(recv_length>0) MPI_Irecv(&recv_buff[0], recv_length, par::Mpi_datatype<char>::value(),recv_pid, 1, *Comm(), &request);
+        if(send_length>0) MPI_Send (&send_buff[0], send_length, par::Mpi_datatype<char>::value(),send_pid, 1, *Comm());
+        if(recv_length>0) MPI_Wait(&request, &status);
+      }
+
+      std::vector<void*> recv_data; // CommData for received nodes.
+      { // Unpack received octants.
+        for(size_t i=0; i<recv_length;){
+          CommData& comm_data=*(CommData*)&recv_buff[i];
+          recv_data.push_back(&comm_data);
+          i+=comm_data.pkd_length;
+        }
+
+        int nchld=(1UL<<this->Dim()); // Number of children.
+        std::vector<Node_t*> recv_nodes(recv_data.size());
+        for(size_t i=0;i<recv_data.size();i++){ // Find received octants in tree.
+          CommData& comm_data=*(CommData*)recv_data[i];
+          MortonId& mid=comm_data.mid;
+          Node_t* srch_node=this->RootNode();
+          while(srch_node->GetMortonId()!=mid){
+            Node_t* ch_node;
+            if(srch_node->IsLeaf()){
+              srch_node->SetGhost(true);
+              srch_node->Subdivide();
+            }
+            for(int j=nchld-1;j>=0;j--){
+              ch_node=(Node_t*)srch_node->Child(j);
+              if(ch_node->GetMortonId()<=mid){
+                srch_node=ch_node;
+                break;
+              }
+            }
+          }
+          recv_nodes[i]=srch_node;
+        }
+        #pragma omp parallel for
+        for(size_t i=0;i<recv_data.size();i++){
+          //assert(recv_nodes[i]->IsGhost()); /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+          if(!recv_nodes[i]->IsGhost()) continue;
+          CommData& comm_data=*(CommData*)recv_data[i];
+
+          PackedData p;
+          p.data=((char*)recv_data[i])+sizeof(CommData);
+          p.length=comm_data.pkd_length-sizeof(CommData);
+          recv_nodes[i]->Unpack(p);
+        }
+      }
+
+      pid_shift<<=1;
+      send_pid=(rank+pid_shift<num_p?rank+pid_shift:rank);
+      if(send_pid!=rank){ // Copy data to shrd_buff_vec1 and Set shrd_data
+        for(size_t i=0;i<recv_data.size();i++){
+          CommData& comm_data=*(CommData*)recv_data[i];
+          assert(comm_data.mid.GetDepth()>0);
+          size_t d=comm_data.mid.GetDepth()-1;
+          if(d<shrd_mid.size() && shrd_mid[d].NextId().getDFD()>mins[send_pid].getDFD())
+          for(size_t j=0;j<comm_data.usr_cnt;j++){
+            if(comm_data.usr_mid[j]==shrd_mid[d]){
+              assert(data_ptr+comm_data.pkd_length<=&(*shrd_buff_vec1.end())); //TODO: resize if needed.
+              mem::memcopy(data_ptr, &comm_data, comm_data.pkd_length);
+              shrd_data.push_back(data_ptr);
+              data_ptr+=comm_data.pkd_length;
+              break;
+            }
+          }
+        }
+      }
+    }
+  }
+  Profile::Toc();
+
+  {
+//  std::vector<TreeNode*> node_lst;
+//  Profile::Tic("LET_Sparse", &comm, true, 5);
+//  {
+//    // Constants.
+//    const size_t chld_cnt=1UL<<COORD_DIM;
+//
+//    std::vector<TreeNode*> nodes;
+//    std::vector<char> is_shared0;
+//    std::vector<char> is_shared1;
+//    MortonId* m1=&mins[rank];
+//    MortonId* m2=(rank+1<num_p?&mins[rank+1]:NULL);
+//
+//    nodes.push_back(this->RootNode());
+//    while(nodes.size()>0){
+//
+//      // Determine which nodes are shared.
+//      is_shared0.resize(nodes.size(),false);
+//      is_shared1.resize(nodes.size(),false);
+//      IsShared(nodes, NULL, m2, bndry, is_shared0);
+//      IsShared(nodes, m1, NULL, bndry, is_shared1);
+//
+//      // Add shared nodes to node_lst.
+//      for(size_t i=0;i<nodes.size();i++){
+//        if(is_shared0[i] || is_shared1[i]) node_lst.push_back(nodes[i]);
+//      }
+//
+//      // Initialize nodes vector for next round
+//      std::vector<TreeNode*> new_nodes;
+//      for(size_t i=0;i<nodes.size();i++){
+//        if(!nodes[i]->IsLeaf()){
+//          for(size_t j=0;j<chld_cnt;j++){
+//            TreeNode* chld=(TreeNode*)nodes[i]->Child(j);
+//            if(!chld->IsGhost()) new_nodes.push_back(chld);
+//          }
+//        }
+//      }
+//      nodes.swap(new_nodes);
+//    }
+//  }
+//  Profile::Toc();
+  }
 }
 
 
@@ -1570,10 +2084,10 @@ const std::vector<MortonId>& MPI_Tree<TreeNode>::GetMins(){
     if(!n->IsGhost() && n->IsLeaf()) break;
     n=this->PreorderNxt(n);
   }
+  ASSERT_WITH_MSG(n!=NULL,"No non-ghost nodes found on this process.");
 
   MortonId my_min;
-  if(n!=NULL)
-    my_min=n->GetMortonId();
+  my_min=n->GetMortonId();
 
   int np;
   MPI_Comm_size(*Comm(),&np);

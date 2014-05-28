@@ -73,6 +73,14 @@ namespace par{
   template<typename T>
     int HyperQuickSort(const std::vector<T>& in, std::vector<T> & out, const MPI_Comm& comm);
 
+  template<typename A, typename B>
+    struct SortPair{
+      int operator<(const SortPair<A,B>& p1) const{ return key<p1.key;}
+
+      A key;
+      B data;
+    };
+
   /**
     @brief Returns the scatter mapping which will sort the keys.
     @author Dhairya Malhotra

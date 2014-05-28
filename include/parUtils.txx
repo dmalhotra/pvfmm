@@ -525,14 +525,6 @@ namespace par{
     }
 
 
-  template<typename A, typename B>
-    struct SortPair{
-      int operator<(const SortPair<A,B>& p1) const{ return key<p1.key;}
-
-      A key;
-      B data;
-    };
-
   template<typename T>
     int SortScatterIndex(const Vector<T>& key, Vector<size_t>& scatter_index, const MPI_Comm& comm, const T* split_key_){
       typedef SortPair<T,size_t> Pair_t;

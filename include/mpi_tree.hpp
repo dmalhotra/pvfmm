@@ -103,6 +103,7 @@ class MPI_Tree: public Tree<TreeNode>{
    * \brief Construct the LET by exchanging ghost octants.
    */
   void ConstructLET(BoundaryType bndry=FreeSpace);
+  void ConstructLET_Sparse(BoundaryType bndry=FreeSpace);
 
   /**
    * \brief Write to a <fname>.vtu file.
