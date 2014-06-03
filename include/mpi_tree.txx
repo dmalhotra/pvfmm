@@ -14,6 +14,7 @@
 #include <parUtils.h>
 #include <ompUtils.h>
 #include <profile.hpp>
+#include <mem_mgr.hpp>
 
 namespace pvfmm{
 
@@ -1229,13 +1230,29 @@ inline void IsShared(std::vector<PackedData>& nodes, MortonId* m1, MortonId* m2,
 
 
 /**
+ * \brief Construct Locally Essential Tree by exchanging Ghost octants.
+ */
+template <class TreeNode>
+void MPI_Tree<TreeNode>::ConstructLET(BoundaryType bndry){
+  Profile::Tic("LET_Hypercube", &comm, true, 5);
+  ConstructLET_Hypercube(bndry);
+  Profile::Toc();
+
+  Profile::Tic("LET_Sparse", &comm, true, 5);
+  ConstructLET_Sparse(bndry);
+  Profile::Toc();
+
+#ifndef NDEBUG
+  CheckTree();
+#endif
+}
+
+/**
  * \brief Hypercube based scheme to exchange Ghost octants.
  */
 //#define PREFETCH_T0(addr,nrOfBytesAhead) _mm_prefetch(((char *)(addr))+nrOfBytesAhead,_MM_HINT_T0)
 template <class TreeNode>
-void MPI_Tree<TreeNode>::ConstructLET(BoundaryType bndry){
-#if 1
-  Profile::Tic("LET_Hypercube", &comm, true, 5); //----
+void MPI_Tree<TreeNode>::ConstructLET_Hypercube(BoundaryType bndry){
   int num_p,rank;
   MPI_Comm_size(*Comm(),&num_p);
   MPI_Comm_rank(*Comm(),&rank );
@@ -1427,21 +1444,12 @@ void MPI_Tree<TreeNode>::ConstructLET(BoundaryType bndry){
     }
   }
   //Now LET is complete.
-  Profile::Toc();
-#endif
 
-  Profile::Tic("LET_Sparse", &comm, true, 5);
-  ConstructLET_Sparse(bndry);
-  Profile::Toc();
-
-  Profile::Tic("LET_Sparse_", &comm, true, 5);
-  ConstructLET_Sparse_(bndry);
-  Profile::Toc();
-#ifndef NDEBUG
-  CheckTree();
-#endif
 }
 
+/**
+ * \brief Sparse communication scheme to exchange Ghost octants.
+ */
 template <class TreeNode>
 void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
   typedef int MPI_size_t;
@@ -1460,11 +1468,12 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
   MPI_Comm_rank(*Comm(),&rank );
   if(num_p==1) return;
 
-  int omp_p=omp_get_max_threads(); omp_p=1;
+  int omp_p=omp_get_max_threads();
   std::vector<MortonId> mins=GetMins();
 
   // Allocate Memory.
-  static std::vector<char> shrd_buff_vec0(16*64l*1024l*1024l); // TODO: Build memory manager for such allocations.
+  #define BUFFER_SIZE 1024
+  static mem::MemoryManager memgr(BUFFER_SIZE*1024l*1024l);
   static std::vector<char> shrd_buff_vec1(16*64l*1024l*1024l); // TODO: Build memory manager for such allocations.
   static std::vector<char> send_buff;
   static std::vector<char> recv_buff;
@@ -1478,7 +1487,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
     MortonId mins_r1=mins[std::min(rank+1,num_p-1)].getDFD();
 
     std::vector<TreeNode*> nodes=this->GetNodeList();
-    node_comm_data=new CommData[nodes.size()];
+    node_comm_data=(CommData*)memgr.malloc(sizeof(CommData)*nodes.size());
     #pragma omp parallel for
     for(size_t tid=0;tid<omp_p;tid++){
       std::vector<MortonId> nbr_lst;
@@ -1505,6 +1514,10 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
           MortonId usr_mid_dfd=usr_mid.getDFD();
           comm_data.usr_mid[j]=usr_mid;
           comm_data.usr_pid[j]=std::upper_bound(&mins[0],&mins[num_p],usr_mid_dfd)-&mins[0]-1;
+//          if(usr_mid_dfd<mins_r0 || (rank+1<num_p && usr_mid_dfd>=mins_r1)){ // Find the user pid.
+//            size_t usr_pid=std::upper_bound(&mins[0],&mins[num_p],usr_mid_dfd)-&mins[0]-1;
+//            comm_data.usr_pid[j]=usr_pid;
+//          }else comm_data.usr_pid[j]=rank;
           if(!shared){ // Check if this node needs to be transferred during broadcast.
             if(comm_data.usr_pid[j]!=rank || (rank+1<num_p && usr_mid.NextId()>mins_r1) ){
               shared=true;
@@ -1539,25 +1552,31 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
   //Profile::Toc();
 
   //Profile::Tic("PackNodes", &comm, false, 5);
-  std::vector<PackedData> pkd_data(shared_data.size()); // PackedData for all shared nodes.
   { // Pack shared nodes.
-    char* data_ptr=&shrd_buff_vec0[0];
-    // TODO: Add OpenMP parallelism.
-    for(size_t i=0;i<shared_data.size();i++){
-      PackedData& p=pkd_data[i];
-      CommData& comm_data=*(CommData*)shared_data[i];
-      PackedData p0=comm_data.node->Pack(true,data_ptr,sizeof(CommData));
-      p.data=data_ptr; p.length=sizeof(CommData)+p0.length;
-      comm_data.pkd_length=p.length;
+    #pragma omp parallel for
+    for(size_t tid=0;tid<omp_p;tid++){
+      size_t buff_length=10l*1024l*1024l; // 1MB buffer per thread.
+      char* buff=(char*)memgr.malloc(buff_length);
 
-      ((CommData*)data_ptr)[0]=comm_data;
-      shared_data[i]=data_ptr;
-      data_ptr+=p.length;
-      assert(data_ptr<=&(*shrd_buff_vec0.end())); //TODO: resize if needed.
+      size_t a=( tid   *shared_data.size())/omp_p;
+      size_t b=((tid+1)*shared_data.size())/omp_p;
+      for(size_t i=a;i<b;i++){
+        CommData& comm_data=*(CommData*)shared_data[i];
+        PackedData p0=comm_data.node->Pack(true,buff);
+        assert(p0.length<buff_length);
+
+        shared_data[i]=memgr.malloc(sizeof(CommData)+p0.length);
+        CommData& new_comm_data=*(CommData*)shared_data[i];
+        new_comm_data=comm_data;
+
+        new_comm_data.pkd_length=sizeof(CommData)+p0.length;
+        mem::memcopy(((char*)shared_data[i])+sizeof(CommData),buff,p0.length);
+      }
+      memgr.free(buff);
     }
 
-    // now CommData is stored in shrd_buff_vec0.
-    delete[] node_comm_data;
+    // now CommData is stored in shared_data
+    memgr.free(node_comm_data);
     node_comm_data=NULL;
   }
   //Profile::Toc();
@@ -1570,7 +1589,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
     std::vector<size_t> disp(pid_node_pair.size(),0);
     #pragma omp parallel for
     for(size_t i=0;i<pid_node_pair.size();i++){
-      size[i]=pkd_data[pid_node_pair[i].data].length;
+      size[i]=((CommData*)shared_data[pid_node_pair[i].data])->pkd_length;
     }
     omp_par::scan(&size[0],&disp[0],pid_node_pair.size());
 
@@ -1582,8 +1601,8 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
     // Copy data to send_buff.
     #pragma omp parallel for
     for(size_t i=0;i<pid_node_pair.size();i++){
-      PackedData& p=pkd_data[pid_node_pair[i].data];
-      mem::memcopy(&send_buff[disp[i]], p.data, p.length);
+      size_t shrd_idx=pid_node_pair[i].data;
+      mem::memcopy(&send_buff[disp[i]], shared_data[shrd_idx], size[i]);
     }
 
     // Compute send_size, send_disp.
@@ -1593,10 +1612,14 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
       for(size_t tid=0;tid<omp_p;tid++){
         size_t a=(pid_node_pair.size()* tid   )/omp_p;
         size_t b=(pid_node_pair.size()*(tid+1))/omp_p;
-        size_t p0=pid_node_pair[a  ].key;
-        size_t p1=pid_node_pair[b-1].key;
-        if(tid>    0) while(a<pid_node_pair.size() && p0==pid_node_pair[a].key) a++;
-        if(tid<omp_p) while(b<pid_node_pair.size() && p1==pid_node_pair[b].key) b++;
+        if(a>                   0){
+          size_t p0=pid_node_pair[a].key;
+          while(a<pid_node_pair.size() && p0==pid_node_pair[a].key) a++;
+        }
+        if(b<pid_node_pair.size()){
+          size_t p1=pid_node_pair[b].key;
+          while(b<pid_node_pair.size() && p1==pid_node_pair[b].key) b++;
+        }
         for(size_t i=a;i<b;i++){
           send_size[pid_node_pair[i].key]+=size[i];
         }
@@ -1861,6 +1884,9 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
     }
   }
   //Profile::Toc();
+
+  // Free data
+  for(size_t i=0;i<shared_data.size();i++) memgr.free(shared_data[i]);
 }
 
 
