@@ -86,9 +86,12 @@ are given below:
      module swap PrgEnv-pgi PrgEnv-intel
      ./configure MPICXX="CC" F77="ftn"
 
-`Stampede (TACC)'
+`Stampede (TACC)' (Offload build)
      module load fftw3
      ./configure CXXFLAGS="-mavx -wd3218 -wd2570" --with-fftw="$TACC_FFTW3_DIR" FLIBS=" "
+
+`Stampede (TACC)' (Native build)
+     ./configure --host=x86_64-k1om-linux CXXFLAGS="-mmic -wd3218 -wd2570 -I$TACC_MKL_INC -DFFTW3_MKL" F77=ifort FFLAGS="-mmic" FLIBS=" " --with-fftw-include="$TACC_MKL_INC/fftw" --with-fftw-lib="-mkl"
 
 `Ronaldo (ICES)'
      ./configure CXXFLAGS="-msse4" --with-fftw="$FFTW_DIR"

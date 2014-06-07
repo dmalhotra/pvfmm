@@ -42,7 +42,7 @@ Matrix<T>::Matrix(size_t dim1, size_t dim2, T* data_, bool own_data_){
   if(own_data){
     if(dim[0]*dim[1]>0){
       data_ptr=mem::aligned_malloc<T>(dim[0]*dim[1]);
-#ifndef __MIC__
+#if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
       Profile::Add_MEM(dim[0]*dim[1]*sizeof(T));
 #endif
       if(data_!=NULL) mem::memcopy(data_ptr,data_,dim[0]*dim[1]*sizeof(T));
@@ -59,7 +59,7 @@ Matrix<T>::Matrix(const Matrix<T>& M){
   own_data=true;
   if(dim[0]*dim[1]>0){
     data_ptr=mem::aligned_malloc<T>(dim[0]*dim[1]);
-#ifndef __MIC__
+#if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
     Profile::Add_MEM(dim[0]*dim[1]*sizeof(T));
 #endif
     mem::memcopy(data_ptr,M.data_ptr,dim[0]*dim[1]*sizeof(T));
@@ -74,7 +74,7 @@ Matrix<T>::~Matrix(){
   if(own_data){
     if(data_ptr!=NULL){
       mem::aligned_free(data_ptr);
-#ifndef __MIC__
+#if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
       Profile::Add_MEM(-dim[0]*dim[1]*sizeof(T));
 #endif
     }
@@ -172,7 +172,7 @@ void Matrix<T>::Resize(size_t i, size_t j){
   if(own_data){
     if(data_ptr!=NULL){
       mem::aligned_free(data_ptr);
-#ifndef __MIC__
+#if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
       Profile::Add_MEM(-dim[0]*dim[1]*sizeof(T));
 #endif
 
@@ -183,7 +183,7 @@ void Matrix<T>::Resize(size_t i, size_t j){
   if(own_data){
     if(dim[0]*dim[1]>0){
       data_ptr=mem::aligned_malloc<T>(dim[0]*dim[1]);
-#ifndef __MIC__
+#if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
       Profile::Add_MEM(dim[0]*dim[1]*sizeof(T));
 #endif
     }else
@@ -204,13 +204,13 @@ Matrix<T>& Matrix<T>::operator=(const Matrix<T>& M){
     if(own_data && dim[0]*dim[1]!=M.dim[0]*M.dim[1]){
       if(data_ptr!=NULL){
         mem::aligned_free(data_ptr); data_ptr=NULL;
-#ifndef __MIC__
+#if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
         Profile::Add_MEM(-dim[0]*dim[1]*sizeof(T));
 #endif
       }
       if(M.dim[0]*M.dim[1]>0){
         data_ptr=mem::aligned_malloc<T>(M.dim[0]*M.dim[1]);
-#ifndef __MIC__
+#if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
         Profile::Add_MEM(M.dim[0]*M.dim[1]*sizeof(T));
 #endif
       }
@@ -294,7 +294,7 @@ void Matrix<T>::DGEMM(Matrix<T>& M_r, const Matrix<T>& A, const Matrix<T>& B, T 
   assert(A.dim[1]==B.dim[0]);
   assert(M_r.dim[0]==A.dim[0]);
   assert(M_r.dim[1]==B.dim[1]);
-#ifndef __MIC__
+#if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
   Profile::Add_FLOP(2*(((long long)A.dim[0])*A.dim[1])*B.dim[1]);
 #endif
   mat::gemm('N','N',B.dim[1],A.dim[0],A.dim[1],

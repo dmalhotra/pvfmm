@@ -185,8 +185,8 @@ void FMM_Tree<FMM_Mat_t>::ClearFMMData() {
       #pragma offload target(mic:0)
       {MIC_Lock::wait_lock(wait_lock_idx);}
     }
-    #endif
     MIC_Lock::init();
+    #endif
   }
 
   }Profile::Toc();

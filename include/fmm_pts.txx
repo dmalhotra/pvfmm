@@ -23,7 +23,7 @@
 #ifdef __AVX__
 #include <immintrin.h>
 #endif
-#ifdef __INTEL_OFFLOAD
+#if defined(__INTEL_OFFLOAD) || defined(__MIC__)
 #include <immintrin.h>
 #endif
 
@@ -1232,7 +1232,7 @@ void FMM_Pts<FMMNode>::CollectNodeData(std::vector<FMMNode*>& node, std::vector<
 
 template <class FMMNode>
 void FMM_Pts<FMMNode>::SetupPrecomp(SetupData<Real_t>& setup_data, bool device){
-  if(setup_data.precomp_data==NULL) return;
+  if(setup_data.precomp_data==NULL || setup_data.level>MAX_DEPTH) return;
 
   Profile::Tic("SetupPrecomp",&this->comm,true,25);
   { // Build precomp_data
