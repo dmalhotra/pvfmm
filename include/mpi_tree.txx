@@ -731,6 +731,10 @@ inline int balanceOctree (std::vector<MortonId > &in, std::vector<MortonId > &ou
   int rank, size;
   MPI_Comm_size(comm,&size);
   MPI_Comm_rank(comm,&rank);
+  if(size==1 && in.size()==1){
+    out=in;
+    return 0;
+  }
 
 #ifdef __VERBOSE__
   long long locInSize = in.size();
@@ -747,39 +751,37 @@ inline int balanceOctree (std::vector<MortonId > &in, std::vector<MortonId > &ou
   for(int p=0;p<omp_p;p++){
     size_t a=( p   *in.size())/omp_p;
     size_t b=((p+1)*in.size())/omp_p;
-    for(size_t i=a;i<b;i++)
-      nodes[in[i].GetDepth()+(maxDepth+1)*p].insert(in[i]);
+    for(size_t i=a;i<b;){
+      size_t d=in[i].GetDepth();
+      if(d==0){i++; continue;}
+      MortonId pnode=in[i].getAncestor(d-1);
+      nodes[d-1+(maxDepth+1)*p].insert(pnode);
+      while(i<b && d==in[i].GetDepth() && pnode==in[i].getAncestor(d-1)) i++;
+    }
 
     //Add new nodes level-by-level.
     std::vector<MortonId> nbrs;
     unsigned int num_chld=1UL<<dim;
-    for(unsigned int l=maxDepth;l>1;l--){
+    for(unsigned int l=maxDepth;l>=1;l--){
       //Build set of parents of balancing nodes.
       std::set<MortonId> nbrs_parent;
       std::set<MortonId>::iterator start=nodes[l+(maxDepth+1)*p].begin();
       std::set<MortonId>::iterator end  =nodes[l+(maxDepth+1)*p].end();
       for(std::set<MortonId>::iterator node=start; node != end;){
-        node->NbrList(nbrs, l-1, periodic);
+        node->NbrList(nbrs, l, periodic);
         int nbr_cnt=nbrs.size();
         for(int i=0;i<nbr_cnt;i++)
-          nbrs_parent.insert(nbrs[i].getAncestor(nbrs[i].GetDepth()-1));
-        //node++; //Optimize this by skipping siblings.
-        MortonId pnode=node->getAncestor(node->GetDepth()-1);
-        while(node != end && pnode==node->getAncestor(node->GetDepth()-1)) node++;
+          nbrs_parent.insert(nbrs[i].getAncestor(l-1));
+        node++;
       }
       //Get the balancing nodes.
       std::set<MortonId>& ancestor_nodes=nodes[l-1+(maxDepth+1)*p];
       start=nbrs_parent.begin();
       end  =nbrs_parent.end();
-      for(std::set<MortonId>::iterator node=start; node != end; node++){
-        std::vector<MortonId> children;
-        children=node->Children();
-        for(unsigned int j=0;j<num_chld;j++)
-          ancestor_nodes.insert(children[j]);
-      }
+      ancestor_nodes.insert(start,end);
     }
 
-    //Remove non-leaf nodes.
+    //Remove non-leaf nodes. (optional)
     for(unsigned int l=1;l<=maxDepth;l++){
       std::set<MortonId>::iterator start=nodes[l  +(maxDepth+1)*p].begin();
       std::set<MortonId>::iterator end  =nodes[l  +(maxDepth+1)*p].end();
@@ -806,7 +808,7 @@ inline int balanceOctree (std::vector<MortonId > &in, std::vector<MortonId > &ou
   #pragma omp parallel for
   for(int p=0;p<omp_p;p++){
     size_t node_iter=node_dsp[p];
-    for(unsigned int l=maxDepth;l>=1;l--){
+    for(unsigned int l=0;l<=maxDepth;l++){
       std::set<MortonId>::iterator start=nodes[l  +(maxDepth+1)*p].begin();
       std::set<MortonId>::iterator end  =nodes[l  +(maxDepth+1)*p].end();
       for(std::set<MortonId>::iterator node=start; node != end; node++)
@@ -827,6 +829,72 @@ inline int balanceOctree (std::vector<MortonId > &in, std::vector<MortonId > &ou
   par::HyperQuickSort(in, out, comm);
   lineariseList(out, comm);
   par::partitionW<MortonId>(out, NULL , comm);
+  { // Add children
+
+    //Remove empty processors...
+    int new_rank, new_size;
+    MPI_Comm   new_comm;
+    MPI_Comm_split(comm, (out.empty()?0:1), rank, &new_comm);
+
+    MPI_Comm_rank (new_comm, &new_rank);
+    MPI_Comm_size (new_comm, &new_size);
+    if(!out.empty()) {
+      MortonId nxt_mid(0,0,0,0);
+      { // Get last octant from previous process.
+        assert(out.size());
+
+        //Send the last octant to the next processor.
+        MortonId lastOctant = out.back();
+        MortonId lastOnPrev;
+
+        MPI_Request recvRequest;
+        MPI_Request sendRequest;
+
+        if(rank > 0) {
+          MPI_Irecv(&lastOnPrev, 1, par::Mpi_datatype<MortonId>::value(), rank-1, 1, comm, &recvRequest);
+        }
+        if(rank < (size-1)) {
+          MPI_Issend( &lastOctant, 1, par::Mpi_datatype<MortonId>::value(), rank+1, 1, comm,  &sendRequest);
+        }
+
+        if(rank > 0) {
+          MPI_Status statusWait;
+          MPI_Wait(&recvRequest, &statusWait);
+          nxt_mid = lastOnPrev.NextId();
+        }
+
+        if(rank < (size-1)) {
+          MPI_Status statusWait;
+          MPI_Wait(&sendRequest, &statusWait);
+        }
+      }
+
+      std::vector<MortonId> out1;
+      std::vector<MortonId> children;
+      for(size_t i=0;i<out.size();i++){
+        while(nxt_mid.getDFD()<out[i]){
+          while(nxt_mid.isAncestor(out[i])){
+            nxt_mid=nxt_mid.getAncestor(nxt_mid.GetDepth()+1);
+          }
+          out1.push_back(nxt_mid);
+          nxt_mid=nxt_mid.NextId();
+        }
+
+        children=out[i].Children();
+        for(size_t j=0;j<8;j++){
+          out1.push_back(children[j]);
+        }
+        nxt_mid=out[i].NextId();
+      }
+      if(rank==size-1){
+        while(nxt_mid.GetDepth()>0){
+          out1.push_back(nxt_mid);
+          nxt_mid=nxt_mid.NextId();
+        }
+      }
+      out.swap(out1);
+    }
+  }
 
   //////////////////////////////////////////////////////////////////////////////////////////////////
 
