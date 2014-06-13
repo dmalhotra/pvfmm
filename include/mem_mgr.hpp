@@ -1,13 +1,13 @@
 /**
- * \file memgr.hpp
+ * \file mem_mgr.hpp
  * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 6-30-2014
  * \brief This file contains the definition of a simple memory manager which
  * uses a pre-allocated buffer of size defined in call to the constructor.
  */
 
-#ifndef _PVFMM_MEMGR_HPP_
-#define _PVFMM_MEMGR_HPP_
+#ifndef _PVFMM_MEM_MGR_HPP_
+#define _PVFMM_MEM_MGR_HPP_
 
 #include <map>
 #include <stack>
@@ -274,4 +274,4 @@ class MemoryManager{
 }//end namespace
 }//end namespace
 
-#endif //_PVFMM_MEMGR_HPP_
+#endif //_PVFMM_MEM_MGR_HPP_
