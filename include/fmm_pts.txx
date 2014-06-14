@@ -1097,7 +1097,6 @@ void FMM_Pts<FMMNode>::CollectNodeData(std::vector<FMMNode*>& node, std::vector<
     buff[indx].Resize(1,buff_size+(extra_size.size()>indx?extra_size[indx]:0));
     Real_t* buff_ptr=&buff[indx][0][0];
     for(size_t i=0;i<node_lst.size();i++){
-      FMMData* fmm_data=((FMMData*)node_lst[i]->FMMData());
       { // src_value
         Vector<Real_t>& src_value=node_lst[i]->src_value;
         mem::memcopy(buff_ptr,&src_value[0],src_value.Dim()*sizeof(Real_t));
@@ -1121,7 +1120,6 @@ void FMM_Pts<FMMNode>::CollectNodeData(std::vector<FMMNode*>& node, std::vector<
     for(size_t i=0;i<node.size();i++)
       if(node[i]->IsLeaf() && !node[i]->IsGhost()){
         node_lst.push_back(node[i]);
-        FMMData* fmm_data=((FMMData*)node[i]->FMMData());
         buff_size+=(node[i]->trg_coord.Dim()/COORD_DIM)*trg_dof;
       }
     n_list[indx]=node_lst;
@@ -1129,7 +1127,6 @@ void FMM_Pts<FMMNode>::CollectNodeData(std::vector<FMMNode*>& node, std::vector<
     buff[indx].Resize(1,buff_size+(extra_size.size()>indx?extra_size[indx]:0));
     Real_t* buff_ptr=&buff[indx][0][0];
     for(size_t i=0;i<node_lst.size();i++){
-      FMMData* fmm_data=((FMMData*)node_lst[i]->FMMData());
       { // trg_value
         Vector<Real_t>& trg_value=node_lst[i]->trg_value;
         trg_value.ReInit((node_lst[i]->trg_coord.Dim()/COORD_DIM)*trg_dof, buff_ptr, false);
@@ -1138,7 +1135,6 @@ void FMM_Pts<FMMNode>::CollectNodeData(std::vector<FMMNode*>& node, std::vector<
     }
     #pragma omp parallel for
     for(size_t i=0;i<node_lst.size();i++){
-      FMMData* fmm_data=((FMMData*)node_lst[i]->FMMData());
       Vector<Real_t>& trg_value=node_lst[i]->trg_value;
       trg_value.SetZero();
     }
@@ -1152,7 +1148,6 @@ void FMM_Pts<FMMNode>::CollectNodeData(std::vector<FMMNode*>& node, std::vector<
     for(size_t i=0;i<node.size();i++)
       if(node[i]->IsLeaf()){
         node_lst.push_back(node[i]);
-        FMMData* fmm_data=((FMMData*)node[i]->FMMData());
         buff_size+=node[i]->src_coord.Dim();
         buff_size+=node[i]->surf_coord.Dim();
         buff_size+=node[i]->trg_coord.Dim();
@@ -1161,7 +1156,6 @@ void FMM_Pts<FMMNode>::CollectNodeData(std::vector<FMMNode*>& node, std::vector<
 
     #pragma omp parallel for
     for(size_t i=0;i<node_lst.size();i++){ // Move data before resizing buff[indx]
-      FMMData* fmm_data=((FMMData*)node_lst[i]->FMMData());
       { // src_coord
         Vector<Real_t>& src_coord=node_lst[i]->src_coord;
         Vector<Real_t> new_buff=src_coord;
@@ -1185,7 +1179,6 @@ void FMM_Pts<FMMNode>::CollectNodeData(std::vector<FMMNode*>& node, std::vector<
 
     Real_t* buff_ptr=&buff[indx][0][0];
     for(size_t i=0;i<node_lst.size();i++){
-      FMMData* fmm_data=((FMMData*)node_lst[i]->FMMData());
       { // src_coord
         Vector<Real_t>& src_coord=node_lst[i]->src_coord;
         mem::memcopy(buff_ptr,&src_coord[0],src_coord.Dim()*sizeof(Real_t));
@@ -3353,9 +3346,6 @@ void FMM_Pts<FMMNode>::PostProcessing(std::vector<FMMNode_t*>& nodes){
 
 template <class FMMNode>
 void FMM_Pts<FMMNode>::CopyOutput(FMMNode** nodes, size_t n){
-//  for(size_t i=0;i<n;i++){
-//    FMMData* fmm_data=((FMMData*)nodes[i]->FMMData());
-//  }
 }
 
 }//end namespace

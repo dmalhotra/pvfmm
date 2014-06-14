@@ -658,8 +658,6 @@ void FMM_Cheb<FMMNode>::CollectNodeData(std::vector<FMMNode*>& node, std::vector
 
     #pragma omp parallel for
     for(size_t i=0;i<node_lst.size();i++){ // Move data before resizing buff[indx]
-      //FMMData* fmm_data=((FMMData*)node_lst[i]->FMMData());
-      //Vector<Real_t>& cheb_in =fmm_data->cheb_in ;
       Vector<Real_t>& cheb_in =node_lst[i]->ChebData();
       Vector<Real_t> new_buff=cheb_in;
       cheb_in.Swap(new_buff);
@@ -685,8 +683,6 @@ void FMM_Cheb<FMMNode>::CollectNodeData(std::vector<FMMNode*>& node, std::vector
     Real_t* buff_ptr=buff[indx][0]+buff[indx].Dim(0)*buff[indx].Dim(1)-extra_size[indx];
     #pragma omp parallel for
     for(size_t i=0;i<node_lst.Dim();i++){
-      //FMMData* fmm_data=((FMMData*)node_lst[i]->FMMData());
-      //Vector<Real_t>& cheb_in =fmm_data->cheb_in ;
       Vector<Real_t>& cheb_in =node_lst[i]->ChebData();
       mem::memcopy(buff_ptr+i*vec_sz, &cheb_in [0], cheb_in .Dim()*sizeof(Real_t));
       cheb_in .ReInit(vec_sz, buff_ptr+i*vec_sz, false);
