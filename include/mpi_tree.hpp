@@ -124,6 +124,9 @@ class MPI_Tree: public Tree<TreeNode>{
 
  private:
 
+  void ConstructLET_Hypercube(BoundaryType bndry=FreeSpace);
+  void ConstructLET_Sparse(BoundaryType bndry=FreeSpace);
+
   MPI_Comm comm;
   std::vector<MortonId> mins;
 

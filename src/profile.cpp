@@ -88,7 +88,9 @@ void Profile::Toc(){
     m_log.push_back(MEM);
     max_m_log.push_back(max_mem.back());
 
+    #ifndef NDEBUG
     if(comm_!=NULL && sync_) MPI_Barrier(*comm_);
+    #endif
     name.pop();
     comm.pop();
     sync.pop();
@@ -99,7 +101,6 @@ void Profile::Toc(){
     if(comm_!=NULL) MPI_Comm_rank(*comm_,&rank);
     if(!rank){
       for(size_t i=0;i<name.size();i++) std::cout<<"    ";
-      //std::cout<<"-"<<name_<<'\n';
       std::cout<<"}\n";
     }
     #endif

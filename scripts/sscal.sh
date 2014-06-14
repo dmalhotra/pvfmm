@@ -30,6 +30,7 @@ mpi_proc+=(         4        32       256      2048     16384     16384 :)
 threads+=(   ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES} :)
 testcase+=(         1         1         1         1         1         1 :)
 n_pts+=(    $((8**7)) $((8**7)) $((8**7)) $((8**7)) $((8**7)) $((8**7)) :)
+m_pts+=(            1         1         1         1         1         1 :)
 m+=(               10        10        10        10        10        10 :)
 q+=(               14        14        14        14        14        14 :)
 tol+=(           1e-0      1e-0      1e-0      1e-0      1e-0      1e-0 :)
@@ -44,19 +45,20 @@ max_time+=(       800       800       800       800       800       800 :)
 ###################################################################################################
 
 # m=10, q=14, octants=
-nodes+=(            1         8        64       512      4096      32768 :)
-cores+=(     ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}   ${CORES} :)
-mpi_proc+=(         1         8        64       512      4096      32768 :)
-threads+=(   ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}   ${CORES} :)
-testcase+=(         3         3         3         3         3          3 :)
-n_pts+=(    $((8**7)) $((8**7)) $((8**7)) $((8**7)) $((8**7))  $((8**7)) :)
-m+=(               10        10        10        10        10         10 :)
-q+=(               14        14        14        14        14         14 :)
-tol+=(           1e-0      1e-0      1e-0      1e-0      1e-0       1e-0 :)
-depth+=(           15        15        15        15        15         15 :)
-unif+=(             0         0         0         0         0          0 :)
-adap+=(             0         0         0         0         0          0 :)
-max_time+=(      2400      2400      2400      2400      2400       2400 :)
+nodes+=(            1         8        64       512      4096     32768 :)
+cores+=(     ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES} :)
+mpi_proc+=(         1         8        64       512      4096     32768 :)
+threads+=(   ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES} :)
+testcase+=(         3         3         3         3         3         3 :)
+n_pts+=(    $((8**7)) $((8**7)) $((8**7)) $((8**7)) $((8**7)) $((8**7)) :)
+m_pts+=(            1         1         1         1         1         1 :)
+m+=(               10        10        10        10        10        10 :)
+q+=(               14        14        14        14        14        14 :)
+tol+=(           1e-0      1e-0      1e-0      1e-0      1e-0      1e-0 :)
+depth+=(           15        15        15        15        15        15 :)
+unif+=(             0         0         0         0         0         0 :)
+adap+=(             0         0         0         0         0         0 :)
+max_time+=(      2400      2400      2400      2400      2400      2400 :)
 
 
 ###################################################################################################
@@ -68,6 +70,7 @@ export mpi_proc_="$(declare -p mpi_proc)";
 export  threads_="$(declare -p  threads)";
 export testcase_="$(declare -p testcase)";
 export    n_pts_="$(declare -p    n_pts)";
+export    m_pts_="$(declare -p    m_pts)";
 export        m_="$(declare -p        m)";
 export        q_="$(declare -p        q)";
 export      tol_="$(declare -p      tol)";
