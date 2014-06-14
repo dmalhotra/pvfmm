@@ -210,7 +210,7 @@ void fn_poten_t5(Real_t* coord, int n, Real_t* out){
 ///////////////////////////////////////////////////////////////////////////////
 
 template <class Real_t>
-void fmm_test(int test_case, size_t N, bool unif, int mult_order, int cheb_deg, int depth, bool adap, Real_t tol, MPI_Comm comm){
+void fmm_test(int test_case, size_t N, size_t M, bool unif, int mult_order, int cheb_deg, int depth, bool adap, Real_t tol, MPI_Comm comm){
   typedef pvfmm::FMM_Node<pvfmm::Cheb_Node<Real_t> > FMMNode_t;
   typedef pvfmm::FMM_Cheb<FMMNode_t> FMM_Mat_t;
   typedef pvfmm::FMM_Tree<FMM_Mat_t> FMM_Tree_t;
@@ -290,7 +290,7 @@ void fmm_test(int test_case, size_t N, bool unif, int mult_order, int cheb_deg, 
   std::vector<Real_t> pt_coord;
   if(unif) pt_coord=point_distrib<Real_t>(UnifGrid,N,comm);
   else pt_coord=point_distrib<Real_t>(RandElps,N,comm); //RandElps, RandGaus
-  tree_data.max_pts=1; // Points per octant.
+  tree_data.max_pts=M; // Points per octant.
   tree_data.pt_coord=pt_coord;
 
   //Print various parameters.
@@ -342,6 +342,7 @@ void fmm_test(int test_case, size_t N, bool unif, int mult_order, int cheb_deg, 
     }
     delete tree;
     tree_data.pt_coord=pt_coord;
+    tree_data.max_pts=1; // Points per octant.
   }
   pvfmm::Profile::Toc();
 
@@ -438,12 +439,44 @@ void fmm_test(int test_case, size_t N, bool unif, int mult_order, int cheb_deg, 
 
 int main(int argc, char **argv){
   MPI_Init(&argc, &argv);
+
   MPI_Comm comm=MPI_COMM_WORLD;
+  if(1){ // Remove slow processors.
+    MPI_Comm comm_=MPI_COMM_WORLD;
+    size_t N=2048;
+    pvfmm::Matrix<double> A(N,N);
+    pvfmm::Matrix<double> B(N,N);
+    pvfmm::Matrix<double> C(N,N);
+    for(int i=0;i<N;i++)
+    for(int j=0;j<N;j++){
+      A[i][j]=i+j;
+      B[i][j]=i-j;
+    }
+    C=A*B;
+    double t=-omp_get_wtime();
+    C=A*B;
+    t+=omp_get_wtime();
+
+    double tt;
+    int myrank, np;
+    MPI_Comm_size(comm_,&np);
+    MPI_Comm_rank(comm_,&myrank);
+    MPI_Allreduce(&t, &tt, 1, pvfmm::par::Mpi_datatype<double>::value(), MPI_SUM, comm_);
+    tt=tt/np;
+
+    int clr=(t<tt*1.05?0:1);
+    MPI_Comm_split(comm_, clr, myrank, &comm );
+    if(clr){
+      MPI_Finalize();
+      return 0;
+    }
+  }
 
   // Read command line options.
   commandline_option_start(argc, argv);
   omp_set_num_threads( atoi(commandline_option(argc, argv,  "-omp",     "1", false, "-omp  <int> = (1)    : Number of OpenMP threads."          )));
   size_t   N=(size_t)strtod(commandline_option(argc, argv,    "-N",     "1",  true, "-N    <int>          : Number of point sources."           ),NULL);
+  size_t   M=(size_t)strtod(commandline_option(argc, argv,    "-M",     "1", false, "-M    <int>          : Number of points per octant."       ),NULL);
   bool  unif=              (commandline_option(argc, argv, "-unif",    NULL, false, "-unif                : Uniform point distribution."        )!=NULL);
   int      m=       strtoul(commandline_option(argc, argv,    "-m",    "10", false, "-m    <int> = (10)   : Multipole order (+ve even integer)."),NULL,10);
   int      q=       strtoul(commandline_option(argc, argv,    "-q",    "14", false, "-q    <int> = (14)   : Chebyshev order (+ve integer)."     ),NULL,10);
@@ -460,7 +493,7 @@ int main(int argc, char **argv){
 
   // Run FMM with above options.
   pvfmm::Profile::Tic("FMM_Test",&comm,true);
-  fmm_test<double>(test, N,unif, m,q, d, adap,tol, comm);
+  fmm_test<double>(test, N,M,unif, m,q, d, adap,tol, comm);
   pvfmm::Profile::Toc();
 
   //Output Profiling results.
