@@ -995,6 +995,11 @@ void FMM_Pts<FMMNode>::CollectNodeData(std::vector<FMMNode*>& node, std::vector<
     n_list[indx]=node_lst;
     size_t buff_size=node_lst.size()*vec_sz;
     buff_size+=(extra_size.size()>indx?extra_size[indx]:0);
+    #pragma omp parallel for
+    for(size_t i=0;i<node.size();i++){ // Clear data
+      Vector<Real_t>& upward_equiv=node[i]->FMMData()->upward_equiv;
+      upward_equiv.ReInit(0);
+    }
     buff[indx].Resize(1,buff_size);
     #pragma omp parallel for
     for(size_t i=0;i<node_lst.size();i++){
@@ -1027,6 +1032,11 @@ void FMM_Pts<FMMNode>::CollectNodeData(std::vector<FMMNode*>& node, std::vector<
     n_list[indx]=node_lst;
     size_t buff_size=node_lst.size()*vec_sz;
     buff_size+=(extra_size.size()>indx?extra_size[indx]:0);
+    #pragma omp parallel for
+    for(size_t i=0;i<node.size();i++){ // Clear data
+      Vector<Real_t>& dnward_equiv=node[i]->FMMData()->dnward_equiv;
+      dnward_equiv.ReInit(0);
+    }
     buff[indx].Resize(1,buff_size);
     #pragma omp parallel for
     for(size_t i=0;i<node_lst.size();i++){
@@ -1081,16 +1091,16 @@ void FMM_Pts<FMMNode>::CollectNodeData(std::vector<FMMNode*>& node, std::vector<
     n_list[indx]=node_lst;
 
     #pragma omp parallel for
-    for(size_t i=0;i<node_lst.size();i++){ // Move data before resizing buff[indx]
+    for(size_t i=0;i<node.size();i++){ // Move data before resizing buff[indx]
       { // src_value
-        Vector<Real_t>& src_value=node_lst[i]->src_value;
+        Vector<Real_t>& src_value=node[i]->src_value;
         Vector<Real_t> new_buff=src_value;
-        src_value.ReInit(new_buff.Dim(), &new_buff[0]);
+        src_value.Swap(new_buff);
       }
       { // surf_value
-        Vector<Real_t>& surf_value=node_lst[i]->surf_value;
+        Vector<Real_t>& surf_value=node[i]->surf_value;
         Vector<Real_t> new_buff=surf_value;
-        surf_value.ReInit(new_buff.Dim(), &new_buff[0]);
+        surf_value.Swap(new_buff);
       }
     }
 
@@ -1124,6 +1134,13 @@ void FMM_Pts<FMMNode>::CollectNodeData(std::vector<FMMNode*>& node, std::vector<
       }
     n_list[indx]=node_lst;
 
+    #pragma omp parallel for
+    for(size_t i=0;i<node.size();i++){ // Clear data
+      { // trg_value
+        Vector<Real_t>& trg_value=node[i]->trg_value;
+        trg_value.ReInit(0);
+      }
+    }
     buff[indx].Resize(1,buff_size+(extra_size.size()>indx?extra_size[indx]:0));
     Real_t* buff_ptr=&buff[indx][0][0];
     for(size_t i=0;i<node_lst.size();i++){
@@ -1155,21 +1172,21 @@ void FMM_Pts<FMMNode>::CollectNodeData(std::vector<FMMNode*>& node, std::vector<
     n_list[indx]=node_lst;
 
     #pragma omp parallel for
-    for(size_t i=0;i<node_lst.size();i++){ // Move data before resizing buff[indx]
+    for(size_t i=0;i<node.size();i++){ // Move data before resizing buff[indx]
       { // src_coord
-        Vector<Real_t>& src_coord=node_lst[i]->src_coord;
+        Vector<Real_t>& src_coord=node[i]->src_coord;
         Vector<Real_t> new_buff=src_coord;
-        src_coord.ReInit(new_buff.Dim(), &new_buff[0]);
+        src_coord.Swap(new_buff);
       }
       { // surf_coord
-        Vector<Real_t>& surf_coord=node_lst[i]->surf_coord;
+        Vector<Real_t>& surf_coord=node[i]->surf_coord;
         Vector<Real_t> new_buff=surf_coord;
-        surf_coord.ReInit(new_buff.Dim(), &new_buff[0]);
+        surf_coord.Swap(new_buff);
       }
       { // trg_coord
-        Vector<Real_t>& trg_coord=node_lst[i]->trg_coord;
+        Vector<Real_t>& trg_coord=node[i]->trg_coord;
         Vector<Real_t> new_buff=trg_coord;
-        trg_coord.ReInit(new_buff.Dim(), &new_buff[0]);
+        trg_coord.Swap(new_buff);
       }
     }
 
@@ -1339,7 +1356,8 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
             interac_dsp[i][j]=interac_dsp_;
             if(trg_interac_list[i][j]!=NULL) interac_dsp_++;
           }
-          if(interac_dsp_*vec_size>buff_size){
+          if(interac_dsp_*vec_size>buff_size) // Comment to disable symmetries.
+          {
             interac_blk.push_back(j-interac_blk_dsp.back());
             interac_blk_dsp.push_back(j);
 
@@ -2679,10 +2697,10 @@ void FMM_Pts<FMMNode>::V_List     (SetupData<Real_t>&  setup_data, bool device){
       Vector<Real_t>  buffer(buffer_dim, (Real_t*)&buff[(input_dim+output_dim)*sizeof(Real_t)],false);
 
       { //  FFT
-        Profile::Tic("FFT",&comm,false,100);
+        //Profile::Tic("FFT",&comm,false,100);
         Vector<Real_t>  input_data_( input_data.dim[0]* input_data.dim[1],  input_data[0], false);
         FFT_UpEquiv(dof, m, ker_dim0,  fft_vec[blk0],  input_data_, fft_in, buffer);
-        Profile::Toc();
+        //Profile::Toc();
       }
       { // Hadamard
 #ifdef PVFMM_HAVE_PAPI
@@ -2691,9 +2709,9 @@ void FMM_Pts<FMMNode>::V_List     (SetupData<Real_t>&  setup_data, bool device){
         if (PAPI_start(EventSet) != PAPI_OK) std::cout << "handle_error3" << std::endl;
 #endif
 #endif
-        Profile::Tic("HadamardProduct",&comm,false,100);
+        //Profile::Tic("HadamardProduct",&comm,false,100);
         VListHadamard<Real_t>(dof, M_dim, ker_dim0, ker_dim1, interac_dsp[blk0], interac_vec[blk0], precomp_mat, fft_in, fft_out);
-        Profile::Toc();
+        //Profile::Toc();
 #ifdef PVFMM_HAVE_PAPI
 #ifdef __VERBOSE__
         if (PAPI_stop(EventSet, values) != PAPI_OK) std::cout << "handle_error4" << std::endl;
@@ -2702,11 +2720,11 @@ void FMM_Pts<FMMNode>::V_List     (SetupData<Real_t>&  setup_data, bool device){
 #endif
       }
       { // IFFT
-        Profile::Tic("IFFT",&comm,false,100);
+        //Profile::Tic("IFFT",&comm,false,100);
         Matrix<Real_t> M(M_d.dim[0],M_d.dim[1],M_d[0],false);
         Vector<Real_t> output_data_(output_data.dim[0]*output_data.dim[1], output_data[0], false);
         FFT_Check2Equiv(dof, m, ker_dim1, ifft_vec[blk0], fft_out, output_data_, buffer, M);
-        Profile::Toc();
+        //Profile::Toc();
       }
     }
   }

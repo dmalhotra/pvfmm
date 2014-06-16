@@ -51,7 +51,7 @@ class MPI_Node: public TreeNode{
   /**
    * \brief Initialize.
    */
-  MPI_Node(): TreeNode(){ghost=false;}
+  MPI_Node(): TreeNode(){ghost=false; weight=1;}
 
   /**
    * \brief Virtual destructor.
@@ -94,7 +94,7 @@ class MPI_Node: public TreeNode{
   /**
    * \brief Returns the cost of this node. Used for load balancing.
    */
-  virtual Real_t NodeCost(){return 1.0;}
+  virtual long long& NodeCost(){return weight;}
 
   /**
    * \brief Returns an array of size dim containing the coordinates of the
@@ -174,6 +174,7 @@ class MPI_Node: public TreeNode{
 
   bool ghost;
   size_t max_pts;
+  long long weight;
 
   Real_t coord[COORD_DIM];
   MPI_Node<Real_t>* colleague[COLLEAGUE_COUNT];

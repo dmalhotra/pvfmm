@@ -269,7 +269,7 @@ PackedData MPI_Node<T>::Pack(bool ghost, void* buff_ptr, size_t offset){
 
   PackedData p0;
   // Determine data length.
-  p0.length =sizeof(size_t)+sizeof(int)+sizeof(MortonId);
+  p0.length =sizeof(size_t)+sizeof(int)+sizeof(long long)+sizeof(MortonId);
   for(size_t j=0;j<pt_coord.size();j++){
     p0.length+=3*sizeof(size_t);
     if(pt_coord  [j]) p0.length+=(pt_coord  [j]->Dim())*sizeof(Real_t);
@@ -293,6 +293,9 @@ PackedData MPI_Node<T>::Pack(bool ghost, void* buff_ptr, size_t offset){
 
   ((int*)data_ptr)[0]=this->Depth();
   data_ptr+=sizeof(int);
+
+  ((long long*)data_ptr)[0]=this->NodeCost();
+  data_ptr+=sizeof(long long);
 
   ((MortonId*)data_ptr)[0]=this->GetMortonId();
   data_ptr+=sizeof(MortonId);
@@ -346,6 +349,9 @@ void MPI_Node<T>::Unpack(PackedData p0, bool own_data){
 
   this->depth=(((int*)data_ptr)[0]);
   data_ptr+=sizeof(int);
+
+  this->NodeCost()=(((long long*)data_ptr)[0]);
+  data_ptr+=sizeof(long long);
 
   this->SetCoord(((MortonId*)data_ptr)[0]);
   data_ptr+=sizeof(MortonId);

@@ -491,7 +491,6 @@ void MPI_Tree<TreeNode>::RedistNodes(MortonId* loc_min) {
     if(curr_node->IsLeaf() && !curr_node->IsGhost()){
       node_lst.push_back(curr_node);
       in.push_back(curr_node->GetMortonId());
-      //in.back().setWeight(curr_node->NodeCost()); //Using default weights.
     }
     curr_node=this->PreorderNxt(curr_node);
   }
@@ -501,9 +500,14 @@ void MPI_Tree<TreeNode>::RedistNodes(MortonId* loc_min) {
   std::vector<MortonId> new_mins(np);
   if(loc_min==NULL){
     //Partition vector of MortonIds using par::partitionW
-    std::vector<MortonId> out=in;
-    par::partitionW<MortonId>(out,NULL,*Comm());
-    MPI_Allgather(&out[0]     , 1, par::Mpi_datatype<MortonId>::value(),
+    std::vector<MortonId> in_=in;
+    std::vector<long long> wts(in_.size());
+    #pragma omp parallel for
+    for(size_t i=0;i<wts.size();i++){
+      wts[i]=node_lst[i]->NodeCost();
+    }
+    par::partitionW<MortonId>(in_,&wts[0],*Comm());
+    MPI_Allgather(&in_[0]     , 1, par::Mpi_datatype<MortonId>::value(),
                   &new_mins[0], 1, par::Mpi_datatype<MortonId>::value(), *Comm());
   }else{
     MPI_Allgather(loc_min     , 1, par::Mpi_datatype<MortonId>::value(),
@@ -719,10 +723,6 @@ inline int lineariseList(std::vector<MortonId> & list, MPI_Comm comm) {
   return 1;
 }//end fn.
 
-inline unsigned int balance_wt(const MortonId* n){
-  return n->GetDepth();
-}
-
 inline int balanceOctree (std::vector<MortonId > &in, std::vector<MortonId > &out,
     unsigned int dim, unsigned int maxDepth, bool periodic, MPI_Comm comm) {
 
@@ -742,8 +742,15 @@ inline int balanceOctree (std::vector<MortonId > &in, std::vector<MortonId > &ou
 
   //////////////////////////////////////////////////////////////////////////////////////////////////
 
-  //Redistribute.
-  par::partitionW<MortonId>(in, balance_wt, comm);
+  { //Redistribute.
+    //Vector<long long> balance_wt(size);
+    //#pragma omp parallel for
+    //for(size_t i=0;i<size;i++){
+    //  balance_wt[i]=in[i].GetDepth();
+    //}
+    //par::partitionW<MortonId>(in, &balance_wt[0], comm);
+    par::partitionW<MortonId>(in, NULL, comm);
+  }
 
   //Build level-by-level set of nodes.
   std::vector<std::set<MortonId> > nodes((maxDepth+1)*omp_p);

@@ -38,9 +38,6 @@ namespace par{
     int Mpi_Alltoallv_dense(T* sendbuf, int* sendcnts, int* sdispls,
         T* recvbuf, int* recvcnts, int* rdispls, const MPI_Comm& comm);
 
-  template<typename T>
-    unsigned int defaultWeight(const T *a);
-
   /**
     @brief A parallel weighted partitioning function. In our implementation, we
     do not pose any restriction on the input or the number of processors. This
@@ -56,10 +53,10 @@ namespace par{
     */
   template<typename T>
     int partitionW(Vector<T>& vec,
-        unsigned int (*getWeight)(const T *), const MPI_Comm& comm);
+        long long* wts, const MPI_Comm& comm);
   template<typename T>
     int partitionW(std::vector<T>& vec,
-        unsigned int (*getWeight)(const T *), const MPI_Comm& comm);
+        long long* wts, const MPI_Comm& comm);
 
   /**
     @brief A parallel hyper quick sort implementation.

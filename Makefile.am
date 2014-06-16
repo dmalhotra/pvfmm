@@ -61,6 +61,7 @@ lib_libfmm_a_HEADERS = \
 									include/legendre_rule.hpp \
 									include/matrix.hpp \
 									include/mat_utils.hpp \
+									include/mem_mgr.hpp \
 									include/mem_utils.hpp \
 									include/mortonid.hpp \
 									include/mpi_node.hpp \

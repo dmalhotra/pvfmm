@@ -84,7 +84,7 @@ class Cheb_Node: public MPI_Node<Real_t>{
   /**
    * \brief Returns the cost of this node. Used for load balancing.
    */
-  virtual Real_t NodeCost(){return 1;}
+  virtual long long& NodeCost(){return MPI_Node<Real_t>::NodeCost();}
 
   /**
    * \brief Degree of Chebyshev polynomials used.

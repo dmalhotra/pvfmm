@@ -254,31 +254,27 @@ namespace par{
 
 
   template<typename T>
-    unsigned int defaultWeight(const T *a){
-      return 1;
-    }
-
-
-  template<typename T>
-    int partitionW(Vector<T>& nodeList, unsigned int (*getWeight)(const T *), const MPI_Comm& comm){
+    int partitionW(Vector<T>& nodeList, long long* wts, const MPI_Comm& comm){
 
       int npes, rank;
       MPI_Comm_size(comm, &npes);
       MPI_Comm_rank(comm, &rank);
       long long npesLong = npes;
 
-      if(getWeight == NULL) {
-        getWeight = par::defaultWeight<T>;
-      }
-
       long long nlSize = nodeList.Dim();
       long long off1= 0, off2= 0, localWt= 0, totalWt = 0;
 
       // First construct arrays of wts.
-      Vector<long long> wts(nlSize);
+      Vector<long long> wts_(nlSize);
+      if(wts == NULL) {
+        wts=&wts_[0];
+        #pragma omp parallel for
+        for (long long i = 0; i < nlSize; i++){
+          wts[i] = 1;
+        }
+      }
       #pragma omp parallel for reduction(+:localWt)
       for (long long i = 0; i < nlSize; i++){
-        wts[i] = (*getWeight)( &(nodeList[i]) );
         localWt+=wts[i];
       }
 
@@ -360,9 +356,9 @@ namespace par{
     }//end function
 
   template<typename T>
-    int partitionW(std::vector<T>& nodeList, unsigned int (*getWeight)(const T *), const MPI_Comm& comm){
+    int partitionW(std::vector<T>& nodeList, long long* wts, const MPI_Comm& comm){
       Vector<T> nodeList_=nodeList;
-      int ret = par::partitionW<T>(nodeList_, getWeight, comm);
+      int ret = par::partitionW<T>(nodeList_, wts, comm);
 
       nodeList.assign(&nodeList_[0],&nodeList_[0]+nodeList_.Dim());
       return ret;

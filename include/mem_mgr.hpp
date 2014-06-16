@@ -197,7 +197,7 @@ class MemoryManager{
           tmp=(double*)memgr.malloc(M*sizeof(double)); assert(tmp);
           tt=omp_get_wtime();
           #pragma omp parallel for
-          for(size_t i=0;i<M;i++) tmp[i]=i;
+          for(size_t i=0;i<M;i+=64) tmp[i]=i;
           tt=omp_get_wtime()-tt;
           std::cout<<tt<<' ';
           memgr.free(tmp);
@@ -215,7 +215,7 @@ class MemoryManager{
           tmp=(double*)::malloc(M*sizeof(double)); assert(tmp);
           tt=omp_get_wtime();
           #pragma omp parallel for
-          for(size_t i=0;i<M;i++) tmp[i]=i;
+          for(size_t i=0;i<M;i+=64) tmp[i]=i;
           tt=omp_get_wtime()-tt;
           std::cout<<tt<<' ';
           ::free(tmp);
