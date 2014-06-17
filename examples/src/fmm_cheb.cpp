@@ -386,50 +386,19 @@ void fmm_test(int test_case, size_t N, size_t M, bool unif, int mult_order, int 
   CheckChebOutput<FMM_Tree_t>(tree, (typename TestFn<Real_t>::Fn_t) fn_input_, mykernel->ker_dim[0], std::string("Input"));
 
   for(size_t iter=0;iter<6;iter++){ // Load balance.
-    { //Output max, min tree size.
-      long node_cnt=0;
-      std::vector<FMMNode_t*>& nodes=tree->GetNodeList();
-      for(size_t i=0;i<nodes.size();i++){
-        FMMNode_t* n=nodes[i];
-        if(!n->IsGhost() && n->IsLeaf()) node_cnt++;
-      }
-
-      if(!myrank) std::cout<<"MAX, MIN Nodes: ";
-      long max=0;
-      long min=0;
-      MPI_Allreduce(&node_cnt, &max, 1, MPI_LONG, MPI_MAX, comm);
-      MPI_Allreduce(&node_cnt, &min, 1, MPI_LONG, MPI_MIN, comm);
-      if(!myrank) std::cout<<max<<' ';
-      if(!myrank) std::cout<<min<<'\n';
-    }
-    tree->RedistNodes();
-    { //Output max, min tree size.
-      long node_cnt=0;
-      std::vector<FMMNode_t*>& nodes=tree->GetNodeList();
-      for(size_t i=0;i<nodes.size();i++){
-        FMMNode_t* n=nodes[i];
-        if(!n->IsGhost() && n->IsLeaf()) node_cnt++;
-      }
-
-      if(!myrank) std::cout<<"MAX, MIN Nodes: ";
-      long max=0;
-      long min=0;
-      MPI_Allreduce(&node_cnt, &max, 1, MPI_LONG, MPI_MAX, comm);
-      MPI_Allreduce(&node_cnt, &min, 1, MPI_LONG, MPI_MIN, comm);
-      if(!myrank) std::cout<<max<<' ';
-      if(!myrank) std::cout<<min<<'\n';
-    }
+    // Setup FMM
     tree->SetupFMM(fmm_mat);
-
     tree->RunFMM();
+
+    //Re-run and time
     MPI_Barrier(comm);
     double tt=-omp_get_wtime();
     tree->RunFMM();
     tt+=omp_get_wtime();
 
-    { // Set weights
-      std::vector<FMMNode_t*> nlist=tree->GetNodeList();
+    { // Redistribute
       size_t node_cnt=0;
+      std::vector<FMMNode_t*> nlist=tree->GetNodeList();
       for(size_t i=0;i<nlist.size();i++){
         if(nlist[i]->IsLeaf() && !nlist[i]->IsGhost())
           node_cnt++;
@@ -437,8 +406,46 @@ void fmm_test(int test_case, size_t N, size_t M, bool unif, int mult_order, int 
       for(size_t i=0;i<nlist.size();i++){
         nlist[i]->NodeCost()=(tt*100000000)/node_cnt;
       }
+
+      { //Output max, min tree size.
+        long node_cnt=0;
+        std::vector<FMMNode_t*>& nodes=tree->GetNodeList();
+        for(size_t i=0;i<nodes.size();i++){
+          FMMNode_t* n=nodes[i];
+          if(!n->IsGhost() && n->IsLeaf()) node_cnt++;
+        }
+
+        if(!myrank) std::cout<<"MAX, MIN Nodes: ";
+        long max=0;
+        long min=0;
+        MPI_Allreduce(&node_cnt, &max, 1, MPI_LONG, MPI_MAX, comm);
+        MPI_Allreduce(&node_cnt, &min, 1, MPI_LONG, MPI_MIN, comm);
+        if(!myrank) std::cout<<max<<' ';
+        if(!myrank) std::cout<<min<<'\n';
+      }
+      tree->RedistNodes();
+      { //Output max, min tree size.
+        long node_cnt=0;
+        std::vector<FMMNode_t*>& nodes=tree->GetNodeList();
+        for(size_t i=0;i<nodes.size();i++){
+          FMMNode_t* n=nodes[i];
+          if(!n->IsGhost() && n->IsLeaf()) node_cnt++;
+        }
+
+        if(!myrank) std::cout<<"MAX, MIN Nodes: ";
+        long max=0;
+        long min=0;
+        MPI_Allreduce(&node_cnt, &max, 1, MPI_LONG, MPI_MAX, comm);
+        MPI_Allreduce(&node_cnt, &min, 1, MPI_LONG, MPI_MIN, comm);
+        if(!myrank) std::cout<<max<<' ';
+        if(!myrank) std::cout<<min<<'\n';
+      }
     }
   }
+
+  // Setup FMM
+  tree->SetupFMM(fmm_mat);
+  tree->RunFMM();
 
   //Re-run FMM
   tree->ClearFMMData();
@@ -511,7 +518,7 @@ int main(int argc, char **argv){
     MPI_Allreduce(&t, &tt, 1, pvfmm::par::Mpi_datatype<double>::value(), MPI_SUM, comm_);
     tt=tt/np;
 
-    int clr=(t<tt*1.1?0:1);
+    int clr=(t<tt*1.5?0:1);
     MPI_Comm_split(comm_, clr, myrank, &comm );
     if(clr){
       MPI_Finalize();

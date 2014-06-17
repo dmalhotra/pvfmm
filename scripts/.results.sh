@@ -111,6 +111,8 @@ for (( l=0; l<${#nodes[@]}; l++ )) ; do
     for i in ${NODE_LIST} ; do 
       NODES=$(( $NODES + $i )); 
     done;
+    PROC_NOMIC="$(grep -hir "Number of MPI processes:" ${FNAME_NOMIC} | tail -n 1 | tr -s ' ' | rev | cut -d ' ' -f 1 | rev)"
+    PROC="$(grep -hir "Number of MPI processes:" ${FNAME} | tail -n 1 | tr -s ' ' | rev | cut -d ' ' -f 1 | rev)"
     #---------------------------------------------------------------------
     # Parse Data: Time, Flop, Flop/s 
     for (( i=0; i<$N; i++ )) ; do
@@ -119,6 +121,7 @@ for (( l=0; l<${#nodes[@]}; l++ )) ; do
       T_MAX[i]="$(grep -hir "$x  " ${FNAME} | tail -n 1 | tr -s ' ' | rev | cut -d ' ' -f 10 | rev)"
       if [ "${T_MAX[i]}" == "" ]; then continue; fi;
       FP_AVG[i]="$(grep -hir "$x  " ${FNAME_NOMIC} | tail -n 1 | tr -s ' ' | rev | cut -d ' ' -f 8 | rev)"
+      FP_AVG[i]=$(echo "scale=10;${FP_AVG[i]}*${PROC_NOMIC}/${mpi_proc[l]}" | bc 2> /dev/null)
       FLOPS[i]=$(echo "scale=10;${FP_AVG[i]}/(${T_MAX[i]}+0.0001)" | bc 2> /dev/null)
 
       if [ "${FLOPS[i]}" != "" ] && [ -f ${FNAME_MIC} ] && [ -f ${FNAME_ASYNC} ] && [ -f ${FNAME_NOMIC} ] ; then 
@@ -148,7 +151,7 @@ for (( l=0; l<${#nodes[@]}; l++ )) ; do
     done;
     printf "   |" >> ${RESULT_FNAME}      
     #---------------------------------------------------------------------
-    printf "${PARAM_FORMAT}"            "${mpi_proc[l]}" >> ${RESULT_FNAME}      
+    printf "${PARAM_FORMAT}"            "${PROC}" >> ${RESULT_FNAME}      
     printf "${PARAM_FORMAT}"             "${threads[l]}" >> ${RESULT_FNAME}      
     printf "${PARAM_FORMAT}"               "${nodes[l]}" >> ${RESULT_FNAME}      
     printf "${PARAM_FORMAT}" "$((${NODES}/${nodes[l]}))" >> ${RESULT_FNAME}      
