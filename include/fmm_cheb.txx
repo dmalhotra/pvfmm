@@ -390,6 +390,18 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
   MPI_Comm_rank(this->comm, &myrank);
   MPI_Comm_size(this->comm,&np);
 
+  size_t progress=0, class_count=0;
+  { // Determine precomputation progress.
+    size_t mat_cnt=this->interac_list.ListCount((Mat_Type)type);
+    for(size_t i=0; i<mat_cnt; i++){
+      size_t indx=this->interac_list.InteracClass((Mat_Type)type,i);
+      if(indx==i){
+        class_count++;
+        if(i<mat_indx) progress++;
+      }
+    }
+  }
+
   //Compute the matrix.
   Matrix<Real_t> M;
   int n_src=((cheb_deg+1)*(cheb_deg+2)*(cheb_deg+3))/6;
@@ -411,14 +423,23 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
       {
         M_s2c.SetZero();
         M_s2c_local.SetZero();
-        #pragma omp parallel for
-        for(size_t i=((myrank+0)*n_uc)/np;i<((myrank+1)*n_uc)/np;i++){
+        size_t cnt_done=0;
+        #pragma omp parallel for schedule(dynamic)
+        for(size_t i=myrank;i<n_uc;i+=np){
           std::vector<Real_t> M_=cheb_integ(cheb_deg, &uc_coord[i*3], r,
                                             this->aux_kernel.ker_poten, this->aux_kernel.ker_dim);
+          #ifdef __VERBOSE__
+          #pragma omp critical
+          if(!myrank){
+            cnt_done++;
+            std::cout<<"\r Progress: "<<(100*progress*n_uc+100*cnt_done*np)/(class_count*n_uc)<<"% "<<std::flush;
+          }
+          #endif
           for(int k=0; k<this->aux_kernel.ker_dim[1]; k++)
             for(size_t j=0; j<(size_t)M_s2c.Dim(0); j++)
               M_s2c_local[j][i*this->aux_kernel.ker_dim[1]+k] = M_[j+k*M_s2c.Dim(0)];
         }
+        if(!myrank) std::cout<<"\r                    \r"<<std::flush;
         MPI_Allreduce(M_s2c_local[0], M_s2c[0], M_s2c.Dim(0)*M_s2c.Dim(1), par::Mpi_datatype<Real_t>::value(), MPI_SUM, this->comm);
       }
 
@@ -434,7 +455,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
 
       // Compute Chebyshev approx from target potential.
       M.Resize(M_s2t.Dim(0), n_src*this->kernel.ker_dim [1]);
-      #pragma omp parallel for
+      #pragma omp parallel for schedule(dynamic)
       for(size_t j=0; j<(size_t)M_s2t.Dim(0); j++){
         Matrix<Real_t> M_trg(n_trg,this->kernel.ker_dim[1],M_s2t[j],false);
         M_trg=M_trg.Transpose();
@@ -467,20 +488,29 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
       {
         M_s2t.SetZero();
         M_s2t_local.SetZero();
-        #pragma omp parallel for
-        for(size_t i=((myrank+0)*n_trg)/np;i<((myrank+1)*n_trg)/np;i++){
+        size_t cnt_done=0;
+        #pragma omp parallel for schedule(dynamic)
+        for(size_t i=myrank;i<n_trg;i+=np){
           std::vector<Real_t> s2t=cheb_integ(cheb_deg, &trg_coord[i*3], (Real_t)(s*2.0),
                                              this->kernel.ker_poten, this->kernel.ker_dim);
+          #ifdef __VERBOSE__
+          #pragma omp critical
+          if(!myrank){
+            cnt_done++;
+            std::cout<<"\r Progress: "<<(100*progress*n_trg+100*cnt_done*np)/(class_count*n_trg)<<"% "<<std::flush;
+          }
+          #endif
           for(int k=0; k<this->kernel.ker_dim[1]; k++)
             for(size_t j=0; j<(size_t)M_s2t.Dim(0); j++)
               M_s2t_local[j][i*this->kernel.ker_dim[1]+k] = s2t[j+k*M_s2t.Dim(0)];
         }
+        if(!myrank) std::cout<<"\r                    \r"<<std::flush;
         MPI_Allreduce(M_s2t_local[0], M_s2t[0], M_s2t.Dim(0)*M_s2t.Dim(1), par::Mpi_datatype<Real_t>::value(), MPI_SUM, this->comm);
       }
 
       // Compute Chebyshev approx from target potential.
       M.Resize(M_s2t.Dim(0), n_src*this->kernel.ker_dim [1]);
-      #pragma omp parallel for
+      #pragma omp parallel for schedule(dynamic)
       for(size_t j=0; j<(size_t)M_s2t.Dim(0); j++){
         Matrix<Real_t> M_trg(n_trg,this->kernel.ker_dim[1],M_s2t[j],false);
         M_trg=M_trg.Transpose();
@@ -509,20 +539,29 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
       {
         M_s2t.SetZero();
         M_s2t_local.SetZero();
-        #pragma omp parallel for
-        for(size_t i=((myrank+0)*n_trg)/np;i<((myrank+1)*n_trg)/np;i++){
+        size_t cnt_done=0;
+        #pragma omp parallel for schedule(dynamic)
+        for(size_t i=myrank;i<n_trg;i+=np){
           std::vector<Real_t> s2t=cheb_integ(cheb_deg, &trg_coord[i*3], s,
                                              this->kernel.ker_poten, this->kernel.ker_dim);
+          #ifdef __VERBOSE__
+          #pragma omp critical
+          if(!myrank){
+            cnt_done++;
+            std::cout<<"\r Progress: "<<(100*progress*n_trg+100*cnt_done*np)/(class_count*n_trg)<<"% "<<std::flush;
+          }
+          #endif
           for(int k=0; k<this->kernel.ker_dim[1]; k++)
             for(size_t j=0; j<(size_t)M_s2t.Dim(0); j++)
               M_s2t_local[j][i*this->kernel.ker_dim[1]+k] = s2t[j+k*M_s2t.Dim(0)];
         }
+        if(!myrank) std::cout<<"\r                    \r"<<std::flush;
         MPI_Allreduce(M_s2t_local[0], M_s2t[0], M_s2t.Dim(0)*M_s2t.Dim(1), par::Mpi_datatype<Real_t>::value(), MPI_SUM, this->comm);
       }
 
       // Compute Chebyshev approx from target potential.
       M.Resize(M_s2t.Dim(0), n_src*this->kernel.ker_dim [1]);
-      #pragma omp parallel for
+      #pragma omp parallel for schedule(dynamic)
       for(size_t j=0; j<(size_t)M_s2t.Dim(0); j++){
         Matrix<Real_t> M_trg(n_trg,this->kernel.ker_dim[1],M_s2t[j],false);
         M_trg=M_trg.Transpose();
@@ -551,20 +590,29 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
       {
         M_s2t.SetZero();
         M_s2t_local.SetZero();
-        #pragma omp parallel for
-        for(size_t i=((myrank+0)*n_trg)/np;i<((myrank+1)*n_trg)/np;i++){
+        size_t cnt_done=0;
+        #pragma omp parallel for schedule(dynamic)
+        for(size_t i=myrank;i<n_trg;i+=np){
           std::vector<Real_t> s2t=cheb_integ(cheb_deg, &trg_coord[i*3], (Real_t)(s*0.5),
                                              this->kernel.ker_poten, this->kernel.ker_dim);
+          #ifdef __VERBOSE__
+          #pragma omp critical
+          if(!myrank){
+            cnt_done++;
+            std::cout<<"\r Progress: "<<(100*progress*n_trg+100*cnt_done*np)/(class_count*n_trg)<<"% "<<std::flush;
+          }
+          #endif
           for(int k=0; k<this->kernel.ker_dim[1]; k++)
             for(size_t j=0; j<(size_t)M_s2t.Dim(0); j++)
               M_s2t_local[j][i*this->kernel.ker_dim[1]+k] = s2t[j+k*M_s2t.Dim(0)];
         }
+        if(!myrank) std::cout<<"\r                    \r"<<std::flush;
         MPI_Allreduce(M_s2t_local[0], M_s2t[0], M_s2t.Dim(0)*M_s2t.Dim(1), par::Mpi_datatype<Real_t>::value(), MPI_SUM, this->comm);
       }
 
       // Compute Chebyshev approx from target potential.
       M.Resize(M_s2t.Dim(0), n_src*this->kernel.ker_dim [1]);
-      #pragma omp parallel for
+      #pragma omp parallel for schedule(dynamic)
       for(size_t j=0; j<(size_t)M_s2t.Dim(0); j++){
         Matrix<Real_t> M_trg(n_trg,this->kernel.ker_dim[1],M_s2t[j],false);
         M_trg=M_trg.Transpose();
@@ -580,7 +628,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
 
       // Compute Chebyshev approx from target potential.
       M.Resize(M_s2t.Dim(0), n_src*this->kernel.ker_dim [1]);
-      #pragma omp parallel for
+      #pragma omp parallel for schedule(dynamic)
       for(size_t j=0; j<(size_t)M_s2t.Dim(0); j++){
         Matrix<Real_t> M_trg(n_trg,this->kernel.ker_dim[1],M_s2t[j],false);
         M_trg=M_trg.Transpose();
@@ -608,14 +656,23 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
       {
         M_xs2c.SetZero();
         M_xs2c_local.SetZero();
-        #pragma omp parallel for
-        for(size_t i=((myrank+0)*n_trg)/np;i<((myrank+1)*n_trg)/np;i++){
+        size_t cnt_done=0;
+        #pragma omp parallel for schedule(dynamic)
+        for(size_t i=myrank;i<n_trg;i+=np){
           std::vector<Real_t> M_=cheb_integ(cheb_deg, &trg_coord[i*3], s,
                                             this->aux_kernel.ker_poten, this->aux_kernel.ker_dim);
+          #ifdef __VERBOSE__
+          #pragma omp critical
+          if(!myrank){
+            cnt_done++;
+            std::cout<<"\r Progress: "<<(100*progress*n_trg+100*cnt_done*np)/(class_count*n_trg)<<"% "<<std::flush;
+          }
+          #endif
           for(int k=0; k<this->aux_kernel.ker_dim[1]; k++)
             for(size_t j=0; j<(size_t)M_xs2c.Dim(0); j++)
               M_xs2c_local[j][i*this->aux_kernel.ker_dim[1]+k] = M_[j+k*M_xs2c.Dim(0)];
         }
+        if(!myrank) std::cout<<"\r                    \r"<<std::flush;
         MPI_Allreduce(M_xs2c_local[0], M_xs2c[0], M_xs2c.Dim(0)*M_xs2c.Dim(1), par::Mpi_datatype<Real_t>::value(), MPI_SUM, this->comm);
       }
       Matrix<Real_t>& M_c2e = this->Precomp(level, DC2DE_Type, 0);

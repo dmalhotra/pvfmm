@@ -150,26 +150,28 @@ void fn_poten_t3(Real_t* coord, int n, Real_t* out){ //Output potential
 template <class Real_t>
 void fn_input_t4(Real_t* coord, int n, Real_t* out){ //Input function
   int dof=3;
+  Real_t L=125;
   for(int i=0;i<n;i++){
     Real_t* c=&coord[i*COORD_DIM];
     {
       Real_t r_2=(c[0]-0.5)*(c[0]-0.5)+(c[1]-0.5)*(c[1]-0.5)+(c[2]-0.5)*(c[2]-0.5);
-      out[i*dof+0]=0;
-      out[i*dof+1]=0;
-      out[i*dof+2]=0;
+      out[i*dof+0]=4*L*exp(-L*r_2)*(1 - L*((c[1]-0.5)*(c[1]-0.5) + (c[2]-0.5)*(c[2]-0.5)));
+      out[i*dof+1]=4*L*exp(-L*r_2)*     L* (c[0]-0.5)*(c[1]-0.5);
+      out[i*dof+2]=4*L*exp(-L*r_2)*     L* (c[0]-0.5)*(c[2]-0.5);
     }
   }
 }
 template <class Real_t>
 void fn_poten_t4(Real_t* coord, int n, Real_t* out){ //Output potential
   int dof=3;
+  Real_t L=125;
   for(int i=0;i<n;i++){
     Real_t* c=&coord[i*COORD_DIM];
     {
       Real_t r_2=(c[0]-0.5)*(c[0]-0.5)+(c[1]-0.5)*(c[1]-0.5)+(c[2]-0.5)*(c[2]-0.5);
-      out[i*dof+0]=0;
-      out[i*dof+1]=0;
-      out[i*dof+2]=0;
+      out[i*dof+0]= 0;
+      out[i*dof+1]= 2*L*(c[2]-0.5)*exp(-L*r_2);
+      out[i*dof+2]=-2*L*(c[1]-0.5)*exp(-L*r_2);
     }
   }
 }
@@ -385,6 +387,7 @@ void fmm_test(int test_case, size_t N, size_t M, bool unif, int mult_order, int 
   //Find error in Chebyshev approximation.
   CheckChebOutput<FMM_Tree_t>(tree, (typename TestFn<Real_t>::Fn_t) fn_input_, mykernel->ker_dim[0], std::string("Input"));
 
+  if(p>8)
   for(size_t iter=0;iter<6;iter++){ // Load balance.
     // Setup FMM
     tree->SetupFMM(fmm_mat);
@@ -469,8 +472,15 @@ void fmm_test(int test_case, size_t N, size_t M, bool unif, int mult_order, int 
   if(fn_grad_!=NULL){ //Compute gradient.
     pvfmm::Profile::Tic("FMM_Eval(Grad)",&comm,true,1);
     if(mykernel_grad!=NULL){
+      //Create Tree and initialize with input data.
+      tree->Initialize(&tree_data);
+
+      //Initialize FMM Tree
+      tree->InitFMM_Tree(false,bndry);
+
       tree->SetupFMM(fmm_mat_grad);
-      tree->DownwardPass();
+      tree->RunFMM();
+
       tree->Copy_FMMOutput(); //Copy FMM output to tree Data.
     }else{
       std::vector<FMMNode_t*> nlist=tree->GetNodeList();

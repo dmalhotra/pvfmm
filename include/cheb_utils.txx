@@ -8,6 +8,7 @@
 #include <assert.h>
 #include <algorithm>
 #include <matrix.hpp>
+#include <mem_mgr.hpp>
 #include <legendre_rule.hpp>
 
 namespace pvfmm{
@@ -580,18 +581,37 @@ void points2cheb(int deg, T* coord, T* val, int n, int dim, T* node_coord, T nod
 
 template <class T>
 void quad_rule(int n, T* x, T* w){//*
+  static std::vector<Vector<double> > x_lst(10000);
+  static std::vector<Vector<double> > w_lst(10000);
+  assert(n<10000);
+
+  bool done=false;
+  #pragma omp critical (QUAD_RULE)
+  if(x_lst[n].Dim()>0){
+    Vector<double>& x_=x_lst[n];
+    Vector<double>& w_=w_lst[n];
+    for(int i=0;i<n;i++){
+      x[i]=x_[i];
+      w[i]=w_[i];
+    }
+    done=true;
+  }
+  if(done) return;
+
+  Vector<double> x_(n);
+  Vector<double> w_(n);
   T alpha=0.0;
   T beta=0.0;
   T a=-1.0;
   T b= 1.0;
   int kind = 1;
-  Vector<double> x_(n);
-  Vector<double> w_(n);
   cgqf ( n, kind, (double)alpha, (double)beta, (double)a, (double)b, &x_[0], &w_[0] );
-  for(int i=0;i<n;i++){
-    x[i]=x_[i];
-    w[i]=w_[i];
+  #pragma omp critical (QUAD_RULE)
+  { // Set x_lst, w_lst
+    x_lst[n]=x_;
+    w_lst[n]=w_;
   }
+  quad_rule(n, x, w);
 
   //Trapezoidal quadrature nodes and weights
 /*  for(int i=0;i<n;i++){
@@ -615,114 +635,204 @@ void quad_rule(int n, T* x, T* w){//*
 }
 
 template <class Y>
-std::vector<double> integ_pyramid(int m, double* s, double r, int n, typename Kernel<Y>::Ker_t kernel, int* ker_dim, int* perm){//*
+std::vector<double> integ_pyramid(int m, double* s, double r, int nx, typename Kernel<Y>::Ker_t kernel, int* ker_dim, int* perm){//*
+  static mem::MemoryManager mem_mgr(16*1024*1024*sizeof(double));
+  int ny=nx;
+  int nz=nx;
+
+  double eps=1e-14;
   int k_dim=ker_dim[0]*ker_dim[1];
-  std::vector<double> qp(n);
-  std::vector<double> qw(n);
-  quad_rule(n,&qp[0],&qw[0]);
 
-  std::vector<double> qp_x(n);
-  std::vector<double> qp_y(n);
-  std::vector<double> qp_z(n);
-  std::vector<double> p_x(n*m);
-  std::vector<double> p_y(n*m);
-  std::vector<double> p_z(n*m);
+  std::vector<double> qp_x(nx), qw_x(nx);
+  std::vector<double> qp_y(ny), qw_y(ny);
+  std::vector<double> qp_z(nz), qw_z(nz);
+  std::vector<double> p_x(nx*m);
+  std::vector<double> p_y(ny*m);
+  std::vector<double> p_z(nz*m);
 
-  std::vector<double> x_(6);
-  x_[0]=s[0];
-  x_[1]=fabs(1.0-s[0])+s[0];
-  x_[2]=fabs(1.0-s[1])+s[0];
-  x_[3]=fabs(1.0+s[1])+s[0];
-  x_[4]=fabs(1.0-s[2])+s[0];
-  x_[5]=fabs(1.0+s[2])+s[0];
-  std::sort(&x_[0],&x_[6]);
+  std::vector<double> x_;
+  { //  Build stack along X-axis.
+    x_.push_back(s[0]);
+    x_.push_back(fabs(1.0-s[0])+s[0]);
+    x_.push_back(fabs(1.0-s[1])+s[0]);
+    x_.push_back(fabs(1.0+s[1])+s[0]);
+    x_.push_back(fabs(1.0-s[2])+s[0]);
+    x_.push_back(fabs(1.0+s[2])+s[0]);
+    std::sort(x_.begin(),x_.end());
+    for(int i=0;i<x_.size();i++){
+      if(x_[i]<-1.0) x_[i]=-1.0;
+      if(x_[i]> 1.0) x_[i]= 1.0;
+    }
 
-  for(int i=0;i<6;i++){
-    if(x_[i]<-1.0)
-      x_[i]=-1.0;
-    if(x_[i]>1.0)
-      x_[i]=1.0;
+    std::vector<double> x_new;
+    double x_jump=fabs(1.0-s[0]);
+    if(fabs(1.0-s[1])>eps) x_jump=std::min(x_jump,fabs(1.0-s[1]));
+    if(fabs(1.0+s[1])>eps) x_jump=std::min(x_jump,fabs(1.0+s[1]));
+    if(fabs(1.0-s[2])>eps) x_jump=std::min(x_jump,fabs(1.0-s[2]));
+    if(fabs(1.0+s[2])>eps) x_jump=std::min(x_jump,fabs(1.0+s[2]));
+    for(int k=0; k<x_.size()-1; k++){
+      double x0=x_[k];
+      double x1=x_[k+1];
+
+      double A0=0;
+      double A1=0;
+      { // A0
+        double y0=s[1]-(x0-s[0]); if(y0<-1.0) y0=-1.0; if(y0> 1.0) y0= 1.0;
+        double y1=s[1]+(x0-s[0]); if(y1<-1.0) y1=-1.0; if(y1> 1.0) y1= 1.0;
+        double z0=s[2]-(x0-s[0]); if(z0<-1.0) z0=-1.0; if(z0> 1.0) z0= 1.0;
+        double z1=s[2]+(x0-s[0]); if(z1<-1.0) z1=-1.0; if(z1> 1.0) z1= 1.0;
+        A0=(y1-y0)*(z1-z0);
+      }
+      { // A1
+        double y0=s[1]-(x1-s[0]); if(y0<-1.0) y0=-1.0; if(y0> 1.0) y0= 1.0;
+        double y1=s[1]+(x1-s[0]); if(y1<-1.0) y1=-1.0; if(y1> 1.0) y1= 1.0;
+        double z0=s[2]-(x1-s[0]); if(z0<-1.0) z0=-1.0; if(z0> 1.0) z0= 1.0;
+        double z1=s[2]+(x1-s[0]); if(z1<-1.0) z1=-1.0; if(z1> 1.0) z1= 1.0;
+        A1=(y1-y0)*(z1-z0);
+      }
+      double V=0.5*(A0+A1)*(x1-x0);
+      if(V<eps) continue;
+
+      if(!x_new.size()) x_new.push_back(x0);
+      x_jump=std::max(x_jump,x0-s[0]);
+      while(s[0]+x_jump*1.5<x1){
+        x_new.push_back(s[0]+x_jump);
+        x_jump*=2.0;
+      }
+      if(x_new.back()+eps<x1) x_new.push_back(x1);
+    }
+    assert(x_new.size()<30);
+    x_.swap(x_new);
   }
 
-  std::vector<Y> k_out_(n*n*k_dim); //Output of kernel evaluation.
-  std::vector<double> k_out(n*n*k_dim);
-  std::vector<double> I2; I2.assign(m*m*m*k_dim,0);
-  for(int k=0; k<5; k++){
+  Vector<double> k_out(   ny*nz*k_dim,(double*)mem_mgr.malloc(   ny*nz*k_dim*sizeof(double)),false); //Output of kernel evaluation.
+  Vector<double> I0   (   ny*m *k_dim,(double*)mem_mgr.malloc(   ny*m *k_dim*sizeof(double)),false);
+  Vector<double> I1   (   m *m *k_dim,(double*)mem_mgr.malloc(   m *m *k_dim*sizeof(double)),false);
+  Vector<double> I2   (m *m *m *k_dim,(double*)mem_mgr.malloc(m *m *m *k_dim*sizeof(double)),false); I2.SetZero();
+  if(x_.size()>1)
+  for(int k=0; k<x_.size()-1; k++){
     double x0=x_[k];
     double x1=x_[k+1];
 
-    if(x0<x1){
-      for(int i=0; i<n; i++)
+    { // Set qp_x
+      std::vector<double> qp(nx);
+      std::vector<double> qw(nx);
+      quad_rule(nx,&qp[0],&qw[0]);
+      for(int i=0; i<nx; i++)
         qp_x[i]=(x1-x0)*qp[i]/2.0+(x1+x0)/2.0;
-      cheb_poly(m-1,&qp_x[0],n,&p_x[0]);
+      qw_x=qw;
+    }
+    cheb_poly(m-1,&qp_x[0],nx,&p_x[0]);
 
-      for(int i=0; i<n; i++){
-        std::vector<double> I0; I0.assign(n*m*k_dim,0);
-        std::vector<double> I1; I1.assign(m*m*k_dim,0);
+    for(int i=0; i<nx; i++){
+      double y0=s[1]-(qp_x[i]-s[0]); if(y0<-1.0) y0=-1.0; if(y0> 1.0) y0= 1.0;
+      double y1=s[1]+(qp_x[i]-s[0]); if(y1<-1.0) y1=-1.0; if(y1> 1.0) y1= 1.0;
+      double z0=s[2]-(qp_x[i]-s[0]); if(z0<-1.0) z0=-1.0; if(z0> 1.0) z0= 1.0;
+      double z1=s[2]+(qp_x[i]-s[0]); if(z1<-1.0) z1=-1.0; if(z1> 1.0) z1= 1.0;
 
-        double y0=s[1]-(qp_x[i]-s[0]);
-        double y1=s[1]+(qp_x[i]-s[0]);
-        double z0=s[2]-(qp_x[i]-s[0]);
-        double z1=s[2]+(qp_x[i]-s[0]);
-
-        if(y0<-1.0) y0=-1.0;
-        if(y1> 1.0) y1= 1.0;
-        if(z0<-1.0) z0=-1.0;
-        if(z1> 1.0) z1= 1.0;
-
-        if( y0<y1 && z0<z1){
-          for(int j=0; j<n; j++){
-            qp_y[j]=(y1-y0)*qp[j]/2.0+(y1+y0)/2.0;
-            qp_z[j]=(z1-z0)*qp[j]/2.0+(z1+z0)/2.0;
+      { // Set qp_y
+        std::vector<double> qp(ny);
+        std::vector<double> qw(ny);
+        quad_rule(ny,&qp[0],&qw[0]);
+        for(int j=0; j<ny; j++)
+          qp_y[j]=(y1-y0)*qp[j]/2.0+(y1+y0)/2.0;
+        qw_y=qw;
+      }
+      { // Set qp_z
+        std::vector<double> qp(nz);
+        std::vector<double> qw(nz);
+        quad_rule(nz,&qp[0],&qw[0]);
+        for(int j=0; j<nz; j++)
+          qp_z[j]=(z1-z0)*qp[j]/2.0+(z1+z0)/2.0;
+        qw_z=qw;
+      }
+      cheb_poly(m-1,&qp_y[0],ny,&p_y[0]);
+      cheb_poly(m-1,&qp_z[0],nz,&p_z[0]);
+      { // k_out =  kernel x qw
+        Y src[3]={0,0,0};
+        std::vector<Y> trg(ny*nz*3);
+        for(int i0=0; i0<ny; i0++){
+          size_t indx0=i0*nz*3;
+          for(int i1=0; i1<nz; i1++){
+            size_t indx1=indx0+i1*3;
+            trg[indx1+perm[0]]=(s[0]-qp_x[i ])*r*0.5*perm[1];
+            trg[indx1+perm[2]]=(s[1]-qp_y[i0])*r*0.5*perm[3];
+            trg[indx1+perm[4]]=(s[2]-qp_z[i1])*r*0.5*perm[5];
           }
-          cheb_poly(m-1,&qp_y[0],n,&p_y[0]);
-          cheb_poly(m-1,&qp_z[0],n,&p_z[0]);
-
-          {
-            Y trg[3]={0,0,0};
-            std::vector<Y> src(n*n*3);
-            for(int i0=0; i0<n; i0++)
-              for(int i1=0; i1<n; i1++){
-                src[(i0*n+i1)*3+perm[0]]=-(s[0]-qp_x[i ])*r*0.5*perm[1];
-                src[(i0*n+i1)*3+perm[2]]=-(s[1]-qp_y[i0])*r*0.5*perm[3];
-                src[(i0*n+i1)*3+perm[4]]=-(s[2]-qp_z[i1])*r*0.5*perm[5];
-              }
-            Kernel<Y>::Eval(&src[0],n*n,&trg[0],1,&k_out_[0],kernel,ker_dim);
-            for(int i0=0; i0<n; i0++)
-              for(int i1=0; i1<n; i1++)
-                for(int kk=0; kk<k_dim; kk++)
-                  k_out[(i0*n+i1)*k_dim+kk] = k_out_[(i0*n+i1)*k_dim+kk]*qw[i0]*qw[i1];
+        }
+        {
+          Matrix<double> k_val(ny*nz*ker_dim[0],ker_dim[1]);
+          Kernel<double>::Eval(&src[0],1,&trg[0],ny*nz,&k_val[0][0],kernel,ker_dim);
+          Matrix<double> k_val_t(ker_dim[1],ny*nz*ker_dim[0],&k_out[0], false);
+          k_val_t=k_val.Transpose();
+        }
+        for(int kk=0; kk<k_dim; kk++){
+          for(int i0=0; i0<ny; i0++){
+            size_t indx=(kk*ny+i0)*nz;
+            for(int i1=0; i1<nz; i1++){
+              k_out[indx+i1] *= qw_y[i0]*qw_z[i1];
+            }
           }
+        }
+      }
 
-          for(int i0=0; i0<n; i0++)
-            for(int i1=0; i1<n; i1++)
-              for(int i2=0; i2<m; i2++)
-                for(int kk=0; kk<k_dim; kk++)
-                  I0[(i0*m+i2)*k_dim+kk] += k_out[(i0*n+i1)*k_dim+kk]*p_z[i2*n+i1];
+      I0.SetZero();
+      for(int kk=0; kk<k_dim; kk++){
+        for(int i0=0; i0<ny; i0++){
+          size_t indx0=(kk*ny+i0)*nz;
+          size_t indx1=(kk*ny+i0)* m;
+          for(int i2=0; i2<m; i2++){
+            for(int i1=0; i1<nz; i1++){
+              I0[indx1+i2] += k_out[indx0+i1]*p_z[i2*nz+i1];
+            }
+          }
+        }
+      }
 
-          for(int i0=0; i0<m; i0++)
-            for(int i1=0; i0+i1<m; i1++)
-              for(int i2=0; i2<n; i2++)
-                for(int kk=0; kk<k_dim; kk++)
-                  I1[(i0*m+i1)*k_dim+kk] += I0[(i2*m+i1)*k_dim+kk]*p_y[i0*n+i2];
+      I1.SetZero();
+      for(int kk=0; kk<k_dim; kk++){
+        for(int i2=0; i2<ny; i2++){
+          size_t indx0=(kk*ny+i2)*m;
+          for(int i0=0; i0<m; i0++){
+            size_t indx1=(kk* m+i0)*m;
+            double py=p_y[i0*ny+i2];
+            for(int i1=0; i0+i1<m; i1++){
+              I1[indx1+i1] += I0[indx0+i1]*py;
+            }
+          }
+        }
+      }
 
-          for(int i0=0; i0<m; i0++)
-            for(int i1=0; i0+i1<m; i1++)
-              for(int kk=0; kk<k_dim; kk++)
-                I1[(i0*m+i1)*k_dim+kk]*=qw[i]*(x1-x0)*(y1-y0)*(z1-z0);
-
-          for(int i0=0; i0<m; i0++)
-            for(int i1=0; i0+i1<m; i1++)
-              for(int i2=0; i0+i1+i2<m; i2++)
-                for(int kk=0; kk<k_dim; kk++)
-                  I2[(i0*m*m+i1*m+i2)*k_dim+kk] += p_x[i+i0*n]*I1[(i1*m+i2)*k_dim+kk];
+      double v=(x1-x0)*(y1-y0)*(z1-z0);
+      for(int kk=0; kk<k_dim; kk++){
+        for(int i0=0; i0<m; i0++){
+          double px=p_x[i+i0*nx]*qw_x[i]*v;
+          for(int i1=0; i0+i1<m; i1++){
+            size_t indx0= (kk*m+i1)*m;
+            size_t indx1=((kk*m+i0)*m+i1)*m;
+            for(int i2=0; i0+i1+i2<m; i2++){
+              I2[indx1+i2] += I1[indx0+i2]*px;
+            }
+          }
         }
       }
     }
   }
   for(int i=0;i<m*m*m*k_dim;i++)
     I2[i]=I2[i]*r*r*r/64.0;
-  return I2;
+
+  if(x_.size()>1)
+  Profile::Add_FLOP(( 2*ny*nz*m*k_dim
+                     +ny*m*(m+1)*k_dim
+                     +2*m*(m+1)*k_dim
+                     +m*(m+1)*(m+2)/3*k_dim)*nx*(x_.size()-1));
+
+  std::vector<double> I2_(&I2[0], &I2[0]+I2.Dim());
+  mem_mgr.free(&k_out[0]);
+  mem_mgr.free(&I0   [0]);
+  mem_mgr.free(&I1   [0]);
+  mem_mgr.free(&I2   [0]);
+  return I2_;
 }
 
 template <class Y>
@@ -769,29 +879,38 @@ std::vector<double> integ(int m, double* s, double r, int n, typename Kernel<Y>:
   U_[5]=integ_pyramid<Y>(m,s1,r,n,kernel,ker_dim,perm);
 
   std::vector<double> U; U.assign(m*m*m*k_dim,0);
-  for(int i=0;i<m;i++)
-    for(int j=0;j<m;j++)
-      for(int k=0;k<m;k++)
-        for(int kk=0; kk<k_dim; kk++){
-          U[(k*m*m+j*m+i)*k_dim+kk]+=U_[0][(i*m*m+j*m+k)*k_dim+kk];
-          U[(k*m*m+j*m+i)*k_dim+kk]+=U_[1][(i*m*m+j*m+k)*k_dim+kk]*(i%2?-1.0:1.0);
+  for(int kk=0; kk<k_dim; kk++){
+    for(int i=0;i<m;i++){
+      for(int j=0;j<m;j++){
+        for(int k=0;k<m;k++){
+          U[kk*m*m*m + k*m*m + j*m + i]+=U_[0][kk*m*m*m + i*m*m + j*m + k];
+          U[kk*m*m*m + k*m*m + j*m + i]+=U_[1][kk*m*m*m + i*m*m + j*m + k]*(i%2?-1.0:1.0);
         }
+      }
+    }
+  }
 
-  for(int i=0; i<m; i++)
-    for(int j=0; j<m; j++)
-      for(int k=0; k<m; k++)
-        for(int kk=0; kk<k_dim; kk++){
-          U[(k*m*m+i*m+j)*k_dim+kk]+=U_[2][(i*m*m+j*m+k)*k_dim+kk];
-          U[(k*m*m+i*m+j)*k_dim+kk]+=U_[3][(i*m*m+j*m+k)*k_dim+kk]*(i%2?-1.0:1.0);
+  for(int kk=0; kk<k_dim; kk++){
+    for(int i=0; i<m; i++){
+      for(int j=0; j<m; j++){
+        for(int k=0; k<m; k++){
+          U[kk*m*m*m + k*m*m + i*m + j]+=U_[2][kk*m*m*m + i*m*m + j*m + k];
+          U[kk*m*m*m + k*m*m + i*m + j]+=U_[3][kk*m*m*m + i*m*m + j*m + k]*(i%2?-1.0:1.0);
         }
+      }
+    }
+  }
 
-  for(int i=0; i<m; i++)
-    for(int j=0; j<m; j++)
-      for(int k=0; k<m; k++)
-        for(int kk=0; kk<k_dim; kk++){
-          U[(i*m*m+k*m+j)*k_dim+kk]+=U_[4][(i*m*m+j*m+k)*k_dim+kk];
-          U[(i*m*m+k*m+j)*k_dim+kk]+=U_[5][(i*m*m+j*m+k)*k_dim+kk]*(i%2?-1.0:1.0);
+  for(int kk=0; kk<k_dim; kk++){
+    for(int i=0; i<m; i++){
+      for(int j=0; j<m; j++){
+        for(int k=0; k<m; k++){
+          U[kk*m*m*m + i*m*m + k*m + j]+=U_[4][kk*m*m*m + i*m*m + j*m + k];
+          U[kk*m*m*m + i*m*m + k*m + j]+=U_[5][kk*m*m*m + i*m*m + j*m + k]*(i%2?-1.0:1.0);
         }
+      }
+    }
+  }
 
   return U;
 }
@@ -802,7 +921,7 @@ std::vector<double> integ(int m, double* s, double r, int n, typename Kernel<Y>:
  */
 template <class Y>
 std::vector<Y> cheb_integ(int m, Y* s_, Y r_, typename Kernel<Y>::Ker_t kernel, int* ker_dim){
-  double eps=(typeid(Y)==typeid(float)?1e-7:1e-13);
+  double eps=(typeid(Y)==typeid(float)?1e-7:1e-14);
 
   double r=r_;
   double s[3]={s_[0],s_[1],s_[2]};
@@ -826,23 +945,15 @@ std::vector<Y> cheb_integ(int m, Y* s_, Y r_, typename Kernel<Y>::Ker_t kernel, 
     U=U_;
   }
 
-  //Rearrange elements.
-  int m3 = (m+1)*(m+1)*(m+1);
-  Matrix<double> M1(m3*ker_dim[0], ker_dim[1], &U[0], false);
-  M1=M1.Transpose();
-  for(int i=0; i<ker_dim[1]; i++){
-    Matrix<double> M2(m3, ker_dim[0], &U[i*m3*ker_dim[0]], false);
-    M2 = M2.Transpose();
-  }
-
   std::vector<Y> U0(((m+1)*(m+2)*(m+3)*k_dim)/6);
   {// Rearrange data
     int indx=0;
-    for(int l=0;l<k_dim;l++)
+    for(int l0=0;l0<ker_dim[0];l0++)
+    for(int l1=0;l1<ker_dim[1];l1++)
     for(int i=0;i<=m;i++)
     for(int j=0;i+j<=m;j++)
     for(int k=0;i+j+k<=m;k++){
-      U0[indx]=U[(k+(j+(i+l*(m+1))*(m+1))*(m+1))];
+      U0[indx]=U[(k+(j+(i+(l1*ker_dim[0]+l0)*(m+1))*(m+1))*(m+1))];
       indx++;
     }
   }
