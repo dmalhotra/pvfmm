@@ -64,6 +64,10 @@ struct FFTW_t<double>{
     fftw_destroy_plan(plan);
   }
 
+  static void fftw_flops(const plan& p, double* add, double* mul, double* fma){
+    ::fftw_flops(p, add, mul, fma);
+  }
+
 };
 #endif
 
@@ -97,6 +101,10 @@ struct FFTW_t<float>{
 
   static void fft_destroy_plan(fftwf_plan plan){
     fftwf_destroy_plan(plan);
+  }
+
+  static void fftw_flops(const plan& p, double* add, double* mul, double* fma){
+    ::fftwf_flops(p, add, mul, fma);
   }
 
 };

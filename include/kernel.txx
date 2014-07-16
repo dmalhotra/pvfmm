@@ -59,21 +59,14 @@ Kernel<T>::Kernel(Ker_t poten, Ker_t dbl_poten, const char* name, int dim_,
 template <class T>
 void Kernel<T>::BuildMatrix(T* r_src, int src_cnt,
                  T* r_trg, int trg_cnt, T* k_out){
-  Eval(r_src, src_cnt, r_trg, trg_cnt, k_out, ker_poten, ker_dim);
-}
-
-template <class T>
-void Kernel<T>::Eval(T* r_src, int src_cnt,
-                     T* r_trg, int trg_cnt, T* k_out,
-                     Kernel<T>::Ker_t eval_kernel, int* ker_dim){
   int dim=3; //Only supporting 3D
   memset(k_out, 0, src_cnt*ker_dim[0]*trg_cnt*ker_dim[1]*sizeof(T));
   for(int i=0;i<src_cnt;i++) //TODO Optimize this.
     for(int j=0;j<ker_dim[0];j++){
       std::vector<T> v_src(ker_dim[0],0);
       v_src[j]=1.0;
-      eval_kernel(&r_src[i*dim], 1, &v_src[0], 1, r_trg, trg_cnt,
-                  &k_out[(i*ker_dim[0]+j)*trg_cnt*ker_dim[1]]    );
+      ker_poten(&r_src[i*dim], 1, &v_src[0], 1, r_trg, trg_cnt,
+                &k_out[(i*ker_dim[0]+j)*trg_cnt*ker_dim[1]], NULL);
     }
 }
 
@@ -443,17 +436,33 @@ namespace
 #define X(s,k) (s)[(k)*COORD_DIM]
 #define Y(s,k) (s)[(k)*COORD_DIM+1]
 #define Z(s,k) (s)[(k)*COORD_DIM+2]
-  void laplaceSSEShuffle(const int ns, const int nt, float  const src[], float  const trg[], float  const den[], float  pot[])
+  void laplaceSSEShuffle(const int ns, const int nt, float  const src[], float  const trg[], float  const den[], float  pot[], mem::MemoryManager* mem_mgr=NULL)
   {
     // TODO
   }
 
-  void laplaceSSEShuffle(const int ns, const int nt, double const src[], double const trg[], double const den[], double pot[])
+  void laplaceSSEShuffle(const int ns, const int nt, double const src[], double const trg[], double const den[], double pot[], mem::MemoryManager* mem_mgr=NULL)
   {
+    double* buff=NULL;
+    if(mem_mgr) buff=(double*)mem_mgr->malloc((ns+1+nt)*3*sizeof(double));
+    else buff=(double*)malloc((ns+1+nt)*3*sizeof(double));
 
-    std::vector<double> xs(ns+1);   std::vector<double> xt(nt);
-    std::vector<double> ys(ns+1);   std::vector<double> yt(nt);
-    std::vector<double> zs(ns+1);   std::vector<double> zt(nt);
+    double* buff_=buff;
+    pvfmm::Vector<double> xs(ns+1,buff_,false); buff_+=ns+1;
+    pvfmm::Vector<double> ys(ns+1,buff_,false); buff_+=ns+1;
+    pvfmm::Vector<double> zs(ns+1,buff_,false); buff_+=ns+1;
+
+    pvfmm::Vector<double> xt(nt  ,buff_,false); buff_+=nt  ;
+    pvfmm::Vector<double> yt(nt  ,buff_,false); buff_+=nt  ;
+    pvfmm::Vector<double> zt(nt  ,buff_,false); buff_+=nt  ;
+
+    //std::vector<double> xs(ns+1);
+    //std::vector<double> ys(ns+1);
+    //std::vector<double> zs(ns+1);
+
+    //std::vector<double> xt(nt  );
+    //std::vector<double> yt(nt  );
+    //std::vector<double> zt(nt  );
 
     int x_shift = size_t(&xs[0]) % IDEAL_ALIGNMENT ? 1:0;
     int y_shift = size_t(&ys[0]) % IDEAL_ALIGNMENT ? 1:0;
@@ -473,15 +482,18 @@ namespace
 
     //2. perform caclulation
     laplaceSSE(ns,nt,&xs[x_shift],&ys[y_shift],&zs[z_shift],&xt[0],&yt[0],&zt[0],den,pot);
+
+    if(mem_mgr) mem_mgr->free(buff);
+    else free(buff);
     return;
   }
 
-  void laplaceDblSSEShuffle(const int ns, const int nt, float  const src[], float  const trg[], float  const den[], float  pot[])
+  void laplaceDblSSEShuffle(const int ns, const int nt, float  const src[], float  const trg[], float  const den[], float  pot[], mem::MemoryManager* mem_mgr=NULL)
   {
     // TODO
   }
 
-  void laplaceDblSSEShuffle(const int ns, const int nt, double const src[], double const trg[], double const den[], double pot[])
+  void laplaceDblSSEShuffle(const int ns, const int nt, double const src[], double const trg[], double const den[], double pot[], mem::MemoryManager* mem_mgr=NULL)
   {
     std::vector<double> xs(ns+1);   std::vector<double> xt(nt);
     std::vector<double> ys(ns+1);   std::vector<double> yt(nt);
@@ -508,16 +520,24 @@ namespace
     return;
   }
 
-  void laplaceGradSSEShuffle(const int ns, const int nt, float  const src[], float  const trg[], float  const den[], float  pot[])
+  void laplaceGradSSEShuffle(const int ns, const int nt, float  const src[], float  const trg[], float  const den[], float  pot[], mem::MemoryManager* mem_mgr=NULL)
   {
     // TODO
   }
 
-  void laplaceGradSSEShuffle(const int ns, const int nt, double const src[], double const trg[], double const den[], double pot[])
+  void laplaceGradSSEShuffle(const int ns, const int nt, double const src[], double const trg[], double const den[], double pot[], mem::MemoryManager* mem_mgr=NULL)
   {
-    std::vector<double> xs(ns+1);   std::vector<double> xt(nt);
-    std::vector<double> ys(ns+1);   std::vector<double> yt(nt);
-    std::vector<double> zs(ns+1);   std::vector<double> zt(nt);
+    int tid=omp_get_thread_num();
+    static std::vector<std::vector<double> > xs_(100);   static std::vector<std::vector<double> > xt_(100);
+    static std::vector<std::vector<double> > ys_(100);   static std::vector<std::vector<double> > yt_(100);
+    static std::vector<std::vector<double> > zs_(100);   static std::vector<std::vector<double> > zt_(100);
+
+    std::vector<double>& xs=xs_[tid];   std::vector<double>& xt=xt_[tid];
+    std::vector<double>& ys=ys_[tid];   std::vector<double>& yt=yt_[tid];
+    std::vector<double>& zs=zs_[tid];   std::vector<double>& zt=zt_[tid];
+    xs.resize(ns+1); xt.resize(nt);
+    ys.resize(ns+1); yt.resize(nt);
+    zs.resize(ns+1); zt.resize(nt);
 
     int x_shift = size_t(&xs[0]) % IDEAL_ALIGNMENT ? 1:0;
     int y_shift = size_t(&ys[0]) % IDEAL_ALIGNMENT ? 1:0;
@@ -554,12 +574,12 @@ namespace
  * dimension = 1x1.
  */
 template <class T>
-void laplace_poten(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out){
+void laplace_poten(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
 #ifndef __MIC__
   Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(12*dof));
 #ifdef USE_SSE
   if(dof==1){
-    laplaceSSEShuffle(src_cnt, trg_cnt, r_src, r_trg, v_src, k_out);
+    laplaceSSEShuffle(src_cnt, trg_cnt, r_src, r_trg, v_src, k_out, mem_mgr);
     return;
   }
 #endif
@@ -583,7 +603,7 @@ void laplace_poten(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_c
 }
 
 template <class T>
-void laplace_poten_(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out){
+void laplace_poten_(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
 //void laplace_poten(T* r_src_, int src_cnt, T* v_src_, int dof, T* r_trg_, int trg_cnt, T* k_out_){
 //  int dim=3; //Only supporting 3D
 //  T* r_src=new T[src_cnt*dim];
@@ -700,12 +720,12 @@ void laplace_poten_(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_
 
 // Laplace double layer potential.
 template <class T>
-void laplace_dbl_poten(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out){
+void laplace_dbl_poten(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
 #ifndef __MIC__
   Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(19*dof));
 #ifdef USE_SSE
   if(dof==1){
-    laplaceDblSSEShuffle(src_cnt, trg_cnt, r_src, r_trg, v_src, k_out);
+    laplaceDblSSEShuffle(src_cnt, trg_cnt, r_src, r_trg, v_src, k_out, mem_mgr);
     return;
   }
 #endif
@@ -732,12 +752,12 @@ void laplace_dbl_poten(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int t
 
 // Laplace grdient kernel.
 template <class T>
-void laplace_grad(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out){
+void laplace_grad(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
 #ifndef __MIC__
   Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(10+12*dof));
 #ifdef USE_SSE
   if(dof==1){
-    laplaceGradSSEShuffle(src_cnt, trg_cnt, r_src, r_trg, v_src, k_out);
+    laplaceGradSSEShuffle(src_cnt, trg_cnt, r_src, r_trg, v_src, k_out, mem_mgr);
     return;
   }
 #endif
@@ -1512,7 +1532,7 @@ namespace
 #define X(s,k) (s)[(k)*COORD_DIM]
 #define Y(s,k) (s)[(k)*COORD_DIM+1]
 #define Z(s,k) (s)[(k)*COORD_DIM+2]
-  void stokesDirectSSEShuffle(const int ns, const int nt, double const src[], double const trg[], double const den[], double pot[], const double kernel_coef)
+  void stokesDirectSSEShuffle(const int ns, const int nt, double const src[], double const trg[], double const den[], double pot[], const double kernel_coef, mem::MemoryManager* mem_mgr=NULL)
   {
 
     std::vector<double> xs(ns+1);   std::vector<double> xt(nt);
@@ -1540,7 +1560,7 @@ namespace
     return;
   }
 
-  void stokesPressureSSEShuffle(const int ns, const int nt, double const src[], double const trg[], double const den[], double pot[])
+  void stokesPressureSSEShuffle(const int ns, const int nt, double const src[], double const trg[], double const den[], double pot[], mem::MemoryManager* mem_mgr=NULL)
   {
     std::vector<double> xs(ns+1);   std::vector<double> xt(nt);
     std::vector<double> ys(ns+1);   std::vector<double> yt(nt);
@@ -1567,7 +1587,7 @@ namespace
     return;
   }
 
-  void stokesStressSSEShuffle(const int ns, const int nt, double const src[], double const trg[], double const den[], double pot[])
+  void stokesStressSSEShuffle(const int ns, const int nt, double const src[], double const trg[], double const den[], double pot[], mem::MemoryManager* mem_mgr=NULL)
   {
     std::vector<double> xs(ns+1);   std::vector<double> xt(nt);
     std::vector<double> ys(ns+1);   std::vector<double> yt(nt);
@@ -1594,7 +1614,7 @@ namespace
     return;
   }
 
-  void stokesGradSSEShuffle(const int ns, const int nt, double const src[], double const trg[], double const den[], double pot[], const double kernel_coef)
+  void stokesGradSSEShuffle(const int ns, const int nt, double const src[], double const trg[], double const den[], double pot[], const double kernel_coef, mem::MemoryManager* mem_mgr=NULL)
   {
     std::vector<double> xs(ns+1);   std::vector<double> xt(nt);
     std::vector<double> ys(ns+1);   std::vector<double> yt(nt);
@@ -1635,13 +1655,13 @@ namespace
  * dimension = 3x3.
  */
 template <class T>
-void stokes_vel(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt, T* k_out){
+void stokes_vel(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
   const T mu=1.0;
 
 #ifndef __MIC__
   Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(28*dof));
 #ifdef USE_SSE
-  stokesDirectSSEShuffle(src_cnt, trg_cnt, r_src, r_trg, v_src_, k_out, mu);
+  stokesDirectSSEShuffle(src_cnt, trg_cnt, r_src, r_trg, v_src_, k_out, mu, mem_mgr);
   return;
 #endif
 #endif
@@ -1677,7 +1697,7 @@ void stokes_vel(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt
 }
 
 template <class T>
-void stokes_dbl_vel(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out){
+void stokes_dbl_vel(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
 
 #ifndef __MIC__
   Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(32*dof));
@@ -1716,12 +1736,12 @@ void stokes_dbl_vel(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_
 }
 
 template <class T>
-void stokes_press(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt, T* k_out){
+void stokes_press(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
 
 #ifndef __MIC__
   Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(17*dof));
 #ifdef USE_SSE
-  stokesPressureSSEShuffle(src_cnt, trg_cnt, r_src, r_trg, v_src_, k_out);
+  stokesPressureSSEShuffle(src_cnt, trg_cnt, r_src, r_trg, v_src_, k_out, mem_mgr);
   return;
 #endif
 #endif
@@ -1754,12 +1774,12 @@ void stokes_press(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_c
 }
 
 template <class T>
-void stokes_stress(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt, T* k_out){
+void stokes_stress(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
 
 #ifndef __MIC__
   Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(45*dof));
 #ifdef USE_SSE
-  stokesStressSSEShuffle(src_cnt, trg_cnt, r_src, r_trg, v_src_, k_out);
+  stokesStressSSEShuffle(src_cnt, trg_cnt, r_src, r_trg, v_src_, k_out, mem_mgr);
   return;
 #endif
 #endif
@@ -1805,13 +1825,13 @@ void stokes_stress(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_
 }
 
 template <class T>
-void stokes_grad(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt, T* k_out){
+void stokes_grad(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
   const T mu=1.0;
 
 #ifndef __MIC__
   Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(89*dof));
 #ifdef USE_SSE
-  stokesGradSSEShuffle(src_cnt, trg_cnt, r_src, r_trg, v_src_, k_out, mu);
+  stokesGradSSEShuffle(src_cnt, trg_cnt, r_src, r_trg, v_src_, k_out, mu, mem_mgr);
   return;
 #endif
 #endif
@@ -1871,7 +1891,7 @@ void stokes_grad(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cn
 ////////////////////////////////////////////////////////////////////////////////
 
 template <class T>
-void biot_savart(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt, T* k_out){
+void biot_savart(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
 #ifndef __MIC__
   Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(26*dof));
 #endif
@@ -1916,7 +1936,7 @@ void biot_savart(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cn
  * dimension = 2x2.
  */
 template <class T>
-void helmholtz_poten(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out){
+void helmholtz_poten(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
 #ifndef __MIC__
   Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(24*dof));
 #endif
@@ -1945,7 +1965,7 @@ void helmholtz_poten(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg
 }
 
 template <class T>
-void helmholtz_grad(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out){
+void helmholtz_grad(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
   //TODO Implement this.
 }
 

@@ -13,6 +13,7 @@
 #include <stack>
 #include <vector>
 #include <cassert>
+#include <iostream>
 #include <cmath>
 #include <omp.h>
 

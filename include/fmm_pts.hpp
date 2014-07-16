@@ -100,7 +100,8 @@ class FMM_Pts{
   /**
    * \brief Constructor.
    */
-  FMM_Pts(): vprecomp_fft_flag(false), vlist_fft_flag(false),
+  FMM_Pts(mem::MemoryManager* mem_mgr_=NULL): mem_mgr(mem_mgr_),
+             vprecomp_fft_flag(false), vlist_fft_flag(false),
                vlist_ifft_flag(false), mat(NULL){};
 
   /**
@@ -218,6 +219,7 @@ class FMM_Pts{
   std::vector<Vector<Real_t> > dnwd_check_surf;
   std::vector<Vector<Real_t> > dnwd_equiv_surf;
 
+  mem::MemoryManager* mem_mgr;
   InteracList<FMMNode> interac_list;
   Kernel<Real_t> kernel;     //The kernel function.
   Kernel<Real_t> aux_kernel; //Auxiliary kernel for source-to-source translations.

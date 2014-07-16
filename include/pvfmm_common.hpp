@@ -36,7 +36,7 @@
 
 #define MEM_ALIGN 64
 #define DEVICE_BUFFER_SIZE 1024 //in MB
-#define V_BLK_SIZE 256
+#define V_BLK_CACHE 25 //in KB
 
 #define UNUSED(x) (void)(x) // to ignore unused variable warning.
 

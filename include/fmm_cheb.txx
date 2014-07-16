@@ -426,8 +426,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
         size_t cnt_done=0;
         #pragma omp parallel for schedule(dynamic)
         for(size_t i=myrank;i<n_uc;i+=np){
-          std::vector<Real_t> M_=cheb_integ(cheb_deg, &uc_coord[i*3], r,
-                                            this->aux_kernel.ker_poten, this->aux_kernel.ker_dim);
+          std::vector<Real_t> M_=cheb_integ(cheb_deg, &uc_coord[i*3], r, this->aux_kernel);
           #ifdef __VERBOSE__
           #pragma omp critical
           if(!myrank){
@@ -491,8 +490,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
         size_t cnt_done=0;
         #pragma omp parallel for schedule(dynamic)
         for(size_t i=myrank;i<n_trg;i+=np){
-          std::vector<Real_t> s2t=cheb_integ(cheb_deg, &trg_coord[i*3], (Real_t)(s*2.0),
-                                             this->kernel.ker_poten, this->kernel.ker_dim);
+          std::vector<Real_t> s2t=cheb_integ(cheb_deg, &trg_coord[i*3], (Real_t)(s*2.0), this->kernel);
           #ifdef __VERBOSE__
           #pragma omp critical
           if(!myrank){
@@ -542,8 +540,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
         size_t cnt_done=0;
         #pragma omp parallel for schedule(dynamic)
         for(size_t i=myrank;i<n_trg;i+=np){
-          std::vector<Real_t> s2t=cheb_integ(cheb_deg, &trg_coord[i*3], s,
-                                             this->kernel.ker_poten, this->kernel.ker_dim);
+          std::vector<Real_t> s2t=cheb_integ(cheb_deg, &trg_coord[i*3], s, this->kernel);
           #ifdef __VERBOSE__
           #pragma omp critical
           if(!myrank){
@@ -593,8 +590,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
         size_t cnt_done=0;
         #pragma omp parallel for schedule(dynamic)
         for(size_t i=myrank;i<n_trg;i+=np){
-          std::vector<Real_t> s2t=cheb_integ(cheb_deg, &trg_coord[i*3], (Real_t)(s*0.5),
-                                             this->kernel.ker_poten, this->kernel.ker_dim);
+          std::vector<Real_t> s2t=cheb_integ(cheb_deg, &trg_coord[i*3], (Real_t)(s*0.5), this->kernel);
           #ifdef __VERBOSE__
           #pragma omp critical
           if(!myrank){
@@ -659,8 +655,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
         size_t cnt_done=0;
         #pragma omp parallel for schedule(dynamic)
         for(size_t i=myrank;i<n_trg;i+=np){
-          std::vector<Real_t> M_=cheb_integ(cheb_deg, &trg_coord[i*3], s,
-                                            this->aux_kernel.ker_poten, this->aux_kernel.ker_dim);
+          std::vector<Real_t> M_=cheb_integ(cheb_deg, &trg_coord[i*3], s, this->aux_kernel);
           #ifdef __VERBOSE__
           #pragma omp critical
           if(!myrank){

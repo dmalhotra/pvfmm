@@ -10,6 +10,7 @@
 #include <matrix.hpp>
 #include <mem_mgr.hpp>
 #include <legendre_rule.hpp>
+#include <limits>
 
 namespace pvfmm{
 
@@ -71,7 +72,7 @@ T cheb_err(T* cheb_coeff, int deg, int dof){
  */
 template <class T, class Y>
 T cheb_approx(T* fn_v, int cheb_deg, int dof, T* out){
-  //double eps=(typeid(T)==typeid(float)?1e-7:1e-12);
+  //T eps=std::numeric_limits<T>::epsilon()*100;
 
   int d=cheb_deg+1;
   static std::vector<Matrix<Y> > precomp;
@@ -191,7 +192,7 @@ inline void legn_poly(int d, T* in, int n, T* out){
  */
 template <class T>
 void gll_quadrature(int deg, T* x_, T* w){//*
-  double eps=(typeid(T)==typeid(float)?1e-7:1e-12);
+  T eps=std::numeric_limits<T>::epsilon()*100;
   int d=deg+1;
   assert(d>1);
   int N=d-1;
@@ -228,7 +229,7 @@ void gll_quadrature(int deg, T* x_, T* w){//*
  */
 template <class T, class Y>
 T gll2cheb(T* fn_v, int deg, int dof, T* out){//*
-  //double eps=(typeid(T)==typeid(float)?1e-7:1e-12);
+  //T eps=std::numeric_limits<T>::epsilon()*100;
 
   int d=deg+1;
   static std::vector<Matrix<Y> > precomp;
@@ -559,7 +560,7 @@ void points2cheb(int deg, T* coord, T* val, int n, int dim, T* node_coord, T nod
 
   //Compute the pinv and get the cheb_coeff.
   Matrix<T> M_val(n,dim,&val[0]);
-  T eps=(typeid(T)==typeid(float)?1e-5:1e-12);
+  T eps=std::numeric_limits<T>::epsilon()*100;
   Matrix<T> cheb_coeff_=(M.pinv(eps)*M_val).Transpose();
 
   //Set the output
@@ -634,23 +635,23 @@ void quad_rule(int n, T* x, T* w){//*
   }// */
 }
 
-template <class Y>
-std::vector<double> integ_pyramid(int m, double* s, double r, int nx, typename Kernel<Y>::Ker_t kernel, int* ker_dim, int* perm){//*
-  static mem::MemoryManager mem_mgr(16*1024*1024*sizeof(double));
+template <class T>
+std::vector<T> integ_pyramid(int m, T* s, T r, int nx, Kernel<T>& kernel, int* perm){//*
+  static mem::MemoryManager mem_mgr(16*1024*1024*sizeof(T));
   int ny=nx;
   int nz=nx;
 
-  double eps=1e-14;
-  int k_dim=ker_dim[0]*ker_dim[1];
+  T eps=std::numeric_limits<T>::epsilon()*100;
+  int k_dim=kernel.ker_dim[0]*kernel.ker_dim[1];
 
-  std::vector<double> qp_x(nx), qw_x(nx);
-  std::vector<double> qp_y(ny), qw_y(ny);
-  std::vector<double> qp_z(nz), qw_z(nz);
-  std::vector<double> p_x(nx*m);
-  std::vector<double> p_y(ny*m);
-  std::vector<double> p_z(nz*m);
+  std::vector<T> qp_x(nx), qw_x(nx);
+  std::vector<T> qp_y(ny), qw_y(ny);
+  std::vector<T> qp_z(nz), qw_z(nz);
+  std::vector<T> p_x(nx*m);
+  std::vector<T> p_y(ny*m);
+  std::vector<T> p_z(nz*m);
 
-  std::vector<double> x_;
+  std::vector<T> x_;
   { //  Build stack along X-axis.
     x_.push_back(s[0]);
     x_.push_back(fabs(1.0-s[0])+s[0]);
@@ -664,33 +665,33 @@ std::vector<double> integ_pyramid(int m, double* s, double r, int nx, typename K
       if(x_[i]> 1.0) x_[i]= 1.0;
     }
 
-    std::vector<double> x_new;
-    double x_jump=fabs(1.0-s[0]);
-    if(fabs(1.0-s[1])>eps) x_jump=std::min(x_jump,fabs(1.0-s[1]));
-    if(fabs(1.0+s[1])>eps) x_jump=std::min(x_jump,fabs(1.0+s[1]));
-    if(fabs(1.0-s[2])>eps) x_jump=std::min(x_jump,fabs(1.0-s[2]));
-    if(fabs(1.0+s[2])>eps) x_jump=std::min(x_jump,fabs(1.0+s[2]));
+    std::vector<T> x_new;
+    T x_jump=fabs(1.0-s[0]);
+    if(fabs(1.0-s[1])>eps) x_jump=std::min(x_jump,(T)fabs(1.0-s[1]));
+    if(fabs(1.0+s[1])>eps) x_jump=std::min(x_jump,(T)fabs(1.0+s[1]));
+    if(fabs(1.0-s[2])>eps) x_jump=std::min(x_jump,(T)fabs(1.0-s[2]));
+    if(fabs(1.0+s[2])>eps) x_jump=std::min(x_jump,(T)fabs(1.0+s[2]));
     for(int k=0; k<x_.size()-1; k++){
-      double x0=x_[k];
-      double x1=x_[k+1];
+      T x0=x_[k];
+      T x1=x_[k+1];
 
-      double A0=0;
-      double A1=0;
+      T A0=0;
+      T A1=0;
       { // A0
-        double y0=s[1]-(x0-s[0]); if(y0<-1.0) y0=-1.0; if(y0> 1.0) y0= 1.0;
-        double y1=s[1]+(x0-s[0]); if(y1<-1.0) y1=-1.0; if(y1> 1.0) y1= 1.0;
-        double z0=s[2]-(x0-s[0]); if(z0<-1.0) z0=-1.0; if(z0> 1.0) z0= 1.0;
-        double z1=s[2]+(x0-s[0]); if(z1<-1.0) z1=-1.0; if(z1> 1.0) z1= 1.0;
+        T y0=s[1]-(x0-s[0]); if(y0<-1.0) y0=-1.0; if(y0> 1.0) y0= 1.0;
+        T y1=s[1]+(x0-s[0]); if(y1<-1.0) y1=-1.0; if(y1> 1.0) y1= 1.0;
+        T z0=s[2]-(x0-s[0]); if(z0<-1.0) z0=-1.0; if(z0> 1.0) z0= 1.0;
+        T z1=s[2]+(x0-s[0]); if(z1<-1.0) z1=-1.0; if(z1> 1.0) z1= 1.0;
         A0=(y1-y0)*(z1-z0);
       }
       { // A1
-        double y0=s[1]-(x1-s[0]); if(y0<-1.0) y0=-1.0; if(y0> 1.0) y0= 1.0;
-        double y1=s[1]+(x1-s[0]); if(y1<-1.0) y1=-1.0; if(y1> 1.0) y1= 1.0;
-        double z0=s[2]-(x1-s[0]); if(z0<-1.0) z0=-1.0; if(z0> 1.0) z0= 1.0;
-        double z1=s[2]+(x1-s[0]); if(z1<-1.0) z1=-1.0; if(z1> 1.0) z1= 1.0;
+        T y0=s[1]-(x1-s[0]); if(y0<-1.0) y0=-1.0; if(y0> 1.0) y0= 1.0;
+        T y1=s[1]+(x1-s[0]); if(y1<-1.0) y1=-1.0; if(y1> 1.0) y1= 1.0;
+        T z0=s[2]-(x1-s[0]); if(z0<-1.0) z0=-1.0; if(z0> 1.0) z0= 1.0;
+        T z1=s[2]+(x1-s[0]); if(z1<-1.0) z1=-1.0; if(z1> 1.0) z1= 1.0;
         A1=(y1-y0)*(z1-z0);
       }
-      double V=0.5*(A0+A1)*(x1-x0);
+      T V=0.5*(A0+A1)*(x1-x0);
       if(V<eps) continue;
 
       if(!x_new.size()) x_new.push_back(x0);
@@ -705,18 +706,18 @@ std::vector<double> integ_pyramid(int m, double* s, double r, int nx, typename K
     x_.swap(x_new);
   }
 
-  Vector<double> k_out(   ny*nz*k_dim,(double*)mem_mgr.malloc(   ny*nz*k_dim*sizeof(double)),false); //Output of kernel evaluation.
-  Vector<double> I0   (   ny*m *k_dim,(double*)mem_mgr.malloc(   ny*m *k_dim*sizeof(double)),false);
-  Vector<double> I1   (   m *m *k_dim,(double*)mem_mgr.malloc(   m *m *k_dim*sizeof(double)),false);
-  Vector<double> I2   (m *m *m *k_dim,(double*)mem_mgr.malloc(m *m *m *k_dim*sizeof(double)),false); I2.SetZero();
+  Vector<T> k_out(   ny*nz*k_dim,(T*)mem_mgr.malloc(   ny*nz*k_dim*sizeof(T)),false); //Output of kernel evaluation.
+  Vector<T> I0   (   ny*m *k_dim,(T*)mem_mgr.malloc(   ny*m *k_dim*sizeof(T)),false);
+  Vector<T> I1   (   m *m *k_dim,(T*)mem_mgr.malloc(   m *m *k_dim*sizeof(T)),false);
+  Vector<T> I2   (m *m *m *k_dim,(T*)mem_mgr.malloc(m *m *m *k_dim*sizeof(T)),false); I2.SetZero();
   if(x_.size()>1)
   for(int k=0; k<x_.size()-1; k++){
-    double x0=x_[k];
-    double x1=x_[k+1];
+    T x0=x_[k];
+    T x1=x_[k+1];
 
     { // Set qp_x
-      std::vector<double> qp(nx);
-      std::vector<double> qw(nx);
+      std::vector<T> qp(nx);
+      std::vector<T> qw(nx);
       quad_rule(nx,&qp[0],&qw[0]);
       for(int i=0; i<nx; i++)
         qp_x[i]=(x1-x0)*qp[i]/2.0+(x1+x0)/2.0;
@@ -725,22 +726,22 @@ std::vector<double> integ_pyramid(int m, double* s, double r, int nx, typename K
     cheb_poly(m-1,&qp_x[0],nx,&p_x[0]);
 
     for(int i=0; i<nx; i++){
-      double y0=s[1]-(qp_x[i]-s[0]); if(y0<-1.0) y0=-1.0; if(y0> 1.0) y0= 1.0;
-      double y1=s[1]+(qp_x[i]-s[0]); if(y1<-1.0) y1=-1.0; if(y1> 1.0) y1= 1.0;
-      double z0=s[2]-(qp_x[i]-s[0]); if(z0<-1.0) z0=-1.0; if(z0> 1.0) z0= 1.0;
-      double z1=s[2]+(qp_x[i]-s[0]); if(z1<-1.0) z1=-1.0; if(z1> 1.0) z1= 1.0;
+      T y0=s[1]-(qp_x[i]-s[0]); if(y0<-1.0) y0=-1.0; if(y0> 1.0) y0= 1.0;
+      T y1=s[1]+(qp_x[i]-s[0]); if(y1<-1.0) y1=-1.0; if(y1> 1.0) y1= 1.0;
+      T z0=s[2]-(qp_x[i]-s[0]); if(z0<-1.0) z0=-1.0; if(z0> 1.0) z0= 1.0;
+      T z1=s[2]+(qp_x[i]-s[0]); if(z1<-1.0) z1=-1.0; if(z1> 1.0) z1= 1.0;
 
       { // Set qp_y
-        std::vector<double> qp(ny);
-        std::vector<double> qw(ny);
+        std::vector<T> qp(ny);
+        std::vector<T> qw(ny);
         quad_rule(ny,&qp[0],&qw[0]);
         for(int j=0; j<ny; j++)
           qp_y[j]=(y1-y0)*qp[j]/2.0+(y1+y0)/2.0;
         qw_y=qw;
       }
       { // Set qp_z
-        std::vector<double> qp(nz);
-        std::vector<double> qw(nz);
+        std::vector<T> qp(nz);
+        std::vector<T> qw(nz);
         quad_rule(nz,&qp[0],&qw[0]);
         for(int j=0; j<nz; j++)
           qp_z[j]=(z1-z0)*qp[j]/2.0+(z1+z0)/2.0;
@@ -749,8 +750,8 @@ std::vector<double> integ_pyramid(int m, double* s, double r, int nx, typename K
       cheb_poly(m-1,&qp_y[0],ny,&p_y[0]);
       cheb_poly(m-1,&qp_z[0],nz,&p_z[0]);
       { // k_out =  kernel x qw
-        Y src[3]={0,0,0};
-        std::vector<Y> trg(ny*nz*3);
+        T src[3]={0,0,0};
+        std::vector<T> trg(ny*nz*3);
         for(int i0=0; i0<ny; i0++){
           size_t indx0=i0*nz*3;
           for(int i1=0; i1<nz; i1++){
@@ -761,9 +762,9 @@ std::vector<double> integ_pyramid(int m, double* s, double r, int nx, typename K
           }
         }
         {
-          Matrix<double> k_val(ny*nz*ker_dim[0],ker_dim[1]);
-          Kernel<double>::Eval(&src[0],1,&trg[0],ny*nz,&k_val[0][0],kernel,ker_dim);
-          Matrix<double> k_val_t(ker_dim[1],ny*nz*ker_dim[0],&k_out[0], false);
+          Matrix<T> k_val(ny*nz*kernel.ker_dim[0],kernel.ker_dim[1]);
+          kernel.BuildMatrix(&src[0],1,&trg[0],ny*nz,&k_val[0][0]);
+          Matrix<T> k_val_t(kernel.ker_dim[1],ny*nz*kernel.ker_dim[0],&k_out[0], false);
           k_val_t=k_val.Transpose();
         }
         for(int kk=0; kk<k_dim; kk++){
@@ -795,7 +796,7 @@ std::vector<double> integ_pyramid(int m, double* s, double r, int nx, typename K
           size_t indx0=(kk*ny+i2)*m;
           for(int i0=0; i0<m; i0++){
             size_t indx1=(kk* m+i0)*m;
-            double py=p_y[i0*ny+i2];
+            T py=p_y[i0*ny+i2];
             for(int i1=0; i0+i1<m; i1++){
               I1[indx1+i1] += I0[indx0+i1]*py;
             }
@@ -803,10 +804,10 @@ std::vector<double> integ_pyramid(int m, double* s, double r, int nx, typename K
         }
       }
 
-      double v=(x1-x0)*(y1-y0)*(z1-z0);
+      T v=(x1-x0)*(y1-y0)*(z1-z0);
       for(int kk=0; kk<k_dim; kk++){
         for(int i0=0; i0<m; i0++){
-          double px=p_x[i+i0*nx]*qw_x[i]*v;
+          T px=p_x[i+i0*nx]*qw_x[i]*v;
           for(int i1=0; i0+i1<m; i1++){
             size_t indx0= (kk*m+i1)*m;
             size_t indx1=((kk*m+i0)*m+i1)*m;
@@ -827,7 +828,7 @@ std::vector<double> integ_pyramid(int m, double* s, double r, int nx, typename K
                      +2*m*(m+1)*k_dim
                      +m*(m+1)*(m+2)/3*k_dim)*nx*(x_.size()-1));
 
-  std::vector<double> I2_(&I2[0], &I2[0]+I2.Dim());
+  std::vector<T> I2_(&I2[0], &I2[0]+I2.Dim());
   mem_mgr.free(&k_out[0]);
   mem_mgr.free(&I0   [0]);
   mem_mgr.free(&I1   [0]);
@@ -835,50 +836,50 @@ std::vector<double> integ_pyramid(int m, double* s, double r, int nx, typename K
   return I2_;
 }
 
-template <class Y>
-std::vector<double> integ(int m, double* s, double r, int n, typename Kernel<Y>::Ker_t kernel, int* ker_dim){//*
+template <class T>
+std::vector<T> integ(int m, T* s, T r, int n, Kernel<T>& kernel){//*
   //Compute integrals over pyramids in all directions.
-  int k_dim=ker_dim[0]*ker_dim[1];
-  double s_[3];
+  int k_dim=kernel.ker_dim[0]*kernel.ker_dim[1];
+  T s_[3];
   s_[0]=s[0]*2.0/r-1.0;
   s_[1]=s[1]*2.0/r-1.0;
   s_[2]=s[2]*2.0/r-1.0;
 
-  double s1[3];
+  T s1[3];
   int perm[6];
-  std::vector<double> U_[6];
+  std::vector<T> U_[6];
 
   s1[0]= s_[0];s1[1]=s_[1];s1[2]=s_[2];
   perm[0]= 0; perm[2]= 1; perm[4]= 2;
   perm[1]= 1; perm[3]= 1; perm[5]= 1;
-  U_[0]=integ_pyramid<Y>(m,s1,r,n,kernel,ker_dim,perm);
+  U_[0]=integ_pyramid<T>(m,s1,r,n,kernel,perm);
 
   s1[0]=-s_[0];s1[1]=s_[1];s1[2]=s_[2];
   perm[0]= 0; perm[2]= 1; perm[4]= 2;
   perm[1]=-1; perm[3]= 1; perm[5]= 1;
-  U_[1]=integ_pyramid<Y>(m,s1,r,n,kernel,ker_dim,perm);
+  U_[1]=integ_pyramid<T>(m,s1,r,n,kernel,perm);
 
   s1[0]= s_[1];s1[1]=s_[0];s1[2]=s_[2];
   perm[0]= 1; perm[2]= 0; perm[4]= 2;
   perm[1]= 1; perm[3]= 1; perm[5]= 1;
-  U_[2]=integ_pyramid<Y>(m,s1,r,n,kernel,ker_dim,perm);
+  U_[2]=integ_pyramid<T>(m,s1,r,n,kernel,perm);
 
   s1[0]=-s_[1];s1[1]=s_[0];s1[2]=s_[2];
   perm[0]= 1; perm[2]= 0; perm[4]= 2;
   perm[1]=-1; perm[3]= 1; perm[5]= 1;
-  U_[3]=integ_pyramid<Y>(m,s1,r,n,kernel,ker_dim,perm);
+  U_[3]=integ_pyramid<T>(m,s1,r,n,kernel,perm);
 
   s1[0]= s_[2];s1[1]=s_[0];s1[2]=s_[1];
   perm[0]= 2; perm[2]= 0; perm[4]= 1;
   perm[1]= 1; perm[3]= 1; perm[5]= 1;
-  U_[4]=integ_pyramid<Y>(m,s1,r,n,kernel,ker_dim,perm);
+  U_[4]=integ_pyramid<T>(m,s1,r,n,kernel,perm);
 
   s1[0]=-s_[2];s1[1]=s_[0];s1[2]=s_[1];
   perm[0]= 2; perm[2]= 0; perm[4]= 1;
   perm[1]=-1; perm[3]= 1; perm[5]= 1;
-  U_[5]=integ_pyramid<Y>(m,s1,r,n,kernel,ker_dim,perm);
+  U_[5]=integ_pyramid<T>(m,s1,r,n,kernel,perm);
 
-  std::vector<double> U; U.assign(m*m*m*k_dim,0);
+  std::vector<T> U; U.assign(m*m*m*k_dim,0);
   for(int kk=0; kk<k_dim; kk++){
     for(int i=0;i<m;i++){
       for(int j=0;j<m;j++){
@@ -919,25 +920,25 @@ std::vector<double> integ(int m, double* s, double r, int n, typename Kernel<Y>:
  * \brief
  * \param[in] r Length of the side of cubic region.
  */
-template <class Y>
-std::vector<Y> cheb_integ(int m, Y* s_, Y r_, typename Kernel<Y>::Ker_t kernel, int* ker_dim){
-  double eps=(typeid(Y)==typeid(float)?1e-7:1e-14);
+template <class T>
+std::vector<T> cheb_integ(int m, T* s_, T r_, Kernel<T>& kernel){
+  T eps=std::numeric_limits<T>::epsilon()*100;
 
-  double r=r_;
-  double s[3]={s_[0],s_[1],s_[2]};
+  T r=r_;
+  T s[3]={s_[0],s_[1],s_[2]};
 
   int n=m+1;
-  double err=1.0;
-  int k_dim=ker_dim[0]*ker_dim[1];
-  std::vector<double> U=integ<Y>(m+1,s,r,n,kernel,ker_dim);
-  std::vector<double> U_;
+  T err=1.0;
+  int k_dim=kernel.ker_dim[0]*kernel.ker_dim[1];
+  std::vector<T> U=integ<T>(m+1,s,r,n,kernel);
+  std::vector<T> U_;
   while(err>eps){
     n=(int)round(n*1.3);
     if(n>300){
       std::cout<<"Cheb_Integ::Failed to converge.["<<err<<","<<s[0]<<","<<s[1]<<","<<s[2]<<"]\n";
       break;
     }
-    U_=integ<Y>(m+1,s,r,n,kernel,ker_dim);
+    U_=integ<T>(m+1,s,r,n,kernel);
     err=0;
     for(int i=0;i<(m+1)*(m+1)*(m+1)*k_dim;i++)
       if(fabs(U[i]-U_[i])>err)
@@ -945,9 +946,10 @@ std::vector<Y> cheb_integ(int m, Y* s_, Y r_, typename Kernel<Y>::Ker_t kernel, 
     U=U_;
   }
 
-  std::vector<Y> U0(((m+1)*(m+2)*(m+3)*k_dim)/6);
+  std::vector<T> U0(((m+1)*(m+2)*(m+3)*k_dim)/6);
   {// Rearrange data
     int indx=0;
+    int* ker_dim=kernel.ker_dim;
     for(int l0=0;l0<ker_dim[0];l0++)
     for(int l1=0;l1<ker_dim[1];l1++)
     for(int i=0;i<=m;i++)

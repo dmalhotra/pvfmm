@@ -44,7 +44,7 @@ class FMM_Cheb: public FMM_Pts<FMMNode>{
   /**
    * \brief Constructor.
    */
-  FMM_Cheb(){};
+  FMM_Cheb(mem::MemoryManager* mem_mgr=NULL){};
 
   /**
    * \brief Virtual destructor.

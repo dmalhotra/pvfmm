@@ -10,6 +10,7 @@
 #define _PVFMM_FMM_KERNEL_HPP_
 
 #include <pvfmm_common.hpp>
+#include <mem_mgr.hpp>
 #include <string>
 
 #ifdef __INTEL_OFFLOAD
@@ -32,7 +33,7 @@ struct Kernel{
    * \param[out] k_out Output array with potential values.
    */
   typedef void (*Ker_t)(T* r_src, int src_cnt, T* v_src, int dof,
-                        T* r_trg, int trg_cnt, T* k_out);
+                        T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr);
 
   /**
    * \brief Constructor.
@@ -59,10 +60,6 @@ struct Kernel{
   void BuildMatrix(T* r_src, int src_cnt,
                    T* r_trg, int trg_cnt, T* k_out);
 
-  static void Eval(T* r_src, int src_cnt,
-                   T* r_trg, int trg_cnt, T* k_out,
-                   Kernel<T>::Ker_t eval_kernel, int* ker_dim);
-
   int dim;
   int ker_dim[2];
   Ker_t ker_poten;
@@ -76,8 +73,8 @@ struct Kernel{
   std::string ker_name;
 };
 
-template<typename T, void (*A)(T*, int, T*, int, T*, int, T*),
-                     void (*B)(T*, int, T*, int, T*, int, T*)>
+template<typename T, void (*A)(T*, int, T*, int, T*, int, T*, mem::MemoryManager* mem_mgr),
+                     void (*B)(T*, int, T*, int, T*, int, T*, mem::MemoryManager* mem_mgr)>
 Kernel<T> BuildKernel(const char* name, int dim,
          const int (&k_dim)[2], bool homogen=false, T ker_scale=0){
   size_t dev_ker_poten      ;
@@ -95,7 +92,7 @@ Kernel<T> BuildKernel(const char* name, int dim,
                    dev_ker_poten, dev_dbl_layer_poten);
 }
 
-template<typename T, void (*A)(T*, int, T*, int, T*, int, T*)>
+template<typename T, void (*A)(T*, int, T*, int, T*, int, T*, mem::MemoryManager* mem_mgr)>
 Kernel<T> BuildKernel(const char* name, int dim,
          const int (&k_dim)[2], bool homogen=false, T ker_scale=0){
   size_t dev_ker_poten      ;
@@ -120,15 +117,15 @@ Kernel<T> BuildKernel(const char* name, int dim,
  * dimension = 1x1.
  */
 template <class T>
-void laplace_poten(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out);
+void laplace_poten(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr);
 
 // Laplace double layer potential.
 template <class T>
-void laplace_dbl_poten(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out);
+void laplace_dbl_poten(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr);
 
 // Laplace grdient kernel.
 template <class T>
-void laplace_grad(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out);
+void laplace_grad(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr);
 
 
 
@@ -161,19 +158,19 @@ template<> Kernel<float>* LaplaceKernel<float>::grad_ker=(Kernel<float>*)&laplac
  * dimension = 3x3.
  */
 template <class T>
-void stokes_vel(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt, T* k_out);
+void stokes_vel(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr);
 
 template <class T>
-void stokes_dbl_vel(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out);
+void stokes_dbl_vel(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr);
 
 template <class T>
-void stokes_press(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt, T* k_out);
+void stokes_press(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr);
 
 template <class T>
-void stokes_stress(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt, T* k_out);
+void stokes_stress(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr);
 
 template <class T>
-void stokes_grad(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt, T* k_out);
+void stokes_grad(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr);
 
 
 
@@ -194,7 +191,7 @@ const Kernel<double> ker_stokes_grad  =BuildKernel<double, stokes_grad          
 ////////////////////////////////////////////////////////////////////////////////
 
 template <class T>
-void biot_savart(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt, T* k_out);
+void biot_savart(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr);
 
 int dim_biot_savart[2]={3,3};
 const Kernel<double> ker_biot_savart=BuildKernel<double, biot_savart>("biot_savart", 3, dim_biot_savart,true,2.0);
@@ -208,10 +205,10 @@ const Kernel<double> ker_biot_savart=BuildKernel<double, biot_savart>("biot_sava
  * dimension = 2x2.
  */
 template <class T>
-void helmholtz_poten(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out);
+void helmholtz_poten(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr);
 
 template <class T>
-void helmholtz_grad(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out);
+void helmholtz_grad(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr);
 
 
 

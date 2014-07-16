@@ -469,9 +469,8 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
 
       // Evaluate potential at check surface due to equivalent surface.
       Matrix<Real_t> M_e2c(n_ue*aux_ker_dim[0],n_uc*aux_ker_dim[1]);
-      Kernel<Real_t>::Eval(&ue_coord[0], n_ue,
-                           &uc_coord[0], n_uc, &(M_e2c[0][0]),
-                           aux_kernel.ker_poten, aux_ker_dim);
+      aux_kernel.BuildMatrix(&ue_coord[0], n_ue,
+                             &uc_coord[0], n_uc, &(M_e2c[0][0]));
       M=M_e2c.pinv(); //check 2 equivalent
       break;
     }
@@ -489,9 +488,8 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
 
       // Evaluate potential at check surface due to equivalent surface.
       Matrix<Real_t> M_e2c(n_eq*aux_ker_dim[0],n_ch*aux_ker_dim[1]);
-      Kernel<Real_t>::Eval(&equiv_surf[0], n_eq,
-                           &check_surf[0], n_ch, &(M_e2c[0][0]),
-                           aux_kernel.ker_poten,aux_ker_dim);
+      aux_kernel.BuildMatrix(&equiv_surf[0], n_eq,
+                             &check_surf[0], n_ch, &(M_e2c[0][0]));
       M=M_e2c.pinv(); //check 2 equivalent
       break;
     }
@@ -516,9 +514,8 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
 
       // Evaluate potential at check surface due to equivalent surface.
       Matrix<Real_t> M_ce2c(n_ue*aux_ker_dim[0],n_uc*aux_ker_dim[1]);
-      Kernel<Real_t>::Eval(&equiv_surf[0], n_ue,
-                           &check_surf[0], n_uc, &(M_ce2c[0][0]),
-                           aux_kernel.ker_poten, aux_ker_dim);
+      aux_kernel.BuildMatrix(&equiv_surf[0], n_ue,
+                             &check_surf[0], n_uc, &(M_ce2c[0][0]));
       Matrix<Real_t>& M_c2e = Precomp(level, UC2UE_Type, 0);
       M=M_ce2c*M_c2e;
       break;
@@ -540,9 +537,8 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
 
       // Evaluate potential at check surface due to equivalent surface.
       Matrix<Real_t> M_pe2c(n_de*aux_ker_dim[0],n_dc*aux_ker_dim[1]);
-      Kernel<Real_t>::Eval(&equiv_surf[0], n_de,
-                           &check_surf[0], n_dc, &(M_pe2c[0][0]),
-                           aux_kernel.ker_poten,aux_ker_dim);
+      aux_kernel.BuildMatrix(&equiv_surf[0], n_de,
+                             &check_surf[0], n_dc, &(M_pe2c[0][0]));
       Matrix<Real_t>& M_c2e=Precomp(level,DC2DE_Type,0);
       M=M_pe2c*M_c2e;
       break;
@@ -598,7 +594,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
       std::vector<Real_t> r_trg(COORD_DIM,0.0);
       std::vector<Real_t> conv_poten(n3*aux_ker_dim[0]*aux_ker_dim[1]);
       std::vector<Real_t> conv_coord=conv_grid(MultipoleOrder(),coord_diff,level);
-      Kernel<Real_t>::Eval(&conv_coord[0],n3,&r_trg[0],1,&conv_poten[0],aux_kernel.ker_poten,aux_ker_dim);
+      aux_kernel.BuildMatrix(&conv_coord[0],n3,&r_trg[0],1,&conv_poten[0]);
 
       //Rearrange data.
       Matrix<Real_t> M_conv(n3,aux_ker_dim[0]*aux_ker_dim[1],&conv_poten[0],false);
@@ -606,9 +602,9 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
 
       //Compute FFTW plan.
       int nnn[3]={n1,n1,n1};
-      void *fftw_in, *fftw_out;
-      fftw_in  = fftw_malloc(  n3 *aux_ker_dim[0]*aux_ker_dim[1]*sizeof(Real_t));
-      fftw_out = fftw_malloc(2*n3_*aux_ker_dim[0]*aux_ker_dim[1]*sizeof(Real_t));
+      Real_t *fftw_in, *fftw_out;
+      fftw_in  = mem::aligned_malloc<Real_t>(  n3 *aux_ker_dim[0]*aux_ker_dim[1]*sizeof(Real_t));
+      fftw_out = mem::aligned_malloc<Real_t>(2*n3_*aux_ker_dim[0]*aux_ker_dim[1]*sizeof(Real_t));
       #pragma omp critical (FFTW_PLAN)
       {
         if (!vprecomp_fft_flag){
@@ -625,8 +621,8 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
       M=M_;
 
       //Free memory.
-      fftw_free(fftw_in);
-      fftw_free(fftw_out);
+      mem::aligned_free<Real_t>(fftw_in);
+      mem::aligned_free<Real_t>(fftw_out);
       break;
     }
     case V1_Type:
@@ -752,9 +748,8 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
               ue_coord[0]=x0*s; ue_coord[1]=x1*s; ue_coord[2]=x2*s;
               std::vector<Real_t> src_coord=u_equiv_surf(MultipoleOrder(), ue_coord, level);
               Matrix<Real_t> M_tmp(n_surf*aux_ker_dim[0], n_surf*aux_ker_dim[1]);
-              Kernel<Real_t>::Eval(&src_coord[0], n_surf,
-                                   &trg_coord[0], n_surf, &(M_tmp[0][0]),
-                                   aux_kernel.ker_poten, aux_ker_dim);
+              aux_kernel.BuildMatrix(&src_coord[0], n_surf,
+                                     &trg_coord[0], n_surf, &(M_tmp[0][0]));
               M_ue2dc+=M_tmp;
             }
 
@@ -789,9 +784,8 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
               size_t n_eq=equiv_surf.size()/3;
 
               // Evaluate potential at check surface due to equivalent surface.
-              Kernel<Real_t>::Eval(&equiv_surf[0], n_eq,
-                                   &check_surf[0], n_ch, &(M_de2dc[0][0]),
-                                   aux_kernel.ker_poten,aux_ker_dim);
+              aux_kernel.BuildMatrix(&equiv_surf[0], n_eq,
+                                     &check_surf[0], n_ch, &(M_de2dc[0][0]));
             }
             Matrix<Real_t> M_ue2dc=M*M_de2dc;
 
@@ -827,9 +821,8 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
           { // Evaluate potential at corner due to upward and dnward equivalent surface.
             { // Error from local expansion.
               Matrix<Real_t> M_e2pt(n_surf*aux_ker_dim[0],n_corner*aux_ker_dim[1]);
-              Kernel<Real_t>::Eval(&dn_equiv_surf[0], n_surf,
-                                   &corner_pts[0], n_corner, &(M_e2pt[0][0]),
-                                   aux_kernel.ker_poten,aux_ker_dim);
+              aux_kernel.BuildMatrix(&dn_equiv_surf[0], n_surf,
+                                     &corner_pts[0], n_corner, &(M_e2pt[0][0]));
               M_err=M*M_e2pt;
             }
             for(size_t k=0;k<4;k++){ // Error from colleagues of root.
@@ -841,9 +834,8 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
                                     corner_pts[k*COORD_DIM+2]-j2};
                 if(fabs(pt_coord[0]-0.5)>1.0 || fabs(pt_coord[1]-0.5)>1.0 || fabs(pt_coord[2]-0.5)>1.0){
                   Matrix<Real_t> M_e2pt(n_surf*aux_ker_dim[0],aux_ker_dim[1]);
-                  Kernel<Real_t>::Eval(&up_equiv_surf[0], n_surf,
-                                       &pt_coord[0], 1, &(M_e2pt[0][0]),
-                                       aux_kernel.ker_poten,aux_ker_dim);
+                  aux_kernel.BuildMatrix(&up_equiv_surf[0], n_surf,
+                                         &pt_coord[0], 1, &(M_e2pt[0][0]));
                   for(size_t i=0;i<M_e2pt.Dim(0);i++)
                     for(size_t j=0;j<M_e2pt.Dim(1);j++)
                       M_err[i][k*aux_ker_dim[1]+j]+=M_e2pt[i][j];
@@ -1921,7 +1913,7 @@ void FMM_Pts<FMMNode>::FFT_UpEquiv(size_t dof, size_t m, size_t ker_dim0, Vector
         //Compute flops.
         #ifndef FFTW3_MKL
         double add, mul, fma;
-        fftw_flops(vlist_fftplan, &add, &mul, &fma);
+        FFTW_t<Real_t>::fftw_flops(vlist_fftplan, &add, &mul, &fma);
         #ifndef __INTEL_OFFLOAD0
         Profile::Add_FLOP((long long)(add+mul+2*fma));
         #endif
@@ -1968,13 +1960,13 @@ void FMM_Pts<FMMNode>::FFT_Check2Equiv(size_t dof, size_t m, size_t ker_dim1, Ve
     if(!vlist_ifft_flag){
       //Build FFTW plan.
       int nnn[3]={(int)n1,(int)n1,(int)n1};
-      void *fftw_in, *fftw_out;
-      fftw_in  = fftw_malloc(2*n3_*ker_dim1*sizeof(Real_t)*chld_cnt);
-      fftw_out = fftw_malloc(  n3 *ker_dim1*sizeof(Real_t)*chld_cnt);
+      Real_t *fftw_in, *fftw_out;
+      fftw_in  = mem::aligned_malloc<Real_t>(2*n3_*ker_dim1*chld_cnt);
+      fftw_out = mem::aligned_malloc<Real_t>(  n3 *ker_dim1*chld_cnt);
       vlist_ifftplan = FFTW_t<Real_t>::fft_plan_many_dft_c2r(COORD_DIM,nnn,ker_dim1*chld_cnt,
           (typename FFTW_t<Real_t>::cplx*)fftw_in, NULL, 1, n3_, (Real_t*)(fftw_out),NULL, 1, n3, FFTW_ESTIMATE);
-      fftw_free(fftw_in);
-      fftw_free(fftw_out);
+      mem::aligned_free<Real_t>(fftw_in);
+      mem::aligned_free<Real_t>(fftw_out);
       vlist_ifft_flag=true;
     }
   }
@@ -2004,7 +1996,7 @@ void FMM_Pts<FMMNode>::FFT_Check2Equiv(size_t dof, size_t m, size_t ker_dim1, Ve
         //Compute flops.
         #ifndef FFTW3_MKL
         double add, mul, fma;
-        fftw_flops(vlist_ifftplan, &add, &mul, &fma);
+        FFTW_t<Real_t>::fftw_flops(vlist_ifftplan, &add, &mul, &fma);
         #ifndef __INTEL_OFFLOAD0
         Profile::Add_FLOP((long long)(add+mul+2*fma));
         #endif
@@ -2030,6 +2022,396 @@ void FMM_Pts<FMMNode>::FFT_Check2Equiv(size_t dof, size_t m, size_t ker_dim1, Ve
   }
 }
 
+template<class Real_t>
+inline void matmult_8x8x2(Real_t*& M_, Real_t*& IN0, Real_t*& IN1, Real_t*& OUT0, Real_t*& OUT1){
+  // Generic code.
+  Real_t out_reg000, out_reg001, out_reg010, out_reg011;
+  Real_t out_reg100, out_reg101, out_reg110, out_reg111;
+  Real_t  in_reg000,  in_reg001,  in_reg010,  in_reg011;
+  Real_t  in_reg100,  in_reg101,  in_reg110,  in_reg111;
+  Real_t   m_reg000,   m_reg001,   m_reg010,   m_reg011;
+  Real_t   m_reg100,   m_reg101,   m_reg110,   m_reg111;
+  //#pragma unroll
+  for(int i1=0;i1<8;i1+=2){
+    Real_t* IN0_=IN0;
+    Real_t* IN1_=IN1;
+
+    out_reg000=OUT0[ 0]; out_reg001=OUT0[ 1];
+    out_reg010=OUT0[ 2]; out_reg011=OUT0[ 3];
+    out_reg100=OUT1[ 0]; out_reg101=OUT1[ 1];
+    out_reg110=OUT1[ 2]; out_reg111=OUT1[ 3];
+    //#pragma unroll
+    for(int i2=0;i2<8;i2+=2){
+      m_reg000=M_[ 0]; m_reg001=M_[ 1];
+      m_reg010=M_[ 2]; m_reg011=M_[ 3];
+      m_reg100=M_[16]; m_reg101=M_[17];
+      m_reg110=M_[18]; m_reg111=M_[19];
+
+      in_reg000=IN0_[0]; in_reg001=IN0_[1];
+      in_reg010=IN0_[2]; in_reg011=IN0_[3];
+      in_reg100=IN1_[0]; in_reg101=IN1_[1];
+      in_reg110=IN1_[2]; in_reg111=IN1_[3];
+
+      out_reg000 += m_reg000*in_reg000 - m_reg001*in_reg001;
+      out_reg001 += m_reg000*in_reg001 + m_reg001*in_reg000;
+      out_reg010 += m_reg010*in_reg000 - m_reg011*in_reg001;
+      out_reg011 += m_reg010*in_reg001 + m_reg011*in_reg000;
+
+      out_reg000 += m_reg100*in_reg010 - m_reg101*in_reg011;
+      out_reg001 += m_reg100*in_reg011 + m_reg101*in_reg010;
+      out_reg010 += m_reg110*in_reg010 - m_reg111*in_reg011;
+      out_reg011 += m_reg110*in_reg011 + m_reg111*in_reg010;
+
+      out_reg100 += m_reg000*in_reg100 - m_reg001*in_reg101;
+      out_reg101 += m_reg000*in_reg101 + m_reg001*in_reg100;
+      out_reg110 += m_reg010*in_reg100 - m_reg011*in_reg101;
+      out_reg111 += m_reg010*in_reg101 + m_reg011*in_reg100;
+
+      out_reg100 += m_reg100*in_reg110 - m_reg101*in_reg111;
+      out_reg101 += m_reg100*in_reg111 + m_reg101*in_reg110;
+      out_reg110 += m_reg110*in_reg110 - m_reg111*in_reg111;
+      out_reg111 += m_reg110*in_reg111 + m_reg111*in_reg110;
+
+      M_+=32; // Jump to (column+2).
+      IN0_+=4;
+      IN1_+=4;
+    }
+    OUT0[ 0]=out_reg000; OUT0[ 1]=out_reg001;
+    OUT0[ 2]=out_reg010; OUT0[ 3]=out_reg011;
+    OUT1[ 0]=out_reg100; OUT1[ 1]=out_reg101;
+    OUT1[ 2]=out_reg110; OUT1[ 3]=out_reg111;
+    M_+=4-64*2; // Jump back to first column (row+2).
+    OUT0+=4;
+    OUT1+=4;
+  }
+}
+
+#if defined(__AVX__) || defined(__SSE3__)
+template<>
+inline void matmult_8x8x2<double>(double*& M_, double*& IN0, double*& IN1, double*& OUT0, double*& OUT1){
+#ifdef __AVX__ //AVX code.
+  __m256d out00,out01,out10,out11;
+  __m256d out20,out21,out30,out31;
+  double* in0__ = IN0;
+  double* in1__ = IN1;
+
+  out00 = _mm256_load_pd(OUT0);
+  out01 = _mm256_load_pd(OUT1);
+  out10 = _mm256_load_pd(OUT0+4);
+  out11 = _mm256_load_pd(OUT1+4);
+  out20 = _mm256_load_pd(OUT0+8);
+  out21 = _mm256_load_pd(OUT1+8);
+  out30 = _mm256_load_pd(OUT0+12);
+  out31 = _mm256_load_pd(OUT1+12);
+  for(int i2=0;i2<8;i2+=2){
+    __m256d m00;
+    __m256d ot00;
+    __m256d mt0,mtt0;
+    __m256d in00,in00_r,in01,in01_r;
+    in00 = _mm256_broadcast_pd((const __m128d*)in0__);
+    in00_r = _mm256_permute_pd(in00,5);
+    in01 = _mm256_broadcast_pd((const __m128d*)in1__);
+    in01_r = _mm256_permute_pd(in01,5);
+
+    m00 = _mm256_load_pd(M_);
+
+    mt0 = _mm256_unpacklo_pd(m00,m00);
+    ot00 = _mm256_mul_pd(mt0,in00);
+    mtt0 = _mm256_unpackhi_pd(m00,m00);
+    out00 = _mm256_add_pd(out00,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in00_r)));
+
+    ot00 = _mm256_mul_pd(mt0,in01);
+    out01 = _mm256_add_pd(out01,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in01_r)));
+
+    m00 = _mm256_load_pd(M_+4);
+
+    mt0 = _mm256_unpacklo_pd(m00,m00);
+    ot00 = _mm256_mul_pd(mt0,in00);
+    mtt0 = _mm256_unpackhi_pd(m00,m00);
+    out10 = _mm256_add_pd(out10,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in00_r)));
+
+    ot00 = _mm256_mul_pd(mt0,in01);
+    out11 = _mm256_add_pd(out11,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in01_r)));
+
+    m00 = _mm256_load_pd(M_+8);
+
+    mt0 = _mm256_unpacklo_pd(m00,m00);
+    ot00 = _mm256_mul_pd(mt0,in00);
+    mtt0 = _mm256_unpackhi_pd(m00,m00);
+    out20 = _mm256_add_pd(out20,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in00_r)));
+
+    ot00 = _mm256_mul_pd(mt0,in01);
+    out21 = _mm256_add_pd(out21,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in01_r)));
+
+    m00 = _mm256_load_pd(M_+12);
+
+    mt0 = _mm256_unpacklo_pd(m00,m00);
+    ot00 = _mm256_mul_pd(mt0,in00);
+    mtt0 = _mm256_unpackhi_pd(m00,m00);
+    out30 = _mm256_add_pd(out30,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in00_r)));
+
+    ot00 = _mm256_mul_pd(mt0,in01);
+    out31 = _mm256_add_pd(out31,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in01_r)));
+
+
+    in00 = _mm256_broadcast_pd((const __m128d*) (in0__+2));
+    in00_r = _mm256_permute_pd(in00,5);
+    in01 = _mm256_broadcast_pd((const __m128d*) (in1__+2));
+    in01_r = _mm256_permute_pd(in01,5);
+
+    m00 = _mm256_load_pd(M_+16);
+
+    mt0 = _mm256_unpacklo_pd(m00,m00);
+    ot00 = _mm256_mul_pd(mt0,in00);
+    mtt0 = _mm256_unpackhi_pd(m00,m00);
+    out00 = _mm256_add_pd(out00,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in00_r)));
+
+    ot00 = _mm256_mul_pd(mt0,in01);
+    out01 = _mm256_add_pd(out01,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in01_r)));
+
+    m00 = _mm256_load_pd(M_+20);
+
+    mt0 = _mm256_unpacklo_pd(m00,m00);
+    ot00 = _mm256_mul_pd(mt0,in00);
+    mtt0 = _mm256_unpackhi_pd(m00,m00);
+    out10 = _mm256_add_pd(out10,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in00_r)));
+
+    ot00 = _mm256_mul_pd(mt0,in01);
+    out11 = _mm256_add_pd(out11,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in01_r)));
+
+    m00 = _mm256_load_pd(M_+24);
+
+    mt0 = _mm256_unpacklo_pd(m00,m00);
+    ot00 = _mm256_mul_pd(mt0,in00);
+    mtt0 = _mm256_unpackhi_pd(m00,m00);
+    out20 = _mm256_add_pd(out20,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in00_r)));
+
+    ot00 = _mm256_mul_pd(mt0,in01);
+    out21 = _mm256_add_pd(out21,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in01_r)));
+
+    m00 = _mm256_load_pd(M_+28);
+
+    mt0 = _mm256_unpacklo_pd(m00,m00);
+    ot00 = _mm256_mul_pd(mt0,in00);
+    mtt0 = _mm256_unpackhi_pd(m00,m00);
+    out30 = _mm256_add_pd(out30,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in00_r)));
+
+    ot00 = _mm256_mul_pd(mt0,in01);
+    out31 = _mm256_add_pd(out31,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in01_r)));
+
+    M_ += 32;
+    in0__ += 4;
+    in1__ += 4;
+  }
+  _mm256_store_pd(OUT0,out00);
+  _mm256_store_pd(OUT1,out01);
+  _mm256_store_pd(OUT0+4,out10);
+  _mm256_store_pd(OUT1+4,out11);
+  _mm256_store_pd(OUT0+8,out20);
+  _mm256_store_pd(OUT1+8,out21);
+  _mm256_store_pd(OUT0+12,out30);
+  _mm256_store_pd(OUT1+12,out31);
+#elif defined __SSE3__ // SSE code.
+  __m128d out00, out01, out10, out11;
+  __m128d in00, in01, in10, in11;
+  __m128d m00, m01, m10, m11;
+  //#pragma unroll
+  for(int i1=0;i1<8;i1+=2){
+    double* IN0_=IN0;
+    double* IN1_=IN1;
+
+    out00 =_mm_load_pd (OUT0  );
+    out10 =_mm_load_pd (OUT0+2);
+    out01 =_mm_load_pd (OUT1  );
+    out11 =_mm_load_pd (OUT1+2);
+    //#pragma unroll
+    for(int i2=0;i2<8;i2+=2){
+      m00 =_mm_load1_pd (M_   );
+      m10 =_mm_load1_pd (M_+ 2);
+      m01 =_mm_load1_pd (M_+16);
+      m11 =_mm_load1_pd (M_+18);
+
+      in00 =_mm_load_pd (IN0_  );
+      in10 =_mm_load_pd (IN0_+2);
+      in01 =_mm_load_pd (IN1_  );
+      in11 =_mm_load_pd (IN1_+2);
+
+      out00 = _mm_add_pd   (out00, _mm_mul_pd(m00 , in00 ));
+      out00 = _mm_add_pd   (out00, _mm_mul_pd(m01 , in10 ));
+      out01 = _mm_add_pd   (out01, _mm_mul_pd(m00 , in01 ));
+      out01 = _mm_add_pd   (out01, _mm_mul_pd(m01 , in11 ));
+      out10 = _mm_add_pd   (out10, _mm_mul_pd(m10 , in00 ));
+      out10 = _mm_add_pd   (out10, _mm_mul_pd(m11 , in10 ));
+      out11 = _mm_add_pd   (out11, _mm_mul_pd(m10 , in01 ));
+      out11 = _mm_add_pd   (out11, _mm_mul_pd(m11 , in11 ));
+
+
+      m00 =_mm_load1_pd (M_+   1);
+      m10 =_mm_load1_pd (M_+ 2+1);
+      m01 =_mm_load1_pd (M_+16+1);
+      m11 =_mm_load1_pd (M_+18+1);
+      in00 =_mm_shuffle_pd (in00,in00,_MM_SHUFFLE2(0,1));
+      in01 =_mm_shuffle_pd (in01,in01,_MM_SHUFFLE2(0,1));
+      in10 =_mm_shuffle_pd (in10,in10,_MM_SHUFFLE2(0,1));
+      in11 =_mm_shuffle_pd (in11,in11,_MM_SHUFFLE2(0,1));
+      out00 = _mm_addsub_pd(out00, _mm_mul_pd(m00, in00));
+      out00 = _mm_addsub_pd(out00, _mm_mul_pd(m01, in10));
+      out01 = _mm_addsub_pd(out01, _mm_mul_pd(m00, in01));
+      out01 = _mm_addsub_pd(out01, _mm_mul_pd(m01, in11));
+      out10 = _mm_addsub_pd(out10, _mm_mul_pd(m10, in00));
+      out10 = _mm_addsub_pd(out10, _mm_mul_pd(m11, in10));
+      out11 = _mm_addsub_pd(out11, _mm_mul_pd(m10, in01));
+      out11 = _mm_addsub_pd(out11, _mm_mul_pd(m11, in11));
+
+      M_+=32; // Jump to (column+2).
+      IN0_+=4;
+      IN1_+=4;
+    }
+    _mm_store_pd (OUT0  ,out00);
+    _mm_store_pd (OUT0+2,out10);
+    _mm_store_pd (OUT1  ,out01);
+    _mm_store_pd (OUT1+2,out11);
+    M_+=4-64*2; // Jump back to first column (row+2).
+    OUT0+=4;
+    OUT1+=4;
+  }
+#endif
+}
+#endif
+
+#if defined(__SSE3__)
+template<>
+inline void matmult_8x8x2<float>(float*& M_, float*& IN0, float*& IN1, float*& OUT0, float*& OUT1){
+#if defined __SSE3__ // SSE code.
+  __m128 out00,out01,out10,out11;
+  __m128 out20,out21,out30,out31;
+  float* in0__ = IN0;
+  float* in1__ = IN1;
+
+  out00 = _mm_load_ps(OUT0);
+  out01 = _mm_load_ps(OUT1);
+  out10 = _mm_load_ps(OUT0+4);
+  out11 = _mm_load_ps(OUT1+4);
+  out20 = _mm_load_ps(OUT0+8);
+  out21 = _mm_load_ps(OUT1+8);
+  out30 = _mm_load_ps(OUT0+12);
+  out31 = _mm_load_ps(OUT1+12);
+  for(int i2=0;i2<8;i2+=2){
+    __m128 m00;
+    __m128 ot00;
+    __m128 mt0,mtt0;
+    __m128 in00,in00_r,in01,in01_r;
+
+
+
+    in00 = _mm_castpd_ps(_mm_load_pd1((const double*)in0__));
+    in00_r = _mm_shuffle_ps(in00,in00,_MM_SHUFFLE(2,3,0,1));
+    in01 = _mm_castpd_ps(_mm_load_pd1((const double*)in1__));
+    in01_r = _mm_shuffle_ps(in01,in01,_MM_SHUFFLE(2,3,0,1));
+
+    m00 = _mm_load_ps(M_);
+
+    mt0  = _mm_shuffle_ps(m00,m00,_MM_SHUFFLE(2,2,0,0));
+    out00= _mm_add_ps   (out00,_mm_mul_ps( mt0,in00  ));
+    mtt0 = _mm_shuffle_ps(m00,m00,_MM_SHUFFLE(3,3,1,1));
+    out00= _mm_addsub_ps(out00,_mm_mul_ps(mtt0,in00_r));
+
+    out01 = _mm_add_ps   (out01,_mm_mul_ps( mt0,in01  ));
+    out01 = _mm_addsub_ps(out01,_mm_mul_ps(mtt0,in01_r));
+
+    m00 = _mm_load_ps(M_+4);
+
+    mt0  = _mm_shuffle_ps(m00,m00,_MM_SHUFFLE(2,2,0,0));
+    out10= _mm_add_ps   (out10,_mm_mul_ps( mt0,in00  ));
+    mtt0 = _mm_shuffle_ps(m00,m00,_MM_SHUFFLE(3,3,1,1));
+    out10= _mm_addsub_ps(out10,_mm_mul_ps(mtt0,in00_r));
+
+    out11 = _mm_add_ps   (out11,_mm_mul_ps( mt0,in01  ));
+    out11 = _mm_addsub_ps(out11,_mm_mul_ps(mtt0,in01_r));
+
+    m00 = _mm_load_ps(M_+8);
+
+    mt0  = _mm_shuffle_ps(m00,m00,_MM_SHUFFLE(2,2,0,0));
+    out20= _mm_add_ps   (out20,_mm_mul_ps( mt0,in00  ));
+    mtt0 = _mm_shuffle_ps(m00,m00,_MM_SHUFFLE(3,3,1,1));
+    out20= _mm_addsub_ps(out20,_mm_mul_ps(mtt0,in00_r));
+
+    out21 = _mm_add_ps   (out21,_mm_mul_ps( mt0,in01  ));
+    out21 = _mm_addsub_ps(out21,_mm_mul_ps(mtt0,in01_r));
+
+    m00 = _mm_load_ps(M_+12);
+
+    mt0  = _mm_shuffle_ps(m00,m00,_MM_SHUFFLE(2,2,0,0));
+    out30= _mm_add_ps   (out30,_mm_mul_ps( mt0,  in00));
+    mtt0 = _mm_shuffle_ps(m00,m00,_MM_SHUFFLE(3,3,1,1));
+    out30= _mm_addsub_ps(out30,_mm_mul_ps(mtt0,in00_r));
+
+    out31 = _mm_add_ps   (out31,_mm_mul_ps( mt0,in01  ));
+    out31 = _mm_addsub_ps(out31,_mm_mul_ps(mtt0,in01_r));
+
+
+
+    in00 = _mm_castpd_ps(_mm_load_pd1((const double*) (in0__+2)));
+    in00_r = _mm_shuffle_ps(in00,in00,_MM_SHUFFLE(2,3,0,1));
+    in01 = _mm_castpd_ps(_mm_load_pd1((const double*) (in1__+2)));
+    in01_r = _mm_shuffle_ps(in01,in01,_MM_SHUFFLE(2,3,0,1));
+
+    m00 = _mm_load_ps(M_+16);
+
+    mt0  = _mm_shuffle_ps(m00,m00,_MM_SHUFFLE(2,2,0,0));
+    out00= _mm_add_ps   (out00,_mm_mul_ps( mt0,in00  ));
+    mtt0 = _mm_shuffle_ps(m00,m00,_MM_SHUFFLE(3,3,1,1));
+    out00= _mm_addsub_ps(out00,_mm_mul_ps(mtt0,in00_r));
+
+    out01 = _mm_add_ps   (out01,_mm_mul_ps( mt0,in01  ));
+    out01 = _mm_addsub_ps(out01,_mm_mul_ps(mtt0,in01_r));
+
+    m00 = _mm_load_ps(M_+20);
+
+    mt0  = _mm_shuffle_ps(m00,m00,_MM_SHUFFLE(2,2,0,0));
+    out10= _mm_add_ps   (out10,_mm_mul_ps( mt0,in00  ));
+    mtt0 = _mm_shuffle_ps(m00,m00,_MM_SHUFFLE(3,3,1,1));
+    out10= _mm_addsub_ps(out10,_mm_mul_ps(mtt0,in00_r));
+
+    out11 = _mm_add_ps   (out11,_mm_mul_ps( mt0,in01 ));
+    out11 = _mm_addsub_ps(out11,_mm_mul_ps(mtt0,in01_r));
+
+    m00 = _mm_load_ps(M_+24);
+
+    mt0  = _mm_shuffle_ps(m00,m00,_MM_SHUFFLE(2,2,0,0));
+    out20= _mm_add_ps   (out20,_mm_mul_ps( mt0,in00  ));
+    mtt0 = _mm_shuffle_ps(m00,m00,_MM_SHUFFLE(3,3,1,1));
+    out20= _mm_addsub_ps(out20,_mm_mul_ps(mtt0,in00_r));
+
+    out21 = _mm_add_ps   (out21,_mm_mul_ps( mt0,in01  ));
+    out21 = _mm_addsub_ps(out21,_mm_mul_ps(mtt0,in01_r));
+
+    m00 = _mm_load_ps(M_+28);
+
+    mt0  = _mm_shuffle_ps(m00,m00,_MM_SHUFFLE(2,2,0,0));
+    out30= _mm_add_ps   (out30,_mm_mul_ps( mt0,in00  ));
+    mtt0 = _mm_shuffle_ps(m00,m00,_MM_SHUFFLE(3,3,1,1));
+    out30= _mm_addsub_ps(out30,_mm_mul_ps(mtt0,in00_r));
+
+    out31 = _mm_add_ps   (out31,_mm_mul_ps( mt0,in01  ));
+    out31 = _mm_addsub_ps(out31,_mm_mul_ps(mtt0,in01_r));
+
+    M_ += 32;
+    in0__ += 4;
+    in1__ += 4;
+  }
+  _mm_store_ps(OUT0,out00);
+  _mm_store_ps(OUT1,out01);
+  _mm_store_ps(OUT0+4,out10);
+  _mm_store_ps(OUT1+4,out11);
+  _mm_store_ps(OUT0+8,out20);
+  _mm_store_ps(OUT1+8,out21);
+  _mm_store_ps(OUT0+12,out30);
+  _mm_store_ps(OUT1+12,out31);
+#endif
+}
+#endif
+
 template <class Real_t>
 void VListHadamard(size_t dof, size_t M_dim, size_t ker_dim0, size_t ker_dim1, Vector<size_t>& interac_dsp,
     Vector<size_t>& interac_vec, Vector<Real_t*>& precomp_mat, Vector<Real_t>& fft_in, Vector<Real_t>& fft_out){
@@ -2051,6 +2433,7 @@ void VListHadamard(size_t dof, size_t M_dim, size_t ker_dim0, size_t ker_dim1, V
   // Build list of interaction pairs (in, out vectors).
   size_t mat_cnt=precomp_mat.Dim();
   size_t blk1_cnt=interac_dsp.Dim()/mat_cnt;
+  const size_t V_BLK_SIZE=V_BLK_CACHE*64/sizeof(Real_t);
   Real_t** IN_ =new Real_t*[2*V_BLK_SIZE*blk1_cnt*mat_cnt];
   Real_t** OUT_=new Real_t*[2*V_BLK_SIZE*blk1_cnt*mat_cnt];
   #pragma omp parallel for
@@ -2113,257 +2496,7 @@ void VListHadamard(size_t dof, size_t M_dim, size_t ker_dim0, size_t ker_dim1, V
           }
 #endif
 
-#ifdef __AVX__ //AVX code.
-          __m256d out00,out01,out10,out11;
-          __m256d out20,out21,out30,out31;
-          double* in0__ = IN0;
-          double* in1__ = IN1;
-
-          out00 = _mm256_load_pd(OUT0);
-          out01 = _mm256_load_pd(OUT1);
-          out10 = _mm256_load_pd(OUT0+4);
-          out11 = _mm256_load_pd(OUT1+4);
-          out20 = _mm256_load_pd(OUT0+8);
-          out21 = _mm256_load_pd(OUT1+8);
-          out30 = _mm256_load_pd(OUT0+12);
-          out31 = _mm256_load_pd(OUT1+12);
-          for(int i2=0;i2<8;i2+=2){
-            __m256d m00;
-            __m256d ot00;
-            __m256d mt0,mtt0;
-            __m256d in00,in00_r,in01,in01_r;
-            in00 = _mm256_broadcast_pd((const __m128d*)in0__);
-            in00_r = _mm256_permute_pd(in00,5);
-            in01 = _mm256_broadcast_pd((const __m128d*)in1__);
-            in01_r = _mm256_permute_pd(in01,5);
-
-            m00 = _mm256_load_pd(M_);
-
-            mt0 = _mm256_unpacklo_pd(m00,m00);
-            ot00 = _mm256_mul_pd(mt0,in00);
-            mtt0 = _mm256_unpackhi_pd(m00,m00);
-            out00 = _mm256_add_pd(out00,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in00_r)));
-
-            ot00 = _mm256_mul_pd(mt0,in01);
-            out01 = _mm256_add_pd(out01,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in01_r)));
-
-            m00 = _mm256_load_pd(M_+4);
-
-            mt0 = _mm256_unpacklo_pd(m00,m00);
-            ot00 = _mm256_mul_pd(mt0,in00);
-            mtt0 = _mm256_unpackhi_pd(m00,m00);
-            out10 = _mm256_add_pd(out10,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in00_r)));
-
-            ot00 = _mm256_mul_pd(mt0,in01);
-            out11 = _mm256_add_pd(out11,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in01_r)));
-
-            m00 = _mm256_load_pd(M_+8);
-
-            mt0 = _mm256_unpacklo_pd(m00,m00);
-            ot00 = _mm256_mul_pd(mt0,in00);
-            mtt0 = _mm256_unpackhi_pd(m00,m00);
-            out20 = _mm256_add_pd(out20,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in00_r)));
-
-            ot00 = _mm256_mul_pd(mt0,in01);
-            out21 = _mm256_add_pd(out21,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in01_r)));
-
-            m00 = _mm256_load_pd(M_+12);
-
-            mt0 = _mm256_unpacklo_pd(m00,m00);
-            ot00 = _mm256_mul_pd(mt0,in00);
-            mtt0 = _mm256_unpackhi_pd(m00,m00);
-            out30 = _mm256_add_pd(out30,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in00_r)));
-
-            ot00 = _mm256_mul_pd(mt0,in01);
-            out31 = _mm256_add_pd(out31,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in01_r)));
-
-
-            in00 = _mm256_broadcast_pd((const __m128d*) (in0__+2));
-            in00_r = _mm256_permute_pd(in00,5);
-            in01 = _mm256_broadcast_pd((const __m128d*) (in1__+2));
-            in01_r = _mm256_permute_pd(in01,5);
-
-
-            m00 = _mm256_load_pd(M_+16);
-
-            mt0 = _mm256_unpacklo_pd(m00,m00);
-            ot00 = _mm256_mul_pd(mt0,in00);
-            mtt0 = _mm256_unpackhi_pd(m00,m00);
-            out00 = _mm256_add_pd(out00,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in00_r)));
-
-            ot00 = _mm256_mul_pd(mt0,in01);
-            out01 = _mm256_add_pd(out01,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in01_r)));
-
-
-            m00 = _mm256_load_pd(M_+20);
-
-            mt0 = _mm256_unpacklo_pd(m00,m00);
-            ot00 = _mm256_mul_pd(mt0,in00);
-            mtt0 = _mm256_unpackhi_pd(m00,m00);
-            out10 = _mm256_add_pd(out10,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in00_r)));
-
-            ot00 = _mm256_mul_pd(mt0,in01);
-            out11 = _mm256_add_pd(out11,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in01_r)));
-
-            m00 = _mm256_load_pd(M_+24);
-
-            mt0 = _mm256_unpacklo_pd(m00,m00);
-            ot00 = _mm256_mul_pd(mt0,in00);
-            mtt0 = _mm256_unpackhi_pd(m00,m00);
-            out20 = _mm256_add_pd(out20,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in00_r)));
-
-            ot00 = _mm256_mul_pd(mt0,in01);
-            out21 = _mm256_add_pd(out21,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in01_r)));
-
-            m00 = _mm256_load_pd(M_+28);
-
-            mt0 = _mm256_unpacklo_pd(m00,m00);
-            ot00 = _mm256_mul_pd(mt0,in00);
-            mtt0 = _mm256_unpackhi_pd(m00,m00);
-            out30 = _mm256_add_pd(out30,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in00_r)));
-
-            ot00 = _mm256_mul_pd(mt0,in01);
-            out31 = _mm256_add_pd(out31,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in01_r)));
-
-            M_ += 32;
-            in0__ += 4;
-            in1__ += 4;
-          }
-          _mm256_store_pd(OUT0,out00);
-          _mm256_store_pd(OUT1,out01);
-          _mm256_store_pd(OUT0+4,out10);
-          _mm256_store_pd(OUT1+4,out11);
-          _mm256_store_pd(OUT0+8,out20);
-          _mm256_store_pd(OUT1+8,out21);
-          _mm256_store_pd(OUT0+12,out30);
-          _mm256_store_pd(OUT1+12,out31);
-
-#elif defined __SSE3__ // SSE code.
-          __m128d out00, out01, out10, out11;
-          __m128d in00, in01, in10, in11;
-          __m128d m00, m01, m10, m11;
-          //#pragma unroll
-          for(int i1=0;i1<8;i1+=2){
-            double* IN0_=IN0;
-            double* IN1_=IN1;
-
-            out00 =_mm_load_pd (OUT0  );
-            out10 =_mm_load_pd (OUT0+2);
-            out01 =_mm_load_pd (OUT1  );
-            out11 =_mm_load_pd (OUT1+2);
-            //#pragma unroll
-            for(int i2=0;i2<8;i2+=2){
-              m00 =_mm_load1_pd (M_   );
-              m10 =_mm_load1_pd (M_+ 2);
-              m01 =_mm_load1_pd (M_+16);
-              m11 =_mm_load1_pd (M_+18);
-
-              in00 =_mm_load_pd (IN0_  );
-              in10 =_mm_load_pd (IN0_+2);
-              in01 =_mm_load_pd (IN1_  );
-              in11 =_mm_load_pd (IN1_+2);
-
-              out00 = _mm_add_pd   (out00, _mm_mul_pd(m00 , in00 ));
-              out00 = _mm_add_pd   (out00, _mm_mul_pd(m01 , in10 ));
-              out01 = _mm_add_pd   (out01, _mm_mul_pd(m00 , in01 ));
-              out01 = _mm_add_pd   (out01, _mm_mul_pd(m01 , in11 ));
-              out10 = _mm_add_pd   (out10, _mm_mul_pd(m10 , in00 ));
-              out10 = _mm_add_pd   (out10, _mm_mul_pd(m11 , in10 ));
-              out11 = _mm_add_pd   (out11, _mm_mul_pd(m10 , in01 ));
-              out11 = _mm_add_pd   (out11, _mm_mul_pd(m11 , in11 ));
-
-
-              m00 =_mm_load1_pd (M_+   1);
-              m10 =_mm_load1_pd (M_+ 2+1);
-              m01 =_mm_load1_pd (M_+16+1);
-              m11 =_mm_load1_pd (M_+18+1);
-              in00 =_mm_shuffle_pd (in00,in00,_MM_SHUFFLE2(0,1));
-              in01 =_mm_shuffle_pd (in01,in01,_MM_SHUFFLE2(0,1));
-              in10 =_mm_shuffle_pd (in10,in10,_MM_SHUFFLE2(0,1));
-              in11 =_mm_shuffle_pd (in11,in11,_MM_SHUFFLE2(0,1));
-              out00 = _mm_addsub_pd(out00, _mm_mul_pd(m00, in00));
-              out00 = _mm_addsub_pd(out00, _mm_mul_pd(m01, in10));
-              out01 = _mm_addsub_pd(out01, _mm_mul_pd(m00, in01));
-              out01 = _mm_addsub_pd(out01, _mm_mul_pd(m01, in11));
-              out10 = _mm_addsub_pd(out10, _mm_mul_pd(m10, in00));
-              out10 = _mm_addsub_pd(out10, _mm_mul_pd(m11, in10));
-              out11 = _mm_addsub_pd(out11, _mm_mul_pd(m10, in01));
-              out11 = _mm_addsub_pd(out11, _mm_mul_pd(m11, in11));
-
-              M_+=32; // Jump to (column+2).
-              IN0_+=4;
-              IN1_+=4;
-            }
-            _mm_store_pd (OUT0  ,out00);
-            _mm_store_pd (OUT0+2,out10);
-            _mm_store_pd (OUT1  ,out01);
-            _mm_store_pd (OUT1+2,out11);
-            M_+=4-64*2; // Jump back to first column (row+2).
-            OUT0+=4;
-            OUT1+=4;
-          }
-
-#else // Generic code.
-          Real_t out_reg000, out_reg001, out_reg010, out_reg011;
-          Real_t out_reg100, out_reg101, out_reg110, out_reg111;
-          Real_t  in_reg000,  in_reg001,  in_reg010,  in_reg011;
-          Real_t  in_reg100,  in_reg101,  in_reg110,  in_reg111;
-          Real_t   m_reg000,   m_reg001,   m_reg010,   m_reg011;
-          Real_t   m_reg100,   m_reg101,   m_reg110,   m_reg111;
-          //#pragma unroll
-          for(int i1=0;i1<8;i1+=2){
-            Real_t* IN0_=IN0;
-            Real_t* IN1_=IN1;
-
-            out_reg000=OUT0[ 0]; out_reg001=OUT0[ 1];
-            out_reg010=OUT0[ 2]; out_reg011=OUT0[ 3];
-            out_reg100=OUT1[ 0]; out_reg101=OUT1[ 1];
-            out_reg110=OUT1[ 2]; out_reg111=OUT1[ 3];
-            //#pragma unroll
-            for(int i2=0;i2<8;i2+=2){
-              m_reg000=M_[ 0]; m_reg001=M_[ 1];
-              m_reg010=M_[ 2]; m_reg011=M_[ 3];
-              m_reg100=M_[16]; m_reg101=M_[17];
-              m_reg110=M_[18]; m_reg111=M_[19];
-
-              in_reg000=IN0_[0]; in_reg001=IN0_[1];
-              in_reg010=IN0_[2]; in_reg011=IN0_[3];
-              in_reg100=IN1_[0]; in_reg101=IN1_[1];
-              in_reg110=IN1_[2]; in_reg111=IN1_[3];
-
-              out_reg000 += m_reg000*in_reg000 - m_reg001*in_reg001;
-              out_reg001 += m_reg000*in_reg001 + m_reg001*in_reg000;
-              out_reg010 += m_reg010*in_reg000 - m_reg011*in_reg001;
-              out_reg011 += m_reg010*in_reg001 + m_reg011*in_reg000;
-
-              out_reg000 += m_reg100*in_reg010 - m_reg101*in_reg011;
-              out_reg001 += m_reg100*in_reg011 + m_reg101*in_reg010;
-              out_reg010 += m_reg110*in_reg010 - m_reg111*in_reg011;
-              out_reg011 += m_reg110*in_reg011 + m_reg111*in_reg010;
-
-              out_reg100 += m_reg000*in_reg100 - m_reg001*in_reg101;
-              out_reg101 += m_reg000*in_reg101 + m_reg001*in_reg100;
-              out_reg110 += m_reg010*in_reg100 - m_reg011*in_reg101;
-              out_reg111 += m_reg010*in_reg101 + m_reg011*in_reg100;
-
-              out_reg100 += m_reg100*in_reg110 - m_reg101*in_reg111;
-              out_reg101 += m_reg100*in_reg111 + m_reg101*in_reg110;
-              out_reg110 += m_reg110*in_reg110 - m_reg111*in_reg111;
-              out_reg111 += m_reg110*in_reg111 + m_reg111*in_reg110;
-
-              M_+=32; // Jump to (column+2).
-              IN0_+=4;
-              IN1_+=4;
-            }
-            OUT0[ 0]=out_reg000; OUT0[ 1]=out_reg001;
-            OUT0[ 2]=out_reg010; OUT0[ 3]=out_reg011;
-            OUT1[ 0]=out_reg100; OUT1[ 1]=out_reg101;
-            OUT1[ 2]=out_reg110; OUT1[ 3]=out_reg111;
-            M_+=4-64*2; // Jump back to first column (row+2).
-            OUT0+=4;
-            OUT1+=4;
-          }
-#endif
+          matmult_8x8x2(M_, IN0, IN1, OUT0, OUT1);
         }
         M += M_dim*128;
       }
@@ -2506,7 +2639,7 @@ void FMM_Pts<FMMNode>::V_ListSetup(SetupData<Real_t>&  setup_data, std::vector<M
         std::vector<FMMNode*>& nodes_out_=nodes_blk_out[blk0];
         for(size_t i=0;i<nodes_in_.size();i++) nodes_in_[i]->node_id=i;
         { // Next blocking level.
-          size_t n_blk1=nodes_out_.size()*(ker_dim0+ker_dim1)/V_BLK_SIZE; //64 vectors should fit in L1.
+          size_t n_blk1=nodes_out_.size()*(ker_dim0+ker_dim1)*sizeof(Real_t)/(64*V_BLK_CACHE);
           if(n_blk1==0) n_blk1=1;
 
           size_t interac_dsp_=0;
@@ -2584,15 +2717,12 @@ void FMM_Pts<FMMNode>::V_ListSetup(SetupData<Real_t>&  setup_data, std::vector<M
 template <class FMMNode>
 void FMM_Pts<FMMNode>::V_List     (SetupData<Real_t>&  setup_data, bool device){
   assert(!device); //Can not run on accelerator yet.
+
+  int np;
+  MPI_Comm_size(comm,&np);
   if(setup_data.interac_data.Dim(0)==0 || setup_data.interac_data.Dim(1)==0){
-    Profile::Tic("Host2Device",&this->comm,false,25);
-    Profile::Toc();
-    Profile::Tic("FFT",&comm,false,100);
-    Profile::Toc();
-    Profile::Tic("HadamardProduct",&comm,false,100);
-    Profile::Toc();
-    Profile::Tic("IFFT",&comm,false,100);
-    Profile::Toc();
+    if(np>1) Profile::Tic("Host2Device",&this->comm,false,25);
+    if(np>1) Profile::Toc();
     return;
   }
 
@@ -2697,10 +2827,10 @@ void FMM_Pts<FMMNode>::V_List     (SetupData<Real_t>&  setup_data, bool device){
       Vector<Real_t>  buffer(buffer_dim, (Real_t*)&buff[(input_dim+output_dim)*sizeof(Real_t)],false);
 
       { //  FFT
-        //Profile::Tic("FFT",&comm,false,100);
+        if(np==1) Profile::Tic("FFT",&comm,false,100);
         Vector<Real_t>  input_data_( input_data.dim[0]* input_data.dim[1],  input_data[0], false);
         FFT_UpEquiv(dof, m, ker_dim0,  fft_vec[blk0],  input_data_, fft_in, buffer);
-        //Profile::Toc();
+        if(np==1) Profile::Toc();
       }
       { // Hadamard
 #ifdef PVFMM_HAVE_PAPI
@@ -2709,9 +2839,9 @@ void FMM_Pts<FMMNode>::V_List     (SetupData<Real_t>&  setup_data, bool device){
         if (PAPI_start(EventSet) != PAPI_OK) std::cout << "handle_error3" << std::endl;
 #endif
 #endif
-        //Profile::Tic("HadamardProduct",&comm,false,100);
+        if(np==1) Profile::Tic("HadamardProduct",&comm,false,100);
         VListHadamard<Real_t>(dof, M_dim, ker_dim0, ker_dim1, interac_dsp[blk0], interac_vec[blk0], precomp_mat, fft_in, fft_out);
-        //Profile::Toc();
+        if(np==1) Profile::Toc();
 #ifdef PVFMM_HAVE_PAPI
 #ifdef __VERBOSE__
         if (PAPI_stop(EventSet, values) != PAPI_OK) std::cout << "handle_error4" << std::endl;
@@ -2720,11 +2850,11 @@ void FMM_Pts<FMMNode>::V_List     (SetupData<Real_t>&  setup_data, bool device){
 #endif
       }
       { // IFFT
-        //Profile::Tic("IFFT",&comm,false,100);
+        if(np==1) Profile::Tic("IFFT",&comm,false,100);
         Matrix<Real_t> M(M_d.dim[0],M_d.dim[1],M_d[0],false);
         Vector<Real_t> output_data_(output_data.dim[0]*output_data.dim[1], output_data[0], false);
         FFT_Check2Equiv(dof, m, ker_dim1, ifft_vec[blk0], fft_out, output_data_, buffer, M);
-        //Profile::Toc();
+        if(np==1) Profile::Toc();
       }
     }
   }
@@ -3107,7 +3237,7 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
             }
 
             single_layer_kernel(                s_coord   , src_cnt[i][2*j+0], input_data[0]+src_value[i][2*j+0], dof,
-                                coord_data[0]+trg_coord[i], trg_cnt[i]       , t_value);
+                                coord_data[0]+trg_coord[i], trg_cnt[i]       , t_value, NULL);
             interac_cnt+=src_cnt[i][2*j+0]*trg_cnt[i];
           }
           if(ptr_double_layer_kernel!=(size_t)NULL){// Double layer kernel
@@ -3120,7 +3250,7 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
             }
 
             double_layer_kernel(                s_coord   , src_cnt[i][2*j+1], input_data[0]+src_value[i][2*j+1], dof,
-                                coord_data[0]+trg_coord[i], trg_cnt[i]       , t_value);
+                                coord_data[0]+trg_coord[i], trg_cnt[i]       , t_value, NULL);
             interac_cnt+=src_cnt[i][2*j+1]*trg_cnt[i];
           }
         }

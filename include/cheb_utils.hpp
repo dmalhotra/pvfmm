@@ -59,7 +59,7 @@ void points2cheb(int deg, T* coord, T* val, int n, int dim, T* node_coord, T nod
  * \param[in] r Length of the side of cubic region.
  */
 template <class T>
-std::vector<T> cheb_integ(int m, T* s, T r, typename Kernel<T>::Ker_t kernel, int* ker_dim);
+std::vector<T> cheb_integ(int m, T* s, T r, Kernel<T>& kernel);
 
 /**
  * \brief Returns coordinates of Chebyshev node points in 'dim' dimensional
