@@ -477,7 +477,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
                              &uc_coord[0], n_uc, &(M_e2c[0][0]));
 
       Real_t eps=1.0;
-      while(eps+(T)1.0>1.0) eps*=0.5;
+      while(eps+(Real_t)1.0>1.0) eps*=0.5;
       M=M_e2c.pinv(sqrt(eps)); //check 2 equivalent
       break;
     }
@@ -499,7 +499,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
                              &check_surf[0], n_ch, &(M_e2c[0][0]));
 
       Real_t eps=1.0;
-      while(eps+(T)1.0>1.0) eps*=0.5;
+      while(eps+(Real_t)1.0>1.0) eps*=0.5;
       M=M_e2c.pinv(sqrt(eps)); //check 2 equivalent
       break;
     }

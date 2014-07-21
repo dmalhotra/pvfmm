@@ -40,7 +40,7 @@ void nbody(vec& src_coord, vec& src_value,
       size_t a=( i   *n_trg_glb)/omp_p;
       size_t b=((i+1)*n_trg_glb)/omp_p;
       kernel_fn.ker_poten(&    src_coord[0]            , n_src, &src_value[0], 1,
-                          &glb_trg_coord[0]+a*COORD_DIM,   b-a, &glb_trg_value_[0]+a*kernel_fn.ker_dim[1]);
+                          &glb_trg_coord[0]+a*COORD_DIM,   b-a, &glb_trg_value_[0]+a*kernel_fn.ker_dim[1],NULL);
     }
     MPI_Allreduce(&glb_trg_value_[0], &glb_trg_value[0], glb_trg_value.size(), MPI_DOUBLE, MPI_SUM, comm);
   }

@@ -462,7 +462,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
       for(size_t j=0; j<(size_t)M_s2t.Dim(0); j++){
         Matrix<Real_t> M_trg(n_trg,this->kernel.ker_dim[1],M_s2t[j],false);
         M_trg=M_trg.Transpose();
-        cheb_approx<Real_t,double>(M_s2t[j],cheb_deg,this->kernel.ker_dim[1],M[j]);
+        cheb_approx<Real_t,Real_t>(M_s2t[j],cheb_deg,this->kernel.ker_dim[1],M[j]);
       }
       #pragma omp critical (PRECOMP_MATRIX_PTS)
       {
@@ -516,7 +516,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
       for(size_t j=0; j<(size_t)M_s2t.Dim(0); j++){
         Matrix<Real_t> M_trg(n_trg,this->kernel.ker_dim[1],M_s2t[j],false);
         M_trg=M_trg.Transpose();
-        cheb_approx<Real_t,double>(M_s2t[j],cheb_deg,this->kernel.ker_dim[1],M[j]);
+        cheb_approx<Real_t,Real_t>(M_s2t[j],cheb_deg,this->kernel.ker_dim[1],M[j]);
       }
       break;
     }
@@ -566,7 +566,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
       for(size_t j=0; j<(size_t)M_s2t.Dim(0); j++){
         Matrix<Real_t> M_trg(n_trg,this->kernel.ker_dim[1],M_s2t[j],false);
         M_trg=M_trg.Transpose();
-        cheb_approx<Real_t,double>(M_s2t[j],cheb_deg,this->kernel.ker_dim[1],M[j]);
+        cheb_approx<Real_t,Real_t>(M_s2t[j],cheb_deg,this->kernel.ker_dim[1],M[j]);
       }
       break;
     }
@@ -616,7 +616,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
       for(size_t j=0; j<(size_t)M_s2t.Dim(0); j++){
         Matrix<Real_t> M_trg(n_trg,this->kernel.ker_dim[1],M_s2t[j],false);
         M_trg=M_trg.Transpose();
-        cheb_approx<Real_t,double>(M_s2t[j],cheb_deg,this->kernel.ker_dim[1],M[j]);
+        cheb_approx<Real_t,Real_t>(M_s2t[j],cheb_deg,this->kernel.ker_dim[1],M[j]);
       }
       break;
     }
@@ -632,7 +632,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
       for(size_t j=0; j<(size_t)M_s2t.Dim(0); j++){
         Matrix<Real_t> M_trg(n_trg,this->kernel.ker_dim[1],M_s2t[j],false);
         M_trg=M_trg.Transpose();
-        cheb_approx<Real_t,double>(M_s2t[j],cheb_deg,this->kernel.ker_dim[1],M[j]);
+        cheb_approx<Real_t,Real_t>(M_s2t[j],cheb_deg,this->kernel.ker_dim[1],M[j]);
       }
       #pragma omp critical (PRECOMP_MATRIX_PTS)
       {

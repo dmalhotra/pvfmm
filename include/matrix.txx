@@ -15,13 +15,14 @@ namespace pvfmm{
 
 template <class T>
 std::ostream& operator<<(std::ostream& output, const Matrix<T>& M){
-  using ::operator<<;
   output<<std::fixed<<std::setprecision(4)<<std::setiosflags(std::ios::left);
   for(size_t i=0;i<M.Dim(0);i++){
     for(size_t j=0;j<M.Dim(1);j++){
       float f=((float)M(i,j));
       if(fabs(f)<1e-25) f=0;
-      output<<std::setw(10)<<f<<' ';
+      output<<std::setw(10);
+      ::operator<<(output,f);
+      output<<' ';
     }
     output<<";\n";
   }

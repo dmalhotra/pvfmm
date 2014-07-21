@@ -30,11 +30,20 @@ inline QuadReal_t sin(const QuadReal_t& a);
 
 inline QuadReal_t cos(const QuadReal_t& a);
 
+inline QuadReal_t exp(const QuadReal_t& a);
+
 inline std::ostream& operator<<(std::ostream& output, const QuadReal_t& q_);
 
 template<>
 inline QuadReal_t const_pi<QuadReal_t>(){
-  return atoquad("3.1415926535897932384626433832795028841");
+  static QuadReal_t pi=atoquad("3.1415926535897932384626433832795028841");
+  return pi;
+}
+
+template<>
+inline QuadReal_t const_e<QuadReal_t>(){
+  static QuadReal_t e=atoquad("2.71828182845904523536028747135266249775724709369995");
+  return e;
 }
 
 #include <quad_utils.txx>

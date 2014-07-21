@@ -99,7 +99,7 @@ QuadReal_t cos(const QuadReal_t& a){
   static std::vector<QuadReal_t> sinval;
   static std::vector<QuadReal_t> cosval;
   if(theta.size()==0){
-    #pragma omp critical (QUAD_SIN)
+    #pragma omp critical (QUAD_COS)
     if(theta.size()==0){
       theta.resize(N);
       sinval.resize(N);
@@ -133,6 +133,52 @@ QuadReal_t cos(const QuadReal_t& a){
     }
   }
   return cval;
+}
+
+QuadReal_t exp(const QuadReal_t& a){
+  const size_t N=200;
+  static std::vector<QuadReal_t> theta0;
+  static std::vector<QuadReal_t> theta1;
+  static std::vector<QuadReal_t> expval0;
+  static std::vector<QuadReal_t> expval1;
+  if(theta0.size()==0){
+    #pragma omp critical (QUAD_EXP)
+    if(theta0.size()==0){
+      theta0.resize(N);
+      theta1.resize(N);
+      expval0.resize(N);
+      expval1.resize(N);
+
+      theta0[0]=1.0;
+      theta1[0]=1.0;
+      expval0[0]=const_e<QuadReal_t>();
+      expval1[0]=const_e<QuadReal_t>();
+      for(int i=1;i<N;i++){
+        theta0[i]=theta0[i-1]*0.5;
+        theta1[i]=theta1[i-1]*2.0;
+        expval0[i]=sqrt(expval0[i-1]);
+        expval1[i]=expval1[i-1]*expval1[i-1];
+      }
+    }
+  }
+
+  QuadReal_t t=(a<0.0?-a:a);
+  QuadReal_t eval=1.0;
+  for(int i=N-1;i>0;i--){
+    while(theta1[i]<=t){
+      eval=eval*expval1[i];
+      t=t-theta1[i];
+    }
+  }
+  for(int i=0;i<N;i++){
+    while(theta0[i]<=t){
+      eval=eval*expval0[i];
+      t=t-theta0[i];
+    }
+  }
+  eval=eval*(1.0+t);
+  return (a<0.0?1.0/eval:eval);
+  return eval;
 }
 
 std::ostream& operator<<(std::ostream& output, const QuadReal_t& q_){

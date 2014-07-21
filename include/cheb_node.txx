@@ -52,7 +52,7 @@ void Cheb_Node<Real_t>::Initialize(TreeNode* parent_, int path2node_, TreeNode::
       M_val=M_val.Transpose();
 
       cheb_coeff.Resize(((cheb_deg+1)*(cheb_deg+2)*(cheb_deg+3))/6*data_dof); cheb_coeff.SetZero();
-      cheb_approx<Real_t,double>(&input_val[0], cheb_deg, data_dof, &cheb_coeff[0]);
+      cheb_approx<Real_t,Real_t>(&input_val[0], cheb_deg, data_dof, &cheb_coeff[0]);
     }else if(this->cheb_value.Dim()>0){
       size_t n_ptr=this->cheb_coord.Dim()/this->Dim();
       assert(n_ptr*data_dof==this->cheb_value.Dim());
@@ -111,7 +111,7 @@ bool Cheb_Node<Real_t>::SubdivCond(){
     read_val(x,y,z, cheb_deg+1, cheb_deg+1, cheb_deg+1, &val[0]);
 
     std::vector<Real_t> tmp_coeff(data_dof*((cheb_deg+1)*(cheb_deg+2)*(cheb_deg+3))/6);
-    cheb_approx<Real_t,double>(&val[0],cheb_deg,data_dof,&tmp_coeff[0]);
+    cheb_approx<Real_t,Real_t>(&val[0],cheb_deg,data_dof,&tmp_coeff[0]);
     return (cheb_err(&(tmp_coeff[0]),cheb_deg,data_dof)>tol);
   }else{
     assert(cheb_coeff.Dim()>0);
@@ -145,7 +145,7 @@ void Cheb_Node<Real_t>::Subdivide() {
     cheb_eval(cheb_coeff, cheb_deg, x, y, z, val);
     assert(val.Dim()==pow(cheb_deg+1,this->Dim())*data_dof);
     child_cheb_coeff[i].Resize(data_dof*((cheb_deg+1)*(cheb_deg+2)*(cheb_deg+3))/6);
-    cheb_approx<Real_t,double>(&val[0],cheb_deg,data_dof,&(child_cheb_coeff[i][0]));
+    cheb_approx<Real_t,Real_t>(&val[0],cheb_deg,data_dof,&(child_cheb_coeff[i][0]));
 
     Cheb_Node<Real_t>* child=static_cast<Cheb_Node<Real_t>*>(this->Child(i));
     child->cheb_coeff=child_cheb_coeff[i];
@@ -174,7 +174,7 @@ void Cheb_Node<Real_t>::Truncate() {
   }
   read_val(x,y,z, cheb_deg+1, cheb_deg+1, cheb_deg+1, &val[0]);
   cheb_coeff.Resize(data_dof*((cheb_deg+1)*(cheb_deg+2)*(cheb_deg+3))/6);
-  cheb_approx<Real_t,double>(&val[0],cheb_deg,data_dof,&cheb_coeff[0]);
+  cheb_approx<Real_t,Real_t>(&val[0],cheb_deg,data_dof,&cheb_coeff[0]);
   MPI_Node<Real_t>::Truncate();
 }
 

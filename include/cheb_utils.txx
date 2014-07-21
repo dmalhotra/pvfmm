@@ -94,12 +94,12 @@ T cheb_approx(T* fn_v, int cheb_deg, int dof, T* out){
     if(precomp [d].Dim(0)==0 && precomp [d].Dim(1)==0){
       std::vector<Y> x(d);
       for(int i=0;i<d;i++)
-        x[i]=-cos((i+0.5)*const_pi<T>()/d);
+        x[i]=-cos((i+(T)0.5)*const_pi<T>()/d);
 
       std::vector<Y> p(d*d);
       cheb_poly(d-1,&x[0],d,&p[0]);
       for(int i=0;i<d*d;i++)
-        p[i]=p[i]*(2.0/d);
+        p[i]=p[i]*2.0/d;
       Matrix<Y> Mp1(d,d,&p[0],false);
       Matrix<Y> Mp1_=Mp1.Transpose();
       precomp [d]=Mp1 ;
@@ -250,7 +250,7 @@ T gll2cheb(T* fn_v, int deg, int dof, T* out){//*
 
       std::vector<Y> x(d); //Cheb nodes.
       for(int i=0;i<d;i++)
-        x[i]=-cos((i+0.5)*const_pi<Y>()/d);
+        x[i]=-cos((i+(T)0.5)*const_pi<Y>()/d);
 
       Vector<T> w(d);
       Vector<T> x_legn(d); // GLL nodes.
@@ -271,7 +271,7 @@ T gll2cheb(T* fn_v, int deg, int dof, T* out){//*
       std::vector<Y> p(d*d);
       cheb_poly(d-1,&x[0],d,&p[0]);
       for(int i=0;i<d*d;i++)
-        p[i]=p[i]*(2.0/d);
+        p[i]=p[i]*2.0/d;
       Matrix<Y> Mp1(d,d,&p[0],false);
       Mp1=Mp1*M_g2c;
 
@@ -341,7 +341,7 @@ T cheb_approx(T (*fn)(T,T,T), int cheb_deg, T* coord, T s, std::vector<T>& out){
   int d=cheb_deg+1;
   std::vector<T> x(d);
   for(int i=0;i<d;i++)
-    x[i]=cos((i+0.5)*const_pi<T>()/d);
+    x[i]=cos((i+(T)0.5)*const_pi<T>()/d);
 
   std::vector<T> p;
   cheb_poly(d-1,&x[0],d,&p[0]);
@@ -1026,8 +1026,11 @@ std::vector<T> cheb_integ(int m, T* s_, T r_, Kernel<T>& kernel){
   while(err>eps*n*n){
     n=(int)round(n*1.3);
     if(n>300){
-      using ::operator<<;
-      std::cout<<"Cheb_Integ::Failed to converge.["<<err<<","<<s[0]<<","<<s[1]<<","<<s[2]<<"]\n";
+      std::cout<<"Cheb_Integ::Failed to converge.[";
+      ::operator<<(std::cout,err); std::cout<<",";
+      ::operator<<(std::cout,s[0]); std::cout<<",";
+      ::operator<<(std::cout,s[1]); std::cout<<",";
+      ::operator<<(std::cout,s[2]); std::cout<<"]\n";
       break;
     }
     U_=integ<T>(m+1,s,r,n,kernel);
@@ -1060,7 +1063,7 @@ std::vector<T> cheb_nodes(int deg, int dim){
   int d=deg+1;
   std::vector<T> x(d);
   for(int i=0;i<d;i++)
-    x[i]=-cos((i+0.5)*const_pi<T>()/d)*0.5+0.5;
+    x[i]=-cos((i+(T)0.5)*const_pi<T>()/d)*0.5+0.5;
   if(dim==1) return x;
 
   int n1=(int)(pow((T)d,dim)+0.5);

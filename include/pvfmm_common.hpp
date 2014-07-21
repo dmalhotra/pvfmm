@@ -53,6 +53,9 @@
 template <class T>
 inline T const_pi(){return 3.1415926535897932384626433832795028841;}
 
+template <class T>
+inline T const_e(){return 2.71828182845904523536028747135266249775724709369995;}
+
 #include <quad_utils.hpp>
 
 #endif //_PVFMM_COMMON_HPP_
