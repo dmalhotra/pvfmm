@@ -244,7 +244,11 @@ void FMM_Pts<FMMNode>::Initialize(int mult_order, const MPI_Comm& comm_, const K
     }
     #endif
 
-    st<<"Precomp_"<<kernel.ker_name.c_str()<<"_m"<<mult_order<<(typeid(Real_t)==typeid(float)?"_f":"")<<".data";
+    st<<"Precomp_"<<kernel.ker_name.c_str()<<"_m"<<mult_order;
+    if(sizeof(Real_t)==8) st<<"";
+    else if(sizeof(Real_t)==4) st<<"_f";
+    else st<<"_t"<<sizeof(Real_t);
+    st<<".data";
     this->mat_fname=st.str();
   }
   this->mat->LoadFile(mat_fname.c_str(), this->comm);
@@ -471,7 +475,10 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
       Matrix<Real_t> M_e2c(n_ue*aux_ker_dim[0],n_uc*aux_ker_dim[1]);
       aux_kernel.BuildMatrix(&ue_coord[0], n_ue,
                              &uc_coord[0], n_uc, &(M_e2c[0][0]));
-      M=M_e2c.pinv(); //check 2 equivalent
+
+      Real_t eps=1.0;
+      while(eps+(T)1.0>1.0) eps*=0.5;
+      M=M_e2c.pinv(sqrt(eps)); //check 2 equivalent
       break;
     }
     case DC2DE_Type:
@@ -490,7 +497,10 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
       Matrix<Real_t> M_e2c(n_eq*aux_ker_dim[0],n_ch*aux_ker_dim[1]);
       aux_kernel.BuildMatrix(&equiv_surf[0], n_eq,
                              &check_surf[0], n_ch, &(M_e2c[0][0]));
-      M=M_e2c.pinv(); //check 2 equivalent
+
+      Real_t eps=1.0;
+      while(eps+(T)1.0>1.0) eps*=0.5;
+      M=M_e2c.pinv(sqrt(eps)); //check 2 equivalent
       break;
     }
     case S2U_Type:

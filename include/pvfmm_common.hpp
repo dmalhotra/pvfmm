@@ -50,4 +50,9 @@
 #define ASSERT_WITH_MSG(cond, msg)
 #endif
 
+template <class T>
+inline T const_pi(){return 3.1415926535897932384626433832795028841;}
+
+#include <quad_utils.hpp>
+
 #endif //_PVFMM_COMMON_HPP_

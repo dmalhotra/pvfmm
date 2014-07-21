@@ -16,6 +16,8 @@
 #include <iostream>
 #include <cmath>
 #include <omp.h>
+#include <pvfmm_common.hpp>
+#include <mem_utils.hpp>
 
 namespace pvfmm{
 namespace mem{
@@ -34,7 +36,7 @@ class MemoryManager{
 
       n_dummy.size=0;
       n_dummy.free=false;
-      n_dummy.prev=NULL;
+      n_dummy.prev=0;
       n_dummy.next=n_indx;
       n_dummy.mem_ptr=&buff[0];
       assert(n_indx);
@@ -42,7 +44,7 @@ class MemoryManager{
       n.size=N;
       n.free=true;
       n.prev=n_dummy_indx;
-      n.next=NULL;
+      n.next=0;
       n.mem_ptr=&buff[0];
       n.it=free_map.insert(std::make_pair(N,n_indx));
 
@@ -62,16 +64,18 @@ class MemoryManager{
     }
 
     void* malloc(size_t size){
+      size_t alignment=MEM_ALIGN;
+      assert(alignment <= 0x8000);
       if(!size) return NULL;
-      size+=sizeof(size_t);
+      size+=sizeof(size_t) + --alignment + 2;
       std::multimap<size_t, size_t>::iterator it;
+      uintptr_t r=0;
 
       omp_set_lock(&omp_lock);
       it=free_map.lower_bound(size);
-      if(it==free_map.end()){
-        omp_unset_lock(&omp_lock);
-        return ::malloc(size);
-      }else if(it->first==size){
+      if(it==free_map.end()){ // Use system malloc
+        r = (uintptr_t)::malloc(size);
+      }else if(it->first==size){ // Found exact size block
         size_t n_indx=it->second;
         node& n=node_buff[n_indx-1];
         //assert(n.size==it->first);
@@ -81,9 +85,8 @@ class MemoryManager{
         n.free=false;
         free_map.erase(it);
         ((size_t*)n.mem_ptr)[0]=n_indx;
-        omp_unset_lock(&omp_lock);
-        return &((size_t*)n.mem_ptr)[1];
-      }else{
+        r = (uintptr_t)&((size_t*)n.mem_ptr)[1];
+      }else{ // Found larger block.
         size_t n_indx=it->second;
         size_t n_free_indx=new_node();
         node& n_free=node_buff[n_free_indx-1];
@@ -109,12 +112,18 @@ class MemoryManager{
         free_map.erase(it);
         n_free.it=free_map.insert(std::make_pair(n_free.size,n_free_indx));
         ((size_t*)n.mem_ptr)[0]=n_indx;
-        omp_unset_lock(&omp_lock);
-        return &((size_t*)n.mem_ptr)[1];
+        r = (uintptr_t) &((size_t*)n.mem_ptr)[1];
       }
+      omp_unset_lock(&omp_lock);
+
+      uintptr_t o = (uintptr_t)(r + 2 + alignment) & ~(uintptr_t)alignment;
+      ((uint16_t*)o)[-1] = (uint16_t)(o-r);
+      return (void*)o;
     }
 
-    void free(void* p){
+    void free(void* p_){
+      if(!p_) return;
+      void* p=((void*)((uintptr_t)p_-((uint16_t*)p_)[-1]));
       if(p<&buff[0] || p>=&buff[buff_size]) return ::free(p);
 
       size_t n_indx=((size_t*)p)[-1];
@@ -126,7 +135,7 @@ class MemoryManager{
       assert(!n.free && n.size>0 && n.mem_ptr==&((size_t*)p)[-1]);
       n.free=true;
 
-      if(n.prev!=NULL && node_buff[n.prev-1].free){
+      if(n.prev!=0 && node_buff[n.prev-1].free){
         size_t n_prev_indx=n.prev;
         node& n_prev=node_buff[n_prev_indx-1];
         free_map.erase(n_prev.it);
@@ -141,7 +150,7 @@ class MemoryManager{
           n_prev.next=n_indx;
         }
       }
-      if(n.next!=NULL && node_buff[n.next-1].free){
+      if(n.next!=0 && node_buff[n.next-1].free){
         size_t n_next_indx=n.next;
         node& n_next=node_buff[n_next_indx-1];
         free_map.erase(n_next.it);

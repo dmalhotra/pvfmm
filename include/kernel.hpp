@@ -10,6 +10,7 @@
 #define _PVFMM_FMM_KERNEL_HPP_
 
 #include <pvfmm_common.hpp>
+#include <quad_utils.hpp>
 #include <mem_mgr.hpp>
 #include <string>
 
@@ -130,18 +131,29 @@ void laplace_grad(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cn
 
 
 int dim_laplace_poten[2]={1,1};
-const Kernel<double> laplace_potn_d=BuildKernel<double, laplace_poten, laplace_dbl_poten>("laplace"     , 3, dim_laplace_poten, true, 1.0);
-const Kernel<float > laplace_potn_f=BuildKernel<float , laplace_poten, laplace_dbl_poten>("laplace"     , 3, dim_laplace_poten, true, 1.0);
-
 int dim_laplace_grad [2]={1,3};
-const Kernel<double> laplace_grad_d=BuildKernel<double, laplace_grad                    >("laplace_grad", 3, dim_laplace_grad , true, 2.0);
-const Kernel<float > laplace_grad_f=BuildKernel<float , laplace_grad                    >("laplace_grad", 3, dim_laplace_grad , true, 2.0);
+
+#ifdef QuadReal_t
+const Kernel<QuadReal_t> laplace_potn_q=BuildKernel<QuadReal_t, laplace_poten, laplace_dbl_poten>("laplace"     , 3, dim_laplace_poten, true, 1.0);
+const Kernel<QuadReal_t> laplace_grad_q=BuildKernel<QuadReal_t, laplace_grad                    >("laplace_grad", 3, dim_laplace_grad , true, 2.0);
+#endif
+
+const Kernel<double    > laplace_potn_d=BuildKernel<double    , laplace_poten, laplace_dbl_poten>("laplace"     , 3, dim_laplace_poten, true, 1.0);
+const Kernel<double    > laplace_grad_d=BuildKernel<double    , laplace_grad                    >("laplace_grad", 3, dim_laplace_grad , true, 2.0);
+
+const Kernel<float     > laplace_potn_f=BuildKernel<float     , laplace_poten, laplace_dbl_poten>("laplace"     , 3, dim_laplace_poten, true, 1.0);
+const Kernel<float     > laplace_grad_f=BuildKernel<float     , laplace_grad                    >("laplace_grad", 3, dim_laplace_grad , true, 2.0);
 
 template<class T>
 struct LaplaceKernel{
   static Kernel<T>* potn_ker;
   static Kernel<T>* grad_ker;
 };
+
+#ifdef QuadReal_t
+template<> Kernel<QuadReal_t>* LaplaceKernel<QuadReal_t>::potn_ker=(Kernel<QuadReal_t>*)&laplace_potn_q;
+template<> Kernel<QuadReal_t>* LaplaceKernel<QuadReal_t>::grad_ker=(Kernel<QuadReal_t>*)&laplace_grad_q;
+#endif
 
 template<> Kernel<double>* LaplaceKernel<double>::potn_ker=(Kernel<double>*)&laplace_potn_d;
 template<> Kernel<double>* LaplaceKernel<double>::grad_ker=(Kernel<double>*)&laplace_grad_d;

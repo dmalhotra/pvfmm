@@ -9,7 +9,6 @@
 #include <cassert>
 #include <cstring>
 #include <stdint.h>
-#include <fft_wrapper.hpp>
 #include <profile.hpp>
 
 namespace pvfmm{

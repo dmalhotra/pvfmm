@@ -74,6 +74,265 @@ void Kernel<T>::BuildMatrix(T* r_src, int src_cnt,
 ////////                   LAPLACE KERNEL                               ////////
 ////////////////////////////////////////////////////////////////////////////////
 
+/**
+ * \brief Green's function for the Poisson's equation. Kernel tensor
+ * dimension = 1x1.
+ */
+template <class T>
+void laplace_poten(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
+#ifndef __MIC__
+  Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(12*dof));
+#endif
+
+  const T OOFP = 1.0/(4.0*const_pi<T>());
+  for(int t=0;t<trg_cnt;t++){
+    for(int i=0;i<dof;i++){
+      T p=0;
+      for(int s=0;s<src_cnt;s++){
+        T dX_reg=r_trg[3*t  ]-r_src[3*s  ];
+        T dY_reg=r_trg[3*t+1]-r_src[3*s+1];
+        T dZ_reg=r_trg[3*t+2]-r_src[3*s+2];
+        T invR = (dX_reg*dX_reg+dY_reg*dY_reg+dZ_reg*dZ_reg);
+        if (invR!=0) invR = 1.0/sqrt(invR);
+        p += v_src[s*dof+i]*invR;
+      }
+      k_out[t*dof+i] += p*OOFP;
+    }
+  }
+}
+
+template <class T>
+void laplace_poten_(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
+//void laplace_poten(T* r_src_, int src_cnt, T* v_src_, int dof, T* r_trg_, int trg_cnt, T* k_out_){
+//  int dim=3; //Only supporting 3D
+//  T* r_src=new T[src_cnt*dim];
+//  T* r_trg=new T[trg_cnt*dim];
+//  T* v_src=new T[src_cnt    ];
+//  T* k_out=new T[trg_cnt    ];
+//  mem::memcopy(r_src,r_src_,src_cnt*dim*sizeof(T));
+//  mem::memcopy(r_trg,r_trg_,trg_cnt*dim*sizeof(T));
+//  mem::memcopy(v_src,v_src_,src_cnt    *sizeof(T));
+//  mem::memcopy(k_out,k_out_,trg_cnt    *sizeof(T));
+
+  #define EVAL_BLKSZ 32
+  #define MAX_DOF 100
+  //Compute source to target interactions.
+  const T OOFP = 1.0/(4.0*const_pi<T>());
+
+  if(dof==1){
+    for (int t_=0; t_<trg_cnt; t_+=EVAL_BLKSZ)
+    for (int s_=0; s_<src_cnt; s_+=EVAL_BLKSZ){
+      int src_blk=s_+EVAL_BLKSZ; src_blk=(src_blk>src_cnt?src_cnt:src_blk);
+      int trg_blk=t_+EVAL_BLKSZ; trg_blk=(trg_blk>trg_cnt?trg_cnt:trg_blk);
+      for(int t=t_;t<trg_blk;t++){
+        T p=0;
+        for(int s=s_;s<src_blk;s++){
+          T dX_reg=r_trg[3*t  ]-r_src[3*s  ];
+          T dY_reg=r_trg[3*t+1]-r_src[3*s+1];
+          T dZ_reg=r_trg[3*t+2]-r_src[3*s+2];
+          T invR = (dX_reg*dX_reg+dY_reg*dY_reg+dZ_reg*dZ_reg);
+          if (invR!=0) invR = 1.0/sqrt(invR);
+          p += v_src[s]*invR;
+        }
+        k_out[t] += p*OOFP;
+      }
+    }
+  }else if(dof==2){
+    T p[MAX_DOF];
+    for (int t_=0; t_<trg_cnt; t_+=EVAL_BLKSZ)
+    for (int s_=0; s_<src_cnt; s_+=EVAL_BLKSZ){
+      int src_blk=s_+EVAL_BLKSZ; src_blk=(src_blk>src_cnt?src_cnt:src_blk);
+      int trg_blk=t_+EVAL_BLKSZ; trg_blk=(trg_blk>trg_cnt?trg_cnt:trg_blk);
+      for(int t=t_;t<trg_blk;t++){
+        p[0]=0; p[1]=0;
+        for(int s=s_;s<src_blk;s++){
+          T dX_reg=r_trg[3*t  ]-r_src[3*s  ];
+          T dY_reg=r_trg[3*t+1]-r_src[3*s+1];
+          T dZ_reg=r_trg[3*t+2]-r_src[3*s+2];
+          T invR = (dX_reg*dX_reg+dY_reg*dY_reg+dZ_reg*dZ_reg);
+          if (invR!=0) invR = 1.0/sqrt(invR);
+          p[0] += v_src[s*dof+0]*invR;
+          p[1] += v_src[s*dof+1]*invR;
+        }
+        k_out[t*dof+0] += p[0]*OOFP;
+        k_out[t*dof+1] += p[1]*OOFP;
+      }
+    }
+  }else if(dof==3){
+    T p[MAX_DOF];
+    for (int t_=0; t_<trg_cnt; t_+=EVAL_BLKSZ)
+    for (int s_=0; s_<src_cnt; s_+=EVAL_BLKSZ){
+      int src_blk=s_+EVAL_BLKSZ; src_blk=(src_blk>src_cnt?src_cnt:src_blk);
+      int trg_blk=t_+EVAL_BLKSZ; trg_blk=(trg_blk>trg_cnt?trg_cnt:trg_blk);
+      for(int t=t_;t<trg_blk;t++){
+        p[0]=0; p[1]=0; p[2]=0;
+        for(int s=s_;s<src_blk;s++){
+          T dX_reg=r_trg[3*t  ]-r_src[3*s  ];
+          T dY_reg=r_trg[3*t+1]-r_src[3*s+1];
+          T dZ_reg=r_trg[3*t+2]-r_src[3*s+2];
+          T invR = (dX_reg*dX_reg+dY_reg*dY_reg+dZ_reg*dZ_reg);
+          if (invR!=0) invR = 1.0/sqrt(invR);
+          p[0] += v_src[s*dof+0]*invR;
+          p[1] += v_src[s*dof+1]*invR;
+          p[2] += v_src[s*dof+2]*invR;
+        }
+        k_out[t*dof+0] += p[0]*OOFP;
+        k_out[t*dof+1] += p[1]*OOFP;
+        k_out[t*dof+2] += p[2]*OOFP;
+      }
+    }
+  }else{
+    T p[MAX_DOF];
+    for (int t_=0; t_<trg_cnt; t_+=EVAL_BLKSZ)
+    for (int s_=0; s_<src_cnt; s_+=EVAL_BLKSZ){
+      int src_blk=s_+EVAL_BLKSZ; src_blk=(src_blk>src_cnt?src_cnt:src_blk);
+      int trg_blk=t_+EVAL_BLKSZ; trg_blk=(trg_blk>trg_cnt?trg_cnt:trg_blk);
+      for(int t=t_;t<trg_blk;t++){
+        for(int i=0;i<dof;i++) p[i]=0;
+        for(int s=s_;s<src_blk;s++){
+          T dX_reg=r_trg[3*t  ]-r_src[3*s  ];
+          T dY_reg=r_trg[3*t+1]-r_src[3*s+1];
+          T dZ_reg=r_trg[3*t+2]-r_src[3*s+2];
+          T invR = (dX_reg*dX_reg+dY_reg*dY_reg+dZ_reg*dZ_reg);
+          if (invR!=0) invR = 1.0/sqrt(invR);
+          for(int i=0;i<dof;i++)
+            p[i] += v_src[s*dof+i]*invR;
+        }
+        for(int i=0;i<dof;i++)
+          k_out[t*dof+i] += p[i]*OOFP;
+      }
+    }
+  }
+#ifndef __MIC__
+  Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(10+2*dof));
+#endif
+  #undef MAX_DOF
+  #undef EVAL_BLKSZ
+
+//  for (int t=0; t<trg_cnt; t++)
+//    k_out_[t] += k_out[t];
+//  delete[] r_src;
+//  delete[] r_trg;
+//  delete[] v_src;
+//  delete[] k_out;
+}
+
+// Laplace double layer potential.
+template <class T>
+void laplace_dbl_poten(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
+#ifndef __MIC__
+  Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(19*dof));
+#endif
+
+  const T OOFP = -1.0/(4.0*const_pi<T>());
+  for(int t=0;t<trg_cnt;t++){
+    for(int i=0;i<dof;i++){
+      T p=0;
+      for(int s=0;s<src_cnt;s++){
+        T dX_reg=r_trg[3*t  ]-r_src[3*s  ];
+        T dY_reg=r_trg[3*t+1]-r_src[3*s+1];
+        T dZ_reg=r_trg[3*t+2]-r_src[3*s+2];
+        T invR = (dX_reg*dX_reg+dY_reg*dY_reg+dZ_reg*dZ_reg);
+        if (invR!=0) invR = 1.0/sqrt(invR);
+        p = v_src[(s*dof+i)*4+3]*invR*invR*invR;
+        k_out[t*dof+i] += p*OOFP*( dX_reg*v_src[(s*dof+i)*4+0] +
+                                   dY_reg*v_src[(s*dof+i)*4+1] +
+                                   dZ_reg*v_src[(s*dof+i)*4+2] );
+      }
+    }
+  }
+}
+
+// Laplace grdient kernel.
+template <class T>
+void laplace_grad(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
+#ifndef __MIC__
+  Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(10+12*dof));
+#endif
+
+  const T OOFP = -1.0/(4.0*const_pi<T>());
+  if(dof==1){
+    for(int t=0;t<trg_cnt;t++){
+      T p=0;
+      for(int s=0;s<src_cnt;s++){
+        T dX_reg=r_trg[3*t  ]-r_src[3*s  ];
+        T dY_reg=r_trg[3*t+1]-r_src[3*s+1];
+        T dZ_reg=r_trg[3*t+2]-r_src[3*s+2];
+        T invR = (dX_reg*dX_reg+dY_reg*dY_reg+dZ_reg*dZ_reg);
+        if (invR!=0) invR = 1.0/sqrt(invR);
+        p = v_src[s]*invR*invR*invR;
+        k_out[(t)*3+0] += p*OOFP*dX_reg;
+        k_out[(t)*3+1] += p*OOFP*dY_reg;
+        k_out[(t)*3+2] += p*OOFP*dZ_reg;
+      }
+    }
+  }else if(dof==2){
+    for(int t=0;t<trg_cnt;t++){
+      T p=0;
+      for(int s=0;s<src_cnt;s++){
+        T dX_reg=r_trg[3*t  ]-r_src[3*s  ];
+        T dY_reg=r_trg[3*t+1]-r_src[3*s+1];
+        T dZ_reg=r_trg[3*t+2]-r_src[3*s+2];
+        T invR = (dX_reg*dX_reg+dY_reg*dY_reg+dZ_reg*dZ_reg);
+        if (invR!=0) invR = 1.0/sqrt(invR);
+
+        p = v_src[s*dof+0]*invR*invR*invR;
+        k_out[(t*dof+0)*3+0] += p*OOFP*dX_reg;
+        k_out[(t*dof+0)*3+1] += p*OOFP*dY_reg;
+        k_out[(t*dof+0)*3+2] += p*OOFP*dZ_reg;
+
+        p = v_src[s*dof+1]*invR*invR*invR;
+        k_out[(t*dof+1)*3+0] += p*OOFP*dX_reg;
+        k_out[(t*dof+1)*3+1] += p*OOFP*dY_reg;
+        k_out[(t*dof+1)*3+2] += p*OOFP*dZ_reg;
+      }
+    }
+  }else if(dof==3){
+    for(int t=0;t<trg_cnt;t++){
+      T p=0;
+      for(int s=0;s<src_cnt;s++){
+        T dX_reg=r_trg[3*t  ]-r_src[3*s  ];
+        T dY_reg=r_trg[3*t+1]-r_src[3*s+1];
+        T dZ_reg=r_trg[3*t+2]-r_src[3*s+2];
+        T invR = (dX_reg*dX_reg+dY_reg*dY_reg+dZ_reg*dZ_reg);
+        if (invR!=0) invR = 1.0/sqrt(invR);
+
+        p = v_src[s*dof+0]*invR*invR*invR;
+        k_out[(t*dof+0)*3+0] += p*OOFP*dX_reg;
+        k_out[(t*dof+0)*3+1] += p*OOFP*dY_reg;
+        k_out[(t*dof+0)*3+2] += p*OOFP*dZ_reg;
+
+        p = v_src[s*dof+1]*invR*invR*invR;
+        k_out[(t*dof+1)*3+0] += p*OOFP*dX_reg;
+        k_out[(t*dof+1)*3+1] += p*OOFP*dY_reg;
+        k_out[(t*dof+1)*3+2] += p*OOFP*dZ_reg;
+
+        p = v_src[s*dof+2]*invR*invR*invR;
+        k_out[(t*dof+2)*3+0] += p*OOFP*dX_reg;
+        k_out[(t*dof+2)*3+1] += p*OOFP*dY_reg;
+        k_out[(t*dof+2)*3+2] += p*OOFP*dZ_reg;
+      }
+    }
+  }else{
+    for(int t=0;t<trg_cnt;t++){
+      for(int i=0;i<dof;i++){
+        T p=0;
+        for(int s=0;s<src_cnt;s++){
+          T dX_reg=r_trg[3*t  ]-r_src[3*s  ];
+          T dY_reg=r_trg[3*t+1]-r_src[3*s+1];
+          T dZ_reg=r_trg[3*t+2]-r_src[3*s+2];
+          T invR = (dX_reg*dX_reg+dY_reg*dY_reg+dZ_reg*dZ_reg);
+          if (invR!=0) invR = 1.0/sqrt(invR);
+          p = v_src[s*dof+i]*invR*invR*invR;
+          k_out[(t*dof+i)*3+0] += p*OOFP*dX_reg;
+          k_out[(t*dof+i)*3+1] += p*OOFP*dY_reg;
+          k_out[(t*dof+i)*3+2] += p*OOFP*dZ_reg;
+        }
+      }
+    }
+  }
+}
+
 #ifndef __MIC__
 #ifdef USE_SSE
 namespace
@@ -81,7 +340,6 @@ namespace
 #define IDEAL_ALIGNMENT 16
 #define SIMD_LEN (int)(IDEAL_ALIGNMENT / sizeof(double))
 #define DECL_SIMD_ALIGNED  __declspec(align(IDEAL_ALIGNMENT))
-#define OOFP_R 1.0/(4.0*M_PI)
   void laplaceSSE(
       const int ns,
       const int nt,
@@ -97,7 +355,7 @@ namespace
     if ( size_t(sx)%IDEAL_ALIGNMENT || size_t(sy)%IDEAL_ALIGNMENT || size_t(sz)%IDEAL_ALIGNMENT )
       abort();
 
-    double OOFP = 1.0/(4.0*M_PI);
+    double OOFP = 1.0/(4.0*const_pi<double>());
     __m128d temp;
 
     double aux_arr[SIMD_LEN+1];
@@ -108,7 +366,7 @@ namespace
     if (size_t(tempval)%IDEAL_ALIGNMENT) abort();
 
     /*! One over four pi */
-    __m128d oofp = _mm_set1_pd (OOFP_R);
+    __m128d oofp = _mm_set1_pd (OOFP);
     __m128d half = _mm_set1_pd (0.5);
     __m128d opf = _mm_set1_pd (1.5);
     __m128d zero = _mm_setzero_pd ();
@@ -201,7 +459,7 @@ namespace
     if ( size_t(sx)%IDEAL_ALIGNMENT || size_t(sy)%IDEAL_ALIGNMENT || size_t(sz)%IDEAL_ALIGNMENT )
       abort();
 
-    double OOFP = 1.0/(4.0*M_PI);
+    double OOFP = 1.0/(4.0*const_pi<double>());
     __m128d temp;
 
     double aux_arr[SIMD_LEN+1];
@@ -212,7 +470,7 @@ namespace
     if (size_t(tempval)%IDEAL_ALIGNMENT) abort();
 
     /*! One over four pi */
-    __m128d oofp = _mm_set1_pd (OOFP_R);
+    __m128d oofp = _mm_set1_pd (OOFP);
     __m128d half = _mm_set1_pd (0.5);
     __m128d opf = _mm_set1_pd (1.5);
     __m128d zero = _mm_setzero_pd ();
@@ -319,7 +577,7 @@ namespace
     if ( size_t(sx)%IDEAL_ALIGNMENT || size_t(sy)%IDEAL_ALIGNMENT || size_t(sz)%IDEAL_ALIGNMENT )
       abort();
 
-    double OOFP = 1.0/(4.0*M_PI);
+    double OOFP = 1.0/(4.0*const_pi<double>());
     __m128d tempx; __m128d tempy; __m128d tempz;
 
     double aux_arr[3*SIMD_LEN+1];
@@ -333,7 +591,7 @@ namespace
     tempvalz=tempvaly+SIMD_LEN;
 
     /*! One over four pi */
-    __m128d oofp = _mm_set1_pd (OOFP_R);
+    __m128d oofp = _mm_set1_pd (OOFP);
     __m128d half = _mm_set1_pd (0.5);
     __m128d opf = _mm_set1_pd (1.5);
     __m128d zero = _mm_setzero_pd ();
@@ -430,7 +688,6 @@ namespace
 
     return;
   }
-#undef OOFP_R
 #undef SIMD_LEN
 
 #define X(s,k) (s)[(k)*COORD_DIM]
@@ -566,36 +823,150 @@ namespace
 #undef IDEAL_ALIGNMENT
 #undef DECL_SIMD_ALIGNED
 }
-#endif
-#endif
 
-/**
- * \brief Green's function for the Poisson's equation. Kernel tensor
- * dimension = 1x1.
- */
-template <class T>
-void laplace_poten(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
-#ifndef __MIC__
+template <>
+void laplace_poten<double>(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
   Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(12*dof));
-#ifdef USE_SSE
+
   if(dof==1){
     laplaceSSEShuffle(src_cnt, trg_cnt, r_src, r_trg, v_src, k_out, mem_mgr);
     return;
   }
+}
+
+template <>
+void laplace_dbl_poten<double>(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
+  Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(19*dof));
+
+  if(dof==1){
+    laplaceDblSSEShuffle(src_cnt, trg_cnt, r_src, r_trg, v_src, k_out, mem_mgr);
+    return;
+  }
+}
+
+template <>
+void laplace_grad<double>(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
+  Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(10+12*dof));
+
+  if(dof==1){
+    laplaceGradSSEShuffle(src_cnt, trg_cnt, r_src, r_trg, v_src, k_out, mem_mgr);
+    return;
+  }
+}
 #endif
 #endif
 
-  const T OOFP = 1.0/(4.0*M_PI);
+
+////////////////////////////////////////////////////////////////////////////////
+////////                   STOKES KERNEL                             ////////
+////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * \brief Green's function for the Stokes's equation. Kernel tensor
+ * dimension = 3x3.
+ */
+template <class T>
+void stokes_vel(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
+#ifndef __MIC__
+  Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(28*dof));
+#endif
+
+  const T mu=1.0;
+  const T OOEPMU = 1.0/(8.0*const_pi<T>()*mu);
   for(int t=0;t<trg_cnt;t++){
     for(int i=0;i<dof;i++){
-      T p=0;
+      T p[3]={0,0,0};
+      for(int s=0;s<src_cnt;s++){
+        T dR[3]={r_trg[3*t  ]-r_src[3*s  ],
+                 r_trg[3*t+1]-r_src[3*s+1],
+                 r_trg[3*t+2]-r_src[3*s+2]};
+        T R = (dR[0]*dR[0]+dR[1]*dR[1]+dR[2]*dR[2]);
+        if (R!=0){
+          T invR2=1.0/R;
+          T invR=sqrt(invR2);
+          T v_src[3]={v_src_[(s*dof+i)*3  ],
+                      v_src_[(s*dof+i)*3+1],
+                      v_src_[(s*dof+i)*3+2]};
+          T inner_prod=(v_src[0]*dR[0] +
+                        v_src[1]*dR[1] +
+                        v_src[2]*dR[2])* invR2;
+          p[0] += (v_src[0] + dR[0]*inner_prod)*invR;
+          p[1] += (v_src[1] + dR[1]*inner_prod)*invR;
+          p[2] += (v_src[2] + dR[2]*inner_prod)*invR;
+        }
+      }
+      k_out[(t*dof+i)*3+0] += p[0]*OOEPMU;
+      k_out[(t*dof+i)*3+1] += p[1]*OOEPMU;
+      k_out[(t*dof+i)*3+2] += p[2]*OOEPMU;
+    }
+  }
+}
+
+template <class T>
+void stokes_dbl_vel(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
+#ifndef __MIC__
+  Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(32*dof));
+#endif
+
+  const T mu=1.0;
+  const T SOEPMU = -6.0/(8.0*const_pi<T>()*mu);
+  for(int t=0;t<trg_cnt;t++){
+    for(int i=0;i<dof;i++){
+      T p[3]={0,0,0};
       for(int s=0;s<src_cnt;s++){
         T dX_reg=r_trg[3*t  ]-r_src[3*s  ];
         T dY_reg=r_trg[3*t+1]-r_src[3*s+1];
         T dZ_reg=r_trg[3*t+2]-r_src[3*s+2];
-        T invR = (dX_reg*dX_reg+dY_reg*dY_reg+dZ_reg*dZ_reg);
-        if (invR!=0) invR = 1.0/sqrt(invR);
-        p += v_src[s*dof+i]*invR;
+        T R = (dX_reg*dX_reg+dY_reg*dY_reg+dZ_reg*dZ_reg);
+        if (R!=0){
+          R = sqrt(R);
+          T invR=1.0/R;
+          T invR5=invR*invR*invR*invR*invR;
+          T inner_prod =(v_src[(s*dof+i)*6+0]*dX_reg +
+                         v_src[(s*dof+i)*6+1]*dY_reg +
+                         v_src[(s*dof+i)*6+2]*dZ_reg)*
+                        (v_src[(s*dof+i)*6+3]*dX_reg +
+                         v_src[(s*dof+i)*6+4]*dY_reg +
+                         v_src[(s*dof+i)*6+5]*dZ_reg)*invR5;
+          p[0] += dX_reg*inner_prod;
+          p[1] += dY_reg*inner_prod;
+          p[2] += dZ_reg*inner_prod;
+        }
+      }
+      k_out[(t*dof+i)*3+0] += p[0]*SOEPMU;
+      k_out[(t*dof+i)*3+1] += p[1]*SOEPMU;
+      k_out[(t*dof+i)*3+2] += p[2]*SOEPMU;
+    }
+  }
+}
+
+template <class T>
+void stokes_press(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
+#ifndef __MIC__
+  Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(17*dof));
+#endif
+
+  const T OOFP = 1.0/(4.0*const_pi<T>());
+  for(int t=0;t<trg_cnt;t++){
+    for(int i=0;i<dof;i++){
+      T p=0;
+      for(int s=0;s<src_cnt;s++){
+        T dR[3]={r_trg[3*t  ]-r_src[3*s  ],
+                 r_trg[3*t+1]-r_src[3*s+1],
+                 r_trg[3*t+2]-r_src[3*s+2]};
+        T R = (dR[0]*dR[0]+dR[1]*dR[1]+dR[2]*dR[2]);
+        if (R!=0){
+          T invR2=1.0/R;
+          T invR=sqrt(invR2);
+          T invR3=invR2*invR;
+          T v_src[3]={v_src_[(s*dof+i)*3  ],
+                      v_src_[(s*dof+i)*3+1],
+                      v_src_[(s*dof+i)*3+2]};
+          T inner_prod=(v_src[0]*dR[0] +
+                        v_src[1]*dR[1] +
+                        v_src[2]*dR[2])* invR3;
+          p += inner_prod;
+        }
       }
       k_out[t*dof+i] += p*OOFP;
     }
@@ -603,253 +974,106 @@ void laplace_poten(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_c
 }
 
 template <class T>
-void laplace_poten_(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
-//void laplace_poten(T* r_src_, int src_cnt, T* v_src_, int dof, T* r_trg_, int trg_cnt, T* k_out_){
-//  int dim=3; //Only supporting 3D
-//  T* r_src=new T[src_cnt*dim];
-//  T* r_trg=new T[trg_cnt*dim];
-//  T* v_src=new T[src_cnt    ];
-//  T* k_out=new T[trg_cnt    ];
-//  mem::memcopy(r_src,r_src_,src_cnt*dim*sizeof(T));
-//  mem::memcopy(r_trg,r_trg_,trg_cnt*dim*sizeof(T));
-//  mem::memcopy(v_src,v_src_,src_cnt    *sizeof(T));
-//  mem::memcopy(k_out,k_out_,trg_cnt    *sizeof(T));
-
-  #define EVAL_BLKSZ 32
-  #define MAX_DOF 100
-  //Compute source to target interactions.
-  const T OOFP = 1.0/(4.0*M_PI);
-
-  if(dof==1){
-    for (int t_=0; t_<trg_cnt; t_+=EVAL_BLKSZ)
-    for (int s_=0; s_<src_cnt; s_+=EVAL_BLKSZ){
-      int src_blk=s_+EVAL_BLKSZ; src_blk=(src_blk>src_cnt?src_cnt:src_blk);
-      int trg_blk=t_+EVAL_BLKSZ; trg_blk=(trg_blk>trg_cnt?trg_cnt:trg_blk);
-      for(int t=t_;t<trg_blk;t++){
-        T p=0;
-        for(int s=s_;s<src_blk;s++){
-          T dX_reg=r_trg[3*t  ]-r_src[3*s  ];
-          T dY_reg=r_trg[3*t+1]-r_src[3*s+1];
-          T dZ_reg=r_trg[3*t+2]-r_src[3*s+2];
-          T invR = (dX_reg*dX_reg+dY_reg*dY_reg+dZ_reg*dZ_reg);
-          if (invR!=0) invR = 1.0/sqrt(invR);
-          p += v_src[s]*invR;
-        }
-        k_out[t] += p*OOFP;
-      }
-    }
-  }else if(dof==2){
-    T p[MAX_DOF];
-    for (int t_=0; t_<trg_cnt; t_+=EVAL_BLKSZ)
-    for (int s_=0; s_<src_cnt; s_+=EVAL_BLKSZ){
-      int src_blk=s_+EVAL_BLKSZ; src_blk=(src_blk>src_cnt?src_cnt:src_blk);
-      int trg_blk=t_+EVAL_BLKSZ; trg_blk=(trg_blk>trg_cnt?trg_cnt:trg_blk);
-      for(int t=t_;t<trg_blk;t++){
-        p[0]=0; p[1]=0;
-        for(int s=s_;s<src_blk;s++){
-          T dX_reg=r_trg[3*t  ]-r_src[3*s  ];
-          T dY_reg=r_trg[3*t+1]-r_src[3*s+1];
-          T dZ_reg=r_trg[3*t+2]-r_src[3*s+2];
-          T invR = (dX_reg*dX_reg+dY_reg*dY_reg+dZ_reg*dZ_reg);
-          if (invR!=0) invR = 1.0/sqrt(invR);
-          p[0] += v_src[s*dof+0]*invR;
-          p[1] += v_src[s*dof+1]*invR;
-        }
-        k_out[t*dof+0] += p[0]*OOFP;
-        k_out[t*dof+1] += p[1]*OOFP;
-      }
-    }
-  }else if(dof==3){
-    T p[MAX_DOF];
-    for (int t_=0; t_<trg_cnt; t_+=EVAL_BLKSZ)
-    for (int s_=0; s_<src_cnt; s_+=EVAL_BLKSZ){
-      int src_blk=s_+EVAL_BLKSZ; src_blk=(src_blk>src_cnt?src_cnt:src_blk);
-      int trg_blk=t_+EVAL_BLKSZ; trg_blk=(trg_blk>trg_cnt?trg_cnt:trg_blk);
-      for(int t=t_;t<trg_blk;t++){
-        p[0]=0; p[1]=0; p[2]=0;
-        for(int s=s_;s<src_blk;s++){
-          T dX_reg=r_trg[3*t  ]-r_src[3*s  ];
-          T dY_reg=r_trg[3*t+1]-r_src[3*s+1];
-          T dZ_reg=r_trg[3*t+2]-r_src[3*s+2];
-          T invR = (dX_reg*dX_reg+dY_reg*dY_reg+dZ_reg*dZ_reg);
-          if (invR!=0) invR = 1.0/sqrt(invR);
-          p[0] += v_src[s*dof+0]*invR;
-          p[1] += v_src[s*dof+1]*invR;
-          p[2] += v_src[s*dof+2]*invR;
-        }
-        k_out[t*dof+0] += p[0]*OOFP;
-        k_out[t*dof+1] += p[1]*OOFP;
-        k_out[t*dof+2] += p[2]*OOFP;
-      }
-    }
-  }else{
-    T p[MAX_DOF];
-    for (int t_=0; t_<trg_cnt; t_+=EVAL_BLKSZ)
-    for (int s_=0; s_<src_cnt; s_+=EVAL_BLKSZ){
-      int src_blk=s_+EVAL_BLKSZ; src_blk=(src_blk>src_cnt?src_cnt:src_blk);
-      int trg_blk=t_+EVAL_BLKSZ; trg_blk=(trg_blk>trg_cnt?trg_cnt:trg_blk);
-      for(int t=t_;t<trg_blk;t++){
-        for(int i=0;i<dof;i++) p[i]=0;
-        for(int s=s_;s<src_blk;s++){
-          T dX_reg=r_trg[3*t  ]-r_src[3*s  ];
-          T dY_reg=r_trg[3*t+1]-r_src[3*s+1];
-          T dZ_reg=r_trg[3*t+2]-r_src[3*s+2];
-          T invR = (dX_reg*dX_reg+dY_reg*dY_reg+dZ_reg*dZ_reg);
-          if (invR!=0) invR = 1.0/sqrt(invR);
-          for(int i=0;i<dof;i++)
-            p[i] += v_src[s*dof+i]*invR;
-        }
-        for(int i=0;i<dof;i++)
-          k_out[t*dof+i] += p[i]*OOFP;
-      }
-    }
-  }
+void stokes_stress(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
 #ifndef __MIC__
-  Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(10+2*dof));
-#endif
-  #undef MAX_DOF
-  #undef EVAL_BLKSZ
-
-//  for (int t=0; t<trg_cnt; t++)
-//    k_out_[t] += k_out[t];
-//  delete[] r_src;
-//  delete[] r_trg;
-//  delete[] v_src;
-//  delete[] k_out;
-}
-
-// Laplace double layer potential.
-template <class T>
-void laplace_dbl_poten(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
-#ifndef __MIC__
-  Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(19*dof));
-#ifdef USE_SSE
-  if(dof==1){
-    laplaceDblSSEShuffle(src_cnt, trg_cnt, r_src, r_trg, v_src, k_out, mem_mgr);
-    return;
-  }
-#endif
+  Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(45*dof));
 #endif
 
-  const T OOFP = -1.0/(4.0*M_PI);
+  const T TOFP = -3.0/(4.0*const_pi<T>());
   for(int t=0;t<trg_cnt;t++){
     for(int i=0;i<dof;i++){
-      T p=0;
+      T p[9]={0,0,0,
+              0,0,0,
+              0,0,0};
       for(int s=0;s<src_cnt;s++){
-        T dX_reg=r_trg[3*t  ]-r_src[3*s  ];
-        T dY_reg=r_trg[3*t+1]-r_src[3*s+1];
-        T dZ_reg=r_trg[3*t+2]-r_src[3*s+2];
-        T invR = (dX_reg*dX_reg+dY_reg*dY_reg+dZ_reg*dZ_reg);
-        if (invR!=0) invR = 1.0/sqrt(invR);
-        p = v_src[(s*dof+i)*4+3]*invR*invR*invR;
-        k_out[t*dof+i] += p*OOFP*( dX_reg*v_src[(s*dof+i)*4+0] +
-                                   dY_reg*v_src[(s*dof+i)*4+1] +
-                                   dZ_reg*v_src[(s*dof+i)*4+2] );
-      }
-    }
-  }
-}
-
-// Laplace grdient kernel.
-template <class T>
-void laplace_grad(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
-#ifndef __MIC__
-  Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(10+12*dof));
-#ifdef USE_SSE
-  if(dof==1){
-    laplaceGradSSEShuffle(src_cnt, trg_cnt, r_src, r_trg, v_src, k_out, mem_mgr);
-    return;
-  }
-#endif
-#endif
-
-  const T OOFP = -1.0/(4.0*M_PI);
-  if(dof==1){
-    for(int t=0;t<trg_cnt;t++){
-      T p=0;
-      for(int s=0;s<src_cnt;s++){
-        T dX_reg=r_trg[3*t  ]-r_src[3*s  ];
-        T dY_reg=r_trg[3*t+1]-r_src[3*s+1];
-        T dZ_reg=r_trg[3*t+2]-r_src[3*s+2];
-        T invR = (dX_reg*dX_reg+dY_reg*dY_reg+dZ_reg*dZ_reg);
-        if (invR!=0) invR = 1.0/sqrt(invR);
-        p = v_src[s]*invR*invR*invR;
-        k_out[(t)*3+0] += p*OOFP*dX_reg;
-        k_out[(t)*3+1] += p*OOFP*dY_reg;
-        k_out[(t)*3+2] += p*OOFP*dZ_reg;
-      }
-    }
-  }else if(dof==2){
-    for(int t=0;t<trg_cnt;t++){
-      T p=0;
-      for(int s=0;s<src_cnt;s++){
-        T dX_reg=r_trg[3*t  ]-r_src[3*s  ];
-        T dY_reg=r_trg[3*t+1]-r_src[3*s+1];
-        T dZ_reg=r_trg[3*t+2]-r_src[3*s+2];
-        T invR = (dX_reg*dX_reg+dY_reg*dY_reg+dZ_reg*dZ_reg);
-        if (invR!=0) invR = 1.0/sqrt(invR);
-
-        p = v_src[s*dof+0]*invR*invR*invR;
-        k_out[(t*dof+0)*3+0] += p*OOFP*dX_reg;
-        k_out[(t*dof+0)*3+1] += p*OOFP*dY_reg;
-        k_out[(t*dof+0)*3+2] += p*OOFP*dZ_reg;
-
-        p = v_src[s*dof+1]*invR*invR*invR;
-        k_out[(t*dof+1)*3+0] += p*OOFP*dX_reg;
-        k_out[(t*dof+1)*3+1] += p*OOFP*dY_reg;
-        k_out[(t*dof+1)*3+2] += p*OOFP*dZ_reg;
-      }
-    }
-  }else if(dof==3){
-    for(int t=0;t<trg_cnt;t++){
-      T p=0;
-      for(int s=0;s<src_cnt;s++){
-        T dX_reg=r_trg[3*t  ]-r_src[3*s  ];
-        T dY_reg=r_trg[3*t+1]-r_src[3*s+1];
-        T dZ_reg=r_trg[3*t+2]-r_src[3*s+2];
-        T invR = (dX_reg*dX_reg+dY_reg*dY_reg+dZ_reg*dZ_reg);
-        if (invR!=0) invR = 1.0/sqrt(invR);
-
-        p = v_src[s*dof+0]*invR*invR*invR;
-        k_out[(t*dof+0)*3+0] += p*OOFP*dX_reg;
-        k_out[(t*dof+0)*3+1] += p*OOFP*dY_reg;
-        k_out[(t*dof+0)*3+2] += p*OOFP*dZ_reg;
-
-        p = v_src[s*dof+1]*invR*invR*invR;
-        k_out[(t*dof+1)*3+0] += p*OOFP*dX_reg;
-        k_out[(t*dof+1)*3+1] += p*OOFP*dY_reg;
-        k_out[(t*dof+1)*3+2] += p*OOFP*dZ_reg;
-
-        p = v_src[s*dof+2]*invR*invR*invR;
-        k_out[(t*dof+2)*3+0] += p*OOFP*dX_reg;
-        k_out[(t*dof+2)*3+1] += p*OOFP*dY_reg;
-        k_out[(t*dof+2)*3+2] += p*OOFP*dZ_reg;
-      }
-    }
-  }else{
-    for(int t=0;t<trg_cnt;t++){
-      for(int i=0;i<dof;i++){
-        T p=0;
-        for(int s=0;s<src_cnt;s++){
-          T dX_reg=r_trg[3*t  ]-r_src[3*s  ];
-          T dY_reg=r_trg[3*t+1]-r_src[3*s+1];
-          T dZ_reg=r_trg[3*t+2]-r_src[3*s+2];
-          T invR = (dX_reg*dX_reg+dY_reg*dY_reg+dZ_reg*dZ_reg);
-          if (invR!=0) invR = 1.0/sqrt(invR);
-          p = v_src[s*dof+i]*invR*invR*invR;
-          k_out[(t*dof+i)*3+0] += p*OOFP*dX_reg;
-          k_out[(t*dof+i)*3+1] += p*OOFP*dY_reg;
-          k_out[(t*dof+i)*3+2] += p*OOFP*dZ_reg;
+        T dR[3]={r_trg[3*t  ]-r_src[3*s  ],
+                 r_trg[3*t+1]-r_src[3*s+1],
+                 r_trg[3*t+2]-r_src[3*s+2]};
+        T R = (dR[0]*dR[0]+dR[1]*dR[1]+dR[2]*dR[2]);
+        if (R!=0){
+          T invR2=1.0/R;
+          T invR=sqrt(invR2);
+          T invR3=invR2*invR;
+          T invR5=invR3*invR2;
+          T v_src[3]={v_src_[(s*dof+i)*3  ],
+                      v_src_[(s*dof+i)*3+1],
+                      v_src_[(s*dof+i)*3+2]};
+          T inner_prod=(v_src[0]*dR[0] +
+                        v_src[1]*dR[1] +
+                        v_src[2]*dR[2])* invR5;
+          p[0] += inner_prod*dR[0]*dR[0]; p[1] += inner_prod*dR[1]*dR[0]; p[2] += inner_prod*dR[2]*dR[0];
+          p[3] += inner_prod*dR[0]*dR[1]; p[4] += inner_prod*dR[1]*dR[1]; p[5] += inner_prod*dR[2]*dR[1];
+          p[6] += inner_prod*dR[0]*dR[2]; p[7] += inner_prod*dR[1]*dR[2]; p[8] += inner_prod*dR[2]*dR[2];
         }
       }
+      k_out[(t*dof+i)*9+0] += p[0]*TOFP;
+      k_out[(t*dof+i)*9+1] += p[1]*TOFP;
+      k_out[(t*dof+i)*9+2] += p[2]*TOFP;
+      k_out[(t*dof+i)*9+3] += p[3]*TOFP;
+      k_out[(t*dof+i)*9+4] += p[4]*TOFP;
+      k_out[(t*dof+i)*9+5] += p[5]*TOFP;
+      k_out[(t*dof+i)*9+6] += p[6]*TOFP;
+      k_out[(t*dof+i)*9+7] += p[7]*TOFP;
+      k_out[(t*dof+i)*9+8] += p[8]*TOFP;
     }
   }
 }
 
+template <class T>
+void stokes_grad(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
+#ifndef __MIC__
+  Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(89*dof));
+#endif
 
-////////////////////////////////////////////////////////////////////////////////
-////////                   STOKES KERNEL                             ////////
-////////////////////////////////////////////////////////////////////////////////
+  const T mu=1.0;
+  const T OOEPMU = 1.0/(8.0*const_pi<T>()*mu);
+  for(int t=0;t<trg_cnt;t++){
+    for(int i=0;i<dof;i++){
+      T p[9]={0,0,0,
+              0,0,0,
+              0,0,0};
+      for(int s=0;s<src_cnt;s++){
+        T dR[3]={r_trg[3*t  ]-r_src[3*s  ],
+                 r_trg[3*t+1]-r_src[3*s+1],
+                 r_trg[3*t+2]-r_src[3*s+2]};
+        T R = (dR[0]*dR[0]+dR[1]*dR[1]+dR[2]*dR[2]);
+        if (R!=0){
+          T invR2=1.0/R;
+          T invR=sqrt(invR2);
+          T invR3=invR2*invR;
+          T v_src[3]={v_src_[(s*dof+i)*3  ],
+                      v_src_[(s*dof+i)*3+1],
+                      v_src_[(s*dof+i)*3+2]};
+          T inner_prod=(v_src[0]*dR[0] +
+                        v_src[1]*dR[1] +
+                        v_src[2]*dR[2]);
+
+          p[0] += (                              inner_prod*(1-3*dR[0]*dR[0]*invR2))*invR3; //6
+          p[1] += (dR[1]*v_src[0]-v_src[1]*dR[0]+inner_prod*( -3*dR[1]*dR[0]*invR2))*invR3; //9
+          p[2] += (dR[2]*v_src[0]-v_src[2]*dR[0]+inner_prod*( -3*dR[2]*dR[0]*invR2))*invR3;
+
+          p[3] += (dR[0]*v_src[1]-v_src[0]*dR[1]+inner_prod*( -3*dR[0]*dR[1]*invR2))*invR3;
+          p[4] += (                              inner_prod*(1-3*dR[1]*dR[1]*invR2))*invR3;
+          p[5] += (dR[2]*v_src[1]-v_src[2]*dR[1]+inner_prod*( -3*dR[2]*dR[1]*invR2))*invR3;
+
+          p[6] += (dR[0]*v_src[2]-v_src[0]*dR[2]+inner_prod*( -3*dR[0]*dR[2]*invR2))*invR3;
+          p[7] += (dR[1]*v_src[2]-v_src[1]*dR[2]+inner_prod*( -3*dR[1]*dR[2]*invR2))*invR3;
+          p[8] += (                              inner_prod*(1-3*dR[2]*dR[2]*invR2))*invR3;
+
+        }
+      }
+      k_out[(t*dof+i)*9+0] += p[0]*OOEPMU;
+      k_out[(t*dof+i)*9+1] += p[1]*OOEPMU;
+      k_out[(t*dof+i)*9+2] += p[2]*OOEPMU;
+      k_out[(t*dof+i)*9+3] += p[3]*OOEPMU;
+      k_out[(t*dof+i)*9+4] += p[4]*OOEPMU;
+      k_out[(t*dof+i)*9+5] += p[5]*OOEPMU;
+      k_out[(t*dof+i)*9+6] += p[6]*OOEPMU;
+      k_out[(t*dof+i)*9+7] += p[7]*OOEPMU;
+      k_out[(t*dof+i)*9+8] += p[8]*OOEPMU;
+    }
+  }
+}
 
 #ifndef __MIC__
 #ifdef USE_SSE
@@ -858,7 +1082,6 @@ namespace
 #define IDEAL_ALIGNMENT 16
 #define SIMD_LEN (int)(IDEAL_ALIGNMENT / sizeof(double))
 #define DECL_SIMD_ALIGNED  __declspec(align(IDEAL_ALIGNMENT))
-#define OOEP_R  1.0/(8.0 * M_PI)
 
   void stokesDirectVecSSE(
       const int ns,
@@ -877,7 +1100,7 @@ namespace
       abort();
     double mu = cof;
 
-    double OOEP = 1.0/(8.0*M_PI);
+    double OOEP = 1.0/(8.0*const_pi<double>());
     __m128d tempx;
     __m128d tempy;
     __m128d tempz;
@@ -900,7 +1123,7 @@ namespace
 
 
     /*! One over eight pi */
-    __m128d ooep = _mm_set1_pd (OOEP_R);
+    __m128d ooep = _mm_set1_pd (OOEP);
     __m128d half = _mm_set1_pd (0.5);
     __m128d opf = _mm_set1_pd (1.5);
     __m128d zero = _mm_setzero_pd ();
@@ -1021,9 +1244,7 @@ namespace
 
     return;
   }
-#undef OOEP_R
 
-#define OOFP_R  1.0/(4.0 * M_PI)
   void stokesPressureSSE(
       const int ns,
       const int nt,
@@ -1039,7 +1260,7 @@ namespace
     if ( size_t(sx)%IDEAL_ALIGNMENT || size_t(sy)%IDEAL_ALIGNMENT || size_t(sz)%IDEAL_ALIGNMENT )
       abort();
 
-    double OOFP = 1.0/(4.0*M_PI);
+    double OOFP = 1.0/(4.0*const_pi<double>());
     __m128d temp_press;
 
     double aux_arr[SIMD_LEN+1];
@@ -1055,7 +1276,7 @@ namespace
 
 
     /*! One over eight pi */
-    __m128d oofp = _mm_set1_pd (OOFP_R);
+    __m128d oofp = _mm_set1_pd (OOFP);
     __m128d half = _mm_set1_pd (0.5);
     __m128d opf = _mm_set1_pd (1.5);
     __m128d zero = _mm_setzero_pd ();
@@ -1146,9 +1367,7 @@ namespace
 
     return;
   }
-#undef OOFP_R
 
-#define TOFP_R  -3.0/(4.0 * M_PI)
   void stokesStressSSE(
       const int ns,
       const int nt,
@@ -1164,7 +1383,7 @@ namespace
     if ( size_t(sx)%IDEAL_ALIGNMENT || size_t(sy)%IDEAL_ALIGNMENT || size_t(sz)%IDEAL_ALIGNMENT )
       abort();
 
-    double TOFP = -3.0/(4.0*M_PI);
+    double TOFP = -3.0/(4.0*const_pi<double>());
     __m128d tempxx; __m128d tempxy; __m128d tempxz;
     __m128d tempyx; __m128d tempyy; __m128d tempyz;
     __m128d tempzx; __m128d tempzy; __m128d tempzz;
@@ -1193,7 +1412,7 @@ namespace
     tempvalzz=tempvalzy+SIMD_LEN;
 
     /*! One over eight pi */
-    __m128d tofp = _mm_set1_pd (TOFP_R);
+    __m128d tofp = _mm_set1_pd (TOFP);
     __m128d half = _mm_set1_pd (0.5);
     __m128d opf = _mm_set1_pd (1.5);
     __m128d zero = _mm_setzero_pd ();
@@ -1335,9 +1554,7 @@ namespace
 
     return;
   }
-#undef TOFP_R
 
-#define OOEP_R  1.0/(8.0 * M_PI)
   void stokesGradSSE(
       const int ns,
       const int nt,
@@ -1355,7 +1572,7 @@ namespace
       abort();
     double mu = cof;
 
-    double OOEP = 1.0/(8.0*M_PI);
+    double OOEP = 1.0/(8.0*const_pi<double>());
     __m128d tempxx; __m128d tempxy; __m128d tempxz;
     __m128d tempyx; __m128d tempyy; __m128d tempyz;
     __m128d tempzx; __m128d tempzy; __m128d tempzz;
@@ -1385,7 +1602,7 @@ namespace
     tempvalzz=tempvalzy+SIMD_LEN;
 
     /*! One over eight pi */
-    __m128d ooep = _mm_set1_pd (OOEP_R);
+    __m128d ooep = _mm_set1_pd (OOEP);
     __m128d half = _mm_set1_pd (0.5);
     __m128d opf = _mm_set1_pd (1.5);
     __m128d three = _mm_set1_pd (3.0);
@@ -1526,7 +1743,6 @@ namespace
 
     return;
   }
-#undef OOEP_R
 #undef SIMD_LEN
 
 #define X(s,k) (s)[(k)*COORD_DIM]
@@ -1647,243 +1863,39 @@ namespace
 #undef IDEAL_ALIGNMENT
 #undef DECL_SIMD_ALIGNED
 }
-#endif
-#endif
 
-/**
- * \brief Green's function for the Stokes's equation. Kernel tensor
- * dimension = 3x3.
- */
-template <class T>
-void stokes_vel(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
-  const T mu=1.0;
-
-#ifndef __MIC__
+template <>
+void stokes_vel<double>(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
   Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(28*dof));
-#ifdef USE_SSE
-  stokesDirectSSEShuffle(src_cnt, trg_cnt, r_src, r_trg, v_src_, k_out, mu, mem_mgr);
-  return;
-#endif
-#endif
-
-  const T OOEPMU = 1.0/(8.0*M_PI*mu);
-  for(int t=0;t<trg_cnt;t++){
-    for(int i=0;i<dof;i++){
-      T p[3]={0,0,0};
-      for(int s=0;s<src_cnt;s++){
-        T dR[3]={r_trg[3*t  ]-r_src[3*s  ],
-                 r_trg[3*t+1]-r_src[3*s+1],
-                 r_trg[3*t+2]-r_src[3*s+2]};
-        T R = (dR[0]*dR[0]+dR[1]*dR[1]+dR[2]*dR[2]);
-        if (R!=0){
-          T invR2=1.0/R;
-          T invR=sqrt(invR2);
-          T v_src[3]={v_src_[(s*dof+i)*3  ],
-                      v_src_[(s*dof+i)*3+1],
-                      v_src_[(s*dof+i)*3+2]};
-          T inner_prod=(v_src[0]*dR[0] +
-                        v_src[1]*dR[1] +
-                        v_src[2]*dR[2])* invR2;
-          p[0] += (v_src[0] + dR[0]*inner_prod)*invR;
-          p[1] += (v_src[1] + dR[1]*inner_prod)*invR;
-          p[2] += (v_src[2] + dR[2]*inner_prod)*invR;
-        }
-      }
-      k_out[(t*dof+i)*3+0] += p[0]*OOEPMU;
-      k_out[(t*dof+i)*3+1] += p[1]*OOEPMU;
-      k_out[(t*dof+i)*3+2] += p[2]*OOEPMU;
-    }
-  }
-}
-
-template <class T>
-void stokes_dbl_vel(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
-
-#ifndef __MIC__
-  Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(32*dof));
-#endif
 
   const T mu=1.0;
-  const T SOEPMU = -6.0/(8.0*M_PI*mu);
-  for(int t=0;t<trg_cnt;t++){
-    for(int i=0;i<dof;i++){
-      T p[3]={0,0,0};
-      for(int s=0;s<src_cnt;s++){
-        T dX_reg=r_trg[3*t  ]-r_src[3*s  ];
-        T dY_reg=r_trg[3*t+1]-r_src[3*s+1];
-        T dZ_reg=r_trg[3*t+2]-r_src[3*s+2];
-        T R = (dX_reg*dX_reg+dY_reg*dY_reg+dZ_reg*dZ_reg);
-        if (R!=0){
-          R = sqrt(R);
-          T invR=1.0/R;
-          T invR5=invR*invR*invR*invR*invR;
-          T inner_prod =(v_src[(s*dof+i)*6+0]*dX_reg +
-                         v_src[(s*dof+i)*6+1]*dY_reg +
-                         v_src[(s*dof+i)*6+2]*dZ_reg)*
-                        (v_src[(s*dof+i)*6+3]*dX_reg +
-                         v_src[(s*dof+i)*6+4]*dY_reg +
-                         v_src[(s*dof+i)*6+5]*dZ_reg)*invR5;
-          p[0] += dX_reg*inner_prod;
-          p[1] += dY_reg*inner_prod;
-          p[2] += dZ_reg*inner_prod;
-        }
-      }
-      k_out[(t*dof+i)*3+0] += p[0]*SOEPMU;
-      k_out[(t*dof+i)*3+1] += p[1]*SOEPMU;
-      k_out[(t*dof+i)*3+2] += p[2]*SOEPMU;
-    }
-  }
+  stokesDirectSSEShuffle(src_cnt, trg_cnt, r_src, r_trg, v_src_, k_out, mu, mem_mgr);
 }
 
-template <class T>
-void stokes_press(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
-
-#ifndef __MIC__
+template <>
+void stokes_press<double>(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
   Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(17*dof));
-#ifdef USE_SSE
+
   stokesPressureSSEShuffle(src_cnt, trg_cnt, r_src, r_trg, v_src_, k_out, mem_mgr);
   return;
-#endif
-#endif
-
-  const T OOFP = 1.0/(4.0*M_PI);
-  for(int t=0;t<trg_cnt;t++){
-    for(int i=0;i<dof;i++){
-      T p=0;
-      for(int s=0;s<src_cnt;s++){
-        T dR[3]={r_trg[3*t  ]-r_src[3*s  ],
-                 r_trg[3*t+1]-r_src[3*s+1],
-                 r_trg[3*t+2]-r_src[3*s+2]};
-        T R = (dR[0]*dR[0]+dR[1]*dR[1]+dR[2]*dR[2]);
-        if (R!=0){
-          T invR2=1.0/R;
-          T invR=sqrt(invR2);
-          T invR3=invR2*invR;
-          T v_src[3]={v_src_[(s*dof+i)*3  ],
-                      v_src_[(s*dof+i)*3+1],
-                      v_src_[(s*dof+i)*3+2]};
-          T inner_prod=(v_src[0]*dR[0] +
-                        v_src[1]*dR[1] +
-                        v_src[2]*dR[2])* invR3;
-          p += inner_prod;
-        }
-      }
-      k_out[t*dof+i] += p*OOFP;
-    }
-  }
 }
 
-template <class T>
-void stokes_stress(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
-
-#ifndef __MIC__
+template <>
+void stokes_stress<double>(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
   Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(45*dof));
-#ifdef USE_SSE
+
   stokesStressSSEShuffle(src_cnt, trg_cnt, r_src, r_trg, v_src_, k_out, mem_mgr);
-  return;
-#endif
-#endif
-
-  const T TOFP = -3.0/(4.0*M_PI);
-  for(int t=0;t<trg_cnt;t++){
-    for(int i=0;i<dof;i++){
-      T p[9]={0,0,0,
-              0,0,0,
-              0,0,0};
-      for(int s=0;s<src_cnt;s++){
-        T dR[3]={r_trg[3*t  ]-r_src[3*s  ],
-                 r_trg[3*t+1]-r_src[3*s+1],
-                 r_trg[3*t+2]-r_src[3*s+2]};
-        T R = (dR[0]*dR[0]+dR[1]*dR[1]+dR[2]*dR[2]);
-        if (R!=0){
-          T invR2=1.0/R;
-          T invR=sqrt(invR2);
-          T invR3=invR2*invR;
-          T invR5=invR3*invR2;
-          T v_src[3]={v_src_[(s*dof+i)*3  ],
-                      v_src_[(s*dof+i)*3+1],
-                      v_src_[(s*dof+i)*3+2]};
-          T inner_prod=(v_src[0]*dR[0] +
-                        v_src[1]*dR[1] +
-                        v_src[2]*dR[2])* invR5;
-          p[0] += inner_prod*dR[0]*dR[0]; p[1] += inner_prod*dR[1]*dR[0]; p[2] += inner_prod*dR[2]*dR[0];
-          p[3] += inner_prod*dR[0]*dR[1]; p[4] += inner_prod*dR[1]*dR[1]; p[5] += inner_prod*dR[2]*dR[1];
-          p[6] += inner_prod*dR[0]*dR[2]; p[7] += inner_prod*dR[1]*dR[2]; p[8] += inner_prod*dR[2]*dR[2];
-        }
-      }
-      k_out[(t*dof+i)*9+0] += p[0]*TOFP;
-      k_out[(t*dof+i)*9+1] += p[1]*TOFP;
-      k_out[(t*dof+i)*9+2] += p[2]*TOFP;
-      k_out[(t*dof+i)*9+3] += p[3]*TOFP;
-      k_out[(t*dof+i)*9+4] += p[4]*TOFP;
-      k_out[(t*dof+i)*9+5] += p[5]*TOFP;
-      k_out[(t*dof+i)*9+6] += p[6]*TOFP;
-      k_out[(t*dof+i)*9+7] += p[7]*TOFP;
-      k_out[(t*dof+i)*9+8] += p[8]*TOFP;
-    }
-  }
 }
 
-template <class T>
-void stokes_grad(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
-  const T mu=1.0;
-
-#ifndef __MIC__
+template <>
+void stokes_grad<double>(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
   Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(89*dof));
-#ifdef USE_SSE
+
+  const T mu=1.0;
   stokesGradSSEShuffle(src_cnt, trg_cnt, r_src, r_trg, v_src_, k_out, mu, mem_mgr);
-  return;
-#endif
-#endif
-
-  const T OOEPMU = 1.0/(8.0*M_PI*mu);
-  for(int t=0;t<trg_cnt;t++){
-    for(int i=0;i<dof;i++){
-      T p[9]={0,0,0,
-              0,0,0,
-              0,0,0};
-      for(int s=0;s<src_cnt;s++){
-        T dR[3]={r_trg[3*t  ]-r_src[3*s  ],
-                 r_trg[3*t+1]-r_src[3*s+1],
-                 r_trg[3*t+2]-r_src[3*s+2]};
-        T R = (dR[0]*dR[0]+dR[1]*dR[1]+dR[2]*dR[2]);
-        if (R!=0){
-          T invR2=1.0/R;
-          T invR=sqrt(invR2);
-          T invR3=invR2*invR;
-          T v_src[3]={v_src_[(s*dof+i)*3  ],
-                      v_src_[(s*dof+i)*3+1],
-                      v_src_[(s*dof+i)*3+2]};
-          T inner_prod=(v_src[0]*dR[0] +
-                        v_src[1]*dR[1] +
-                        v_src[2]*dR[2]);
-
-          p[0] += (                              inner_prod*(1-3*dR[0]*dR[0]*invR2))*invR3; //6
-          p[1] += (dR[1]*v_src[0]-v_src[1]*dR[0]+inner_prod*( -3*dR[1]*dR[0]*invR2))*invR3; //9
-          p[2] += (dR[2]*v_src[0]-v_src[2]*dR[0]+inner_prod*( -3*dR[2]*dR[0]*invR2))*invR3;
-
-          p[3] += (dR[0]*v_src[1]-v_src[0]*dR[1]+inner_prod*( -3*dR[0]*dR[1]*invR2))*invR3;
-          p[4] += (                              inner_prod*(1-3*dR[1]*dR[1]*invR2))*invR3;
-          p[5] += (dR[2]*v_src[1]-v_src[2]*dR[1]+inner_prod*( -3*dR[2]*dR[1]*invR2))*invR3;
-
-          p[6] += (dR[0]*v_src[2]-v_src[0]*dR[2]+inner_prod*( -3*dR[0]*dR[2]*invR2))*invR3;
-          p[7] += (dR[1]*v_src[2]-v_src[1]*dR[2]+inner_prod*( -3*dR[1]*dR[2]*invR2))*invR3;
-          p[8] += (                              inner_prod*(1-3*dR[2]*dR[2]*invR2))*invR3;
-
-        }
-      }
-      k_out[(t*dof+i)*9+0] += p[0]*OOEPMU;
-      k_out[(t*dof+i)*9+1] += p[1]*OOEPMU;
-      k_out[(t*dof+i)*9+2] += p[2]*OOEPMU;
-      k_out[(t*dof+i)*9+3] += p[3]*OOEPMU;
-      k_out[(t*dof+i)*9+4] += p[4]*OOEPMU;
-      k_out[(t*dof+i)*9+5] += p[5]*OOEPMU;
-      k_out[(t*dof+i)*9+6] += p[6]*OOEPMU;
-      k_out[(t*dof+i)*9+7] += p[7]*OOEPMU;
-      k_out[(t*dof+i)*9+8] += p[8]*OOEPMU;
-    }
-  }
 }
+#endif
+#endif
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1896,7 +1908,7 @@ void biot_savart(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cn
   Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(26*dof));
 #endif
 
-  const T OOFP = -1.0/(4.0*M_PI);
+  const T OOFP = -1.0/(4.0*const_pi<T>());
   for(int t=0;t<trg_cnt;t++){
     for(int i=0;i<dof;i++){
       T p[3]={0,0,0};
@@ -1941,7 +1953,7 @@ void helmholtz_poten(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg
   Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(24*dof));
 #endif
 
-  const T mu = (20.0*M_PI);
+  const T mu = (20.0*const_pi<T>());
   for(int t=0;t<trg_cnt;t++){
     for(int i=0;i<dof;i++){
       T p[2]={0,0};

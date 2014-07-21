@@ -10,9 +10,15 @@
 #include <matrix.hpp>
 #include <mem_mgr.hpp>
 #include <legendre_rule.hpp>
-#include <limits>
 
 namespace pvfmm{
+
+template <class T>
+T machine_eps(){
+  T eps=1.0;
+  while(eps+(T)1.0>1.0) eps*=0.5;
+  return eps;
+}
 
 /**
  * \brief Returns the values of all chebyshev polynomials up to degree d,
@@ -72,7 +78,7 @@ T cheb_err(T* cheb_coeff, int deg, int dof){
  */
 template <class T, class Y>
 T cheb_approx(T* fn_v, int cheb_deg, int dof, T* out){
-  //T eps=std::numeric_limits<T>::epsilon()*100;
+  //T eps=machine_eps<T>()*64;
 
   int d=cheb_deg+1;
   static std::vector<Matrix<Y> > precomp;
@@ -88,7 +94,7 @@ T cheb_approx(T* fn_v, int cheb_deg, int dof, T* out){
     if(precomp [d].Dim(0)==0 && precomp [d].Dim(1)==0){
       std::vector<Y> x(d);
       for(int i=0;i<d;i++)
-        x[i]=-cos((i+0.5)*M_PI/d);
+        x[i]=-cos((i+0.5)*const_pi<T>()/d);
 
       std::vector<Y> p(d*d);
       cheb_poly(d-1,&x[0],d,&p[0]);
@@ -192,14 +198,14 @@ inline void legn_poly(int d, T* in, int n, T* out){
  */
 template <class T>
 void gll_quadrature(int deg, T* x_, T* w){//*
-  T eps=std::numeric_limits<T>::epsilon()*100;
+  T eps=machine_eps<T>()*64;
   int d=deg+1;
   assert(d>1);
   int N=d-1;
 
   Vector<T> x(d,x_,false);
   for(int i=0;i<d;i++)
-    x[i]=-cos((M_PI*i)/N);
+    x[i]=-cos((const_pi<T>()*i)/N);
   Matrix<T> P(d,d); P.SetZero();
 
   T err=1;
@@ -229,7 +235,7 @@ void gll_quadrature(int deg, T* x_, T* w){//*
  */
 template <class T, class Y>
 T gll2cheb(T* fn_v, int deg, int dof, T* out){//*
-  //T eps=std::numeric_limits<T>::epsilon()*100;
+  //T eps=machine_eps<T>()*64;
 
   int d=deg+1;
   static std::vector<Matrix<Y> > precomp;
@@ -244,7 +250,7 @@ T gll2cheb(T* fn_v, int deg, int dof, T* out){//*
 
       std::vector<Y> x(d); //Cheb nodes.
       for(int i=0;i<d;i++)
-        x[i]=-cos((i+0.5)*M_PI/d);
+        x[i]=-cos((i+0.5)*const_pi<Y>()/d);
 
       Vector<T> w(d);
       Vector<T> x_legn(d); // GLL nodes.
@@ -335,7 +341,7 @@ T cheb_approx(T (*fn)(T,T,T), int cheb_deg, T* coord, T s, std::vector<T>& out){
   int d=cheb_deg+1;
   std::vector<T> x(d);
   for(int i=0;i<d;i++)
-    x[i]=cos((i+0.5)*M_PI/d);
+    x[i]=cos((i+0.5)*const_pi<T>()/d);
 
   std::vector<T> p;
   cheb_poly(d-1,&x[0],d,&p[0]);
@@ -560,7 +566,7 @@ void points2cheb(int deg, T* coord, T* val, int n, int dim, T* node_coord, T nod
 
   //Compute the pinv and get the cheb_coeff.
   Matrix<T> M_val(n,dim,&val[0]);
-  T eps=std::numeric_limits<T>::epsilon()*100;
+  T eps=machine_eps<T>()*64;
   Matrix<T> cheb_coeff_=(M.pinv(eps)*M_val).Transpose();
 
   //Set the output
@@ -582,6 +588,107 @@ void points2cheb(int deg, T* coord, T* val, int n, int dim, T* node_coord, T nod
 
 template <class T>
 void quad_rule(int n, T* x, T* w){//*
+  static std::vector<Vector<T> > x_lst(10000);
+  static std::vector<Vector<T> > w_lst(10000);
+  assert(n<10000);
+
+  bool done=false;
+  #pragma omp critical (QUAD_RULE)
+  if(x_lst[n].Dim()>0){
+    Vector<T>& x_=x_lst[n];
+    Vector<T>& w_=w_lst[n];
+    for(int i=0;i<n;i++){
+      x[i]=x_[i];
+      w[i]=w_[i];
+    }
+    done=true;
+  }
+  if(done) return;
+
+  Vector<T> x_(n);
+  Vector<T> w_(n);
+
+  { //Gauss-Chebyshev quadrature nodes and weights
+    for(int i=0;i<n;i++){
+      x_[i]=-cos((T)(2.0*i+1.0)/(2.0*n)*const_pi<T>());
+      w_[i]=0;//sqrt(1.0-x_[i]*x_[i])*const_pi<T>()/n;
+    }
+    Matrix<T> M(n,n);
+    cheb_poly(n-1, &x_[0], n, &M[0][0]);
+    for(size_t i=0;i<n;i++) M[0][i]/=2.0;
+
+    std::vector<T> w_sample(n,0);
+    if(n>0) w_sample[0]=2.0;
+    if(n>1) w_sample[1]=0.0;
+    if(n>2) w_sample[2]=-((T)2.0)/3;
+    if(n>3) w_sample[3]=0.0;
+    if(n>4) w_sample[4]=-((T)2.0)/15;
+    if(n>5) w_sample[5]=0.0;
+    if(n>6) w_sample[5]=((T)64)/7-((T)96)/5+((T)36)/3-2;
+    if(n>7) w_sample[5]=0;
+    if(n>8){
+      T eps=machine_eps<T>()*64;
+      std::vector<T> qx(n-1);
+      std::vector<T> qw(n-1);
+      quad_rule(n-1, &qx[0], &qw[0]);
+
+      T err=1.0;
+      std::vector<T> w_prev;
+      for(size_t iter=1;err>eps*iter;iter*=2){
+        w_prev=w_sample;
+        w_sample.assign(n,0);
+
+        size_t N=(n-1)*iter;
+        std::vector<T> x_sample(N,0);
+
+        Matrix<T> M_sample(n,N);
+        for(size_t i=0;i<iter;i++){
+          for(size_t j=0;j<n-1;j++){
+            x_sample[j+i*(n-1)]=(2*i+qx[j]+1)/iter-1;
+          }
+        }
+        cheb_poly(n-1, &x_sample[0], N, &M_sample[0][0]);
+
+        for(size_t i=0;i<n;i++)
+        for(size_t j=0;j<iter;j++)
+        for(size_t k=0;k<n-1;k++){
+          w_sample[i]+=M_sample[i][k+j*(n-1)]*qw[k];
+        }
+        for(size_t i=0;i<n;i++) w_sample[i]/=iter;
+        for(size_t i=1;i<n;i+=2) w_sample[i]=0.0;
+
+        err=0;
+        for(size_t i=0;i<n;i++) err+=fabs(w_sample[i]-w_prev[i]);
+      }
+    }
+
+    for(size_t i=0;i<n;i++)
+    for(size_t j=0;j<n;j++){
+      M[i][j]*=w_sample[i];
+    }
+
+    for(size_t i=0;i<n;i++)
+    for(size_t j=0;j<n;j++){
+      w_[j]+=M[i][j]*2/n;
+    }
+  }
+  { //Trapezoidal quadrature nodes and weights
+    //for(int i=0;i<n;i++){
+    //  x_[i]=(2.0*i+1.0)/(1.0*n)-1.0;
+    //  w_[i]=2.0/n;
+    //}
+  }
+
+  #pragma omp critical (QUAD_RULE)
+  { // Set x_lst, w_lst
+    x_lst[n]=x_;
+    w_lst[n]=w_;
+  }
+  quad_rule(n, x, w);
+}
+
+template <>
+void quad_rule<double>(int n, double* x, double* w){//*
   static std::vector<Vector<double> > x_lst(10000);
   static std::vector<Vector<double> > w_lst(10000);
   assert(n<10000);
@@ -601,38 +708,22 @@ void quad_rule(int n, T* x, T* w){//*
 
   Vector<double> x_(n);
   Vector<double> w_(n);
-  T alpha=0.0;
-  T beta=0.0;
-  T a=-1.0;
-  T b= 1.0;
-  int kind = 1;
-  cgqf ( n, kind, (double)alpha, (double)beta, (double)a, (double)b, &x_[0], &w_[0] );
+
+  { //Gauss-Legendre quadrature nodes and weights
+    double alpha=0.0;
+    double beta=0.0;
+    double a=-1.0;
+    double b= 1.0;
+    int kind = 1;
+    cgqf ( n, kind, (double)alpha, (double)beta, (double)a, (double)b, &x_[0], &w_[0] );
+  }
+
   #pragma omp critical (QUAD_RULE)
   { // Set x_lst, w_lst
     x_lst[n]=x_;
     w_lst[n]=w_;
   }
   quad_rule(n, x, w);
-
-  //Trapezoidal quadrature nodes and weights
-/*  for(int i=0;i<n;i++){
-    x[i]=(2.0*i+1.0)/(1.0*n)-1.0;
-    w[i]=2.0/n;
-  }// */
-  //Gauss-Chebyshev quadrature nodes and weights
-/*  for(int i=0;i<n;i++){
-    x[i]=cos((2.0*i+1.0)/(2.0*n)*M_PI);
-    w[i]=sqrt(1.0-x[i]*x[i])*M_PI/n;
-  }// */
-  //Gauss-Legendre quadrature nodes and weights
-/*  T x_[10]={-0.97390652851717,  -0.86506336668898,  -0.67940956829902,  -0.43339539412925,  -0.14887433898163,
-          0.14887433898163,   0.43339539412925,   0.67940956829902,   0.86506336668898,   0.97390652851717};
-  T w_[10]={0.06667134430869,   0.14945134915058,   0.21908636251598,   0.26926671931000,   0.29552422471475,
-          0.29552422471475,   0.26926671931000,   0.21908636251598,   0.14945134915058,   0.06667134430869};
-  for(int i=0;i<10;i++){
-    x[i]=x_[i];
-    w[i]=w_[i];
-  }// */
 }
 
 template <class T>
@@ -641,7 +732,7 @@ std::vector<T> integ_pyramid(int m, T* s, T r, int nx, Kernel<T>& kernel, int* p
   int ny=nx;
   int nz=nx;
 
-  T eps=std::numeric_limits<T>::epsilon()*100;
+  T eps=machine_eps<T>()*64;
   int k_dim=kernel.ker_dim[0]*kernel.ker_dim[1];
 
   std::vector<T> qp_x(nx), qw_x(nx);
@@ -922,7 +1013,7 @@ std::vector<T> integ(int m, T* s, T r, int n, Kernel<T>& kernel){//*
  */
 template <class T>
 std::vector<T> cheb_integ(int m, T* s_, T r_, Kernel<T>& kernel){
-  T eps=std::numeric_limits<T>::epsilon()*100;
+  T eps=machine_eps<T>();
 
   T r=r_;
   T s[3]={s_[0],s_[1],s_[2]};
@@ -932,9 +1023,10 @@ std::vector<T> cheb_integ(int m, T* s_, T r_, Kernel<T>& kernel){
   int k_dim=kernel.ker_dim[0]*kernel.ker_dim[1];
   std::vector<T> U=integ<T>(m+1,s,r,n,kernel);
   std::vector<T> U_;
-  while(err>eps){
+  while(err>eps*n*n){
     n=(int)round(n*1.3);
     if(n>300){
+      using ::operator<<;
       std::cout<<"Cheb_Integ::Failed to converge.["<<err<<","<<s[0]<<","<<s[1]<<","<<s[2]<<"]\n";
       break;
     }
@@ -968,7 +1060,7 @@ std::vector<T> cheb_nodes(int deg, int dim){
   int d=deg+1;
   std::vector<T> x(d);
   for(int i=0;i<d;i++)
-    x[i]=-cos((i+0.5)*M_PI/d)*0.5+0.5;
+    x[i]=-cos((i+0.5)*const_pi<T>()/d)*0.5+0.5;
   if(dim==1) return x;
 
   int n1=(int)(pow((T)d,dim)+0.5);

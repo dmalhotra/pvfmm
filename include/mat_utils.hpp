@@ -13,16 +13,12 @@
 namespace pvfmm{
 namespace mat{
 
-  void gemm(char TransA, char TransB,  int M,  int N,  int K,  float alpha,  float *A,  int lda,  float *B,  int ldb,  float beta, float *C,  int ldc);
+  template <class T>
+  void gemm(char TransA, char TransB,  int M,  int N,  int K,  T alpha,  T *A,  int lda,  T *B,  int ldb,  T beta, T *C,  int ldc);
 
-  void gemm(char TransA, char TransB,  int M,  int N,  int K,  double alpha,  double *A,  int lda,  double *B,  int ldb,  double beta, double *C,  int ldc);
-
-  void svd(char *JOBU, char *JOBVT, int *M, int *N, float *A, int *LDA,
-      float *S, float *U, int *LDU, float *VT, int *LDVT, float *WORK, int *LWORK,
-      int *INFO);
-
-  void svd(char *JOBU, char *JOBVT, int *M, int *N, double *A, int *LDA,
-      double *S, double *U, int *LDU, double *VT, int *LDVT, double *WORK, int *LWORK,
+  template <class T>
+  void svd(char *JOBU, char *JOBVT, int *M, int *N, T *A, int *LDA,
+      T *S, T *U, int *LDU, T *VT, int *LDVT, T *WORK, int *LWORK,
       int *INFO);
 
   /**

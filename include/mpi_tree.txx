@@ -6,7 +6,6 @@
  */
 
 #include <assert.h>
-#include <typeinfo>
 #include <cstring>
 #include <fstream>
 #include <list>
@@ -103,7 +102,7 @@ inline int points2Octree(const Vector<MortonId>& pt_mid, Vector<MortonId>& nodes
   {
     { // Adjust maxNumPts
       size_t glb_pt_cnt=0;
-      MPI_Allreduce(&pt_cnt, &glb_pt_cnt, 1, par::Mpi_datatype<size_t>::value(), MPI_SUM, comm);
+      MPI_Allreduce(&pt_cnt, &glb_pt_cnt, 1, par::Mpi_datatype<size_t>::value(), par::Mpi_datatype<size_t>::sum(), comm);
       if(glb_pt_cnt<maxNumPts*np) maxNumPts=glb_pt_cnt/np;
     }
 
@@ -428,9 +427,9 @@ void MPI_Tree<TreeNode>::RefineTree(){
       tree_node_cnt+=(leaf_nodes_[i].size()/n_child)*(n_child-1);
 
     //Determine load imbalance.
-    int global_max, global_sum;
-    MPI_Allreduce(&tree_node_cnt, &global_max, 1, MPI_INT, MPI_MAX, *Comm());
-    MPI_Allreduce(&tree_node_cnt, &global_sum, 1, MPI_INT, MPI_SUM, *Comm());
+    size_t global_max, global_sum;
+    MPI_Allreduce(&tree_node_cnt, &global_max, 1, par::Mpi_datatype<size_t>::value(), par::Mpi_datatype<size_t>::max(), *Comm());
+    MPI_Allreduce(&tree_node_cnt, &global_sum, 1, par::Mpi_datatype<size_t>::value(), par::Mpi_datatype<size_t>::sum(), *Comm());
 
     //RedistNodes if needed.
     if(global_max*np>4*global_sum){
@@ -908,9 +907,9 @@ inline int balanceOctree (std::vector<MortonId > &in, std::vector<MortonId > &ou
 #ifdef __VERBOSE__
   long long locOutSize = out.size();
   long long globInSize, globTmpSize, globOutSize;
-  MPI_Allreduce(&locInSize , &globInSize , 1, par::Mpi_datatype<long long>::value(), MPI_SUM, comm);
-  MPI_Allreduce(&locTmpSize, &globTmpSize, 1, par::Mpi_datatype<long long>::value(), MPI_SUM, comm);
-  MPI_Allreduce(&locOutSize, &globOutSize, 1, par::Mpi_datatype<long long>::value(), MPI_SUM, comm);
+  MPI_Allreduce(&locInSize , &globInSize , 1, par::Mpi_datatype<long long>::value(), par::Mpi_datatype<long long>::sum(), comm);
+  MPI_Allreduce(&locTmpSize, &globTmpSize, 1, par::Mpi_datatype<long long>::value(), par::Mpi_datatype<long long>::sum(), comm);
+  MPI_Allreduce(&locOutSize, &globOutSize, 1, par::Mpi_datatype<long long>::value(), par::Mpi_datatype<long long>::sum(), comm);
   if(!rank) std::cout<<"Balance Octree. inpSize: "<<globInSize
                                     <<" tmpSize: "<<globTmpSize
                                     <<" outSize: "<<globOutSize
@@ -2078,12 +2077,15 @@ inline bool isLittleEndian(){
 
 template <class TreeNode>
 void MPI_Tree<TreeNode>::Write2File(const char* fname, int lod){
+  typedef double VTKData_t;
   int myrank, np;
   MPI_Comm_size(*Comm(),&np);
   MPI_Comm_rank(*Comm(),&myrank);
 
-  std::vector<Real_t> coord;  //Coordinates of octant corners.
-  std::vector<Real_t> value;  //Data value at points.
+  std::vector<Real_t> coord_;  //Coordinates of octant corners.
+  std::vector<Real_t> value_;  //Data value at points.
+  std::vector<VTKData_t> coord;  //Coordinates of octant corners.
+  std::vector<VTKData_t> value;  //Data value at points.
   std::vector<int32_t> mpi_rank;  //MPI_Rank at points.
   std::vector<int32_t> connect;  //Cell connectivity.
   std::vector<int32_t> offset ;  //Cell offset.
@@ -2093,9 +2095,11 @@ void MPI_Tree<TreeNode>::Write2File(const char* fname, int lod){
   Node_t* n=this->PreorderFirst();
   while(n!=NULL){
     if(!n->IsGhost() && n->IsLeaf())
-      n->VTU_Data(coord, value, connect, offset, types, lod);
+      n->VTU_Data(coord_, value_, connect, offset, types, lod);
     n=this->PreorderNxt(n);
   }
+  for(size_t i=0;i<coord_.size();i++) coord.push_back(coord_[i]);
+  for(size_t i=0;i<value_.size();i++) value.push_back(value_[i]);
   int pt_cnt=coord.size()/COORD_DIM;
   int dof=(pt_cnt?value.size()/pt_cnt:0);
   assert(value.size()==(size_t)pt_cnt*dof);
@@ -2123,13 +2127,13 @@ void MPI_Tree<TreeNode>::Write2File(const char* fname, int lod){
 
   //---------------------------------------------------------------------------
   vtufile<<"      <Points>\n";
-  vtufile<<"        <DataArray type=\"Float"<<sizeof(Real_t)*8<<"\" NumberOfComponents=\""<<COORD_DIM<<"\" Name=\"Position\" format=\"appended\" offset=\""<<data_size<<"\" />\n";
-  data_size+=sizeof(uint32_t)+coord.size()*sizeof(Real_t);
+  vtufile<<"        <DataArray type=\"Float"<<sizeof(VTKData_t)*8<<"\" NumberOfComponents=\""<<COORD_DIM<<"\" Name=\"Position\" format=\"appended\" offset=\""<<data_size<<"\" />\n";
+  data_size+=sizeof(uint32_t)+coord.size()*sizeof(VTKData_t);
   vtufile<<"      </Points>\n";
   //---------------------------------------------------------------------------
   vtufile<<"      <PointData>\n";
-  vtufile<<"        <DataArray type=\"Float"<<sizeof(Real_t)*8<<"\" NumberOfComponents=\""<<dof<<"\" Name=\"value\" format=\"appended\" offset=\""<<data_size<<"\" />\n";
-  data_size+=sizeof(uint32_t)+value   .size()*sizeof( Real_t);
+  vtufile<<"        <DataArray type=\"Float"<<sizeof(VTKData_t)*8<<"\" NumberOfComponents=\""<<dof<<"\" Name=\"value\" format=\"appended\" offset=\""<<data_size<<"\" />\n";
+  data_size+=sizeof(uint32_t)+value.size()*sizeof(VTKData_t);
   vtufile<<"        <DataArray type=\"Int32\" NumberOfComponents=\"1\" Name=\"mpi_rank\" format=\"appended\" offset=\""<<data_size<<"\" />\n";
   data_size+=sizeof(uint32_t)+mpi_rank.size()*sizeof(int32_t);
   vtufile<<"      </PointData>\n";
@@ -2145,7 +2149,7 @@ void MPI_Tree<TreeNode>::Write2File(const char* fname, int lod){
   vtufile<<"      </Cells>\n";
   //---------------------------------------------------------------------------
   //vtufile<<"      <CellData>\n";
-  //vtufile<<"        <DataArray type=\"Float"<<sizeof(Real_t)*8<<"\" Name=\"Velocity\" format=\"appended\" offset=\""<<data_size<<"\" />\n";
+  //vtufile<<"        <DataArray type=\"Float"<<sizeof(VTKData_t)*8<<"\" Name=\"Velocity\" format=\"appended\" offset=\""<<data_size<<"\" />\n";
   //vtufile<<"      </CellData>\n";
   //---------------------------------------------------------------------------
 
@@ -2156,9 +2160,9 @@ void MPI_Tree<TreeNode>::Write2File(const char* fname, int lod){
   vtufile<<"    _";
 
   int32_t block_size;
-  block_size=coord   .size()*sizeof( Real_t); vtufile.write((char*)&block_size, sizeof(int32_t)); vtufile.write((char*)&coord   [0], coord   .size()*sizeof( Real_t));
-  block_size=value   .size()*sizeof( Real_t); vtufile.write((char*)&block_size, sizeof(int32_t)); vtufile.write((char*)&value   [0], value   .size()*sizeof( Real_t));
-  block_size=mpi_rank.size()*sizeof(int32_t); vtufile.write((char*)&block_size, sizeof(int32_t)); vtufile.write((char*)&mpi_rank[0], mpi_rank.size()*sizeof(int32_t));
+  block_size=coord   .size()*sizeof(VTKData_t); vtufile.write((char*)&block_size, sizeof(int32_t)); vtufile.write((char*)&coord   [0], coord   .size()*sizeof(VTKData_t));
+  block_size=value   .size()*sizeof(VTKData_t); vtufile.write((char*)&block_size, sizeof(int32_t)); vtufile.write((char*)&value   [0], value   .size()*sizeof(VTKData_t));
+  block_size=mpi_rank.size()*sizeof(  int32_t); vtufile.write((char*)&block_size, sizeof(int32_t)); vtufile.write((char*)&mpi_rank[0], mpi_rank.size()*sizeof(  int32_t));
 
   block_size=connect.size()*sizeof(int32_t); vtufile.write((char*)&block_size, sizeof(int32_t)); vtufile.write((char*)&connect[0], connect.size()*sizeof(int32_t));
   block_size=offset .size()*sizeof(int32_t); vtufile.write((char*)&block_size, sizeof(int32_t)); vtufile.write((char*)&offset [0], offset .size()*sizeof(int32_t));
@@ -2181,10 +2185,10 @@ void MPI_Tree<TreeNode>::Write2File(const char* fname, int lod){
   pvtufile<<"<VTKFile type=\"PUnstructuredGrid\">\n";
   pvtufile<<"  <PUnstructuredGrid GhostLevel=\"0\">\n";
   pvtufile<<"      <PPoints>\n";
-  pvtufile<<"        <PDataArray type=\"Float"<<sizeof(Real_t)*8<<"\" NumberOfComponents=\""<<COORD_DIM<<"\" Name=\"Position\"/>\n";
+  pvtufile<<"        <PDataArray type=\"Float"<<sizeof(VTKData_t)*8<<"\" NumberOfComponents=\""<<COORD_DIM<<"\" Name=\"Position\"/>\n";
   pvtufile<<"      </PPoints>\n";
   pvtufile<<"      <PPointData>\n";
-  pvtufile<<"        <PDataArray type=\"Float"<<sizeof(Real_t)*8<<"\" NumberOfComponents=\""<<dof<<"\" Name=\"value\"/>\n";
+  pvtufile<<"        <PDataArray type=\"Float"<<sizeof(VTKData_t)*8<<"\" NumberOfComponents=\""<<dof<<"\" Name=\"value\"/>\n";
   pvtufile<<"        <PDataArray type=\"Int32\" NumberOfComponents=\"1\" Name=\"mpi_rank\"/>\n";
   pvtufile<<"      </PPointData>\n";
   {

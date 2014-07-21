@@ -35,7 +35,7 @@ for (( k=0; k<${#nodes[@]}; k++ )) ; do
     if [ -f ${EXEC_} ] && [ ! -s ${FNAME} ] ; then
       printf '%*s\n\n' "100" ' ' | tr ' ' "#" | tee -a ${FNAME};
       printf "COMMAND: ${EXEC_} ${args[k]}\n" | tee -a ${FNAME};
-      ${TIMEOUT} ${max_time[k]} time mpirun -np ${mpi_proc[k]}  ${EXEC_} ${args[k]} &> >(tee -a ${FNAME});
+      ${TIMEOUT} ${max_time[k]} time mpirun --hostfile ${PBS_NODEFILE} -np ${mpi_proc[k]}  ${EXEC_} ${args[k]} &> >(tee -a ${FNAME});
       printf '\n%*s\n\n' "100" ' ' | tr ' ' "#" | tee -a ${FNAME};
     fi;
 

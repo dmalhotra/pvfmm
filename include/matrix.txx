@@ -8,7 +8,6 @@
 #include <cstring>
 #include <cassert>
 #include <iomanip>
-#include <typeinfo>
 #include <profile.hpp>
 #include <mat_utils.hpp>
 
@@ -16,10 +15,14 @@ namespace pvfmm{
 
 template <class T>
 std::ostream& operator<<(std::ostream& output, const Matrix<T>& M){
+  using ::operator<<;
   output<<std::fixed<<std::setprecision(4)<<std::setiosflags(std::ios::left);
   for(size_t i=0;i<M.Dim(0);i++){
-    for(size_t j=0;j<M.Dim(1);j++)
-      output<<std::setw(10)<<M(i,j)<<' ';
+    for(size_t j=0;j<M.Dim(1);j++){
+      float f=((float)M(i,j));
+      if(fabs(f)<1e-25) f=0;
+      output<<std::setw(10)<<f<<' ';
+    }
     output<<";\n";
   }
   return output;
@@ -284,7 +287,7 @@ Matrix<T> Matrix<T>::operator*(const Matrix<T>& M){
   Profile::Add_FLOP(2*(((long long)dim[0])*dim[1])*M.dim[1]);
 
   Matrix<T> M_r(dim[0],M.dim[1],NULL);
-  mat::gemm('N','N',M.dim[1],dim[0],dim[1],
+  mat::gemm<T>('N','N',M.dim[1],dim[0],dim[1],
       1.0,M.data_ptr,M.dim[1],data_ptr,dim[1],0.0,M_r.data_ptr,M_r.dim[1]);
   return M_r;
 }
@@ -297,7 +300,7 @@ void Matrix<T>::DGEMM(Matrix<T>& M_r, const Matrix<T>& A, const Matrix<T>& B, T 
 #if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
   Profile::Add_FLOP(2*(((long long)A.dim[0])*A.dim[1])*B.dim[1]);
 #endif
-  mat::gemm('N','N',B.dim[1],A.dim[0],A.dim[1],
+  mat::gemm<T>('N','N',B.dim[1],A.dim[0],A.dim[1],
       1.0,B.data_ptr,B.dim[1],A.data_ptr,A.dim[1],beta,M_r.data_ptr,M_r.dim[1]);
 }
 
@@ -425,15 +428,15 @@ void Matrix<T>::Transpose(Matrix<T>& M_r, const Matrix<T>& M){
 #undef B1
 
 template <class T>
-Matrix<T> Matrix<T>::pinv(){
-  T eps=(typeid(T)==typeid(float)?4*1e-5:4*1e-9);
-  return pinv(eps);
-}
-
-template <class T>
 Matrix<T> Matrix<T>::pinv(T eps){
+  if(eps<0){
+    eps=1.0;
+    while(eps+(T)1.0>1.0) eps*=0.5;
+    eps=sqrt(eps);
+  }
   Matrix<T> M_r(dim[1],dim[0]);
   mat::pinv(data_ptr,dim[0],dim[1],eps,M_r.data_ptr);
+  this->Resize(0,0);
   return M_r;
 }
 

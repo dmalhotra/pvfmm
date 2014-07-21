@@ -39,6 +39,53 @@ namespace par{
       }
       return datatype;
     }
+
+    static MPI_Op sum() {
+      static bool   first = true;
+      static MPI_Op myop;
+
+      if (first) {
+        first = false;
+        int commune=1;
+        MPI_Op_create(sum_fn, commune, &myop);
+      }
+
+      return myop;
+    }
+
+    static MPI_Op max() {
+      static bool   first = true;
+      static MPI_Op myop;
+
+      if (first) {
+        first = false;
+        int commune=1;
+        MPI_Op_create(max_fn, commune, &myop);
+      }
+
+      return myop;
+    }
+
+   private:
+
+    static void sum_fn( void * a_, void * b_, int * len_, MPI_Datatype * datatype){
+      T* a=(T*)a_;
+      T* b=(T*)b_;
+      int len=*len_;
+      for(int i=0;i<len;i++){
+        b[i]=a[i]+b[i];
+      }
+    }
+
+    static void max_fn( void * a_, void * b_, int * len_, MPI_Datatype * datatype){
+      T* a=(T*)a_;
+      T* b=(T*)b_;
+      int len=*len_;
+      for(int i=0;i<len;i++){
+        if(a[i]>b[i]) b[i]=a[i];
+      }
+    }
+
   };
 
   #define HS_MPIDATATYPE(CTYPE, MPITYPE) \
@@ -47,6 +94,12 @@ namespace par{
      public: \
       static MPI_Datatype value() { \
         return MPITYPE; \
+      } \
+      static MPI_Op sum() { \
+        return MPI_SUM; \
+      } \
+      static MPI_Op max() { \
+        return MPI_MAX; \
       } \
     };
 

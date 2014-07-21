@@ -105,9 +105,8 @@ class Matrix{
 
   static void Transpose(Matrix<T>& M_r, const Matrix<T>& M);
 
-  Matrix<T> pinv();
-
-  Matrix<T> pinv(T eps);
+  // Original matrix is destroyed.
+  Matrix<T> pinv(T eps=-1);
 
   private:
 
