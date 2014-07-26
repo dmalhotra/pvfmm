@@ -1027,10 +1027,10 @@ std::vector<T> cheb_integ(int m, T* s_, T r_, Kernel<T>& kernel){
     n=(int)round(n*1.3);
     if(n>300){
       std::cout<<"Cheb_Integ::Failed to converge.[";
-      ::operator<<(std::cout,err); std::cout<<",";
-      ::operator<<(std::cout,s[0]); std::cout<<",";
-      ::operator<<(std::cout,s[1]); std::cout<<",";
-      ::operator<<(std::cout,s[2]); std::cout<<"]\n";
+      std::cout<<((double)err )<<",";
+      std::cout<<((double)s[0])<<",";
+      std::cout<<((double)s[1])<<",";
+      std::cout<<((double)s[2])<<"]\n";
       break;
     }
     U_=integ<T>(m+1,s,r,n,kernel);

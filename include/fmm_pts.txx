@@ -3249,6 +3249,8 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
             single_layer_kernel(                s_coord   , src_cnt[i][2*j+0], input_data[0]+src_value[i][2*j+0], dof,
                                 coord_data[0]+trg_coord[i], trg_cnt[i]       , t_value, NULL);
             interac_cnt+=src_cnt[i][2*j+0]*trg_cnt[i];
+          }else if(src_cnt[i][2*j+0]!=0 && trg_cnt[i]!=0){
+            assert(ptr_single_layer_kernel); // Single-layer kernel not implemented
           }
           if(ptr_double_layer_kernel!=(size_t)NULL){// Double layer kernel
             Real_t* src_coord_=coord_data[0]+src_coord[i][2*j+1];
@@ -3262,6 +3264,8 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
             double_layer_kernel(                s_coord   , src_cnt[i][2*j+1], input_data[0]+src_value[i][2*j+1], dof,
                                 coord_data[0]+trg_coord[i], trg_cnt[i]       , t_value, NULL);
             interac_cnt+=src_cnt[i][2*j+1]*trg_cnt[i];
+          }else if(src_cnt[i][2*j+1]!=0 && trg_cnt[i]!=0){
+            assert(ptr_double_layer_kernel); // Double-layer kernel not implemented
           }
         }
         if(M.Dim(0)>0 && M.Dim(1)>0 && interac_cnt>0){

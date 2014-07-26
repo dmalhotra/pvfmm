@@ -173,7 +173,7 @@ template <class T>
 void stokes_vel(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr);
 
 template <class T>
-void stokes_dbl_vel(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr);
+void stokes_sym_dip(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr);
 
 template <class T>
 void stokes_press(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr);
@@ -187,7 +187,7 @@ void stokes_grad(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cn
 
 
 int dim_stokes_vel   [2]={3,3};
-const Kernel<double> ker_stokes_vel   =BuildKernel<double, stokes_vel, stokes_dbl_vel>("stokes_vel"   , 3, dim_stokes_vel   ,true,1.0);
+const Kernel<double> ker_stokes_vel   =BuildKernel<double, stokes_vel, stokes_sym_dip>("stokes_vel"   , 3, dim_stokes_vel   ,true,1.0);
 
 int dim_stokes_press [2]={3,1};
 const Kernel<double> ker_stokes_press =BuildKernel<double, stokes_press              >("stokes_press" , 3, dim_stokes_press ,true,2.0);

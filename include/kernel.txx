@@ -903,39 +903,41 @@ void stokes_vel(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt
 }
 
 template <class T>
-void stokes_dbl_vel(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
+void stokes_sym_dip(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
 #ifndef __MIC__
   Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(32*dof));
 #endif
 
   const T mu=1.0;
-  const T SOEPMU = -6.0/(8.0*const_pi<T>()*mu);
+  const T OOEPMU = -1.0/(8.0*const_pi<T>()*mu);
   for(int t=0;t<trg_cnt;t++){
     for(int i=0;i<dof;i++){
       T p[3]={0,0,0};
       for(int s=0;s<src_cnt;s++){
-        T dX_reg=r_trg[3*t  ]-r_src[3*s  ];
-        T dY_reg=r_trg[3*t+1]-r_src[3*s+1];
-        T dZ_reg=r_trg[3*t+2]-r_src[3*s+2];
-        T R = (dX_reg*dX_reg+dY_reg*dY_reg+dZ_reg*dZ_reg);
+        T dR[3]={r_trg[3*t  ]-r_src[3*s  ],
+                 r_trg[3*t+1]-r_src[3*s+1],
+                 r_trg[3*t+2]-r_src[3*s+2]};
+        T R = (dR[0]*dR[0]+dR[1]*dR[1]+dR[2]*dR[2]);
         if (R!=0){
-          R = sqrt(R);
-          T invR=1.0/R;
-          T invR5=invR*invR*invR*invR*invR;
-          T inner_prod =(v_src[(s*dof+i)*6+0]*dX_reg +
-                         v_src[(s*dof+i)*6+1]*dY_reg +
-                         v_src[(s*dof+i)*6+2]*dZ_reg)*
-                        (v_src[(s*dof+i)*6+3]*dX_reg +
-                         v_src[(s*dof+i)*6+4]*dY_reg +
-                         v_src[(s*dof+i)*6+5]*dZ_reg)*invR5;
-          p[0] += dX_reg*inner_prod;
-          p[1] += dY_reg*inner_prod;
-          p[2] += dZ_reg*inner_prod;
+          T invR2=1.0/R;
+          T invR=sqrt(invR2);
+          T invR3=invR2*invR;
+
+          T* f=&v_src[(s*dof+i)*6+0];
+          T* n=&v_src[(s*dof+i)*6+3];
+
+          T r_dot_n=(n[0]*dR[0]+n[1]*dR[1]+n[2]*dR[2]);
+          T r_dot_f=(f[0]*dR[0]+f[1]*dR[1]+f[2]*dR[2]);
+          T n_dot_f=(f[0]* n[0]+f[1]* n[1]+f[2]* n[2]);
+
+          p[0] += dR[0]*(n_dot_f - 3*r_dot_n*r_dot_f*invR2)*invR3;
+          p[1] += dR[1]*(n_dot_f - 3*r_dot_n*r_dot_f*invR2)*invR3;
+          p[2] += dR[2]*(n_dot_f - 3*r_dot_n*r_dot_f*invR2)*invR3;
         }
       }
-      k_out[(t*dof+i)*3+0] += p[0]*SOEPMU;
-      k_out[(t*dof+i)*3+1] += p[1]*SOEPMU;
-      k_out[(t*dof+i)*3+2] += p[2]*SOEPMU;
+      k_out[(t*dof+i)*3+0] += p[0]*OOEPMU;
+      k_out[(t*dof+i)*3+1] += p[1]*OOEPMU;
+      k_out[(t*dof+i)*3+2] += p[2]*OOEPMU;
     }
   }
 }

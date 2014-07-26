@@ -20,9 +20,7 @@ std::ostream& operator<<(std::ostream& output, const Matrix<T>& M){
     for(size_t j=0;j<M.Dim(1);j++){
       float f=((float)M(i,j));
       if(fabs(f)<1e-25) f=0;
-      output<<std::setw(10);
-      ::operator<<(output,f);
-      output<<' ';
+      output<<std::setw(10)<<((double)f)<<output<<' ';
     }
     output<<";\n";
   }

@@ -154,9 +154,6 @@ operates.
 `CXXFLAGS=-DUSE_SSE'
      To use SSE optimized imlementation of kernel functions.
 
-`CXXFLAGS=-Qoption,cpp,--extended_float_type'
-     To use quadruple precision with Intel compiler.
-
 `configure' also accepts some other, not widely useful, options.  Run
 `configure --help' for more details.
 

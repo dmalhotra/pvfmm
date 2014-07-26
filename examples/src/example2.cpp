@@ -87,6 +87,7 @@ with Laplace kernel, using the PvFMM library.\n");
   int      q=       strtoul(commandline_option(argc, argv,    "-q",    "14", false, "-q    <int> = (14)   : Chebyshev order (+ve integer)."     ),NULL,10);
   double tol=        strtod(commandline_option(argc, argv,  "-tol",  "1e-5", false, "-tol <real> = (1e-5) : Tolerance for adaptive refinement." ),NULL);
   commandline_option_end(argc, argv);
+  pvfmm::Profile::Enable(true);
 
   // Run FMM with above options.
   fmm_test(N, m,q, tol, comm);

@@ -12,13 +12,9 @@
 #include <iostream>
 #include <vector>
 
-#if defined __INTEL_COMPILER
-#define QuadReal_t _Quad
-#elif defined __GNUC__
-#define QuadReal_t __float128
-#endif
+#ifdef PVFMM_QUAD_T
 
-#ifdef QuadReal_t
+typedef PVFMM_QUAD_T QuadReal_t;
 
 inline QuadReal_t atoquad(const char* str);
 
@@ -48,7 +44,7 @@ inline QuadReal_t const_e<QuadReal_t>(){
 
 #include <quad_utils.txx>
 
-#endif //QuadReal_t
+#endif //PVFMM_QUAD_T
 
 #endif //_QUAD_UTILS_HPP_
 

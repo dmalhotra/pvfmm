@@ -83,7 +83,7 @@ void CheckFMMOutput(pvfmm::FMM_Tree<FMM_Mat_t>* mytree, pvfmm::Kernel<typename F
   for(int i=0;i<np;i++){
     size_t a=(i*glb_trg_cnt)/np;
     size_t b=((i+1)*glb_trg_cnt)/np;
-    mykernel->ker_poten(&src_coord[0], src_cnt, &src_value[0], dof, &glb_trg_coord[a*3], b-a, &trg_poten_dir[a*trg_dof  ]);
+    mykernel->ker_poten(&src_coord[0], src_cnt, &src_value[0], dof, &glb_trg_coord[a*3], b-a, &trg_poten_dir[a*trg_dof  ],NULL);
   }
   MPI_Allreduce(&trg_poten_dir[0], &glb_trg_poten_dir[0], trg_poten_dir.size(), pvfmm::par::Mpi_datatype<Real_t>::value(), pvfmm::par::Mpi_datatype<Real_t>::sum(), c1);
   pvfmm::Profile::Toc();

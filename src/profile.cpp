@@ -21,6 +21,7 @@ namespace pvfmm{
 
 void Profile::Add_FLOP(long long inc){
 #if __PROFILE__ >= 0
+  if(!enable_state) return;
   #pragma omp critical (FLOP)
   FLOP+=inc;
 #endif
@@ -28,6 +29,7 @@ void Profile::Add_FLOP(long long inc){
 
 void Profile::Add_MEM(long long inc){
 #if __PROFILE__ >= 0
+  if(!enable_state) return;
   #pragma omp critical (MEM)
   {
   MEM+=inc;
@@ -40,6 +42,7 @@ void Profile::Add_MEM(long long inc){
 void Profile::Tic(const char* name_, const MPI_Comm* comm_,bool sync_, int verbose){
 #if __PROFILE__ >= 0
   //sync_=true;
+  if(!enable_state) return;
   if(verbose<=__PROFILE__ && verb_level.size()==enable_depth){
     if(comm_!=NULL && sync_) MPI_Barrier(*comm_);
     #ifdef __VERBOSE__
@@ -71,6 +74,7 @@ void Profile::Tic(const char* name_, const MPI_Comm* comm_,bool sync_, int verbo
 
 void Profile::Toc(){
 #if __PROFILE__ >= 0
+  if(!enable_state) return;
   ASSERT_WITH_MSG(!verb_level.empty(),"Unbalanced extra Toc()");
   if(verb_level.top()<=__PROFILE__ && verb_level.size()==enable_depth){
     ASSERT_WITH_MSG(!name.empty() && !comm.empty() && !sync.empty() && !max_mem.empty(),"Unbalanced extra Toc()");
@@ -127,7 +131,7 @@ void Profile::print(const MPI_Comm* comm_){
   std::stack<long long> mm;
   int width=10;
   size_t level=0;
-  if(!rank){
+  if(!rank && e_log.size()>0){
     std::cout<<"\n"<<std::setw(width*3-2*level)<<std::string(" ");
     std::cout<<"  "<<std::setw(width)<<std::string("t_min");
     std::cout<<"  "<<std::setw(width)<<std::string("t_avg");
@@ -268,6 +272,7 @@ void Profile::reset(){
 
 long long Profile::FLOP=0;
 long long Profile::MEM=0;
+bool Profile::enable_state=false;
 std::stack<bool> Profile::sync;
 std::stack<std::string> Profile::name;
 std::stack<MPI_Comm*> Profile::comm;

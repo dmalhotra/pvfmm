@@ -60,6 +60,8 @@ DX_PS_FEATURE(OFF)
 DX_INIT_DOXYGEN($PACKAGE_NAME, Doxyfile, doc/doxygen)
 
 
+CHECK_QUAD_PRECISION
+
 # Check for math libs
 AC_CHECK_LIB([m],[cos])
 AC_CHECK_LIB([imf],[cos])

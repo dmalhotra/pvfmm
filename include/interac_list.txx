@@ -20,11 +20,16 @@ namespace pvfmm{
  */
 template <class Node_t>
 void InteracList<Node_t>::Initialize(unsigned int dim_, PrecompMat<Real_t>* mat_){
+  #ifdef PVFMM_NO_SYMMETRIES
+  use_symmetries=false;
+  #else
+  use_symmetries=true;
+  #endif
+
   dim=dim_;
   assert(dim==3); //Only supporting 3D for now.
   mat=mat_;
 
-  class_count.resize(Type_Count);
   interac_class.resize(Type_Count);
   perm_list.resize(Type_Count);
   rel_coord.resize(Type_Count);
@@ -325,7 +330,7 @@ Permutation<typename Node_t::Real_t>& InteracList<Node_t>::Perm_C(int l, Mat_Typ
 /**
  * \brief A hash function defined on the relative coordinates of octants.
  */
-#define MAX_HASH 2000
+#define PVFMM_MAX_COORD_HASH 2000
 template <class Node_t>
 int InteracList<Node_t>::coord_hash(int* c){
   const int n=5;
@@ -334,6 +339,7 @@ int InteracList<Node_t>::coord_hash(int* c){
 
 template <class Node_t>
 int InteracList<Node_t>::class_hash(int* c_){
+  if(!use_symmetries) return coord_hash(c_);
   int c[3]={abs(c_[0]), abs(c_[1]), abs(c_[2])};
   if(c[1]>c[0] && c[1]>c[2])
     {int tmp=c[0]; c[0]=c[1]; c[1]=tmp;}
@@ -354,21 +360,18 @@ void InteracList<Node_t>::InitList(int max_r, int min_r, int step, Mat_Type t){
   size_t count=(size_t)(pow((max_r*2)/step+1,dim)-(min_r>0?pow((min_r*2)/step-1,dim):0));
   Matrix<int>& M=rel_coord[t];
   M.Resize(count,dim);
-  hash_lut[t].assign(MAX_HASH, -1);
+  hash_lut[t].assign(PVFMM_MAX_COORD_HASH, -1);
 
-  class_count[t]=0;
-  std::vector<int> class_size_hash(MAX_HASH, 0);
-  std::vector<int> class_disp_hash(MAX_HASH, 0);
+  std::vector<int> class_size_hash(PVFMM_MAX_COORD_HASH, 0);
+  std::vector<int> class_disp_hash(PVFMM_MAX_COORD_HASH, 0);
   for(int k=-max_r;k<=max_r;k+=step)
   for(int j=-max_r;j<=max_r;j+=step)
   for(int i=-max_r;i<=max_r;i+=step)
   if(abs(i)>=min_r || abs(j)>=min_r || abs(k) >= min_r){
     int c[3]={i,j,k};
-    int& idx=class_size_hash[class_hash(c)];
-    if(idx==0) class_count[t]++;
-    idx++;
+    class_size_hash[class_hash(c)]++;
   }
-  omp_par::scan(&class_size_hash[0], &class_disp_hash[0], MAX_HASH);
+  omp_par::scan(&class_size_hash[0], &class_disp_hash[0], PVFMM_MAX_COORD_HASH);
 
   size_t count_=0;
   for(int k=-max_r;k<=max_r;k+=step)
@@ -386,11 +389,17 @@ void InteracList<Node_t>::InitList(int max_r, int min_r, int step, Mat_Type t){
 
   interac_class[t].resize(count);
   perm_list[t].resize(count);
-  std::vector<int> coord(3);
-  for(size_t j=0;j<count;j++){
+  if(!use_symmetries){ // Set interac_class=self
+    for(size_t j=0;j<count;j++){
+      int c_hash = coord_hash(&M[j][0]);
+      interac_class[t][j]=hash_lut[t][c_hash];
+    }
+  }
+  else for(size_t j=0;j<count;j++){
     if(M[j][0]<0) perm_list[t][j].push_back(ReflecX);
     if(M[j][1]<0) perm_list[t][j].push_back(ReflecY);
     if(M[j][2]<0) perm_list[t][j].push_back(ReflecZ);
+    int coord[3];
     coord[0]=abs(M[j][0]);
     coord[1]=abs(M[j][1]);
     coord[2]=abs(M[j][2]);
@@ -412,6 +421,6 @@ void InteracList<Node_t>::InitList(int max_r, int min_r, int step, Mat_Type t){
     interac_class[t][j]=hash_lut[t][c_hash];
   }
 }
-#undef MAX_HASH
+#undef PVFMM_MAX_COORD_HASH
 
 }//end namespace
