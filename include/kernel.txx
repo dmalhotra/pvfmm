@@ -905,7 +905,7 @@ void stokes_vel(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt
 template <class T>
 void stokes_sym_dip(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
 #ifndef __MIC__
-  Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(32*dof));
+  Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(47*dof));
 #endif
 
   const T mu=1.0;

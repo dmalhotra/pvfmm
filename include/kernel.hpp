@@ -14,10 +14,6 @@
 #include <mem_mgr.hpp>
 #include <string>
 
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(push,target(mic))
-#endif
-
 namespace pvfmm{
 
 template <class T>
@@ -108,6 +104,13 @@ Kernel<T> BuildKernel(const char* name, int dim,
                    name, dim, k_dim, homogen, ker_scale,
                    dev_ker_poten, (size_t)NULL);
 }
+
+}//end namespace
+
+#ifdef __INTEL_OFFLOAD
+#pragma offload_attribute(push,target(mic))
+#endif
+namespace pvfmm{ // Predefined Kernel-functions
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////                   LAPLACE KERNEL                               ////////
@@ -231,12 +234,11 @@ int dim_helmholtz_grad[2]={2,6};
 const Kernel<double> ker_helmholtz_grad=BuildKernel<double, helmholtz_grad >("helmholtz_grad", 3, dim_helmholtz_grad);
 
 }//end namespace
-
-#include <kernel.txx>
-
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
 #endif
+
+#include <kernel.txx>
 
 #endif //_PVFMM_FMM_KERNEL_HPP_
 

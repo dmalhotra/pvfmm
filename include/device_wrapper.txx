@@ -156,6 +156,7 @@ namespace DeviceWrapper{
   #endif
 
   inline void MIC_Lock::init(){
+    #ifdef __INTEL_OFFLOAD
     if(have_mic) abort();// Cannot be called from MIC.
 
     lock_idx=0;
@@ -163,13 +164,13 @@ namespace DeviceWrapper{
     lock_vec.SetZero();
     lock_vec_=lock_vec.AllocDevice(false);
     {for(size_t i=0;i<NUM_LOCKS;i++) lock_vec [i]=1;}
-    #ifdef __INTEL_OFFLOAD
     #pragma offload target(mic:0)
     {for(size_t i=0;i<NUM_LOCKS;i++) lock_vec_[i]=1;}
     #endif
   }
 
   inline int MIC_Lock::get_lock(){
+    #ifdef __INTEL_OFFLOAD
     if(have_mic) abort();// Cannot be called from MIC.
 
     int idx;
@@ -179,10 +180,8 @@ namespace DeviceWrapper{
         int wait_lock_idx=-1;
         wait_lock_idx=MIC_Lock::curr_lock();
         MIC_Lock::wait_lock(wait_lock_idx);
-        #ifdef __INTEL_OFFLOAD
         #pragma offload target(mic:0)
         {MIC_Lock::wait_lock(wait_lock_idx);}
-        #endif
         MIC_Lock::init();
       }
       idx=lock_idx;
@@ -190,36 +189,45 @@ namespace DeviceWrapper{
       assert(lock_idx<NUM_LOCKS);
     }
     return idx;
+    #else
+    return -1;
+    #endif
   }
 
   inline int MIC_Lock::curr_lock(){
+    #ifdef __INTEL_OFFLOAD
     if(have_mic) abort();// Cannot be called from MIC.
     return lock_idx-1;
+    #else
+    return -1;
+    #endif
   }
 
   inline void MIC_Lock::release_lock(int idx){ // Only call from inside an offload section
+    #ifdef __INTEL_OFFLOAD
     #ifdef __MIC__
     if(idx>=0) lock_vec_[idx]=0;
+    #endif
     #endif
   }
 
   inline void MIC_Lock::wait_lock(int idx){
-#ifdef __MIC__
+    #ifdef __INTEL_OFFLOAD
+    #ifdef __MIC__
     if(idx>=0) while(lock_vec_[idx]==1){
       _mm_delay_32(8192);
     }
-#else
+    #else
     if(idx<0 || lock_vec[idx]==0) return;
     if(lock_vec[idx]==2){
       while(lock_vec[idx]==2);
       return;
     }
     lock_vec[idx]=2;
-    #ifdef __INTEL_OFFLOAD
     #pragma offload_wait target(mic:0) wait(&lock_vec[idx])
-    #endif
     lock_vec[idx]=0;
-#endif
+    #endif
+    #endif
   }
 
   Vector<char> MIC_Lock::lock_vec;

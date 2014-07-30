@@ -16,7 +16,6 @@
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push,target(mic))
 #endif
-
 namespace pvfmm{
 
 template <class T>
@@ -31,9 +30,6 @@ class Matrix{
   public:
 
   struct
-#ifdef __INTEL_OFFLOAD
-  __attribute__ ((target(mic)))
-#endif
   Device{
 
     Device& operator=(Matrix& M){
@@ -158,11 +154,10 @@ class Permutation{
 };
 
 }//end namespace
-
-#include <matrix.txx>
-
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
 #endif
+
+#include <matrix.txx>
 
 #endif //_PVFMM_MATRIX_HPP_

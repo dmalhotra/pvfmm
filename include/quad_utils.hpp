@@ -16,6 +16,12 @@
 
 typedef PVFMM_QUAD_T QuadReal_t;
 
+inline std::ostream& operator<<(std::ostream& output, const QuadReal_t& q_);
+
+#ifdef __INTEL_OFFLOAD
+#pragma offload_attribute(push,target(mic))
+#endif
+
 inline QuadReal_t atoquad(const char* str);
 
 inline QuadReal_t fabs(const QuadReal_t& f);
@@ -28,8 +34,6 @@ inline QuadReal_t cos(const QuadReal_t& a);
 
 inline QuadReal_t exp(const QuadReal_t& a);
 
-inline std::ostream& operator<<(std::ostream& output, const QuadReal_t& q_);
-
 template<>
 inline QuadReal_t const_pi<QuadReal_t>(){
   static QuadReal_t pi=atoquad("3.1415926535897932384626433832795028841");
@@ -38,9 +42,13 @@ inline QuadReal_t const_pi<QuadReal_t>(){
 
 template<>
 inline QuadReal_t const_e<QuadReal_t>(){
-  static QuadReal_t e=atoquad("2.71828182845904523536028747135266249775724709369995");
+  static QuadReal_t e =atoquad("2.7182818284590452353602874713526624977");
   return e;
 }
+
+#ifdef __INTEL_OFFLOAD
+#pragma offload_attribute(pop)
+#endif
 
 #include <quad_utils.txx>
 

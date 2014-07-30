@@ -18,7 +18,6 @@
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push,target(mic))
 #endif
-
 namespace pvfmm{
 namespace mem{
 
@@ -35,7 +34,6 @@ namespace mem{
 
 }//end namespace
 }//end namespace
-
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
 #endif

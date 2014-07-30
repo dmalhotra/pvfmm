@@ -11,12 +11,11 @@
 #include <stdint.h>
 #include <profile.hpp>
 
-namespace pvfmm{
-namespace mem{
-
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push,target(mic))
 #endif
+namespace pvfmm{
+namespace mem{
 
   // For fundamental data types.
   template <class T>
@@ -82,9 +81,8 @@ namespace mem{
     return memcpy ( destination, source, num );
   }
 
+}//end namespace
+}//end namespace
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
 #endif
-
-}//end namespace
-}//end namespace

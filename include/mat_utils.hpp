@@ -10,6 +10,9 @@
 
 #include <cstdlib>
 
+#ifdef __INTEL_OFFLOAD
+#pragma offload_attribute(push,target(mic))
+#endif
 namespace pvfmm{
 namespace mat{
 
@@ -30,6 +33,9 @@ namespace mat{
 
 }//end namespace
 }//end namespace
+#ifdef __INTEL_OFFLOAD
+#pragma offload_attribute(pop)
+#endif
 
 #include <mat_utils.txx>
 

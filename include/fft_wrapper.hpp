@@ -8,10 +8,6 @@
 #ifndef _PVFMM_FFT_WRAPPER_
 #define _PVFMM_FFT_WRAPPER_
 
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(push,target(mic))
-#endif
-
 #include <fftw3.h>
 #ifdef FFTW3_MKL
 #include <fftw3_mkl.h>
@@ -317,10 +313,6 @@ struct FFTW_t<float>{
 #endif
 
 }//end namespace
-
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(pop)
-#endif
 
 #endif //_PVFMM_FFT_WRAPPER_
 

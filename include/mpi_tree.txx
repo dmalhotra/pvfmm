@@ -828,7 +828,6 @@ inline int balanceOctree (std::vector<MortonId > &in, std::vector<MortonId > &ou
 #endif
 
   //Sort, Linearise, Redistribute.
-  //TODO Sort and linearize non-leaf nodes and then add leaf nodes.
   //TODO The following might work better as it reduces the comm bandwidth:
   //Split comm into sqrt(np) processes and sort, linearise for each comm group.
   //Then do the global sort, linearise with the original comm.

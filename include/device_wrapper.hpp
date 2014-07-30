@@ -8,15 +8,14 @@
 #ifndef _PVFMM_DEVICE_WRAPPER_HPP_
 #define _PVFMM_DEVICE_WRAPPER_HPP_
 
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(push,target(mic))
-#endif
-
 #include <cstdlib>
 #include <cassert>
 #include <stdint.h>
 #include <pvfmm_common.hpp>
 
+#ifdef __INTEL_OFFLOAD
+#pragma offload_attribute(push,target(mic))
+#endif
 namespace pvfmm{
 
 namespace DeviceWrapper{
@@ -92,7 +91,6 @@ transfer, use:
   };
 
 }//end namespace
-
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
 #endif

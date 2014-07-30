@@ -23,12 +23,8 @@
 #ifdef __AVX__
 #include <immintrin.h>
 #endif
-#if defined(__INTEL_OFFLOAD) || defined(__MIC__)
+#if defined(__MIC__)
 #include <immintrin.h>
-#endif
-
-#ifdef __INTEL_OFFLOAD0
-#pragma offload_attribute(push,target(mic))
 #endif
 
 namespace pvfmm{
@@ -149,9 +145,6 @@ std::vector<Real_t> conv_grid(int p, Real_t* c, int depth){
   }
   return grid;
 }
-#ifdef __INTEL_OFFLOAD0
-#pragma offload_attribute(pop)
-#endif
 
 template <class Real_t>
 void FMM_Data<Real_t>::Clear(){
@@ -1523,11 +1516,11 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
   Profile::Toc();
 
   Profile::Tic("DeviceComp",&this->comm,false,20);
-  #ifdef __INTEL_OFFLOAD
   int lock_idx=-1;
   int wait_lock_idx=-1;
   if(device) wait_lock_idx=MIC_Lock::curr_lock();
   if(device) lock_idx=MIC_Lock::get_lock();
+  #ifdef __INTEL_OFFLOAD
   #pragma offload if(device) target(mic:0) signal(&MIC_Lock::lock_vec[device?lock_idx:0])
   #endif
   { // Offloaded computation.
@@ -1568,9 +1561,7 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
       data_ptr+=sizeof(size_t)+scaling.Dim()*sizeof(Real_t);
     }
 
-    #ifdef __INTEL_OFFLOAD
     if(device) MIC_Lock::wait_lock(wait_lock_idx);
-    #endif
 
     //Compute interaction from Chebyshev source density.
     { // interactions
@@ -1728,9 +1719,7 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
       }
     }
 
-    #ifdef __INTEL_OFFLOAD
     if(device) MIC_Lock::release_lock(lock_idx);
-    #endif
   }
 
   #ifndef __MIC_ASYNCH__
@@ -3137,11 +3126,11 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
   size_t ptr_double_layer_kernel=(size_t)setup_data.kernel->dbl_layer_poten;
 
   Profile::Tic("DeviceComp",&this->comm,false,20);
-  #ifdef __INTEL_OFFLOAD
   int lock_idx=-1;
   int wait_lock_idx=-1;
   if(device) wait_lock_idx=MIC_Lock::curr_lock();
   if(device) lock_idx=MIC_Lock::get_lock();
+  #ifdef __INTEL_OFFLOAD
   if(device) ptr_single_layer_kernel=setup_data.kernel->dev_ker_poten;
   if(device) ptr_double_layer_kernel=setup_data.kernel->dev_dbl_layer_poten;
   #pragma offload if(device) target(mic:0) signal(&MIC_Lock::lock_vec[device?lock_idx:0])
@@ -3209,9 +3198,7 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
       }
     }
 
-    #ifdef __INTEL_OFFLOAD
     if(device) MIC_Lock::wait_lock(wait_lock_idx);
-    #endif
 
     //Compute interaction from point sources.
     { // interactions
@@ -3278,9 +3265,7 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
       }
     }
 
-    #ifdef __INTEL_OFFLOAD
     if(device) MIC_Lock::release_lock(lock_idx);
-    #endif
   }
 
   #ifndef __MIC_ASYNCH__

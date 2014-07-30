@@ -15,7 +15,6 @@
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push,target(mic))
 #endif
-
 namespace pvfmm{
 
 template <class T>
@@ -27,9 +26,6 @@ class Vector{
   public:
 
   struct
-#ifdef __INTEL_OFFLOAD
-  __attribute__ ((target(mic)))
-#endif
   Device{
 
     Device& operator=(Vector& V){
@@ -92,11 +88,10 @@ class Vector{
 };
 
 }//end namespace
-
-#include <vector.txx>
-
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
 #endif
+
+#include <vector.txx>
 
 #endif //_PVFMM_VECTOR_HPP_

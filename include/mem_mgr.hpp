@@ -19,6 +19,9 @@
 #include <pvfmm_common.hpp>
 #include <mem_utils.hpp>
 
+#ifdef __INTEL_OFFLOAD
+#pragma offload_attribute(push,target(mic))
+#endif
 namespace pvfmm{
 namespace mem{
 
@@ -283,5 +286,8 @@ class MemoryManager{
 
 }//end namespace
 }//end namespace
+#ifdef __INTEL_OFFLOAD
+#pragma offload_attribute(pop)
+#endif
 
 #endif //_PVFMM_MEM_MGR_HPP_
