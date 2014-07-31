@@ -1,14 +1,16 @@
 /**
- * \file cheb_node.cpp
+ * \file cheb_node.txx
  * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 1-22-2010
  * \brief This file contains the implementation of the class Cheb_Node.
  */
 
-#include <iostream>
-#include <matrix.hpp>
-#include <omp.h>
+#include <cmath>
+#include <cassert>
+#include <algorithm>
+
 #include <cheb_utils.hpp>
+#include <matrix.hpp>
 
 namespace pvfmm{
 

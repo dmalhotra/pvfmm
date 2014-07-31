@@ -1,8 +1,8 @@
-#ifndef __PVFMM_DTYPES_H_
-#define __PVFMM_DTYPES_H_
-
 #include <mpi.h>
 #include <complex>
+
+#ifndef __PVFMM_DTYPES_H_
+#define __PVFMM_DTYPES_H_
 
 /**
  * \file	dtypes.h

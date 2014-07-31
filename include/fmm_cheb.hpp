@@ -6,16 +6,19 @@
  * This handles all the translations through matrix multiplications.
  */
 
-#ifndef _PVFMM_FMM_CHEB_HPP_
-#define _PVFMM_FMM_CHEB_HPP_
+#include <mpi.h>
+#include <vector>
 
 #include <pvfmm_common.hpp>
-#include <mpi.h>
-#include <matrix.hpp>
 #include <precomp_mat.hpp>
-#include <cheb_utils.hpp>
-#include <cheb_node.hpp>
+#include <mem_mgr.hpp>
 #include <fmm_pts.hpp>
+#include <vector.hpp>
+#include <matrix.hpp>
+#include <kernel.hpp>
+
+#ifndef _PVFMM_FMM_CHEB_HPP_
+#define _PVFMM_FMM_CHEB_HPP_
 
 namespace pvfmm{
 

@@ -5,11 +5,17 @@
  * \brief This file contains inplementation of the class Matrix.
  */
 
-#include <cstring>
+#include <omp.h>
+#include <cmath>
+#include <cstdlib>
 #include <cassert>
+#include <iostream>
 #include <iomanip>
-#include <profile.hpp>
+
+#include <device_wrapper.hpp>
 #include <mat_utils.hpp>
+#include <mem_utils.hpp>
+#include <profile.hpp>
 
 namespace pvfmm{
 

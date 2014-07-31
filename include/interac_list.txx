@@ -7,10 +7,10 @@
  * symmetry class for each interaction.
  */
 
-#include <math.h>
-#include <algorithm>
-#include <tree_node.hpp>
-#include <precomp_mat.hpp>
+#include <cmath>
+#include <cassert>
+
+#include <parUtils.h>
 #include <ompUtils.h>
 
 namespace pvfmm{

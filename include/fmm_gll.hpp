@@ -1,7 +1,10 @@
-#ifndef _PVFMM_FMM_GLL_HPP_
-#define _PVFMM_FMM_GLL_HPP_
 
 #include <mpi.h>
+
+#include <pvfmm_common.hpp>
+
+#ifndef _PVFMM_FMM_GLL_HPP_
+#define _PVFMM_FMM_GLL_HPP_
 
 #ifdef __cplusplus
 extern "C" {

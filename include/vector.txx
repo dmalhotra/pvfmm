@@ -5,13 +5,13 @@
  * \brief This file contains implementation of the class Vector.
  */
 
-#include <cstdlib>
-#include <cstring>
 #include <cassert>
+#include <iostream>
 #include <iomanip>
-#include <profile.hpp>
-#include <mem_utils.hpp>
+
 #include <device_wrapper.hpp>
+#include <mem_utils.hpp>
+#include <profile.hpp>
 
 namespace pvfmm{
 

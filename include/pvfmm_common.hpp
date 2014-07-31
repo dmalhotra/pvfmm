@@ -38,11 +38,15 @@
 #define DEVICE_BUFFER_SIZE 1024 //in MB
 #define V_BLK_CACHE 25 //in KB
 
+#ifndef __DEVICE_SYNC__
+#define __DEVICE_SYNC__ 0 // No device synchronization by default.
+#endif
+
 #define UNUSED(x) (void)(x) // to ignore unused variable warning.
 
-#include <cstdlib>
-#include <cassert>
 #ifndef NDEBUG
+#include <cassert>
+#include <iostream>
 #define ASSERT_WITH_MSG(cond, msg) do \
 { if (!(cond)) { std::cerr<<"Error: "<<msg<<'\n'; assert(cond); } \
 } while(0)

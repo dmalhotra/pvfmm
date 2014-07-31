@@ -5,14 +5,17 @@
  * \brief This file contains the definition of the FMM_Tree class.
  */
 
+#include <mpi.h>
+#include <vector>
+
+#include <pvfmm_common.hpp>
+#include <interac_list.hpp>
+#include <fmm_node.hpp>
+#include <mpi_tree.hpp>
+#include <matrix.hpp>
+
 #ifndef _PVFMM_FMM_TREE_HPP_
 #define _PVFMM_FMM_TREE_HPP_
-
-#include <iostream>
-#include <mpi.h>
-#include <pvfmm_common.hpp>
-#include <mpi_tree.hpp>
-#include <fmm_node.hpp>
 
 namespace pvfmm{
 

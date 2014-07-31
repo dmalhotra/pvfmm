@@ -6,14 +6,15 @@
  * MPI tree.
  */
 
-#ifndef _PVFMM_MPI_TREE_HPP_
-#define _PVFMM_MPI_TREE_HPP_
+#include <mpi.h>
+#include <vector>
 
 #include <pvfmm_common.hpp>
-#include <mpi.h>
-#include <mpi_node.hpp>
 #include <mortonid.hpp>
 #include <tree.hpp>
+
+#ifndef _PVFMM_MPI_TREE_HPP_
+#define _PVFMM_MPI_TREE_HPP_
 
 namespace pvfmm{
 

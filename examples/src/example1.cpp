@@ -76,12 +76,15 @@ void fmm_test(size_t N, int mult_order, MPI_Comm comm){
   for(size_t i=0;i< src_value.size();i++)  src_value[i]=drand48();
   for(size_t i=0;i<surf_value.size();i++) surf_value[i]=drand48();
 
+  // Create memory-manager (optional)
+  pvfmm::mem::MemoryManager mem_mgr(10000000);
+
   // Construct tree.
   size_t max_pts=300;
   pvfmm::PtFMM_Tree* tree=PtFMM_CreateTree(src_coord, src_value, surf_coord, surf_value, trg_coord, comm, max_pts, pvfmm::FreeSpace);
 
   // Load matrices.
-  pvfmm::PtFMM matrices;
+  pvfmm::PtFMM matrices(&mem_mgr);
   matrices.Initialize(mult_order, comm, &kernel_fn, &kernel_fn_aux);
 
   // FMM Setup

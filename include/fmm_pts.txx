@@ -5,17 +5,23 @@
  * \brief This file contains the implementation of the FMM_Pts class.
  */
 
-#include <mpi.h>
-#include <set>
+#include <omp.h>
+#include <cmath>
+#include <cstdlib>
+#include <cassert>
 #include <sstream>
-#include <fft_wrapper.hpp>
-#include <mat_utils.hpp>
+#include <iostream>
+#include <stdint.h>
+#include <set>
 #ifdef PVFMM_HAVE_SYS_STAT_H
 #include <sys/stat.h>
 #endif
 
 #ifdef __SSE__
 #include <xmmintrin.h>
+#endif
+#ifdef __SSE2__
+#include <emmintrin.h>
 #endif
 #ifdef __SSE3__
 #include <pmmintrin.h>
@@ -26,6 +32,8 @@
 #if defined(__MIC__)
 #include <immintrin.h>
 #endif
+
+#include <profile.hpp>
 
 namespace pvfmm{
 
@@ -1485,6 +1493,7 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
 }
 
 template <class FMMNode>
+template <int SYNC=__DEVICE_SYNC__>
 void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
   if(setup_data.interac_data.Dim(0)==0 || setup_data.interac_data.Dim(1)==0){
     Profile::Tic("Host2Device",&this->comm,false,25);
@@ -1722,11 +1731,11 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
     if(device) MIC_Lock::release_lock(lock_idx);
   }
 
-  #ifndef __MIC_ASYNCH__
   #ifdef __INTEL_OFFLOAD
-  #pragma offload if(device) target(mic:0)
-  {if(device) MIC_Lock::wait_lock(lock_idx);}
-  #endif
+  if(SYNC){
+    #pragma offload if(device) target(mic:0)
+    {if(device) MIC_Lock::wait_lock(lock_idx);}
+  }
   #endif
 
   Profile::Toc();
@@ -3089,6 +3098,7 @@ void FMM_Pts<FMMNode>::SetupInteracPts(SetupData<Real_t>& setup_data, bool shift
 }
 
 template <class FMMNode>
+template <int SYNC=__DEVICE_SYNC__>
 void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
   if(setup_data.interac_data.Dim(0)==0 || setup_data.interac_data.Dim(1)==0){
     Profile::Tic("Host2Device",&this->comm,false,25);
@@ -3268,11 +3278,11 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
     if(device) MIC_Lock::release_lock(lock_idx);
   }
 
-  #ifndef __MIC_ASYNCH__
   #ifdef __INTEL_OFFLOAD
-  #pragma offload if(device) target(mic:0)
-  {if(device) MIC_Lock::wait_lock(lock_idx);}
-  #endif
+  if(SYNC){
+    #pragma offload if(device) target(mic:0)
+    {if(device) MIC_Lock::wait_lock(lock_idx);}
+  }
   #endif
 
   Profile::Toc();

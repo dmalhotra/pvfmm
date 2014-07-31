@@ -5,12 +5,13 @@
  * \brief This file contains definition of the class Vector.
  */
 
+#include <vector>
+#include <stdint.h>
+
+#include <pvfmm_common.hpp>
+
 #ifndef _PVFMM_VECTOR_HPP_
 #define _PVFMM_VECTOR_HPP_
-
-#include <vector>
-#include <iostream>
-#include <stdint.h>
 
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push,target(mic))

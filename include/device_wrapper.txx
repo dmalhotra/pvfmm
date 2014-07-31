@@ -5,14 +5,19 @@
  * \brief This file contains implementation of DeviceWrapper.
  */
 
-#include <vector.hpp>
-#include <device_wrapper.hpp>
+#include <omp.h>
+#include <cassert>
+#include <cstdlib>
 
 namespace pvfmm{
 
 namespace DeviceWrapper{
 
   // MIC functions
+
+  #define ALLOC alloc_if(1) free_if(0)
+  #define FREE alloc_if(0) free_if(1)
+  #define REUSE alloc_if(0) free_if(0)
 
   inline uintptr_t alloc_device_mic(char* dev_handle, size_t len){
     assert(dev_handle!=NULL);
@@ -52,10 +57,6 @@ namespace DeviceWrapper{
         MIC_Lock::release_lock(lock_idx);
       }
     }
-    #ifndef __MIC_ASYNCH__ // Wait
-    #pragma offload target(mic:0)
-    {MIC_Lock::wait_lock(lock_idx);}
-    #endif
     return lock_idx;
     #endif
     return -1;
@@ -80,9 +81,6 @@ namespace DeviceWrapper{
         MIC_Lock::release_lock(lock_idx);
       }
     }
-    #ifndef __MIC_ASYNCH__ // Wait
-    MIC_Lock::wait_lock(lock_idx);
-    #endif
     return lock_idx;
     #endif
     return -1;
@@ -116,20 +114,27 @@ namespace DeviceWrapper{
     #endif
   }
 
+  template <int SYNC=__DEVICE_SYNC__>
   inline int host2device(char* host_ptr, char* dev_handle, uintptr_t dev_ptr, size_t len){
     int lock_idx=-1;
     #ifdef __INTEL_OFFLOAD
     lock_idx=host2device_mic(host_ptr,dev_handle,dev_ptr,len);
+    if(SYNC){
+      #pragma offload target(mic:0)
+      {MIC_Lock::wait_lock(lock_idx);}
+    }
     #else
     ;
     #endif
     return lock_idx;
   }
 
+  template <int SYNC=__DEVICE_SYNC__>
   inline int device2host(char* dev_handle, uintptr_t dev_ptr, char* host_ptr, size_t len){
     int lock_idx=-1;
     #ifdef __INTEL_OFFLOAD
     lock_idx=device2host_mic(dev_handle,dev_ptr, host_ptr, len);
+    if(SYNC) MIC_Lock::wait_lock(lock_idx);
     #else
     ;
     #endif
@@ -229,9 +234,5 @@ namespace DeviceWrapper{
     #endif
     #endif
   }
-
-  Vector<char> MIC_Lock::lock_vec;
-  Vector<char>::Device MIC_Lock::lock_vec_;
-  int MIC_Lock::lock_idx;
 
 }//end namespace

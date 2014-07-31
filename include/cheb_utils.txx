@@ -5,11 +5,18 @@
  * \brief This file contains chebyshev related functions.
  */
 
-#include <assert.h>
+#include <omp.h>
+#include <cmath>
+#include <cassert>
+#include <iostream>
 #include <algorithm>
-#include <matrix.hpp>
-#include <mem_mgr.hpp>
+
 #include <legendre_rule.hpp>
+#include <mem_utils.hpp>
+#include <mat_utils.hpp>
+#include <mem_mgr.hpp>
+#include <matrix.hpp>
+#include <profile.hpp>
 
 namespace pvfmm{
 

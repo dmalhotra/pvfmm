@@ -5,13 +5,13 @@
  * \brief This file contains definition of the class Matrix.
  */
 
+#include <stdint.h>
+
+#include <pvfmm_common.hpp>
+#include <vector.hpp>
+
 #ifndef _PVFMM_MATRIX_HPP_
 #define _PVFMM_MATRIX_HPP_
-
-#include <cstdlib>
-#include <vector>
-#include <iostream>
-#include <vector.hpp>
 
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push,target(mic))

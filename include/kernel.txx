@@ -6,14 +6,29 @@
  * implementation of various kernels for FMM.
  */
 
-#ifdef USE_SSE
+#include <cmath>
+#include <cstdlib>
+#include <vector>
+
+#include <mem_utils.hpp>
+#include <profile.hpp>
+#include <vector.hpp>
+
+#ifdef __SSE__
+#include <xmmintrin.h>
+#endif
+#ifdef __SSE2__
 #include <emmintrin.h>
 #endif
-
-#include <math.h>
-#include <assert.h>
-#include <vector>
-#include <profile.hpp>
+#ifdef __SSE3__
+#include <pmmintrin.h>
+#endif
+#ifdef __AVX__
+#include <immintrin.h>
+#endif
+#if defined(__MIC__)
+#include <immintrin.h>
+#endif
 
 namespace pvfmm{
 
@@ -31,11 +46,11 @@ Kernel<T>::Kernel(): dim(0){
  */
 template <class T>
 Kernel<T>::Kernel(Ker_t poten, Ker_t dbl_poten, const char* name, int dim_,
-                  const int (&k_dim)[2], bool homogen_, T ker_scale,
+                  std::pair<int,int> k_dim, bool homogen_, T ker_scale,
                   size_t dev_poten, size_t dev_dbl_poten){
   dim=dim_;
-  ker_dim[0]=k_dim[0];
-  ker_dim[1]=k_dim[1];
+  ker_dim[0]=k_dim.first;
+  ker_dim[1]=k_dim.second;
   ker_poten=poten;
   dbl_layer_poten=dbl_poten;
   homogen=homogen_;

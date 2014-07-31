@@ -5,12 +5,20 @@
  * \brief This file contains the implementation of the FMM_Cheb class.
  */
 
-#include <mpi.h>
-#include <fftw3.h>
-#include <parUtils.h>
+#include <omp.h>
+#include <sstream>
+#include <iostream>
+#include <cstdlib>
+#include <cmath>
 #ifdef PVFMM_HAVE_SYS_STAT_H
 #include <sys/stat.h>
 #endif
+
+#include <dtypes.h>
+#include <parUtils.h>
+#include <cheb_utils.hpp>
+#include <mem_utils.hpp>
+#include <profile.hpp>
 
 namespace pvfmm{
 

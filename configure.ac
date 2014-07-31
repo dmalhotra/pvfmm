@@ -25,8 +25,14 @@ AC_PROG_INSTALL
 AC_PROG_MKDIR_P
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
-AC_PROG_RANLIB
-#AM_PROG_AR
+#AC_PROG_RANLIB
+##AM_PROG_AR
+
+# automake 1.12 seems to require AM_PROG_AR, but automake 1.11 doesn't
+# recognize it
+m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
+LT_INIT
+AC_PROG_LIBTOOL
 
 # Check for CUDA
 AX_CHECK_CUDA

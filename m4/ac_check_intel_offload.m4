@@ -1,7 +1,3 @@
-# SYNOPSIS
-#
-#   CHECK_INTEL_OFFLOAD([ACTION-IF-FOUND[, ACTION-IF-NOT-FOUND]])
-#
 
 AC_DEFUN([CHECK_INTEL_OFFLOAD], [
     ## Check for support of offload pragma and -no-offload flag. If
@@ -38,8 +34,8 @@ AC_DEFUN([CHECK_INTEL_OFFLOAD], [
     AC_LANG_WERROR([off])
     CFLAGS="$XCFLAGS"
     CXXFLAGS="$XCXXFLAGS"
+    ARFLAGS="$AR_FLAGS"
 
-    # Finally, execute ACTION-IF-FOUND/ACTION-IF-NOT-FOUND:
     if test x"$intel_offload_pragma_ok" = xyes; then
         AC_DEFINE(HAVE_INTEL_OFFLOAD_PRAGMA,1,[Define if you have INTEL_OFFLOAD_PRAGMA.])
     fi
@@ -48,6 +44,9 @@ AC_DEFUN([CHECK_INTEL_OFFLOAD], [
         if test x"$intel_offload_pragma_ok" = xyes; then
             AC_DEFINE(HAVE_INTEL_OFFLOAD,1,[Define if you have INTEL_OFFLOAD.])
             intel_offload_ok=yes
+
+            AR="xiar"
+            ARFLAGS="cru -qoffload-build"
         else
             CFLAGS="$CFLAGS -no-offload"
             CXXFLAGS="$CXXFLAGS -no-offload"
@@ -56,6 +55,7 @@ AC_DEFUN([CHECK_INTEL_OFFLOAD], [
     AC_SUBST(intel_offload_pragma_ok)
     AC_SUBST(intel_noffload_flag_ok)
     AC_SUBST(intel_offload_ok)
-
+    AC_SUBST(ARFLAGS)
+    AC_SUBST(AR)
 ])
 

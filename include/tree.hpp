@@ -5,12 +5,15 @@
  * \brief This file contains the definition of the base class for a tree.
  */
 
-#ifndef _PVFMM_TREE_HPP_
-#define _PVFMM_TREE_HPP_
+#include <cassert>
+#include <vector>
 
 #include <pvfmm_common.hpp>
-#include <iostream>
+#include <tree_node.hpp>
 #include <mem_mgr.hpp>
+
+#ifndef _PVFMM_TREE_HPP_
+#define _PVFMM_TREE_HPP_
 
 namespace pvfmm{
 

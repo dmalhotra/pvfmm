@@ -5,10 +5,10 @@
  * \brief This file contains BLAS and LAPACK wrapper functions.
  */
 
+#include <pvfmm_common.hpp>
+
 #ifndef _PVFMM_MAT_UTILS_
 #define _PVFMM_MAT_UTILS_
-
-#include <cstdlib>
 
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push,target(mic))

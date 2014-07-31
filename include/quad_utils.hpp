@@ -5,12 +5,10 @@
  * \brief This file contains definition of QuadReal_t.
  */
 
+#include <cmath>
+
 #ifndef _QUAD_UTILS_
 #define _QUAD_UTILS_
-
-#include <pvfmm_common.hpp>
-#include <iostream>
-#include <vector>
 
 #ifdef PVFMM_QUAD_T
 

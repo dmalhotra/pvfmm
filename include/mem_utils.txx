@@ -5,11 +5,10 @@
  * \brief This file contains implementation of mem_utils.hpp.
  */
 
-#include <omp.h>
 #include <cassert>
 #include <cstring>
+#include <cstdlib>
 #include <stdint.h>
-#include <profile.hpp>
 
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push,target(mic))

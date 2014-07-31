@@ -5,9 +5,17 @@
  * \brief This file contains the implementation of the class FMM_Tree.
  */
 
-#include <assert.h>
+#include <omp.h>
+#include <sstream>
+#include <iomanip>
+#include <cassert>
+
+#include <mpi_node.hpp>
 #include <fmm_node.hpp>
+#include <mem_utils.hpp>
+#include <mortonid.hpp>
 #include <profile.hpp>
+#include <vector.hpp>
 
 namespace pvfmm{
 

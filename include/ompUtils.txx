@@ -1,7 +1,7 @@
-#include <cstdlib>
+
 #include <omp.h>
-#include <iterator>
-#include <vector>
+#include <cstring>
+#include <algorithm>
 
 namespace pvfmm{
 

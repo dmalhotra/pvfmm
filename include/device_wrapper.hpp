@@ -5,13 +5,13 @@
  * \brief This file contains definition of DeviceWrapper.
  */
 
+#include <stdint.h>
+
+#include <pvfmm_common.hpp>
+#include <vector.hpp>
+
 #ifndef _PVFMM_DEVICE_WRAPPER_HPP_
 #define _PVFMM_DEVICE_WRAPPER_HPP_
-
-#include <cstdlib>
-#include <cassert>
-#include <stdint.h>
-#include <pvfmm_common.hpp>
 
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push,target(mic))
@@ -24,8 +24,10 @@ namespace DeviceWrapper{
 
   void free_device(char* dev_handle, uintptr_t dev_ptr);
 
+  template <int SYNC=__DEVICE_SYNC__>
   int host2device(char* host_ptr, char* dev_handle, uintptr_t dev_ptr, size_t len);
 
+  template <int SYNC=__DEVICE_SYNC__>
   int device2host(char* dev_handle, uintptr_t dev_ptr, char* host_ptr, size_t len);
 
   void wait(int lock_idx);
@@ -51,7 +53,7 @@ Note: Any MIC offload section should look like this:
       MIC_Lock::release_lock(lock_idx);
     }
 
-    #ifdef __MIC_ASYNCH__
+    #ifdef __DEVICE_SYNC__
     MIC_Lock::wait_lock(lock_idx);
     #endif
 

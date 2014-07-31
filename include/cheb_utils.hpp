@@ -5,13 +5,14 @@
  * \brief This file contains chebyshev related functions.
  */
 
-#ifndef _PVFMM_CHEB_UTILS_HPP_
-#define _PVFMM_CHEB_UTILS_HPP_
+#include <vector>
 
 #include <pvfmm_common.hpp>
-#include <vector>
-#include <kernel.hpp>
 #include <vector.hpp>
+#include <kernel.hpp>
+
+#ifndef _PVFMM_CHEB_UTILS_HPP_
+#define _PVFMM_CHEB_UTILS_HPP_
 
 namespace pvfmm{
 

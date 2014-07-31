@@ -8,12 +8,12 @@
   @author Dhairya Malhotra, dhairya.malhotra@gmail.com
   */
 
-#ifndef __PVFMM_PAR_UTILS_H_
-#define __PVFMM_PAR_UTILS_H_
-
-#include "mpi.h"
+#include <mpi.h>
 #include <vector>
 #include <vector.hpp>
+
+#ifndef __PVFMM_PAR_UTILS_H_
+#define __PVFMM_PAR_UTILS_H_
 
 /**
   @namespace par

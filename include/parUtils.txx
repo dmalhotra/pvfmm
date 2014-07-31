@@ -8,13 +8,15 @@
   @author Santi Swaroop Adavani, santis@gmail.com
   */
 
-#include "dtypes.h"
+#include <cmath>
 #include <cassert>
+#include <cstring>
+#include <cstdlib>
 #include <iostream>
 #include <algorithm>
-#include <cstring>
-#include "ompUtils.h"
-#include <mpi.h>
+
+#include <dtypes.h>
+#include <ompUtils.h>
 
 namespace pvfmm{
 namespace par{

@@ -27,15 +27,15 @@ ifeq ($(INTEL_OFFLOAD_OK),yes)
 
 $(BINDIR)/%: $(OBJDIR)/%.o
 	-@$(MKDIRS) $(dir $@)
-	$(CXX_PVFMM) $(CXXFLAGS_PVFMM) -no-offload      $^       $(LDFLAGS_PVFMM) -o $@
-	$(CXX_PVFMM) $(CXXFLAGS_PVFMM)                  $^_mic   $(LDFLAGS_PVFMM) -o $@_mic
-	$(CXX_PVFMM) $(CXXFLAGS_PVFMM) -D__MIC_ASYNCH__ $^_async $(LDFLAGS_PVFMM) -o $@_async
+	$(CXX_PVFMM) $(CXXFLAGS_PVFMM) -no-offload         $^       $(LDFLAGS_PVFMM) -o $@
+	$(CXX_PVFMM) $(CXXFLAGS_PVFMM)                     $^_async $(LDFLAGS_PVFMM) -o $@_async
+	$(CXX_PVFMM) $(CXXFLAGS_PVFMM) -D__DEVICE_SYNC__=1 $^_mic   $(LDFLAGS_PVFMM) -o $@_mic
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
 	-@$(MKDIRS) $(dir $@)
-	$(CXX_PVFMM) $(CXXFLAGS_PVFMM) -no-offload      -I$(INCDIR) -c $^ -o $@
-	$(CXX_PVFMM) $(CXXFLAGS_PVFMM)                  -I$(INCDIR) -c $^ -o $@_mic
-	$(CXX_PVFMM) $(CXXFLAGS_PVFMM) -D__MIC_ASYNCH__ -I$(INCDIR) -c $^ -o $@_async
+	$(CXX_PVFMM) $(CXXFLAGS_PVFMM) -no-offload         -I$(INCDIR) -c $^ -o $@
+	$(CXX_PVFMM) $(CXXFLAGS_PVFMM)                     -I$(INCDIR) -c $^ -o $@_async
+	$(CXX_PVFMM) $(CXXFLAGS_PVFMM) -D__DEVICE_SYNC__=1 -I$(INCDIR) -c $^ -o $@_mic
 
 else
 

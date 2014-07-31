@@ -1,19 +1,24 @@
 /**
- * \file mat_utils.hpp
+ * \file fft_wrapper.hpp
  * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 2-11-2011
  * \brief This file contains FFTW3 wrapper functions.
  */
 
-#ifndef _PVFMM_FFT_WRAPPER_
-#define _PVFMM_FFT_WRAPPER_
-
+#include <cmath>
+#include <cassert>
+#include <vector>
 #include <fftw3.h>
 #ifdef FFTW3_MKL
 #include <fftw3_mkl.h>
 #endif
+
 #include <pvfmm_common.hpp>
+#include <mem_utils.hpp>
 #include <matrix.hpp>
+
+#ifndef _PVFMM_FFT_WRAPPER_
+#define _PVFMM_FFT_WRAPPER_
 
 namespace pvfmm{
 

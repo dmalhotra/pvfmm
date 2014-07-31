@@ -5,15 +5,16 @@
  * \brief This is a derived cheb class of MPI_Node.
  */
 
-#ifndef _PVFMM_CHEB_NODE_HPP_
-#define _PVFMM_CHEB_NODE_HPP_
+#include <vector>
+#include <stdint.h>
 
 #include <pvfmm_common.hpp>
-#include <assert.h>
-#include <vector.hpp>
+#include <tree_node.hpp>
 #include <mpi_node.hpp>
-#include <mortonid.hpp>
-#include <cheb_utils.hpp>
+#include <vector.hpp>
+
+#ifndef _PVFMM_CHEB_NODE_HPP_
+#define _PVFMM_CHEB_NODE_HPP_
 
 namespace pvfmm{
 

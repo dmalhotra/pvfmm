@@ -6,14 +6,17 @@
  * locally essential tree node.
  */
 
-#ifndef _PVFMM_MPI_NODE_HPP_
-#define _PVFMM_MPI_NODE_HPP_
+#include <vector>
+#include <cassert>
+#include <stdint.h>
 
 #include <pvfmm_common.hpp>
-#include <assert.h>
 #include <tree_node.hpp>
 #include <mortonid.hpp>
 #include <vector.hpp>
+
+#ifndef _PVFMM_MPI_NODE_HPP_
+#define _PVFMM_MPI_NODE_HPP_
 
 namespace pvfmm{
 

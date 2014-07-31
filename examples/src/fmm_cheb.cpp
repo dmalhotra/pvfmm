@@ -9,6 +9,7 @@
 #include <fmm_cheb.hpp>
 #include <fmm_node.hpp>
 #include <fmm_tree.hpp>
+#include <cheb_node.hpp>
 #include <utils.hpp>
 
 //////////////////////////////////////////////////////////////////////////////
@@ -229,16 +230,16 @@ void fmm_test(int test_case, size_t N, size_t M, bool unif, int mult_order, int 
       fn_input_=fn_input_t1<Real_t>;
       fn_poten_=fn_poten_t1<Real_t>;
       fn_grad_ =fn_grad_t1<Real_t>;
-      mykernel     =pvfmm::LaplaceKernel<Real_t>::potn_ker;
-      //mykernel_grad=pvfmm::LaplaceKernel<Real_t>::grad_ker;
+      mykernel     =&pvfmm::LaplaceKernel<Real_t>::potn_ker();
+      //mykernel_grad=&pvfmm::LaplaceKernel<Real_t>::grad_ker();
       bndry=pvfmm::Periodic;
       break;
     case 2:
       fn_input_=fn_input_t2<Real_t>;
       fn_poten_=fn_poten_t2<Real_t>;
       fn_grad_ =fn_grad_t2<Real_t>;
-      mykernel     =pvfmm::LaplaceKernel<Real_t>::potn_ker;
-      //mykernel_grad=pvfmm::LaplaceKernel<Real_t>::grad_ker;
+      mykernel     =&pvfmm::LaplaceKernel<Real_t>::potn_ker();
+      //mykernel_grad=&pvfmm::LaplaceKernel<Real_t>::grad_ker();
       bndry=pvfmm::FreeSpace;
       break;
     case 3:

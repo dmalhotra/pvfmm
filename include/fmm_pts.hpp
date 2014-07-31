@@ -6,16 +6,23 @@
  * This handles all the translations for point sources and targets.
  */
 
-#ifndef _PVFMM_FMM_PTS_HPP_
-#define _PVFMM_FMM_PTS_HPP_
+#include <mpi.h>
+#include <string>
+#include <vector>
 
 #include <pvfmm_common.hpp>
-#include <mpi.h>
-#include <matrix.hpp>
-#include <precomp_mat.hpp>
 #include <interac_list.hpp>
-#include <kernel.hpp>
+#include <precomp_mat.hpp>
+#include <fft_wrapper.hpp>
+#include <mem_utils.hpp>
 #include <mpi_node.hpp>
+#include <mem_mgr.hpp>
+#include <vector.hpp>
+#include <matrix.hpp>
+#include <kernel.hpp>
+
+#ifndef _PVFMM_FMM_PTS_HPP_
+#define _PVFMM_FMM_PTS_HPP_
 
 namespace pvfmm{
 
@@ -130,9 +137,11 @@ class FMM_Pts{
 
   void SetupPrecomp(SetupData<Real_t>& setup_data, bool device=false);
   void SetupInterac(SetupData<Real_t>& setup_data, bool device=false);
+  template <int SYNC=__DEVICE_SYNC__>
   void EvalList    (SetupData<Real_t>& setup_data, bool device=false); // Run on CPU by default.
 
   void SetupInteracPts(SetupData<Real_t>& setup_data, bool shift_src, bool shift_trg, Matrix<Real_t>* M, bool device);
+  template <int SYNC=__DEVICE_SYNC__>
   void EvalListPts    (SetupData<Real_t>& setup_data, bool device=false); // Run on CPU by default.
 
   /**

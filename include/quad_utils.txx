@@ -5,9 +5,11 @@
  * \brief This file contains quadruple-precision related functions.
  */
 
-#include <iomanip>
-#include <cstdlib>
+#include <omp.h>
 #include <cmath>
+#include <iostream>
+#include <iomanip>
+#include <vector>
 
 QuadReal_t atoquad(const char* str){
   size_t i=0;

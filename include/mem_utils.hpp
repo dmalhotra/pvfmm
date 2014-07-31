@@ -5,15 +5,10 @@
  * \brief This file contains memory management utilities.
  */
 
-#ifndef _PVFMM_MEM_UTILS_
-#define _PVFMM_MEM_UTILS_
-
-#include <cstdlib>
 #include <pvfmm_common.hpp>
 
-#define ALLOC alloc_if(1) free_if(0)
-#define FREE alloc_if(0) free_if(1)
-#define REUSE alloc_if(0) free_if(0)
+#ifndef _PVFMM_MEM_UTILS_
+#define _PVFMM_MEM_UTILS_
 
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push,target(mic))

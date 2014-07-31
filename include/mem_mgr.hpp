@@ -6,18 +6,20 @@
  * uses a pre-allocated buffer of size defined in call to the constructor.
  */
 
+#include <omp.h>
+#include <cstdlib>
+#include <stdint.h>
+#include <algorithm>
+#include <iostream>
+#include <cassert>
+#include <vector>
+#include <stack>
+#include <map>
+
+#include <pvfmm_common.hpp>
+
 #ifndef _PVFMM_MEM_MGR_HPP_
 #define _PVFMM_MEM_MGR_HPP_
-
-#include <map>
-#include <stack>
-#include <vector>
-#include <cassert>
-#include <iostream>
-#include <cmath>
-#include <omp.h>
-#include <pvfmm_common.hpp>
-#include <mem_utils.hpp>
 
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push,target(mic))

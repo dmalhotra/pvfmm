@@ -100,6 +100,7 @@ lib_libfmm_a_HEADERS = \
 # the sources to add to the library and to add to the source distribution
 lib_libpvfmm_a_SOURCES = \
 									$(lib_libpvfmm_a_HEADERS) \
+									src/device_wrapper.cpp \
 									src/fmm_gll.cpp \
 									src/legendre_rule.cpp \
 									src/mortonid.cpp \
@@ -216,6 +217,7 @@ clean-local: clean-doxygen
 	cd $(EX_DIR) && $(MAKE) clean;
 	$(RM) -r $(RESULT_DIR)/*
 	$(RM) *~ */*~ */*/*~
+	$(RM) ./lib/*
 
 #------------------------------------------------------------------------------
 

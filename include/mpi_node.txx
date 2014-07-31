@@ -1,12 +1,14 @@
 /**
- * \file mpi_node.cpp
+ * \file mpi_node.txx
  * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 12-11-2010
  * \brief This file contains the implementation of the class MPI_Node.
  */
 
-#include <assert.h>
-#include <iostream>
+#include <cmath>
+
+#include <matrix.hpp>
+#include <mem_utils.hpp>
 
 namespace pvfmm{
 

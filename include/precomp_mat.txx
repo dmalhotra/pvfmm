@@ -6,8 +6,16 @@
  * Handles storage of precomputed translation matrices.
  */
 
-#include <sys/stat.h>
+#include <omp.h>
+#include <cassert>
 #include <stdint.h>
+#ifdef PVFMM_HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
+
+#include <mem_utils.hpp>
+#include <profile.hpp>
+#include <vector.hpp>
 
 namespace pvfmm{
 

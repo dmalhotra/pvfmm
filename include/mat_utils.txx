@@ -5,14 +5,16 @@
  * \brief This file contains BLAS and LAPACK wrapper functions.
  */
 
+#include <omp.h>
+#include <cmath>
 #include <cassert>
-#include <vector>
+#include <algorithm>
 #include <iostream>
-#include <stdint.h>
-#include <math.h>
+#include <vector>
+
 #include <blas.h>
 #include <lapack.h>
-#include <fft_wrapper.hpp>
+#include <matrix.hpp>
 
 namespace pvfmm{
 namespace mat{

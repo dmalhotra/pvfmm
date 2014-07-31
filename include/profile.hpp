@@ -5,15 +5,15 @@
  * \brief This file contains definition of the class Profile.
  */
 
-#ifndef _PVFMM_PROFILE_HPP_
-#define _PVFMM_PROFILE_HPP_
-
 #include <mpi.h>
-#include <iostream>
 #include <string>
 #include <vector>
 #include <stack>
+
 #include <pvfmm_common.hpp>
+
+#ifndef _PVFMM_PROFILE_HPP_
+#define _PVFMM_PROFILE_HPP_
 
 #ifndef __PROFILE__
 #define __PROFILE__ -1
