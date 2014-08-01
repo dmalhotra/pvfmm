@@ -70,6 +70,7 @@ lib_libfmm_a_HEADERS = \
 									include/parUtils.h \
 									include/precomp_mat.hpp \
 									include/profile.hpp \
+									include/quad_utils.hpp \
 									include/tree.hpp \
 									include/tree_node.hpp \
 									include/vector.hpp \
@@ -91,6 +92,7 @@ lib_libfmm_a_HEADERS = \
 									include/ompUtils.txx \
 									include/parUtils.txx \
 									include/precomp_mat.txx \
+									include/quad_utils.txx \
 									include/tree.txx \
 									include/vector.txx
 
