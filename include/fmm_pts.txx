@@ -1493,7 +1493,7 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
 }
 
 template <class FMMNode>
-template <int SYNC=__DEVICE_SYNC__>
+template <int SYNC>
 void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
   if(setup_data.interac_data.Dim(0)==0 || setup_data.interac_data.Dim(1)==0){
     Profile::Tic("Host2Device",&this->comm,false,25);
@@ -3098,7 +3098,7 @@ void FMM_Pts<FMMNode>::SetupInteracPts(SetupData<Real_t>& setup_data, bool shift
 }
 
 template <class FMMNode>
-template <int SYNC=__DEVICE_SYNC__>
+template <int SYNC>
 void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
   if(setup_data.interac_data.Dim(0)==0 || setup_data.interac_data.Dim(1)==0){
     Profile::Tic("Host2Device",&this->comm,false,25);

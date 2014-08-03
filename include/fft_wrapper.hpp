@@ -7,6 +7,7 @@
 
 #include <cmath>
 #include <cassert>
+#include <cstdlib>
 #include <vector>
 #include <fftw3.h>
 #ifdef FFTW3_MKL

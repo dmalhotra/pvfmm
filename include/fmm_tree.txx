@@ -9,6 +9,7 @@
 #include <sstream>
 #include <iomanip>
 #include <cassert>
+#include <cstdlib>
 
 #include <mpi_node.hpp>
 #include <fmm_node.hpp>

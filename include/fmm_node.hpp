@@ -6,6 +6,7 @@
  */
 
 #include <vector>
+#include <cstdlib>
 
 #include <pvfmm_common.hpp>
 #include <tree_node.hpp>

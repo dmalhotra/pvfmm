@@ -659,7 +659,7 @@ namespace par{
         recv_size=scatter_index.Dim();
 
         long long glb_size[2]={0,0};
-        long long loc_size[2]={data_.Dim()*sizeof(T), recv_size};
+        long long loc_size[2]={(long long)(data_.Dim()*sizeof(T)), recv_size};
         MPI_Allreduce(&loc_size, &glb_size, 2, par::Mpi_datatype<long long>::value(), par::Mpi_datatype<long long>::sum(), comm);
         if(glb_size[0]==0 || glb_size[1]==0) return 0; //Nothing to be done.
         data_dim=glb_size[0]/glb_size[1];
@@ -787,7 +787,7 @@ namespace par{
         recv_size=loc_size;
 
         long long glb_size[3]={0,0};
-        long long loc_size[3]={data_.Dim()*sizeof(T), send_size, recv_size};
+        long long loc_size[3]={(long long)(data_.Dim()*sizeof(T)), send_size, recv_size};
         MPI_Allreduce(&loc_size, &glb_size, 3, par::Mpi_datatype<long long>::value(), par::Mpi_datatype<long long>::sum(), comm);
         if(glb_size[0]==0 || glb_size[1]==0) return 0; //Nothing to be done.
         data_dim=glb_size[0]/glb_size[1];

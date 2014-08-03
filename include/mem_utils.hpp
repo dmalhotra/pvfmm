@@ -5,6 +5,8 @@
  * \brief This file contains memory management utilities.
  */
 
+#include <cstdlib>
+
 #include <pvfmm_common.hpp>
 
 #ifndef _PVFMM_MEM_UTILS_

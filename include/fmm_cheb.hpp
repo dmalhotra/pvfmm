@@ -8,6 +8,7 @@
 
 #include <mpi.h>
 #include <vector>
+#include <cstdlib>
 
 #include <pvfmm_common.hpp>
 #include <precomp_mat.hpp>

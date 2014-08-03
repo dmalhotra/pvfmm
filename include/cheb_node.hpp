@@ -6,6 +6,7 @@
  */
 
 #include <vector>
+#include <cstdlib>
 #include <stdint.h>
 
 #include <pvfmm_common.hpp>

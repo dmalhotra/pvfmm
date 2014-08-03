@@ -5,6 +5,7 @@
  * \brief This file contains definition of DeviceWrapper.
  */
 
+#include <cstdlib>
 #include <stdint.h>
 
 #include <pvfmm_common.hpp>

@@ -8,6 +8,7 @@
 #include <omp.h>
 #include <cmath>
 #include <cassert>
+#include <cstdlib>
 #include <iostream>
 #include <algorithm>
 

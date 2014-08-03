@@ -7,6 +7,7 @@
  */
 
 #include <string>
+#include <cstdlib>
 
 #include <pvfmm_common.hpp>
 #include <mem_mgr.hpp>

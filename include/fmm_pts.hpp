@@ -9,6 +9,7 @@
 #include <mpi.h>
 #include <string>
 #include <vector>
+#include <cstdlib>
 
 #include <pvfmm_common.hpp>
 #include <interac_list.hpp>

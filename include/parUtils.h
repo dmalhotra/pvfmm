@@ -10,6 +10,8 @@
 
 #include <mpi.h>
 #include <vector>
+#include <cstdlib>
+
 #include <vector.hpp>
 
 #ifndef __PVFMM_PAR_UTILS_H_

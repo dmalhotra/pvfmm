@@ -66,6 +66,7 @@ DX_PS_FEATURE(OFF)
 DX_INIT_DOXYGEN($PACKAGE_NAME, Doxyfile, doc/doxygen)
 
 
+AX_CXX_DEF_TEMPLATE_ARG
 CHECK_QUAD_PRECISION
 
 # Check for math libs
@@ -168,7 +169,7 @@ AC_SUBST(FLIBS)
 
 
 # Checks for header files.
-AC_CHECK_HEADERS([stdint.h stdlib.h stddef.h])
+AC_CHECK_HEADERS([stdint.h cstdlib cstddef])
 
 
 # Checks for typedefs, structures, and compiler characteristics.

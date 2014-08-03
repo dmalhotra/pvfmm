@@ -1,5 +1,6 @@
 
 #include <mpi.h>
+#include <cstdlib>
 
 #include <pvfmm_common.hpp>
 

@@ -7,6 +7,7 @@
 
 #include <mpi.h>
 #include <vector>
+#include <cstdlib>
 #include <cmath>
 
 #include <pvfmm_common.hpp>

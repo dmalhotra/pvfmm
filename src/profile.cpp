@@ -11,6 +11,7 @@
 #include <sstream>
 #include <iomanip>
 #include <cassert>
+#include <cstdlib>
 #include <string>
 #include <vector>
 #include <stack>

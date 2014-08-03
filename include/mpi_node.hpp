@@ -8,6 +8,7 @@
 
 #include <vector>
 #include <cassert>
+#include <cstdlib>
 #include <stdint.h>
 
 #include <pvfmm_common.hpp>
