@@ -21,7 +21,6 @@ EXTRA_DIST = \
 									$(EX_DIR)/src \
 									$(EX_DIR)/include \
 									$(EX_DIR)/Makefile \
-									$(EX_DIR)/scripts \
 									$(DX_CONFIG) \
 									scripts
 
