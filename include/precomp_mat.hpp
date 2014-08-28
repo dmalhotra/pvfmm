@@ -37,14 +37,15 @@ typedef enum{
 } Mat_Type;
 
 typedef enum{
-  ReflecX = 0,
-  ReflecY = 1,
-  ReflecZ = 2,
-  SwapXY  = 3,
-  SwapXZ  = 4,
+  Scaling = 0,
+  ReflecX = 1,
+  ReflecY = 2,
+  ReflecZ = 3,
+  SwapXY  = 4,
+  SwapXZ  = 5,
   R_Perm = 0,
-  C_Perm = 5,
-  Perm_Count=10
+  C_Perm = 6,
+  Perm_Count=12
 } Perm_Type;
 
 template <class T>
@@ -56,9 +57,9 @@ class PrecompMat{
 
   Matrix<T>& Mat(int l, Mat_Type type, size_t indx);
 
-  Permutation<T>& Perm_R(Mat_Type type, size_t indx);
+  Permutation<T>& Perm_R(int l, Mat_Type type, size_t indx);
 
-  Permutation<T>& Perm_C(Mat_Type type, size_t indx);
+  Permutation<T>& Perm_C(int l, Mat_Type type, size_t indx);
 
   Permutation<T>& Perm(Mat_Type type, size_t indx);
 

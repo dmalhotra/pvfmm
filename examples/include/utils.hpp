@@ -13,7 +13,7 @@
 #include <fmm_tree.hpp>
 
 template <class FMM_Mat_t>
-void CheckFMMOutput(pvfmm::FMM_Tree<FMM_Mat_t>* mytree, pvfmm::Kernel<typename FMM_Mat_t::Real_t>* mykernel);
+void CheckFMMOutput(pvfmm::FMM_Tree<FMM_Mat_t>* mytree, const pvfmm::Kernel<typename FMM_Mat_t::Real_t>* mykernel);
 
 template <class Real_t>
 struct TestFn{

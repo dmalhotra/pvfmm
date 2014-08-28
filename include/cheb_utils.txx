@@ -595,7 +595,7 @@ void points2cheb(int deg, T* coord, T* val, int n, int dim, T* node_coord, T nod
 }
 
 template <class T>
-void quad_rule(int n, T* x, T* w){//*
+void quad_rule(int n, T* x, T* w){
   static std::vector<Vector<T> > x_lst(10000);
   static std::vector<Vector<T> > w_lst(10000);
   assert(n<10000);
@@ -616,7 +616,7 @@ void quad_rule(int n, T* x, T* w){//*
   Vector<T> x_(n);
   Vector<T> w_(n);
 
-  { //Gauss-Chebyshev quadrature nodes and weights
+  { //Chebyshev quadrature nodes and weights
     for(int i=0;i<n;i++){
       x_[i]=-cos((T)(2.0*i+1.0)/(2.0*n)*const_pi<T>());
       w_[i]=0;//sqrt(1.0-x_[i]*x_[i])*const_pi<T>()/n;
@@ -626,49 +626,50 @@ void quad_rule(int n, T* x, T* w){//*
     for(size_t i=0;i<n;i++) M[0][i]/=2.0;
 
     std::vector<T> w_sample(n,0);
-    if(n>0) w_sample[0]=2.0;
-    if(n>1) w_sample[1]=0.0;
-    if(n>2) w_sample[2]=-((T)2.0)/3;
-    if(n>3) w_sample[3]=0.0;
-    if(n>4) w_sample[4]=-((T)2.0)/15;
-    if(n>5) w_sample[5]=0.0;
-    if(n>6) w_sample[5]=((T)64)/7-((T)96)/5+((T)36)/3-2;
-    if(n>7) w_sample[5]=0;
-    if(n>8){
-      T eps=machine_eps<T>()*64;
-      std::vector<T> qx(n-1);
-      std::vector<T> qw(n-1);
-      quad_rule(n-1, &qx[0], &qw[0]);
+    for(size_t i=0;i<n;i+=2) w_sample=-((T)2.0/(n+1)/(n-1));
+    //if(n>0) w_sample[0]=2.0;
+    //if(n>1) w_sample[1]=0.0;
+    //if(n>2) w_sample[2]=-((T)2.0)/3;
+    //if(n>3) w_sample[3]=0.0;
+    //if(n>4) w_sample[4]=-((T)2.0)/15;
+    //if(n>5) w_sample[5]=0.0;
+    //if(n>6) w_sample[5]=((T)64)/7-((T)96)/5+((T)36)/3-2;
+    //if(n>7) w_sample[5]=0;
+    //if(n>8){
+    //  T eps=machine_eps<T>()*64;
+    //  std::vector<T> qx(n-1);
+    //  std::vector<T> qw(n-1);
+    //  quad_rule(n-1, &qx[0], &qw[0]);
 
-      T err=1.0;
-      std::vector<T> w_prev;
-      for(size_t iter=1;err>eps*iter;iter*=2){
-        w_prev=w_sample;
-        w_sample.assign(n,0);
+    //  T err=1.0;
+    //  std::vector<T> w_prev;
+    //  for(size_t iter=1;err>eps*iter;iter*=2){
+    //    w_prev=w_sample;
+    //    w_sample.assign(n,0);
 
-        size_t N=(n-1)*iter;
-        std::vector<T> x_sample(N,0);
+    //    size_t N=(n-1)*iter;
+    //    std::vector<T> x_sample(N,0);
 
-        Matrix<T> M_sample(n,N);
-        for(size_t i=0;i<iter;i++){
-          for(size_t j=0;j<n-1;j++){
-            x_sample[j+i*(n-1)]=(2*i+qx[j]+1)/iter-1;
-          }
-        }
-        cheb_poly(n-1, &x_sample[0], N, &M_sample[0][0]);
+    //    Matrix<T> M_sample(n,N);
+    //    for(size_t i=0;i<iter;i++){
+    //      for(size_t j=0;j<n-1;j++){
+    //        x_sample[j+i*(n-1)]=(2*i+qx[j]+1)/iter-1;
+    //      }
+    //    }
+    //    cheb_poly(n-1, &x_sample[0], N, &M_sample[0][0]);
 
-        for(size_t i=0;i<n;i++)
-        for(size_t j=0;j<iter;j++)
-        for(size_t k=0;k<n-1;k++){
-          w_sample[i]+=M_sample[i][k+j*(n-1)]*qw[k];
-        }
-        for(size_t i=0;i<n;i++) w_sample[i]/=iter;
-        for(size_t i=1;i<n;i+=2) w_sample[i]=0.0;
+    //    for(size_t i=0;i<n;i++)
+    //    for(size_t j=0;j<iter;j++)
+    //    for(size_t k=0;k<n-1;k++){
+    //      w_sample[i]+=M_sample[i][k+j*(n-1)]*qw[k];
+    //    }
+    //    for(size_t i=0;i<n;i++) w_sample[i]/=iter;
+    //    for(size_t i=1;i<n;i+=2) w_sample[i]=0.0;
 
-        err=0;
-        for(size_t i=0;i<n;i++) err+=fabs(w_sample[i]-w_prev[i]);
-      }
-    }
+    //    err=0;
+    //    for(size_t i=0;i<n;i++) err+=fabs(w_sample[i]-w_prev[i]);
+    //  }
+    //}
 
     for(size_t i=0;i<n;i++)
     for(size_t j=0;j<n;j++){
@@ -696,7 +697,7 @@ void quad_rule(int n, T* x, T* w){//*
 }
 
 template <>
-void quad_rule<double>(int n, double* x, double* w){//*
+void quad_rule<double>(int n, double* x, double* w){
   static std::vector<Vector<double> > x_lst(10000);
   static std::vector<Vector<double> > w_lst(10000);
   assert(n<10000);
@@ -735,7 +736,7 @@ void quad_rule<double>(int n, double* x, double* w){//*
 }
 
 template <class T>
-std::vector<T> integ_pyramid(int m, T* s, T r, int nx, Kernel<T>& kernel, int* perm){//*
+std::vector<T> integ_pyramid(int m, T* s, T r, int nx, const Kernel<T>& kernel, int* perm){//*
   static mem::MemoryManager mem_mgr(16*1024*1024*sizeof(T));
   int ny=nx;
   int nz=nx;
@@ -936,7 +937,7 @@ std::vector<T> integ_pyramid(int m, T* s, T r, int nx, Kernel<T>& kernel, int* p
 }
 
 template <class T>
-std::vector<T> integ(int m, T* s, T r, int n, Kernel<T>& kernel){//*
+std::vector<T> integ(int m, T* s, T r, int n, const Kernel<T>& kernel){//*
   //Compute integrals over pyramids in all directions.
   int k_dim=kernel.ker_dim[0]*kernel.ker_dim[1];
   T s_[3];
@@ -1020,7 +1021,7 @@ std::vector<T> integ(int m, T* s, T r, int n, Kernel<T>& kernel){//*
  * \param[in] r Length of the side of cubic region.
  */
 template <class T>
-std::vector<T> cheb_integ(int m, T* s_, T r_, Kernel<T>& kernel){
+std::vector<T> cheb_integ(int m, T* s_, T r_, const Kernel<T>& kernel){
   T eps=machine_eps<T>();
 
   T r=r_;
@@ -1052,7 +1053,7 @@ std::vector<T> cheb_integ(int m, T* s_, T r_, Kernel<T>& kernel){
   std::vector<T> U0(((m+1)*(m+2)*(m+3)*k_dim)/6);
   {// Rearrange data
     int indx=0;
-    int* ker_dim=kernel.ker_dim;
+    const int* ker_dim=kernel.ker_dim;
     for(int l0=0;l0<ker_dim[0];l0++)
     for(int l1=0;l1<ker_dim[1];l1++)
     for(int i=0;i<=m;i++)

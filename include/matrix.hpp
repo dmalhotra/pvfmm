@@ -103,6 +103,9 @@ class Matrix{
   static void Transpose(Matrix<T>& M_r, const Matrix<T>& M);
 
   // Original matrix is destroyed.
+  void SVD(Matrix<T>& tU, Matrix<T>& tS, Matrix<T>& tVT);
+
+  // Original matrix is destroyed.
   Matrix<T> pinv(T eps=-1);
 
   private:

@@ -70,7 +70,7 @@ class FMM_Data{
 template <class Real_t>
 struct SetupData{
   int level;
-  Kernel<Real_t>* kernel;
+  const Kernel<Real_t>* kernel;
   std::vector<Mat_Type> interac_type;
 
   std::vector<void*> nodes_in ;
@@ -110,7 +110,7 @@ class FMM_Pts{
    */
   FMM_Pts(mem::MemoryManager* mem_mgr_=NULL): mem_mgr(mem_mgr_),
              vprecomp_fft_flag(false), vlist_fft_flag(false),
-               vlist_ifft_flag(false), mat(NULL){};
+               vlist_ifft_flag(false), mat(NULL), kernel(NULL), aux_kernel(NULL){};
 
   /**
    * \brief Virtual destructor.
@@ -127,12 +127,12 @@ class FMM_Pts{
   /**
    * \brief Order for the multipole expansion.
    */
-  int& MultipoleOrder(){return multipole_order;}
+  int MultipoleOrder(){return multipole_order;}
 
   /**
    * \brief Whether using homogeneous kernel?
    */
-  bool& Homogen(){return kernel.homogen;}
+  bool Homogen(){return kernel->homogen;}
 
   virtual void CollectNodeData(std::vector<FMMNode*>& nodes, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, std::vector<size_t> extra_size = std::vector<size_t>(0));
 
@@ -231,8 +231,8 @@ class FMM_Pts{
 
   mem::MemoryManager* mem_mgr;
   InteracList<FMMNode> interac_list;
-  Kernel<Real_t> kernel;     //The kernel function.
-  Kernel<Real_t> aux_kernel; //Auxiliary kernel for source-to-source translations.
+  const Kernel<Real_t>* kernel;    //The kernel function.
+  const Kernel<Real_t>* aux_kernel;//Auxiliary kernel for source-to-source translations.
   PrecompMat<Real_t>* mat;   //Handles storage of matrices.
   std::string mat_fname;
   int multipole_order;       //Order of multipole expansion.

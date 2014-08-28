@@ -13,6 +13,8 @@
 #include <mem_utils.hpp>
 #include <profile.hpp>
 #include <vector.hpp>
+#include <matrix.hpp>
+#include <precomp_mat.hpp>
 
 #ifdef __SSE__
 #include <xmmintrin.h>
@@ -36,29 +38,593 @@ namespace pvfmm{
  * \brief Constructor.
  */
 template <class T>
-Kernel<T>::Kernel(): dim(0){
-  ker_dim[0]=0;
-  ker_dim[1]=0;
-}
-
-/**
- * \brief Constructor.
- */
-template <class T>
-Kernel<T>::Kernel(Ker_t poten, Ker_t dbl_poten, const char* name, int dim_,
-                  std::pair<int,int> k_dim, bool homogen_, T ker_scale,
+Kernel<T>::Kernel(Ker_t poten, Ker_t dbl_poten, const char* name, int dim_, std::pair<int,int> k_dim,
                   size_t dev_poten, size_t dev_dbl_poten){
   dim=dim_;
   ker_dim[0]=k_dim.first;
   ker_dim[1]=k_dim.second;
   ker_poten=poten;
   dbl_layer_poten=dbl_poten;
-  homogen=homogen_;
-  poten_scale=ker_scale;
   ker_name=std::string(name);
 
   dev_ker_poten=dev_poten;
   dev_dbl_layer_poten=dev_dbl_poten;
+  init=false;
+}
+
+/**
+ * \brief Initialize the kernel.
+ */
+template <class T>
+void Kernel<T>::Initialize(bool verbose) const{
+  if(init) return;
+  init=true;
+
+  T eps=1.0;
+  while(eps+(T)1.0>1.0) eps*=0.5;
+
+  { // Determine scal
+    homogen=true;
+    Matrix<T> M_scal(ker_dim[0],ker_dim[1]);
+    size_t N=1024;
+
+    T src_coord[3]={0,0,0};
+    std::vector<T> trg_coord1(N*COORD_DIM);
+    std::vector<T> trg_coord2(N*COORD_DIM);
+    for(size_t i=0;i<N;i++){
+      T x,y,z,r;
+      do{
+        x=(drand48()-0.5);
+        y=(drand48()-0.5);
+        z=(drand48()-0.5);
+        r=sqrt(x*x+y*y+z*z);
+      }while(r<0.25);
+      trg_coord1[i*COORD_DIM+0]=x;
+      trg_coord1[i*COORD_DIM+1]=y;
+      trg_coord1[i*COORD_DIM+2]=z;
+    }
+    for(size_t i=0;i<N*COORD_DIM;i++){
+      trg_coord2[i]=trg_coord1[i]*0.5;
+    }
+
+    T max_val=0;
+    Matrix<T> M1(N,ker_dim[0]*ker_dim[1]);
+    Matrix<T> M2(N,ker_dim[0]*ker_dim[1]);
+    for(size_t i=0;i<N;i++){
+      BuildMatrix(&src_coord [          0], 1,
+                  &trg_coord1[i*COORD_DIM], 1, &(M1[i][0]));
+      BuildMatrix(&src_coord [          0], 1,
+                  &trg_coord2[i*COORD_DIM], 1, &(M2[i][0]));
+      for(size_t j=0;j<ker_dim[0]*ker_dim[1];j++){
+        max_val=std::max<T>(max_val,M1[i][j]);
+        max_val=std::max<T>(max_val,M2[i][j]);
+      }
+    }
+    for(size_t i=0;i<ker_dim[0]*ker_dim[1];i++){
+      T dot11=0, dot12=0, dot22=0;
+      for(size_t j=0;j<N;j++){
+        dot11+=M1[j][i]*M1[j][i];
+        dot12+=M1[j][i]*M2[j][i];
+        dot22+=M2[j][i]*M2[j][i];
+      }
+      if(dot11>N*max_val*max_val*eps &&
+         dot22>N*max_val*max_val*eps ){
+        T s=dot12/dot11;
+        M_scal[0][i]=log(s)/log(2.0);
+        T err=sqrt(0.5*(dot22/dot11)/(s*s)-0.5);
+        if(err>N*eps){
+          homogen=false;
+          M_scal[0][i]=0.0;
+        }
+        assert(M_scal[0][i]>=0.0); // Kernel function must decay
+      }else M_scal[0][i]=-1;
+    }
+
+    src_scal.Resize(ker_dim[0]); src_scal.SetZero();
+    trg_scal.Resize(ker_dim[1]); trg_scal.SetZero();
+    if(homogen){
+      Matrix<T> b(ker_dim[0]*ker_dim[1]+1,1);
+      mem::memcopy(&b[0][0],&M_scal[0][0],ker_dim[0]*ker_dim[1]*sizeof(T));
+      b[ker_dim[0]*ker_dim[1]][0]=1;
+
+      Matrix<T> M(ker_dim[0]*ker_dim[1]+1,ker_dim[0]+ker_dim[1]); M.SetZero();
+      M[ker_dim[0]*ker_dim[1]][0]=1;
+      for(size_t i0=0;i0<ker_dim[0];i0++)
+      for(size_t i1=0;i1<ker_dim[1];i1++){
+        size_t j=i0*ker_dim[1]+i1;
+        if(b[j][0]>=0){
+          M[j][ 0+        i0]=1;
+          M[j][i1+ker_dim[0]]=1;
+        }
+      }
+      Matrix<T> x=M.pinv()*b;
+
+      for(size_t i=0;i<ker_dim[0];i++){
+        src_scal[i]=x[i][0];
+      }
+      for(size_t i=0;i<ker_dim[1];i++){
+        trg_scal[i]=x[ker_dim[0]+i][0];
+      }
+
+      for(size_t i0=0;i0<ker_dim[0];i0++)
+      for(size_t i1=0;i1<ker_dim[1];i1++){
+        if(M_scal[i0][i1]>=0){
+          if(fabs(src_scal[i0]+trg_scal[i1]-M_scal[i0][i1])>eps*N){
+            homogen=false;
+          }
+        }
+      }
+    }
+
+    if(!homogen){
+      src_scal.SetZero();
+      trg_scal.SetZero();
+      //std::cout<<ker_name<<" not-scale-invariant\n";
+    }
+  }
+  { // Determine symmetry
+    perm_vec.Resize(Perm_Count);
+
+    size_t N=1024; eps=N*eps;
+    T src_coord[3]={0,0,0};
+    std::vector<T> trg_coord1(N*COORD_DIM);
+    std::vector<T> trg_coord2(N*COORD_DIM);
+    for(size_t i=0;i<N;i++){
+      T x,y,z,r;
+      do{
+        x=(drand48()-0.5);
+        y=(drand48()-0.5);
+        z=(drand48()-0.5);
+        r=sqrt(x*x+y*y+z*z);
+      }while(r<0.25);
+      trg_coord1[i*COORD_DIM+0]=x;
+      trg_coord1[i*COORD_DIM+1]=y;
+      trg_coord1[i*COORD_DIM+2]=z;
+    }
+
+    for(size_t p_type=0;p_type<C_Perm;p_type++){ // For each symmetry transform
+
+      switch(p_type){ // Set trg_coord2
+        case ReflecX:
+          for(size_t i=0;i<N;i++){
+            trg_coord2[i*COORD_DIM+0]=-trg_coord1[i*COORD_DIM+0];
+            trg_coord2[i*COORD_DIM+1]= trg_coord1[i*COORD_DIM+1];
+            trg_coord2[i*COORD_DIM+2]= trg_coord1[i*COORD_DIM+2];
+          }
+          break;
+        case ReflecY:
+          for(size_t i=0;i<N;i++){
+            trg_coord2[i*COORD_DIM+0]= trg_coord1[i*COORD_DIM+0];
+            trg_coord2[i*COORD_DIM+1]=-trg_coord1[i*COORD_DIM+1];
+            trg_coord2[i*COORD_DIM+2]= trg_coord1[i*COORD_DIM+2];
+          }
+          break;
+        case ReflecZ:
+          for(size_t i=0;i<N;i++){
+            trg_coord2[i*COORD_DIM+0]= trg_coord1[i*COORD_DIM+0];
+            trg_coord2[i*COORD_DIM+1]= trg_coord1[i*COORD_DIM+1];
+            trg_coord2[i*COORD_DIM+2]=-trg_coord1[i*COORD_DIM+2];
+          }
+          break;
+        case SwapXY:
+          for(size_t i=0;i<N;i++){
+            trg_coord2[i*COORD_DIM+0]= trg_coord1[i*COORD_DIM+1];
+            trg_coord2[i*COORD_DIM+1]= trg_coord1[i*COORD_DIM+0];
+            trg_coord2[i*COORD_DIM+2]= trg_coord1[i*COORD_DIM+2];
+          }
+          break;
+        case SwapXZ:
+          for(size_t i=0;i<N;i++){
+            trg_coord2[i*COORD_DIM+0]= trg_coord1[i*COORD_DIM+2];
+            trg_coord2[i*COORD_DIM+1]= trg_coord1[i*COORD_DIM+1];
+            trg_coord2[i*COORD_DIM+2]= trg_coord1[i*COORD_DIM+0];
+          }
+          break;
+        default:
+          for(size_t i=0;i<N;i++){
+            trg_coord2[i*COORD_DIM+0]= trg_coord1[i*COORD_DIM+0];
+            trg_coord2[i*COORD_DIM+1]= trg_coord1[i*COORD_DIM+1];
+            trg_coord2[i*COORD_DIM+2]= trg_coord1[i*COORD_DIM+2];
+          }
+      }
+
+      Matrix<long long> M11, M22;
+      {
+        Matrix<T> M1(N,ker_dim[0]*ker_dim[1]); M1.SetZero();
+        Matrix<T> M2(N,ker_dim[0]*ker_dim[1]); M2.SetZero();
+        for(size_t i=0;i<N;i++){
+          BuildMatrix(&src_coord [          0], 1,
+                      &trg_coord1[i*COORD_DIM], 1, &(M1[i][0]));
+          BuildMatrix(&src_coord [          0], 1,
+                      &trg_coord2[i*COORD_DIM], 1, &(M2[i][0]));
+        }
+
+        Matrix<T> dot11(ker_dim[0]*ker_dim[1],ker_dim[0]*ker_dim[1]);dot11.SetZero();
+        Matrix<T> dot12(ker_dim[0]*ker_dim[1],ker_dim[0]*ker_dim[1]);dot12.SetZero();
+        Matrix<T> dot22(ker_dim[0]*ker_dim[1],ker_dim[0]*ker_dim[1]);dot22.SetZero();
+        std::vector<T> norm1(ker_dim[0]*ker_dim[1]);
+        std::vector<T> norm2(ker_dim[0]*ker_dim[1]);
+        {
+          for(size_t k=0;k<N;k++)
+          for(size_t i=0;i<ker_dim[0]*ker_dim[1];i++)
+          for(size_t j=0;j<ker_dim[0]*ker_dim[1];j++){
+            dot11[i][j]+=M1[k][i]*M1[k][j];
+            dot12[i][j]+=M1[k][i]*M2[k][j];
+            dot22[i][j]+=M2[k][i]*M2[k][j];
+          }
+          for(size_t i=0;i<ker_dim[0]*ker_dim[1];i++){
+            norm1[i]=sqrt(dot11[i][i]);
+            norm2[i]=sqrt(dot22[i][i]);
+          }
+          for(size_t i=0;i<ker_dim[0]*ker_dim[1];i++)
+          for(size_t j=0;j<ker_dim[0]*ker_dim[1];j++){
+            dot11[i][j]/=(norm1[i]*norm1[j]);
+            dot12[i][j]/=(norm1[i]*norm2[j]);
+            dot22[i][j]/=(norm2[i]*norm2[j]);
+          }
+        }
+
+        long long flag=1;
+        M11.Resize(ker_dim[0],ker_dim[1]); M11.SetZero();
+        M22.Resize(ker_dim[0],ker_dim[1]); M22.SetZero();
+        for(size_t i=0;i<ker_dim[0]*ker_dim[1];i++){
+          if(norm1[i]>eps && M11[0][i]==0){
+            for(size_t j=0;j<ker_dim[0]*ker_dim[1];j++){
+              if(fabs(norm1[i]-norm1[j])<eps && fabs(fabs(dot11[i][j])-1.0)<eps){
+                M11[0][j]=(dot11[i][j]>0?flag:-flag);
+              }
+              if(fabs(norm1[i]-norm2[j])<eps && fabs(fabs(dot12[i][j])-1.0)<eps){
+                M22[0][j]=(dot12[i][j]>0?flag:-flag);
+              }
+            }
+            flag++;
+          }
+        }
+      }
+
+      Matrix<long long> P1, P2;
+      { // P1
+        Matrix<long long>& P=P1;
+        Matrix<long long>  M1=M11;
+        Matrix<long long>  M2=M22;
+        for(size_t i=0;i<M1.Dim(0);i++){
+          for(size_t j=0;j<M1.Dim(1);j++){
+            if(M1[i][j]<0) M1[i][j]=-M1[i][j];
+            if(M2[i][j]<0) M2[i][j]=-M2[i][j];
+          }
+          std::sort(&M1[i][0],&M1[i][M1.Dim(1)]);
+          std::sort(&M2[i][0],&M2[i][M2.Dim(1)]);
+        }
+        P.Resize(M1.Dim(0),M1.Dim(0));
+        for(size_t i=0;i<M1.Dim(0);i++)
+        for(size_t j=0;j<M1.Dim(0);j++){
+          P[i][j]=1;
+          for(size_t k=0;k<M1.Dim(1);k++)
+          if(M1[i][k]!=M2[j][k]){
+            P[i][j]=0;
+            break;
+          }
+        }
+      }
+      { // P2
+        Matrix<long long>& P=P2;
+        Matrix<long long>  M1=M11.Transpose();
+        Matrix<long long>  M2=M22.Transpose();
+        for(size_t i=0;i<M1.Dim(0);i++){
+          for(size_t j=0;j<M1.Dim(1);j++){
+            if(M1[i][j]<0) M1[i][j]=-M1[i][j];
+            if(M2[i][j]<0) M2[i][j]=-M2[i][j];
+          }
+          std::sort(&M1[i][0],&M1[i][M1.Dim(1)]);
+          std::sort(&M2[i][0],&M2[i][M2.Dim(1)]);
+        }
+        P.Resize(M1.Dim(0),M1.Dim(0));
+        for(size_t i=0;i<M1.Dim(0);i++)
+        for(size_t j=0;j<M1.Dim(0);j++){
+          P[i][j]=1;
+          for(size_t k=0;k<M1.Dim(1);k++)
+          if(M1[i][k]!=M2[j][k]){
+            P[i][j]=0;
+            break;
+          }
+        }
+      }
+
+      std::vector<Permutation<long long> > P1vec, P2vec;
+      int dbg_cnt=0;
+      { // P1vec
+        Matrix<long long>& Pmat=P1;
+        std::vector<Permutation<long long> >& Pvec=P1vec;
+
+        Permutation<long long> P(Pmat.Dim(0));
+        Vector<PERM_INT_T>& perm=P.perm;
+        perm.SetZero();
+
+        // First permutation
+        for(size_t i=0;i<P.Dim();i++)
+        for(size_t j=0;j<P.Dim();j++){
+          if(Pmat[i][j]){
+            perm[i]=j;
+            break;
+          }
+        }
+
+        Vector<PERM_INT_T> perm_tmp;
+        while(true){ // Next permutation
+          perm_tmp=perm;
+          std::sort(&perm_tmp[0],&perm_tmp[0]+perm_tmp.Dim());
+          for(size_t i=0;i<perm_tmp.Dim();i++){
+            if(perm_tmp[i]!=i) break;
+            if(i==perm_tmp.Dim()-1){
+              Pvec.push_back(P);
+            }
+          }
+
+          bool last=false;
+          for(size_t i=0;i<P.Dim();i++){
+            PERM_INT_T tmp=perm[i];
+            for(size_t j=perm[i]+1;j<P.Dim();j++){
+              if(Pmat[i][j]){
+                perm[i]=j;
+                break;
+              }
+            }
+            if(perm[i]>tmp) break;
+            for(size_t j=0;j<P.Dim();j++){
+              if(Pmat[i][j]){
+                perm[i]=j;
+                break;
+              }
+            }
+            if(i==P.Dim()-1) last=true;
+          }
+          if(last) break;
+        }
+      }
+      { // P2vec
+        Matrix<long long>& Pmat=P2;
+        std::vector<Permutation<long long> >& Pvec=P2vec;
+
+        Permutation<long long> P(Pmat.Dim(0));
+        Vector<PERM_INT_T>& perm=P.perm;
+        perm.SetZero();
+
+        // First permutation
+        for(size_t i=0;i<P.Dim();i++)
+        for(size_t j=0;j<P.Dim();j++){
+          if(Pmat[i][j]){
+            perm[i]=j;
+            break;
+          }
+        }
+
+        Vector<PERM_INT_T> perm_tmp;
+        while(true){ // Next permutation
+          perm_tmp=perm;
+          std::sort(&perm_tmp[0],&perm_tmp[0]+perm_tmp.Dim());
+          for(size_t i=0;i<perm_tmp.Dim();i++){
+            if(perm_tmp[i]!=i) break;
+            if(i==perm_tmp.Dim()-1){
+              Pvec.push_back(P);
+            }
+          }
+
+          bool last=false;
+          for(size_t i=0;i<P.Dim();i++){
+            PERM_INT_T tmp=perm[i];
+            for(size_t j=perm[i]+1;j<P.Dim();j++){
+              if(Pmat[i][j]){
+                perm[i]=j;
+                break;
+              }
+            }
+            if(perm[i]>tmp) break;
+            for(size_t j=0;j<P.Dim();j++){
+              if(Pmat[i][j]){
+                perm[i]=j;
+                break;
+              }
+            }
+            if(i==P.Dim()-1) last=true;
+          }
+          if(last) break;
+        }
+      }
+
+      { // Find pairs which acutally work (neglect scaling)
+        std::vector<Permutation<long long> > P1vec_, P2vec_;
+        Matrix<long long>  M1=M11;
+        Matrix<long long>  M2=M22;
+        for(size_t i=0;i<M1.Dim(0);i++){
+          for(size_t j=0;j<M1.Dim(1);j++){
+            if(M1[i][j]<0) M1[i][j]=-M1[i][j];
+            if(M2[i][j]<0) M2[i][j]=-M2[i][j];
+          }
+        }
+
+        Matrix<long long> M;
+        for(size_t i=0;i<P1vec.size();i++)
+        for(size_t j=0;j<P2vec.size();j++){
+          M=P1vec[i]*M2*P2vec[j];
+          for(size_t k=0;k<M.Dim(0)*M.Dim(1);k++){
+            if(M[0][k]!=M1[0][k]) break;
+            if(k==M.Dim(0)*M.Dim(1)-1){
+              P1vec_.push_back(P1vec[i]);
+              P2vec_.push_back(P2vec[j]);
+            }
+          }
+        }
+
+        P1vec=P1vec_;
+        P2vec=P2vec_;
+      }
+
+      Permutation<T> P1_, P2_;
+      { // Find pairs which acutally work
+        for(size_t k=0;k<P1vec.size();k++){
+          Permutation<long long> P1=P1vec[k];
+          Permutation<long long> P2=P2vec[k];
+          Matrix<long long>  M1=   M11   ;
+          Matrix<long long>  M2=P1*M22*P2;
+
+          Matrix<T> M(M1.Dim(0)*M1.Dim(1)+1,M1.Dim(0)+M1.Dim(1));
+          M.SetZero(); M[M1.Dim(0)*M1.Dim(1)][0]=1.0;
+          for(size_t i=0;i<M1.Dim(0);i++)
+          for(size_t j=0;j<M1.Dim(1);j++){
+            size_t k=i*M1.Dim(1)+j;
+            M[k][          i]= M1[i][j];
+            M[k][M1.Dim(0)+j]=-M2[i][j];
+          }
+          M=M.pinv();
+          { // Construct new permutation
+            Permutation<long long> P1_(M1.Dim(0));
+            Permutation<long long> P2_(M1.Dim(1));
+            for(size_t i=0;i<M1.Dim(0);i++){
+              P1_.scal[i]=(M[i][M1.Dim(0)*M1.Dim(1)]>0?1:-1);
+            }
+            for(size_t i=0;i<M1.Dim(1);i++){
+              P2_.scal[i]=(M[M1.Dim(0)+i][M1.Dim(0)*M1.Dim(1)]>0?1:-1);
+            }
+            P1=P1_*P1 ;
+            P2=P2 *P2_;
+          }
+
+          bool done=true;
+          Matrix<long long> Merr=P1*M22*P2-M11;
+          for(size_t i=0;i<Merr.Dim(0)*Merr.Dim(1);i++){
+            if(Merr[0][i]){
+              done=false;
+              break;
+            }
+          }
+          if(done){
+            P1_=Permutation<T>(P1.Dim());
+            P2_=Permutation<T>(P2.Dim());
+            for(size_t i=0;i<P1.Dim();i++){
+              P1_.perm[i]=P1.perm[i];
+              P1_.scal[i]=P1.scal[i];
+            }
+            for(size_t i=0;i<P2.Dim();i++){
+              P2_.perm[i]=P2.perm[i];
+              P2_.scal[i]=P2.scal[i];
+            }
+            break;
+          }
+        }
+      }
+
+      //std::cout<<P1_<<'\n';
+      //std::cout<<P2_<<'\n';
+      perm_vec[p_type       ]=P1_.Transpose();
+      perm_vec[p_type+C_Perm]=P2_;
+    }
+
+    for(size_t i=0;i<2*C_Perm;i++){
+      if(perm_vec[i].Dim()==0){
+        perm_vec.Resize(0);
+        std::cout<<"no-symmetry for: "<<ker_name<<'\n';
+        break;
+      }
+    }
+  }
+
+  if(verbose){ // Display kernel information
+    std::cout<<"\n";
+    std::cout<<"Kernel Name    : "<<ker_name<<'\n';
+    std::cout<<"Precision      : "<<(double)eps<<'\n';
+    std::cout<<"Symmetry       : "<<(perm_vec.Dim()>0?"yes":"no")<<'\n';
+    std::cout<<"Scale Invariant: "<<(homogen?"yes":"no")<<'\n';
+    if(homogen){
+      std::cout<<"Scaling Matrix :\n";
+      Matrix<T> S(ker_dim[0],1);
+      Matrix<T> T(1,ker_dim[1]);
+      for(size_t i=0;i<ker_dim[0];i++) S[i][0]=pow(2.0,src_scal[i]);
+      for(size_t i=0;i<ker_dim[1];i++) T[0][i]=pow(2.0,trg_scal[i]);
+      std::cout<<S*T;
+    }
+
+    std::cout<<"Error          : ";
+    for(T rad=1.0; rad>1.0e-2; rad*=0.5){ // Accuracy of multipole expansion
+      int m=8; // multipole order
+
+      std::vector<T> equiv_surf;
+      std::vector<T> check_surf;
+      for(int i0=0;i0<m;i0++){
+        for(int i1=0;i1<m;i1++){
+          for(int i2=0;i2<m;i2++){
+            if(i0==  0 || i1==  0 || i2==  0 ||
+               i0==m-1 || i1==m-1 || i2==m-1){
+
+              // Range: [-1/3,1/3]^3
+              T x=((T)2*i0-(m-1))/(m-1)/3;
+              T y=((T)2*i1-(m-1))/(m-1)/3;
+              T z=((T)2*i2-(m-1))/(m-1)/3;
+
+              equiv_surf.push_back(x*RAD0*rad);
+              equiv_surf.push_back(y*RAD0*rad);
+              equiv_surf.push_back(z*RAD0*rad);
+
+              check_surf.push_back(x*RAD1*rad);
+              check_surf.push_back(y*RAD1*rad);
+              check_surf.push_back(z*RAD1*rad);
+            }
+          }
+        }
+      }
+      size_t n_equiv=equiv_surf.size()/COORD_DIM;
+      size_t n_check=equiv_surf.size()/COORD_DIM;
+
+      size_t n_src=m;
+      size_t n_trg=m;
+      std::vector<T> src_coord;
+      std::vector<T> trg_coord;
+      for(size_t i=0;i<n_src*COORD_DIM;i++){
+        src_coord.push_back((2*drand48()-1)/3*rad);
+      }
+      for(size_t i=0;i<n_trg;i++){
+        T x,y,z,r;
+        do{
+          x=(drand48()-0.5);
+          y=(drand48()-0.5);
+          z=(drand48()-0.5);
+          r=sqrt(x*x+y*y+z*z);
+        }while(r==0.0);
+        trg_coord.push_back(x/r*sqrt((T)COORD_DIM)*rad);
+        trg_coord.push_back(y/r*sqrt((T)COORD_DIM)*rad);
+        trg_coord.push_back(z/r*sqrt((T)COORD_DIM)*rad);
+      }
+
+      Matrix<T> M_s2c(n_src*ker_dim[0],n_check*ker_dim[1]);
+      BuildMatrix( &src_coord[0], n_src,
+                  &check_surf[0], n_check, &(M_s2c[0][0]));
+
+      Matrix<T> M_e2c(n_equiv*ker_dim[0],n_check*ker_dim[1]);
+      BuildMatrix(&equiv_surf[0], n_equiv,
+                  &check_surf[0], n_check, &(M_e2c[0][0]));
+      Matrix<T> M_c2e=M_e2c.pinv();
+
+      Matrix<T> M_e2t(n_equiv*ker_dim[0],n_trg*ker_dim[1]);
+      BuildMatrix(&equiv_surf[0], n_equiv,
+                   &trg_coord[0], n_trg  , &(M_e2t[0][0]));
+
+      Matrix<T> M_s2t(n_src*ker_dim[0],n_trg*ker_dim[1]);
+      BuildMatrix( &src_coord[0], n_src,
+                   &trg_coord[0], n_trg  , &(M_s2t[0][0]));
+
+      Matrix<T> M=M_s2c*M_c2e*M_e2t-M_s2t;
+      T max_error=0, max_value=0;
+      for(size_t i=0;i<M.Dim(0);i++)
+      for(size_t j=0;j<M.Dim(1);j++){
+        max_error=std::max<T>(max_error,fabs(M    [i][j]));
+        max_value=std::max<T>(max_value,fabs(M_s2t[i][j]));
+      }
+
+      std::cout<<(double)(max_error/max_value)<<' ';
+      if(homogen) break;
+    }
+    std::cout<<"\n";
+    std::cout<<"\n";
+  }
 }
 
 /**
@@ -73,7 +639,7 @@ Kernel<T>::Kernel(Ker_t poten, Ker_t dbl_poten, const char* name, int dim_,
  */
 template <class T>
 void Kernel<T>::BuildMatrix(T* r_src, int src_cnt,
-                 T* r_trg, int trg_cnt, T* k_out){
+                 T* r_trg, int trg_cnt, T* k_out) const{
   int dim=3; //Only supporting 3D
   memset(k_out, 0, src_cnt*ker_dim[0]*trg_cnt*ker_dim[1]*sizeof(T));
   for(int i=0;i<src_cnt;i++) //TODO Optimize this.

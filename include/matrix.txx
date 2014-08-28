@@ -21,6 +21,7 @@ namespace pvfmm{
 
 template <class T>
 std::ostream& operator<<(std::ostream& output, const Matrix<T>& M){
+  std::ios::fmtflags f(std::cout.flags());
   output<<std::fixed<<std::setprecision(4)<<std::setiosflags(std::ios::left);
   for(size_t i=0;i<M.Dim(0);i++){
     for(size_t j=0;j<M.Dim(1);j++){
@@ -30,6 +31,7 @@ std::ostream& operator<<(std::ostream& output, const Matrix<T>& M){
     }
     output<<";\n";
   }
+  std::cout.flags(f);
   return output;
 }
 
@@ -433,6 +435,41 @@ void Matrix<T>::Transpose(Matrix<T>& M_r, const Matrix<T>& M){
 #undef B1
 
 template <class T>
+void Matrix<T>::SVD(Matrix<T>& tU, Matrix<T>& tS, Matrix<T>& tVT){
+  pvfmm::Matrix<T>& M=*this;
+  pvfmm::Matrix<T> M_=M;
+  int n=M.Dim(0);
+  int m=M.Dim(1);
+
+  int k = (m<n?m:n);
+  tU.Resize(n,k); tU.SetZero();
+  tS.Resize(k,k); tS.SetZero();
+  tVT.Resize(k,m); tVT.SetZero();
+
+  //SVD
+  int INFO=0;
+  char JOBU  = 'S';
+  char JOBVT = 'S';
+
+  int wssize = 3*(m<n?m:n)+(m>n?m:n);
+  int wssize1 = 5*(m<n?m:n);
+  wssize = (wssize>wssize1?wssize:wssize1);
+
+  T* wsbuf = new T[wssize];
+  pvfmm::mat::svd(&JOBU, &JOBVT, &m, &n, &M[0][0], &m, &tS[0][0], &tVT[0][0], &m, &tU[0][0], &k, wsbuf, &wssize, &INFO);
+  delete[] wsbuf;
+
+  if(INFO!=0) std::cout<<INFO<<'\n';
+  assert(INFO==0);
+
+  for(size_t i=1;i<k;i++){
+    tS[i][i]=tS[0][i];
+    tS[0][i]=0;
+  }
+  //std::cout<<tU*tS*tVT-M_<<'\n';
+}
+
+template <class T>
 Matrix<T> Matrix<T>::pinv(T eps){
   if(eps<0){
     eps=1.0;
@@ -451,7 +488,7 @@ Matrix<T> Matrix<T>::pinv(T eps){
 template <class T>
 std::ostream& operator<<(std::ostream& output, const Permutation<T>& P){
   output<<std::setprecision(4)<<std::setiosflags(std::ios::left);
-  size_t size=P.perm.size();
+  size_t size=P.perm.Dim();
   for(size_t i=0;i<size;i++) output<<std::setw(10)<<P.perm[i]<<' ';
   output<<";\n";
   for(size_t i=0;i<size;i++) output<<std::setw(10)<<P.scal[i]<<' ';

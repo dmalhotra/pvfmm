@@ -56,11 +56,19 @@ template <class T>
 void points2cheb(int deg, T* coord, T* val, int n, int dim, T* node_coord, T node_size, Vector<T>& cheb_coeff);
 
 /**
+ * \brief Returns an n-point quadrature rule with points 'x' and weights 'w'.
+ * Gauss-Legendre quadrature rule for double precision and Chebyshev quadrature
+ * rule for other data types.
+ */
+template <class T>
+void quad_rule(int n, T* x, T* w);
+
+/**
  * \brief
  * \param[in] r Length of the side of cubic region.
  */
 template <class T>
-std::vector<T> cheb_integ(int m, T* s, T r, Kernel<T>& kernel);
+std::vector<T> cheb_integ(int m, T* s, T r, const Kernel<T>& kernel);
 
 /**
  * \brief Returns coordinates of Chebyshev node points in 'dim' dimensional

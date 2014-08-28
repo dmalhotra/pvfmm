@@ -49,8 +49,8 @@ QuadReal_t fabs(const QuadReal_t& f){
 
 QuadReal_t sqrt(const QuadReal_t& a){
   QuadReal_t b=sqrt((double)a);
-  b=b+(a/b-b)*0.5;
-  b=b+(a/b-b)*0.5;
+  b=(b+a/b)*0.5;
+  b=(b+a/b)*0.5;
   return b;
 }
 
@@ -181,7 +181,13 @@ QuadReal_t exp(const QuadReal_t& a){
   }
   eval=eval*(1.0+t);
   return (a<0.0?1.0/eval:eval);
-  return eval;
+}
+
+QuadReal_t log(const QuadReal_t& a){
+  QuadReal_t y0=log((double)a);
+  y0=y0+(a/exp(y0)-1.0);
+  y0=y0+(a/exp(y0)-1.0);
+  return y0;
 }
 
 std::ostream& operator<<(std::ostream& output, const QuadReal_t& q_){

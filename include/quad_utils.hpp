@@ -6,6 +6,7 @@
  */
 
 #include <cmath>
+#include <ostream>
 
 #ifndef _QUAD_UTILS_
 #define _QUAD_UTILS_
@@ -31,6 +32,8 @@ inline QuadReal_t sin(const QuadReal_t& a);
 inline QuadReal_t cos(const QuadReal_t& a);
 
 inline QuadReal_t exp(const QuadReal_t& a);
+
+inline QuadReal_t log(const QuadReal_t& a);
 
 template<>
 inline QuadReal_t const_pi<QuadReal_t>(){

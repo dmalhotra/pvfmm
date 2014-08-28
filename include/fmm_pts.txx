@@ -219,11 +219,23 @@ template <class FMMNode>
 void FMM_Pts<FMMNode>::Initialize(int mult_order, const MPI_Comm& comm_, const Kernel<Real_t>* kernel_, const Kernel<Real_t>* aux_kernel_){
   Profile::Tic("InitFMM_Pts",&comm_,true);{
 
+  bool verbose=false;
+  #ifndef NDEBUG
+  #ifdef __VERBOSE__
+  int rank;
+  MPI_Comm_rank(comm_,&rank);
+  if(!rank) verbose=true;
+  #endif
+  #endif
+  if(    kernel_)     kernel_->Initialize(verbose);
+  if(aux_kernel_) aux_kernel_->Initialize(verbose);
+
   multipole_order=mult_order;
   comm=comm_;
-  kernel=*kernel_;
-  aux_kernel=*(aux_kernel_?aux_kernel_:kernel_);
-  assert(kernel.ker_dim[0]==aux_kernel.ker_dim[0]);
+  kernel=kernel_;
+  assert(kernel!=NULL);
+  aux_kernel=(aux_kernel_?aux_kernel_:kernel_);
+  assert(kernel->ker_dim[0]==aux_kernel->ker_dim[0]);
 
   mat=new PrecompMat<Real_t>(Homogen(), MAX_DEPTH+1);
   if(this->mat_fname.size()==0){
@@ -245,7 +257,7 @@ void FMM_Pts<FMMNode>::Initialize(int mult_order, const MPI_Comm& comm_, const K
     }
     #endif
 
-    st<<"Precomp_"<<kernel.ker_name.c_str()<<"_m"<<mult_order;
+    st<<"Precomp_"<<kernel->ker_name.c_str()<<"_m"<<mult_order;
     if(sizeof(Real_t)==8) st<<"";
     else if(sizeof(Real_t)==4) st<<"_f";
     else st<<"_t"<<sizeof(Real_t);
@@ -301,34 +313,6 @@ Permutation<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::PrecompPerm(Mat_Type ty
   Permutation<Real_t>& P_ = mat->Perm((Mat_Type)type, perm_indx);
   if(P_.Dim()!=0) return P_;
 
-  Matrix<size_t> swap_xy(10,9);
-  Matrix<size_t> swap_xz(10,9);
-  {
-      for(int i=0;i<9;i++)
-      for(int j=0;j<9;j++){
-        swap_xy[i][j]=j;
-        swap_xz[i][j]=j;
-      }
-      swap_xy[3][0]=1; swap_xy[3][1]=0; swap_xy[3][2]=2;
-      swap_xz[3][0]=2; swap_xz[3][1]=1; swap_xz[3][2]=0;
-
-
-      swap_xy[6][0]=1; swap_xy[6][1]=0; swap_xy[6][2]=2;
-      swap_xy[6][3]=4; swap_xy[6][4]=3; swap_xy[6][5]=5;
-
-      swap_xz[6][0]=2; swap_xz[6][1]=1; swap_xz[6][2]=0;
-      swap_xz[6][3]=5; swap_xz[6][4]=4; swap_xz[6][5]=3;
-
-
-      swap_xy[9][0]=4; swap_xy[9][1]=3; swap_xy[9][2]=5;
-      swap_xy[9][3]=1; swap_xy[9][4]=0; swap_xy[9][5]=2;
-      swap_xy[9][6]=7; swap_xy[9][7]=6; swap_xy[9][8]=8;
-
-      swap_xz[9][0]=8; swap_xz[9][1]=7; swap_xz[9][2]=6;
-      swap_xz[9][3]=5; swap_xz[9][4]=4; swap_xz[9][5]=3;
-      swap_xz[9][6]=2; swap_xz[9][7]=1; swap_xz[9][8]=0;
-  }
-
   //Compute the matrix.
   Permutation<Real_t> P;
   switch (type){
@@ -353,38 +337,67 @@ Permutation<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::PrecompPerm(Mat_Type ty
     case D2D_Type:
     {
       Real_t eps=1e-10;
-      int dof=kernel.ker_dim[0];
+      int dof=kernel->ker_dim[0];
       size_t p_indx=perm_indx % C_Perm;
+      Permutation<Real_t>& ker_perm=kernel->perm_vec[p_indx];
+      assert(dof==ker_perm.Dim());
+
       Real_t c[3]={-0.5,-0.5,-0.5};
       std::vector<Real_t> trg_coord=d_check_surf(this->MultipoleOrder(),c,0);
       int n_trg=trg_coord.size()/3;
+
       P=Permutation<Real_t>(n_trg*dof);
-      if(p_indx==ReflecX || p_indx==ReflecY || p_indx==ReflecZ){
+      if(p_indx==ReflecX || p_indx==ReflecY || p_indx==ReflecZ){ // Set P.perm
         for(int i=0;i<n_trg;i++)
         for(int j=0;j<n_trg;j++){
           if(fabs(trg_coord[i*3+0]-trg_coord[j*3+0]*(p_indx==ReflecX?-1.0:1.0))<eps)
           if(fabs(trg_coord[i*3+1]-trg_coord[j*3+1]*(p_indx==ReflecY?-1.0:1.0))<eps)
           if(fabs(trg_coord[i*3+2]-trg_coord[j*3+2]*(p_indx==ReflecZ?-1.0:1.0))<eps){
             for(int k=0;k<dof;k++){
-              P.perm[j*dof+k]=i*dof+k;
+              P.perm[j*dof+k]=i*dof+ker_perm.perm[k];
             }
           }
         }
-        if(dof==3) //stokes_vel (and like kernels)
-        for(int j=0;j<n_trg;j++)
-          P.scal[j*dof+(int)p_indx]*=-1.0;
-      }else if(p_indx==SwapXY || p_indx==SwapXZ)
-      for(int i=0;i<n_trg;i++)
-      for(int j=0;j<n_trg;j++){
-        if(fabs(trg_coord[i*3+0]-trg_coord[j*3+(p_indx==SwapXY?1:2)])<eps)
-        if(fabs(trg_coord[i*3+1]-trg_coord[j*3+(p_indx==SwapXY?0:1)])<eps)
-        if(fabs(trg_coord[i*3+2]-trg_coord[j*3+(p_indx==SwapXY?2:0)])<eps){
+      }else if(p_indx==SwapXY || p_indx==SwapXZ){
+        for(int i=0;i<n_trg;i++)
+        for(int j=0;j<n_trg;j++){
+          if(fabs(trg_coord[i*3+0]-trg_coord[j*3+(p_indx==SwapXY?1:2)])<eps)
+          if(fabs(trg_coord[i*3+1]-trg_coord[j*3+(p_indx==SwapXY?0:1)])<eps)
+          if(fabs(trg_coord[i*3+2]-trg_coord[j*3+(p_indx==SwapXY?2:0)])<eps){
+            for(int k=0;k<dof;k++){
+              P.perm[j*dof+k]=i*dof+ker_perm.perm[k];
+            }
+          }
+        }
+      }else{
+        for(int j=0;j<n_trg;j++){
           for(int k=0;k<dof;k++){
-            P.perm[j*dof+k]=i*dof+(p_indx==SwapXY?swap_xy[dof][k]:swap_xz[dof][k]);
+            P.perm[j*dof+k]=j*dof+ker_perm.perm[k];
           }
         }
       }
 
+      if(p_indx==Scaling && this->Homogen()){ // Set level-by-level scaling
+        const Vector<Real_t>& scal_exp=kernel->src_scal;
+        assert(dof==scal_exp.Dim());
+
+        Vector<Real_t> scal(scal_exp.Dim());
+        for(size_t i=0;i<scal_exp.Dim();i++){
+          scal[i]=pow(2.0,(perm_indx<C_Perm?1.0:-1.0)*scal_exp[i]);
+        }
+        for(int j=0;j<n_trg;j++){
+          for(int i=0;i<dof;i++){
+            P.scal[j*dof+i]*=scal[i];
+          }
+        }
+      }
+      { // Set P.scal
+        for(int j=0;j<n_trg;j++){
+          for(int i=0;i<dof;i++){
+            P.scal[j*dof+i]*=ker_perm.scal[i];
+          }
+        }
+      }
       break;
     }
     case D2T_Type:
@@ -455,8 +468,8 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
 
   //Compute the matrix.
   Matrix<Real_t> M;
-  int* ker_dim=kernel.ker_dim;
-  int* aux_ker_dim=aux_kernel.ker_dim;
+  const int* ker_dim=kernel->ker_dim;
+  const int* aux_ker_dim=aux_kernel->ker_dim;
   //int omp_p=omp_get_max_threads();
   switch (type){
 
@@ -474,7 +487,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
 
       // Evaluate potential at check surface due to equivalent surface.
       Matrix<Real_t> M_e2c(n_ue*aux_ker_dim[0],n_uc*aux_ker_dim[1]);
-      aux_kernel.BuildMatrix(&ue_coord[0], n_ue,
+      aux_kernel->BuildMatrix(&ue_coord[0], n_ue,
                              &uc_coord[0], n_uc, &(M_e2c[0][0]));
 
       Real_t eps=1.0;
@@ -496,7 +509,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
 
       // Evaluate potential at check surface due to equivalent surface.
       Matrix<Real_t> M_e2c(n_eq*aux_ker_dim[0],n_ch*aux_ker_dim[1]);
-      aux_kernel.BuildMatrix(&equiv_surf[0], n_eq,
+      aux_kernel->BuildMatrix(&equiv_surf[0], n_eq,
                              &check_surf[0], n_ch, &(M_e2c[0][0]));
 
       Real_t eps=1.0;
@@ -525,7 +538,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
 
       // Evaluate potential at check surface due to equivalent surface.
       Matrix<Real_t> M_ce2c(n_ue*aux_ker_dim[0],n_uc*aux_ker_dim[1]);
-      aux_kernel.BuildMatrix(&equiv_surf[0], n_ue,
+      aux_kernel->BuildMatrix(&equiv_surf[0], n_ue,
                              &check_surf[0], n_uc, &(M_ce2c[0][0]));
       Matrix<Real_t>& M_c2e = Precomp(level, UC2UE_Type, 0);
       M=M_ce2c*M_c2e;
@@ -548,7 +561,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
 
       // Evaluate potential at check surface due to equivalent surface.
       Matrix<Real_t> M_pe2c(n_de*aux_ker_dim[0],n_dc*aux_ker_dim[1]);
-      aux_kernel.BuildMatrix(&equiv_surf[0], n_de,
+      aux_kernel->BuildMatrix(&equiv_surf[0], n_de,
                              &check_surf[0], n_dc, &(M_pe2c[0][0]));
       Matrix<Real_t>& M_c2e=Precomp(level,DC2DE_Type,0);
       M=M_pe2c*M_c2e;
@@ -573,7 +586,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
       // Evaluate potential at target points due to equivalent surface.
       {
         M     .Resize(n_eq*ker_dim [0], n_trg*ker_dim [1]);
-        kernel.BuildMatrix(&equiv_surf[0], n_eq, &trg_coord[0], n_trg, &(M     [0][0]));
+        kernel->BuildMatrix(&equiv_surf[0], n_eq, &trg_coord[0], n_trg, &(M     [0][0]));
       }
       break;
     }
@@ -605,7 +618,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
       std::vector<Real_t> r_trg(COORD_DIM,0.0);
       std::vector<Real_t> conv_poten(n3*aux_ker_dim[0]*aux_ker_dim[1]);
       std::vector<Real_t> conv_coord=conv_grid(MultipoleOrder(),coord_diff,level);
-      aux_kernel.BuildMatrix(&conv_coord[0],n3,&r_trg[0],1,&conv_poten[0]);
+      aux_kernel->BuildMatrix(&conv_coord[0],n3,&r_trg[0],1,&conv_poten[0]);
 
       //Rearrange data.
       Matrix<Real_t> M_conv(n3,aux_ker_dim[0]*aux_ker_dim[1],&conv_poten[0],false);
@@ -701,7 +714,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
       // Evaluate potential at target points due to equivalent surface.
       {
         M     .Resize(n_eq*ker_dim [0],n_trg*ker_dim [1]);
-        kernel.BuildMatrix(&equiv_surf[0], n_eq, &trg_coord[0], n_trg, &(M     [0][0]));
+        kernel->BuildMatrix(&equiv_surf[0], n_eq, &trg_coord[0], n_trg, &(M     [0][0]));
       }
       break;
     }
@@ -728,22 +741,21 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
               for(size_t k=0;k<aux_ker_dim[0];k++)
                 M_zero_avg[i*aux_ker_dim[0]+k][j*aux_ker_dim[0]+k]-=1.0/n_surf;
         }
-        for(int level=0; level>-BC_LEVELS; level--){
+        for(int level=0; level>=-BC_LEVELS; level--){
+          // Compute M_l2l
           M_l2l[-level] = this->Precomp(level, D2D_Type, 0);
-          if(M_l2l[-level].Dim(0)==0 || M_l2l[-level].Dim(1)==0){
-            Matrix<Real_t>& M0 = interac_list.ClassMat(level, D2D_Type, 0);
-            Permutation<Real_t>& Pr = this->interac_list.Perm_R(level, D2D_Type, 0);
-            Permutation<Real_t>& Pc = this->interac_list.Perm_C(level, D2D_Type, 0);
-            M_l2l[-level] = Pr*M0*Pc;
+          assert(M_l2l[-level].Dim(0)>0 && M_l2l[-level].Dim(1)>0);
+
+          // Compute M_m2m
+          for(size_t mat_indx=0; mat_indx<mat_cnt_m2m; mat_indx++){
+            Matrix<Real_t> M=this->Precomp(level, U2U_Type, mat_indx);
+            assert(M.Dim(0)>0 && M_m2m>0);
+            if(mat_indx==0) M_m2m[-level] = M_zero_avg*M;
+            else M_m2m[-level] += M_zero_avg*M;
           }
-          M_m2m[-level] = M_zero_avg*this->Precomp(level, U2U_Type, 0);
 
-          for(size_t mat_indx=1; mat_indx<mat_cnt_m2m; mat_indx++)
-            M_m2m[-level] += M_zero_avg*this->Precomp(level, U2U_Type, mat_indx);
-        }
-
-        for(int level=-BC_LEVELS;level<=0;level++){
-          if(!Homogen() || level==-BC_LEVELS){
+          // Compute M_m2l
+          if(!Homogen() || level==0){
             Real_t s=(1UL<<(-level));
             Real_t ue_coord[3]={0,0,0};
             Real_t dc_coord[3]={0,0,0};
@@ -759,26 +771,27 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
               ue_coord[0]=x0*s; ue_coord[1]=x1*s; ue_coord[2]=x2*s;
               std::vector<Real_t> src_coord=u_equiv_surf(MultipoleOrder(), ue_coord, level);
               Matrix<Real_t> M_tmp(n_surf*aux_ker_dim[0], n_surf*aux_ker_dim[1]);
-              aux_kernel.BuildMatrix(&src_coord[0], n_surf,
+              aux_kernel->BuildMatrix(&src_coord[0], n_surf,
                                      &trg_coord[0], n_surf, &(M_tmp[0][0]));
               M_ue2dc+=M_tmp;
             }
 
             // Shift by constant.
-            Real_t scale_adj=(Homogen()?pow(0.5, level*aux_kernel.poten_scale):1);
             for(size_t i=0;i<M_ue2dc.Dim(0);i++){
               std::vector<Real_t> avg(aux_ker_dim[1],0);
               for(size_t j=0; j<M_ue2dc.Dim(1); j+=aux_ker_dim[1])
                 for(int k=0; k<aux_ker_dim[1]; k++) avg[k]+=M_ue2dc[i][j+k];
               for(int k=0; k<aux_ker_dim[1]; k++) avg[k]/=n_surf;
               for(size_t j=0; j<M_ue2dc.Dim(1); j+=aux_ker_dim[1])
-                for(int k=0; k<aux_ker_dim[1]; k++) M_ue2dc[i][j+k]=(M_ue2dc[i][j+k]-avg[k])*scale_adj;
+                for(int k=0; k<aux_ker_dim[1]; k++) M_ue2dc[i][j+k]-=avg[k];
             }
 
             Matrix<Real_t>& M_dc2de = Precomp(level, DC2DE_Type, 0);
             M_m2l[-level]=M_ue2dc*M_dc2de;
-          }else M_m2l[-level]=M_m2l[1-level];
+          }else M_m2l[-level]=M_m2l[-level-1];
+        }
 
+        for(int level=-BC_LEVELS;level<=0;level++){
           if(level==-BC_LEVELS) M = M_m2l[-level];
           else                  M = M_m2l[-level] + M_m2m[-level]*M*M_l2l[-level];
 
@@ -787,15 +800,16 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
             { // M_de2dc TODO: For homogeneous kernels, compute only once.
               // Coord of downward check surface
               Real_t c[3]={0,0,0};
-              std::vector<Real_t> check_surf=d_check_surf(MultipoleOrder(),c,0);
+              int level_=(Homogen()?0:level);
+              std::vector<Real_t> check_surf=d_check_surf(MultipoleOrder(),c,level_);
               size_t n_ch=check_surf.size()/3;
 
               // Coord of downward equivalent surface
-              std::vector<Real_t> equiv_surf=d_equiv_surf(MultipoleOrder(),c,0);
+              std::vector<Real_t> equiv_surf=d_equiv_surf(MultipoleOrder(),c,level_);
               size_t n_eq=equiv_surf.size()/3;
 
               // Evaluate potential at check surface due to equivalent surface.
-              aux_kernel.BuildMatrix(&equiv_surf[0], n_eq,
+              aux_kernel->BuildMatrix(&equiv_surf[0], n_eq,
                                      &check_surf[0], n_ch, &(M_de2dc[0][0]));
             }
             Matrix<Real_t> M_ue2dc=M*M_de2dc;
@@ -832,7 +846,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
           { // Evaluate potential at corner due to upward and dnward equivalent surface.
             { // Error from local expansion.
               Matrix<Real_t> M_e2pt(n_surf*aux_ker_dim[0],n_corner*aux_ker_dim[1]);
-              aux_kernel.BuildMatrix(&dn_equiv_surf[0], n_surf,
+              aux_kernel->BuildMatrix(&dn_equiv_surf[0], n_surf,
                                      &corner_pts[0], n_corner, &(M_e2pt[0][0]));
               M_err=M*M_e2pt;
             }
@@ -845,7 +859,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
                                     corner_pts[k*COORD_DIM+2]-j2};
                 if(fabs(pt_coord[0]-0.5)>1.0 || fabs(pt_coord[1]-0.5)>1.0 || fabs(pt_coord[2]-0.5)>1.0){
                   Matrix<Real_t> M_e2pt(n_surf*aux_ker_dim[0],aux_ker_dim[1]);
-                  aux_kernel.BuildMatrix(&up_equiv_surf[0], n_surf,
+                  aux_kernel->BuildMatrix(&up_equiv_surf[0], n_surf,
                                          &pt_coord[0], 1, &(M_e2pt[0][0]));
                   for(size_t i=0;i<M_e2pt.Dim(0);i++)
                     for(size_t j=0;j<M_e2pt.Dim(1);j++)
@@ -926,11 +940,8 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
 
 template <class FMMNode>
 void FMM_Pts<FMMNode>::PrecompAll(Mat_Type type, int level){
-  int depth=(Homogen()?1:MAX_DEPTH);
   if(level==-1){
-    for(int l=0;l<depth;l++){
-      std::stringstream level_str;
-      level_str<<"level="<<l;
+    for(int l=0;l<MAX_DEPTH;l++){
       PrecompAll(type, l);
     }
     return;
@@ -1081,7 +1092,7 @@ void FMM_Pts<FMMNode>::CollectNodeData(std::vector<FMMNode*>& node, std::vector<
   }
   {// 4. src_val
     int indx=4;
-    int src_dof=kernel.ker_dim[0];
+    int src_dof=kernel->ker_dim[0];
     int surf_dof=COORD_DIM+src_dof;
     std::vector< FMMNode* > node_lst;
     size_t buff_size=0;
@@ -1127,7 +1138,7 @@ void FMM_Pts<FMMNode>::CollectNodeData(std::vector<FMMNode*>& node, std::vector<
   }
   {// 5. trg_val
     int indx=5;
-    int trg_dof=kernel.ker_dim[1];
+    int trg_dof=kernel->ker_dim[1];
     std::vector< FMMNode* > node_lst;
     size_t buff_size=0;
     for(size_t i=0;i<node.size();i++)
@@ -1295,7 +1306,6 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
     std::vector<size_t> interac_blk;
     std::vector<size_t>  input_perm;
     std::vector<size_t> output_perm;
-    std::vector<Real_t> scaling;
     size_t dof=0, M_dim0=0, M_dim1=0;
 
     size_t precomp_offset=0;
@@ -1304,13 +1314,14 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
 
       Mat_Type& interac_type=interac_type_lst[type_indx];
       size_t mat_cnt=this->interac_list.ListCount(interac_type);
-      Vector<size_t> precomp_data_offset;
+      Matrix<size_t> precomp_data_offset;
       { // Load precomp_data for interac_type.
         Matrix<char>& precomp_data=*setup_data.precomp_data;
         char* indx_ptr=precomp_data[0]+precomp_offset;
         size_t total_size=((size_t*)indx_ptr)[0]; indx_ptr+=sizeof(size_t);
-        /*size_t mat_cnt_  =((size_t*)indx_ptr)[0];*/ indx_ptr+=sizeof(size_t);
-        precomp_data_offset.ReInit((1+2+2)*mat_cnt, (size_t*)indx_ptr, false);
+        size_t mat_cnt_  =((size_t*)indx_ptr)[0]; indx_ptr+=sizeof(size_t);
+        size_t max_depth =((size_t*)indx_ptr)[0]; indx_ptr+=sizeof(size_t);
+        precomp_data_offset.ReInit(mat_cnt_,(1+(2+2)*max_depth), (size_t*)indx_ptr, false);
         precomp_offset+=total_size;
       }
 
@@ -1370,7 +1381,7 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
 
             assert(interac_dsp_*vec_size<=buff_size); // Problem too big for buff_size.
           }
-          interac_mat.push_back(precomp_data_offset[5*this->interac_list.InteracClass(interac_type,j)+0]);
+          interac_mat.push_back(precomp_data_offset[this->interac_list.InteracClass(interac_type,j)][0]);
           interac_cnt.push_back(interac_dsp_-interac_dsp[0][j]);
         }
         interac_blk.push_back(mat_cnt-interac_blk_dsp.back());
@@ -1385,8 +1396,9 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
             for(size_t j=interac_blk_dsp[k-1];j<interac_blk_dsp[k];j++){
               FMMNode_t* trg_node=src_interac_list[i][j];
               if(trg_node!=NULL){
-                input_perm .push_back(precomp_data_offset[5*j+1]); // prem
-                input_perm .push_back(precomp_data_offset[5*j+2]); // scal
+                size_t depth=trg_node->Depth();
+                input_perm .push_back(precomp_data_offset[j][1+4*depth+0]); // prem
+                input_perm .push_back(precomp_data_offset[j][1+4*depth+1]); // scal
                 input_perm .push_back(interac_dsp[trg_node->node_id][j]*vec_size*sizeof(Real_t)); // trg_ptr
                 input_perm .push_back((size_t)(& input_vector[i][0][0]- input_data[0])); // src_ptr
                 assert(input_vector[i]->Dim()==vec_size);
@@ -1399,23 +1411,11 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
         size_t vec_size=M_dim1*dof;
         for(size_t k=1;k<interac_blk_dsp.size();k++){
           for(size_t i=0;i<n_out;i++){
-            Real_t scaling_=0.0;
-            if(!this->Homogen()) scaling_=1.0;
-            else if(interac_type==S2U_Type) scaling_=pow(0.5, COORD_DIM                                *((FMMNode*)nodes_out[i])->Depth());
-            else if(interac_type==U2U_Type) scaling_=1.0;
-            else if(interac_type==D2D_Type) scaling_=1.0;
-            else if(interac_type==D2T_Type) scaling_=pow(0.5,          -setup_data.kernel->poten_scale *((FMMNode*)nodes_out[i])->Depth());
-            else if(interac_type== U0_Type) scaling_=pow(0.5,(COORD_DIM-setup_data.kernel->poten_scale)*((FMMNode*)nodes_out[i])->Depth());
-            else if(interac_type== U1_Type) scaling_=pow(0.5,(COORD_DIM-setup_data.kernel->poten_scale)*((FMMNode*)nodes_out[i])->Depth());
-            else if(interac_type== U2_Type) scaling_=pow(0.5,(COORD_DIM-setup_data.kernel->poten_scale)*((FMMNode*)nodes_out[i])->Depth());
-            else if(interac_type==  W_Type) scaling_=pow(0.5,          -setup_data.kernel->poten_scale *((FMMNode*)nodes_out[i])->Depth());
-            else if(interac_type==  X_Type) scaling_=pow(0.5, COORD_DIM                                *((FMMNode*)nodes_out[i])->Depth());
-
             for(size_t j=interac_blk_dsp[k-1];j<interac_blk_dsp[k];j++){
               if(trg_interac_list[i][j]!=NULL){
-                scaling.push_back(scaling_); // scaling
-                output_perm.push_back(precomp_data_offset[5*j+3]); // prem
-                output_perm.push_back(precomp_data_offset[5*j+4]); // scal
+                size_t depth=((FMMNode*)nodes_out[i])->Depth();
+                output_perm.push_back(precomp_data_offset[j][1+4*depth+2]); // prem
+                output_perm.push_back(precomp_data_offset[j][1+4*depth+3]); // scal
                 output_perm.push_back(interac_dsp[               i ][j]*vec_size*sizeof(Real_t)); // src_ptr
                 output_perm.push_back((size_t)(&output_vector[i][0][0]-output_data[0])); // trg_ptr
                 assert(output_vector[i]->Dim()==vec_size);
@@ -1435,7 +1435,6 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
       data_size+=sizeof(size_t)+interac_mat.size()*sizeof(size_t);
       data_size+=sizeof(size_t)+ input_perm.size()*sizeof(size_t);
       data_size+=sizeof(size_t)+output_perm.size()*sizeof(size_t);
-      data_size+=sizeof(size_t)+scaling.size()*sizeof(Real_t);
       if(interac_data.Dim(0)*interac_data.Dim(1)<sizeof(size_t)){
         data_size+=sizeof(size_t);
         interac_data.Resize(1,data_size);
@@ -1477,10 +1476,6 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
       ((size_t*)data_ptr)[0]=output_perm.size(); data_ptr+=sizeof(size_t);
       mem::memcopy(data_ptr, &output_perm[0], output_perm.size()*sizeof(size_t));
       data_ptr+=output_perm.size()*sizeof(size_t);
-
-      ((size_t*)data_ptr)[0]=scaling.size(); data_ptr+=sizeof(size_t);
-      mem::memcopy(data_ptr, &scaling[0], scaling.size()*sizeof(Real_t));
-      data_ptr+=scaling.size()*sizeof(Real_t);
     }
   }
   Profile::Toc();
@@ -1541,7 +1536,6 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
     Vector<size_t> interac_mat;
     Vector<size_t>  input_perm;
     Vector<size_t> output_perm;
-    Vector<Real_t> scaling;
     { // Set interac_data.
       char* data_ptr=&interac_data[0][0];
 
@@ -1565,9 +1559,6 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
 
       output_perm.ReInit(((size_t*)data_ptr)[0],(size_t*)(data_ptr+sizeof(size_t)),false);
       data_ptr+=sizeof(size_t)+output_perm.Dim()*sizeof(size_t);
-
-      scaling.ReInit(((size_t*)data_ptr)[0],(Real_t*)(data_ptr+sizeof(size_t)),false);
-      data_ptr+=sizeof(size_t)+scaling.Dim()*sizeof(Real_t);
     }
 
     if(device) MIC_Lock::wait_lock(wait_lock_idx);
@@ -1675,7 +1666,6 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
             if(tid<omp_p-1) while(b<vec_cnt && out_ptr==output_perm[(interac_indx+b)*4+3]) b++;
           }
           for(size_t i=a;i<b;i++){ // Compute permutations.
-            Real_t scaling_factor=scaling[interac_indx+i];
             const PERM_INT_T*  perm=(PERM_INT_T*)(precomp_data[0]+output_perm[(interac_indx+i)*4+0]);
             const     Real_t*  scal=(    Real_t*)(precomp_data[0]+output_perm[(interac_indx+i)*4+1]);
             const     Real_t* v_in =(    Real_t*)(    buff_out   +output_perm[(interac_indx+i)*4+2]);
@@ -1695,29 +1685,29 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
               assert(((uintptr_t)(v_out+j_end  ))%64==0);
               size_t j=0;
               for(;j<j_start;j++ ){
-                v_out[j]+=v_in[perm[j]]*scal[j]*scaling_factor;
+                v_out[j]+=v_in[perm[j]]*scal[j];
               }
               for(;j<j_end  ;j+=8){
                 v_old=_mm512_load_pd(v_out+j);
                 v8=_mm512_setr_pd(
-                    v_in[perm[j+0]]*scal[j+0]*scaling_factor,
-                    v_in[perm[j+1]]*scal[j+1]*scaling_factor,
-                    v_in[perm[j+2]]*scal[j+2]*scaling_factor,
-                    v_in[perm[j+3]]*scal[j+3]*scaling_factor,
-                    v_in[perm[j+4]]*scal[j+4]*scaling_factor,
-                    v_in[perm[j+5]]*scal[j+5]*scaling_factor,
-                    v_in[perm[j+6]]*scal[j+6]*scaling_factor,
-                    v_in[perm[j+7]]*scal[j+7]*scaling_factor);
+                    v_in[perm[j+0]]*scal[j+0],
+                    v_in[perm[j+1]]*scal[j+1],
+                    v_in[perm[j+2]]*scal[j+2],
+                    v_in[perm[j+3]]*scal[j+3],
+                    v_in[perm[j+4]]*scal[j+4],
+                    v_in[perm[j+5]]*scal[j+5],
+                    v_in[perm[j+6]]*scal[j+6],
+                    v_in[perm[j+7]]*scal[j+7]);
                 v_old=_mm512_add_pd(v_old, v8);
                 _mm512_storenrngo_pd(v_out+j,v_old);
               }
               for(;j<M_dim1 ;j++ ){
-                v_out[j]+=v_in[perm[j]]*scal[j]*scaling_factor;
+                v_out[j]+=v_in[perm[j]]*scal[j];
               }
             }
             #else
             for(size_t j=0;j<M_dim1;j++ ){
-              v_out[j]+=v_in[perm[j]]*scal[j]*scaling_factor;
+              v_out[j]+=v_in[perm[j]]*scal[j];
             }
             #endif
           }
@@ -1748,7 +1738,7 @@ void FMM_Pts<FMMNode>::Source2UpSetup(SetupData<Real_t>&  setup_data, std::vecto
   if(this->MultipoleOrder()==0) return;
   { // Set setup_data
     setup_data.level=level;
-    setup_data.kernel=&aux_kernel;
+    setup_data.kernel=aux_kernel;
     setup_data.interac_type.resize(1);
     setup_data.interac_type[0]=S2U_Type;
 
@@ -1800,7 +1790,7 @@ void FMM_Pts<FMMNode>::Up2UpSetup(SetupData<Real_t>& setup_data, std::vector<Mat
   if(this->MultipoleOrder()==0) return;
   { // Set setup_data
     setup_data.level=level;
-    setup_data.kernel=&aux_kernel;
+    setup_data.kernel=aux_kernel;
     setup_data.interac_type.resize(1);
     setup_data.interac_type[0]=U2U_Type;
 
@@ -2529,7 +2519,7 @@ void FMM_Pts<FMMNode>::V_ListSetup(SetupData<Real_t>&  setup_data, std::vector<M
   if(level==0) return;
   { // Set setup_data
     setup_data.level=level;
-    setup_data.kernel=&aux_kernel;
+    setup_data.kernel=aux_kernel;
     setup_data.interac_type.resize(1);
     setup_data.interac_type[0]=V1_Type;
 
@@ -2566,19 +2556,20 @@ void FMM_Pts<FMMNode>::V_ListSetup(SetupData<Real_t>&  setup_data, std::vector<M
     size_t precomp_offset=0;
     Mat_Type& interac_type=setup_data.interac_type[0];
     size_t mat_cnt=this->interac_list.ListCount(interac_type);
-    Vector<size_t> precomp_data_offset;
+    Matrix<size_t> precomp_data_offset;
     std::vector<size_t> interac_mat;
     { // Load precomp_data for interac_type.
       Matrix<char>& precomp_data=*setup_data.precomp_data;
       char* indx_ptr=precomp_data[0]+precomp_offset;
       size_t total_size=((size_t*)indx_ptr)[0]; indx_ptr+=sizeof(size_t);
-      /*size_t mat_cnt_  =((size_t*)indx_ptr)[0];*/ indx_ptr+=sizeof(size_t);
-      precomp_data_offset.ReInit((1+2+2)*mat_cnt, (size_t*)indx_ptr, false);
+      size_t mat_cnt_  =((size_t*)indx_ptr)[0]; indx_ptr+=sizeof(size_t);
+      size_t max_depth =((size_t*)indx_ptr)[0]; indx_ptr+=sizeof(size_t);
+      precomp_data_offset.ReInit(mat_cnt_,1+(2+2)*max_depth, (size_t*)indx_ptr, false);
       precomp_offset+=total_size;
       for(size_t mat_id=0;mat_id<mat_cnt;mat_id++){
         Matrix<Real_t>& M0 = this->mat->Mat(level, interac_type, mat_id);
         assert(M0.Dim(0)>0 && M0.Dim(1)>0); UNUSED(M0);
-        interac_mat.push_back(precomp_data_offset[5*mat_id]);
+        interac_mat.push_back(precomp_data_offset[mat_id][0]);
       }
     }
 
@@ -2875,7 +2866,7 @@ void FMM_Pts<FMMNode>::Down2DownSetup(SetupData<Real_t>& setup_data, std::vector
   if(this->MultipoleOrder()==0) return;
   { // Set setup_data
     setup_data.level=level;
-    setup_data.kernel=&aux_kernel;
+    setup_data.kernel=aux_kernel;
     setup_data.interac_type.resize(1);
     setup_data.interac_type[0]=D2D_Type;
 
@@ -2940,7 +2931,7 @@ void FMM_Pts<FMMNode>::SetupInteracPts(SetupData<Real_t>& setup_data, bool shift
     std::vector<size_t> trg_coord(n_out);
     std::vector<size_t> trg_value(n_out);
     std::vector<size_t> trg_cnt(n_out);
-    std::vector<Real_t> scaling(n_out,0);
+    std::vector<Real_t> scaling(n_out*(ker_dim0+ker_dim1),0);
     { // Set trg data
       Mat_Type& interac_type=interac_type_lst[0];
       for(size_t i=0;i<n_out;i++){
@@ -2949,9 +2940,17 @@ void FMM_Pts<FMMNode>::SetupInteracPts(SetupData<Real_t>& setup_data, bool shift
           trg_coord[i]=(size_t)(&output_vector[i*2+0][0][0]- coord_data[0]);
           trg_value[i]=(size_t)(&output_vector[i*2+1][0][0]-output_data[0]);
 
-          if(!this->Homogen()) scaling[i]=1.0;
-          else if(interac_type==S2U_Type) scaling[i]=pow(0.5, setup_data.kernel->poten_scale *((FMMNode*)nodes_out[i])->Depth());
-          else if(interac_type==  X_Type) scaling[i]=pow(0.5, setup_data.kernel->poten_scale *((FMMNode*)nodes_out[i])->Depth());
+          Real_t* s=&scaling[i*(ker_dim0+ker_dim1)];
+          for(size_t j=0;j<ker_dim1;j++){
+            if(!this->Homogen()) s[j]=0.0;
+            else if(interac_type==S2U_Type) s[         j]=pow(0.5, setup_data.kernel->trg_scal[j]*((FMMNode*)nodes_out[i])->Depth());
+            else if(interac_type==  X_Type) s[         j]=pow(0.5, setup_data.kernel->trg_scal[j]*((FMMNode*)nodes_out[i])->Depth());
+          }
+          for(size_t j=0;j<ker_dim0;j++){
+            if(!this->Homogen()) s[j]=0.0;
+            else if(interac_type==S2U_Type) s[ker_dim1+j]=pow(0.5, setup_data.kernel->src_scal[j]*((FMMNode*)nodes_out[i])->Depth());
+            else if(interac_type==  X_Type) s[ker_dim1+j]=pow(0.5, setup_data.kernel->src_scal[j]*((FMMNode*)nodes_out[i])->Depth());
+          }
         }
       }
     }
@@ -3148,8 +3147,8 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
   { // Offloaded computation.
 
     // Set interac_data.
-    //size_t data_size;
-    //size_t ker_dim0;
+    size_t data_size;
+    size_t ker_dim0;
     size_t ker_dim1;
     size_t dof, n_out;
     Vector<size_t> trg_interac_cnt;
@@ -3165,8 +3164,8 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
     { // Set interac_data.
       char* data_ptr=&interac_data[0][0];
 
-      /*data_size=((size_t*)data_ptr)[0];*/ data_ptr+=sizeof(size_t);
-      /*ker_dim0=((size_t*)data_ptr)[0];*/ data_ptr+=sizeof(size_t);
+      data_size=((size_t*)data_ptr)[0]; data_ptr+=sizeof(size_t);
+      ker_dim0=((size_t*)data_ptr)[0]; data_ptr+=sizeof(size_t);
       ker_dim1=((size_t*)data_ptr)[0]; data_ptr+=sizeof(size_t);
       dof     =((size_t*)data_ptr)[0]; data_ptr+=sizeof(size_t);
 
@@ -3236,7 +3235,7 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
         for(size_t j=0;j<trg_interac_cnt[i];j++){
           if(ptr_single_layer_kernel!=(size_t)NULL){// Single layer kernel
             Real_t* src_coord_=coord_data[0]+src_coord[i][2*j+0];
-            assert(thread_buff_size>=dof*M.Dim(0)+src_cnt[i][2*j+0]*COORD_DIM);
+            assert(thread_buff_size>=dof*M.Dim(0)+dof*M.Dim(1)+src_cnt[i][2*j+0]*COORD_DIM);
             for(size_t k1=0;k1<src_cnt[i][2*j+0];k1++){ // Compute shifted source coordinates.
               for(size_t k0=0;k0<COORD_DIM;k0++){
                 s_coord[k1*COORD_DIM+k0]=src_coord_[k1*COORD_DIM+k0]+shift_coord[i][j*COORD_DIM+k0];
@@ -3251,7 +3250,7 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
           }
           if(ptr_double_layer_kernel!=(size_t)NULL){// Double layer kernel
             Real_t* src_coord_=coord_data[0]+src_coord[i][2*j+1];
-            assert(thread_buff_size>=dof*M.Dim(0)+src_cnt[i][2*j+1]*COORD_DIM);
+            assert(thread_buff_size>=dof*M.Dim(0)+dof*M.Dim(1)+src_cnt[i][2*j+1]*COORD_DIM);
             for(size_t k1=0;k1<src_cnt[i][2*j+1];k1++){ // Compute shifted source coordinates.
               for(size_t k0=0;k0<COORD_DIM;k0++){
                 s_coord[k1*COORD_DIM+k0]=src_coord_[k1*COORD_DIM+k0]+shift_coord[i][j*COORD_DIM+k0];
@@ -3266,11 +3265,32 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
           }
         }
         if(M.Dim(0)>0 && M.Dim(1)>0 && interac_cnt>0){
-          assert(trg_cnt[i]*ker_dim1==M.Dim(0)); UNUSED(ker_dim1);
-          for(size_t j=0;j<dof*M.Dim(0);j++) t_value[j]*=scaling[i];
-          Matrix<Real_t>  in_vec(dof, M.Dim(0),                  t_value   , false);
+          assert(trg_cnt[i]*ker_dim1==M.Dim(0));
+          assert(trg_cnt[i]*ker_dim0==M.Dim(1));
+
+          {// Scaling (ker_dim1)
+            Real_t* s=&scaling[i*(ker_dim0+ker_dim1)];
+            for(size_t j=0;j<dof*M.Dim(0);j+=ker_dim1){
+              for(size_t k=0;k<ker_dim1;k++){
+                t_value[j+k]*=s[k];
+              }
+            }
+          }
+
+          Matrix<Real_t>  in_vec(dof, M.Dim(0),             t_value, false);
+          Matrix<Real_t> tmp_vec(dof, M.Dim(1),dof*M.Dim(0)+t_value, false);
+          Matrix<Real_t>::DGEMM(tmp_vec, in_vec, M, 0.0);
+
           Matrix<Real_t> out_vec(dof, M.Dim(1), output_data[0]+trg_value[i], false);
-          Matrix<Real_t>::DGEMM(out_vec, in_vec, M, 1.0);
+          {// Scaling (ker_dim0)
+            Real_t* s=&scaling[i*(ker_dim0+ker_dim1)+ker_dim1];
+            for(size_t j=0;j<dof*M.Dim(1);j+=ker_dim0){
+              for(size_t k=0;k<ker_dim0;k++){
+                out_vec[0][j+k]+=tmp_vec[0][j+k]*s[k];
+              }
+            }
+          }
+
         }
       }
     }
@@ -3295,7 +3315,7 @@ void FMM_Pts<FMMNode>::X_ListSetup(SetupData<Real_t>&  setup_data, std::vector<M
   if(this->MultipoleOrder()==0) return;
   { // Set setup_data
     setup_data.level=level;
-    setup_data.kernel=&aux_kernel;
+    setup_data.kernel=aux_kernel;
     setup_data.interac_type.resize(1);
     setup_data.interac_type[0]=X_Type;
 
@@ -3348,7 +3368,7 @@ void FMM_Pts<FMMNode>::W_ListSetup(SetupData<Real_t>&  setup_data, std::vector<M
   if(this->MultipoleOrder()==0) return;
   { // Set setup_data
     setup_data.level=level;
-    setup_data.kernel=&kernel;
+    setup_data.kernel=kernel;
     setup_data.interac_type.resize(1);
     setup_data.interac_type[0]=W_Type;
 
@@ -3398,7 +3418,7 @@ template <class FMMNode>
 void FMM_Pts<FMMNode>::U_ListSetup(SetupData<Real_t>& setup_data, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device){
   { // Set setup_data
     setup_data.level=level;
-    setup_data.kernel=&kernel;
+    setup_data.kernel=kernel;
     setup_data.interac_type.resize(3);
     setup_data.interac_type[0]=U0_Type;
     setup_data.interac_type[1]=U1_Type;
@@ -3451,7 +3471,7 @@ void FMM_Pts<FMMNode>::Down2TargetSetup(SetupData<Real_t>&  setup_data, std::vec
   if(this->MultipoleOrder()==0) return;
   { // Set setup_data
     setup_data.level=level;
-    setup_data.kernel=&kernel;
+    setup_data.kernel=kernel;
     setup_data.interac_type.resize(1);
     setup_data.interac_type[0]=D2T_Type;
 

@@ -284,18 +284,19 @@ Matrix<typename Node_t::Real_t>& InteracList<Node_t>::ClassMat(int l, Mat_Type t
 template <class Node_t>
 Permutation<typename Node_t::Real_t>& InteracList<Node_t>::Perm_R(int l, Mat_Type type, size_t indx){
   size_t indx0=InteracClass(type, indx);
-  Matrix<Real_t>& M0=mat->Mat(l, type, indx0);
-  Permutation<Real_t>& row_perm=mat->Perm_R(type, indx);
+  Matrix     <Real_t>& M0      =mat->Mat   (l, type, indx0);
+  Permutation<Real_t>& row_perm=mat->Perm_R(l, type, indx );
   if(M0.Dim(0)==0 || M0.Dim(1)==0) return row_perm;
 
   //Get the necessary permutations.
   if(row_perm.Dim()==0){
-    std::vector<Perm_Type>& p_list=PermutList(type, indx);
+    std::vector<Perm_Type> p_list=PermutList(type, indx);
+    for(int i=0;i<l;i++) p_list.push_back(Scaling);
     row_perm=Permutation<Real_t>(M0.Dim(0));
     for(int i=p_list.size()-1; i>=0; i--){
       Permutation<Real_t>& pr=mat->Perm(type, R_Perm + p_list[i]);
       if(pr.Dim()!=M0.Dim(0)){
-        row_perm=Permutation<Real_t>();
+        row_perm=Permutation<Real_t>(indx==indx0?M0.Dim(0):0);
         break;
       }
       row_perm=pr.Transpose()*row_perm;
@@ -307,18 +308,19 @@ Permutation<typename Node_t::Real_t>& InteracList<Node_t>::Perm_R(int l, Mat_Typ
 template <class Node_t>
 Permutation<typename Node_t::Real_t>& InteracList<Node_t>::Perm_C(int l, Mat_Type type, size_t indx){
   size_t indx0=InteracClass(type, indx);
-  Matrix<Real_t>& M0=mat->Mat(l, type, indx0);
-  Permutation<Real_t>& col_perm=mat->Perm_C(type, indx);
+  Matrix     <Real_t>& M0      =mat->Mat   (l, type, indx0);
+  Permutation<Real_t>& col_perm=mat->Perm_C(l, type, indx );
   if(M0.Dim(0)==0 || M0.Dim(1)==0) return col_perm;
 
   //Get the necessary permutations.
   if(col_perm.Dim()==0){
-    std::vector<Perm_Type>& p_list=PermutList(type, indx);
+    std::vector<Perm_Type> p_list=PermutList(type, indx);
+    for(int i=0;i<l;i++) p_list.push_back(Scaling);
     col_perm=Permutation<Real_t>(M0.Dim(1));
     for(int i=p_list.size()-1; i>=0; i--){
       Permutation<Real_t>& pc=mat->Perm(type, C_Perm + p_list[i]);
       if(pc.Dim()!=M0.Dim(1)){
-        col_perm=Permutation<Real_t>();
+        col_perm=Permutation<Real_t>(indx==indx0?M0.Dim(1):0);
         break;
       }
       col_perm=col_perm*pc;

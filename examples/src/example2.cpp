@@ -6,20 +6,20 @@
 #include <utils.hpp>
 
 //Input function
-void fn_input(double* coord, int n, double* out){
+void fn_input(const double* coord, int n, double* out){
   double a=-160;
   for(int i=0;i<n;i++){
-    double* c=&coord[i*3];
+    const double* c=&coord[i*3];
     double r_2=(c[0]-0.5)*(c[0]-0.5)+(c[1]-0.5)*(c[1]-0.5)+(c[2]-0.5)*(c[2]-0.5);
     out[i]=(2*a*r_2+3)*2*a*exp(a*r_2);
   }
 }
 
 //Analytical solution (Expected output)
-void fn_output(double* coord, int n, double* out){
+void fn_output(const double* coord, int n, double* out){
   double a=-160;
   for(int i=0;i<n;i++){
-    double* c=&coord[i*3];
+    const double* c=&coord[i*3];
     double r_2=(c[0]-0.5)*(c[0]-0.5)+(c[1]-0.5)*(c[1]-0.5)+(c[2]-0.5)*(c[2]-0.5);
     out[i]=-exp(a*r_2);
   }

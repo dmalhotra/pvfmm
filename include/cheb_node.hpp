@@ -27,7 +27,7 @@ class Cheb_Node: public MPI_Node<Real_t>{
 
  public:
 
-  typedef void (*fn_ptr)(Real_t* coord, int n, Real_t* out);
+  typedef void (*fn_ptr)(const Real_t* coord, int n, Real_t* out);
 
   /**
    * \brief Base class for node data. Contains initialization data for the node.

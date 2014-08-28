@@ -16,11 +16,11 @@
 // Test1: Laplace problem, Smooth Gaussian, Periodic Boundary
 ///////////////////////////////////////////////////////////////////////////////
 template <class Real_t>
-void fn_input_t1(Real_t* coord, int n, Real_t* out){ //Input function
+void fn_input_t1(const Real_t* coord, int n, Real_t* out){ //Input function
   int dof=1;
   Real_t a=-160;
   for(int i=0;i<n;i++){
-    Real_t* c=&coord[i*COORD_DIM];
+    const Real_t* c=&coord[i*COORD_DIM];
     {
       Real_t r_2=(c[0]-0.5)*(c[0]-0.5)+(c[1]-0.5)*(c[1]-0.5)+(c[2]-0.0)*(c[2]-0.0);
       out[i*dof+0]=(2*a*r_2+3)*2*a*exp(a*r_2);
@@ -32,11 +32,11 @@ void fn_input_t1(Real_t* coord, int n, Real_t* out){ //Input function
   }
 }
 template <class Real_t>
-void fn_poten_t1(Real_t* coord, int n, Real_t* out){ //Output potential
+void fn_poten_t1(const Real_t* coord, int n, Real_t* out){ //Output potential
   int dof=1;
   Real_t a=-160;
   for(int i=0;i<n;i++){
-    Real_t* c=&coord[i*COORD_DIM];
+    const Real_t* c=&coord[i*COORD_DIM];
     {
       Real_t r_2=(c[0]-0.5)*(c[0]-0.5)+(c[1]-0.5)*(c[1]-0.5)+(c[2]-0.0)*(c[2]-0.0);
       out[i*dof+0]=-exp(a*r_2);
@@ -48,11 +48,11 @@ void fn_poten_t1(Real_t* coord, int n, Real_t* out){ //Output potential
   }
 }
 template <class Real_t>
-void fn_grad_t1(Real_t* coord, int n, Real_t* out){ //Output gradient
+void fn_grad_t1(const Real_t* coord, int n, Real_t* out){ //Output gradient
   int dof=1;
   Real_t a=-160;
   for(int i=0;i<n;i++){
-    Real_t* c=&coord[i*COORD_DIM];
+    const Real_t* c=&coord[i*COORD_DIM];
     {
       Real_t r_2=(c[0]-0.5)*(c[0]-0.5)+(c[1]-0.5)*(c[1]-0.5)+(c[2]-0.0)*(c[2]-0.0);
       out[i*dof+0]=-2*a*exp(a*r_2)*(c[0]-0.5);
@@ -73,11 +73,11 @@ void fn_grad_t1(Real_t* coord, int n, Real_t* out){ //Output gradient
 // Test2: Laplace problem, Discontinuous Sphere, FreeSpace Boundary
 ///////////////////////////////////////////////////////////////////////////////
 template <class Real_t>
-void fn_input_t2(Real_t* coord, int n, Real_t* out){ //Input function
+void fn_input_t2(const Real_t* coord, int n, Real_t* out){ //Input function
   int dof=1;
   Real_t R=0.1;
   for(int i=0;i<n;i++){
-    Real_t* c=&coord[i*3];
+    const Real_t* c=&coord[i*COORD_DIM];
     {
       Real_t r_2=(c[0]-0.5)*(c[0]-0.5)+(c[1]-0.5)*(c[1]-0.5)+(c[2]-0.5)*(c[2]-0.5);
       out[i*dof+0]=(sqrt(r_2)<R?1:0);
@@ -85,11 +85,11 @@ void fn_input_t2(Real_t* coord, int n, Real_t* out){ //Input function
   }
 }
 template <class Real_t>
-void fn_poten_t2(Real_t* coord, int n, Real_t* out){ //Output potential
+void fn_poten_t2(const Real_t* coord, int n, Real_t* out){ //Output potential
   int dof=1;
   Real_t R=0.1;
   for(int i=0;i<n;i++){
-    Real_t* c=&coord[i*3];
+    const Real_t* c=&coord[i*COORD_DIM];
     {
       Real_t r_2=(c[0]-0.5)*(c[0]-0.5)+(c[1]-0.5)*(c[1]-0.5)+(c[2]-0.5)*(c[2]-0.5);
       out[i*dof+0]=(sqrt(r_2)<R? (R*R-r_2)/6 + R*R/3 : pow(R,3)/(3*sqrt(r_2)) );
@@ -97,11 +97,11 @@ void fn_poten_t2(Real_t* coord, int n, Real_t* out){ //Output potential
   }
 }
 template <class Real_t>
-void fn_grad_t2(Real_t* coord, int n, Real_t* out){ //Output gradient
+void fn_grad_t2(const Real_t* coord, int n, Real_t* out){ //Output gradient
   int dof=3;
   Real_t R=0.1;
   for(int i=0;i<n;i++){
-    Real_t* c=&coord[i*3];
+    const Real_t* c=&coord[i*COORD_DIM];
     {
       Real_t r_2=(c[0]-0.5)*(c[0]-0.5)+(c[1]-0.5)*(c[1]-0.5)+(c[2]-0.5)*(c[2]-0.5);
       out[i*dof+0]=(sqrt(r_2)<R? -r_2/3 : -pow(R,3)/(3*sqrt(r_2)) )*(c[0]-0.5)/r_2;
@@ -116,11 +116,11 @@ void fn_grad_t2(Real_t* coord, int n, Real_t* out){ //Output gradient
 // Test3: Stokes problem, Smooth Gaussian, FreeSpace Boundary
 ///////////////////////////////////////////////////////////////////////////////
 template <class Real_t>
-void fn_input_t3(Real_t* coord, int n, Real_t* out){ //Input function
+void fn_input_t3(const Real_t* coord, int n, Real_t* out){ //Input function
   int dof=3;
   Real_t L=125;
   for(int i=0;i<n;i++){
-    Real_t* c=&coord[i*COORD_DIM];
+    const Real_t* c=&coord[i*COORD_DIM];
     {
       Real_t r_2=(c[0]-0.5)*(c[0]-0.5)+(c[1]-0.5)*(c[1]-0.5)+(c[2]-0.5)*(c[2]-0.5);
       out[i*dof+0]=                                        0+2*L*exp(-L*r_2)*(c[0]-0.5);
@@ -130,11 +130,11 @@ void fn_input_t3(Real_t* coord, int n, Real_t* out){ //Input function
   }
 }
 template <class Real_t>
-void fn_poten_t3(Real_t* coord, int n, Real_t* out){ //Output potential
+void fn_poten_t3(const Real_t* coord, int n, Real_t* out){ //Output potential
   int dof=3;
   Real_t L=125;
   for(int i=0;i<n;i++){
-    Real_t* c=&coord[i*COORD_DIM];
+    const Real_t* c=&coord[i*COORD_DIM];
     {
       Real_t r_2=(c[0]-0.5)*(c[0]-0.5)+(c[1]-0.5)*(c[1]-0.5)+(c[2]-0.5)*(c[2]-0.5);
       out[i*dof+0]= 0;
@@ -149,11 +149,11 @@ void fn_poten_t3(Real_t* coord, int n, Real_t* out){ //Output potential
 // Test4: Biot-Savart problem, Smooth Gaussian, FreeSpace Boundary
 ///////////////////////////////////////////////////////////////////////////////
 template <class Real_t>
-void fn_input_t4(Real_t* coord, int n, Real_t* out){ //Input function
+void fn_input_t4(const Real_t* coord, int n, Real_t* out){ //Input function
   int dof=3;
   Real_t L=125;
   for(int i=0;i<n;i++){
-    Real_t* c=&coord[i*COORD_DIM];
+    const Real_t* c=&coord[i*COORD_DIM];
     {
       Real_t r_2=(c[0]-0.5)*(c[0]-0.5)+(c[1]-0.5)*(c[1]-0.5)+(c[2]-0.5)*(c[2]-0.5);
       out[i*dof+0]=4*L*exp(-L*r_2)*(1 - L*((c[1]-0.5)*(c[1]-0.5) + (c[2]-0.5)*(c[2]-0.5)));
@@ -163,11 +163,11 @@ void fn_input_t4(Real_t* coord, int n, Real_t* out){ //Input function
   }
 }
 template <class Real_t>
-void fn_poten_t4(Real_t* coord, int n, Real_t* out){ //Output potential
+void fn_poten_t4(const Real_t* coord, int n, Real_t* out){ //Output potential
   int dof=3;
   Real_t L=125;
   for(int i=0;i<n;i++){
-    Real_t* c=&coord[i*COORD_DIM];
+    const Real_t* c=&coord[i*COORD_DIM];
     {
       Real_t r_2=(c[0]-0.5)*(c[0]-0.5)+(c[1]-0.5)*(c[1]-0.5)+(c[2]-0.5)*(c[2]-0.5);
       out[i*dof+0]= 0;
@@ -182,12 +182,12 @@ void fn_poten_t4(Real_t* coord, int n, Real_t* out){ //Output potential
 // Test5: Helmholtz problem, Smooth Gaussian, FreeSpace Boundary
 ///////////////////////////////////////////////////////////////////////////////
 template <class Real_t>
-void fn_input_t5(Real_t* coord, int n, Real_t* out){
+void fn_input_t5(const Real_t* coord, int n, Real_t* out){
   int dof=2;
   Real_t a=-160;
   Real_t mu=(20.0*M_PI);
   for(int i=0;i<n;i++){
-    Real_t* c=&coord[i*3];
+    const Real_t* c=&coord[i*COORD_DIM];
     {
       Real_t r_2=(c[0]-0.5)*(c[0]-0.5)+(c[1]-0.5)*(c[1]-0.5)+(c[2]-0.5)*(c[2]-0.5);
       out[i*dof+0]=((2*a*r_2+3)*2*a*exp(a*r_2)+mu*mu*exp(a*r_2))/4.0/M_PI;
@@ -196,11 +196,11 @@ void fn_input_t5(Real_t* coord, int n, Real_t* out){
   }
 }
 template <class Real_t>
-void fn_poten_t5(Real_t* coord, int n, Real_t* out){
+void fn_poten_t5(const Real_t* coord, int n, Real_t* out){
   int dof=2;
   Real_t a=-160;
   for(int i=0;i<n;i++){
-    Real_t* c=&coord[i*3];
+    const Real_t* c=&coord[i*COORD_DIM];
     {
       Real_t r_2=(c[0]-0.5)*(c[0]-0.5)+(c[1]-0.5)*(c[1]-0.5)+(c[2]-0.5)*(c[2]-0.5);
       out[i*dof+0]=-exp(a*r_2);
@@ -218,9 +218,9 @@ void fmm_test(int test_case, size_t N, size_t M, bool unif, int mult_order, int 
   typedef pvfmm::FMM_Cheb<FMMNode_t> FMM_Mat_t;
   typedef pvfmm::FMM_Tree<FMM_Mat_t> FMM_Tree_t;
 
-  void (*fn_input_)(Real_t* , int , Real_t*)=NULL;
-  void (*fn_poten_)(Real_t* , int , Real_t*)=NULL;
-  void (*fn_grad_)(Real_t* , int , Real_t*)=NULL;
+  void (*fn_input_)(const Real_t* , int , Real_t*)=NULL;
+  void (*fn_poten_)(const Real_t* , int , Real_t*)=NULL;
+  void (*fn_grad_ )(const Real_t* , int , Real_t*)=NULL;
   const pvfmm::Kernel<Real_t>* mykernel=NULL;
   const pvfmm::Kernel<Real_t>* mykernel_grad=NULL;;
   pvfmm::BoundaryType bndry;
@@ -231,7 +231,7 @@ void fmm_test(int test_case, size_t N, size_t M, bool unif, int mult_order, int 
       fn_poten_=fn_poten_t1<Real_t>;
       fn_grad_ =fn_grad_t1<Real_t>;
       mykernel     =&pvfmm::LaplaceKernel<Real_t>::potn_ker();
-      //mykernel_grad=&pvfmm::LaplaceKernel<Real_t>::grad_ker();
+      mykernel_grad=&pvfmm::LaplaceKernel<Real_t>::grad_ker();
       bndry=pvfmm::Periodic;
       break;
     case 2:

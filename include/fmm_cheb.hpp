@@ -109,7 +109,7 @@ class FMM_Cheb: public FMM_Pts<FMMNode>{
    */
   virtual void CopyOutput(FMMNode** nodes, size_t n){
     for(size_t i=0;i<n;i++){
-      nodes[i]->DataDOF()=this->kernel.ker_dim[1];
+      nodes[i]->DataDOF()=this->kernel->ker_dim[1];
       if(nodes[i]->IsLeaf() && !nodes[i]->IsGhost()){
         Vector<Real_t>& cheb_data=nodes[i]->ChebData();
         Vector<Real_t>& cheb_out =((FMMData*)nodes[i]->FMMData())->cheb_out;
