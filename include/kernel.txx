@@ -49,6 +49,8 @@ Kernel<T>::Kernel(Ker_t poten, Ker_t dbl_poten, const char* name, int dim_, std:
 
   dev_ker_poten=dev_poten;
   dev_dbl_layer_poten=dev_dbl_poten;
+
+  homogen=false;
   init=false;
 }
 
@@ -67,6 +69,7 @@ void Kernel<T>::Initialize(bool verbose) const{
     homogen=true;
     Matrix<T> M_scal(ker_dim[0],ker_dim[1]);
     size_t N=1024;
+    T eps_=N*eps;
 
     T src_coord[3]={0,0,0};
     std::vector<T> trg_coord1(N*COORD_DIM);
@@ -107,12 +110,12 @@ void Kernel<T>::Initialize(bool verbose) const{
         dot12+=M1[j][i]*M2[j][i];
         dot22+=M2[j][i]*M2[j][i];
       }
-      if(dot11>N*max_val*max_val*eps &&
-         dot22>N*max_val*max_val*eps ){
+      if(dot11>max_val*max_val*eps_ &&
+         dot22>max_val*max_val*eps_ ){
         T s=dot12/dot11;
         M_scal[0][i]=log(s)/log(2.0);
         T err=sqrt(0.5*(dot22/dot11)/(s*s)-0.5);
-        if(err>N*eps){
+        if(err>eps_){
           homogen=false;
           M_scal[0][i]=0.0;
         }
@@ -123,9 +126,8 @@ void Kernel<T>::Initialize(bool verbose) const{
     src_scal.Resize(ker_dim[0]); src_scal.SetZero();
     trg_scal.Resize(ker_dim[1]); trg_scal.SetZero();
     if(homogen){
-      Matrix<T> b(ker_dim[0]*ker_dim[1]+1,1);
+      Matrix<T> b(ker_dim[0]*ker_dim[1]+1,1); b.SetZero();
       mem::memcopy(&b[0][0],&M_scal[0][0],ker_dim[0]*ker_dim[1]*sizeof(T));
-      b[ker_dim[0]*ker_dim[1]][0]=1;
 
       Matrix<T> M(ker_dim[0]*ker_dim[1]+1,ker_dim[0]+ker_dim[1]); M.SetZero();
       M[ker_dim[0]*ker_dim[1]][0]=1;
@@ -149,7 +151,7 @@ void Kernel<T>::Initialize(bool verbose) const{
       for(size_t i0=0;i0<ker_dim[0];i0++)
       for(size_t i1=0;i1<ker_dim[1];i1++){
         if(M_scal[i0][i1]>=0){
-          if(fabs(src_scal[i0]+trg_scal[i1]-M_scal[i0][i1])>eps*N){
+          if(fabs(src_scal[i0]+trg_scal[i1]-M_scal[i0][i1])>eps_){
             homogen=false;
           }
         }
@@ -165,7 +167,8 @@ void Kernel<T>::Initialize(bool verbose) const{
   { // Determine symmetry
     perm_vec.Resize(Perm_Count);
 
-    size_t N=1024; eps=N*eps;
+    size_t N=1024;
+    T eps_=N*eps;
     T src_coord[3]={0,0,0};
     std::vector<T> trg_coord1(N*COORD_DIM);
     std::vector<T> trg_coord2(N*COORD_DIM);
@@ -268,12 +271,12 @@ void Kernel<T>::Initialize(bool verbose) const{
         M11.Resize(ker_dim[0],ker_dim[1]); M11.SetZero();
         M22.Resize(ker_dim[0],ker_dim[1]); M22.SetZero();
         for(size_t i=0;i<ker_dim[0]*ker_dim[1];i++){
-          if(norm1[i]>eps && M11[0][i]==0){
+          if(norm1[i]>eps_ && M11[0][i]==0){
             for(size_t j=0;j<ker_dim[0]*ker_dim[1];j++){
-              if(fabs(norm1[i]-norm1[j])<eps && fabs(fabs(dot11[i][j])-1.0)<eps){
+              if(fabs(norm1[i]-norm1[j])<eps_ && fabs(fabs(dot11[i][j])-1.0)<eps_){
                 M11[0][j]=(dot11[i][j]>0?flag:-flag);
               }
-              if(fabs(norm1[i]-norm2[j])<eps && fabs(fabs(dot12[i][j])-1.0)<eps){
+              if(fabs(norm1[i]-norm2[j])<eps_ && fabs(fabs(dot12[i][j])-1.0)<eps_){
                 M22[0][j]=(dot12[i][j]>0?flag:-flag);
               }
             }

@@ -156,9 +156,9 @@ void fn_input_t4(const Real_t* coord, int n, Real_t* out){ //Input function
     const Real_t* c=&coord[i*COORD_DIM];
     {
       Real_t r_2=(c[0]-0.5)*(c[0]-0.5)+(c[1]-0.5)*(c[1]-0.5)+(c[2]-0.5)*(c[2]-0.5);
-      out[i*dof+0]=4*L*exp(-L*r_2)*(1 - L*((c[1]-0.5)*(c[1]-0.5) + (c[2]-0.5)*(c[2]-0.5)));
-      out[i*dof+1]=4*L*exp(-L*r_2)*     L* (c[0]-0.5)*(c[1]-0.5);
-      out[i*dof+2]=4*L*exp(-L*r_2)*     L* (c[0]-0.5)*(c[2]-0.5);
+      out[i*dof+0]=-4*L*exp(-L*r_2)*(1 - L*((c[1]-0.5)*(c[1]-0.5) + (c[2]-0.5)*(c[2]-0.5)));
+      out[i*dof+1]=-4*L*exp(-L*r_2)*     L* (c[0]-0.5)*(c[1]-0.5);
+      out[i*dof+2]=-4*L*exp(-L*r_2)*     L* (c[0]-0.5)*(c[2]-0.5);
     }
   }
 }
@@ -231,7 +231,7 @@ void fmm_test(int test_case, size_t N, size_t M, bool unif, int mult_order, int 
       fn_poten_=fn_poten_t1<Real_t>;
       fn_grad_ =fn_grad_t1<Real_t>;
       mykernel     =&pvfmm::LaplaceKernel<Real_t>::potn_ker();
-      mykernel_grad=&pvfmm::LaplaceKernel<Real_t>::grad_ker();
+      //mykernel_grad=&pvfmm::LaplaceKernel<Real_t>::grad_ker();
       bndry=pvfmm::Periodic;
       break;
     case 2:

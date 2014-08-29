@@ -1059,7 +1059,7 @@ std::vector<T> cheb_integ(int m, T* s_, T r_, const Kernel<T>& kernel){
     for(int i=0;i<=m;i++)
     for(int j=0;i+j<=m;j++)
     for(int k=0;i+j+k<=m;k++){
-      U0[indx]=U[(k+(j+(i+(l1*ker_dim[0]+l0)*(m+1))*(m+1))*(m+1))];
+      U0[indx]=U[(k+(j+(i+(l0*ker_dim[1]+l1)*(m+1))*(m+1))*(m+1))];
       indx++;
     }
   }

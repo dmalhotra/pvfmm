@@ -2942,12 +2942,12 @@ void FMM_Pts<FMMNode>::SetupInteracPts(SetupData<Real_t>& setup_data, bool shift
 
           Real_t* s=&scaling[i*(ker_dim0+ker_dim1)];
           for(size_t j=0;j<ker_dim1;j++){
-            if(!this->Homogen()) s[j]=0.0;
+            if(!this->Homogen()) s[j]=1.0;
             else if(interac_type==S2U_Type) s[         j]=pow(0.5, setup_data.kernel->trg_scal[j]*((FMMNode*)nodes_out[i])->Depth());
             else if(interac_type==  X_Type) s[         j]=pow(0.5, setup_data.kernel->trg_scal[j]*((FMMNode*)nodes_out[i])->Depth());
           }
           for(size_t j=0;j<ker_dim0;j++){
-            if(!this->Homogen()) s[j]=0.0;
+            if(!this->Homogen()) s[ker_dim1+j]=1.0;
             else if(interac_type==S2U_Type) s[ker_dim1+j]=pow(0.5, setup_data.kernel->src_scal[j]*((FMMNode*)nodes_out[i])->Depth());
             else if(interac_type==  X_Type) s[ker_dim1+j]=pow(0.5, setup_data.kernel->src_scal[j]*((FMMNode*)nodes_out[i])->Depth());
           }
