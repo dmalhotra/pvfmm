@@ -539,11 +539,11 @@ void Kernel<T>::Initialize(bool verbose) const{
     std::cout<<"Scale Invariant: "<<(homogen?"yes":"no")<<'\n';
     if(homogen){
       std::cout<<"Scaling Matrix :\n";
-      Matrix<T> S(ker_dim[0],1);
-      Matrix<T> T(1,ker_dim[1]);
-      for(size_t i=0;i<ker_dim[0];i++) S[i][0]=pow(2.0,src_scal[i]);
-      for(size_t i=0;i<ker_dim[1];i++) T[0][i]=pow(2.0,trg_scal[i]);
-      std::cout<<S*T;
+      Matrix<T> Src(ker_dim[0],1);
+      Matrix<T> Trg(1,ker_dim[1]);
+      for(size_t i=0;i<ker_dim[0];i++) Src[i][0]=pow(2.0,src_scal[i]);
+      for(size_t i=0;i<ker_dim[1];i++) Trg[0][i]=pow(2.0,trg_scal[i]);
+      std::cout<<Src*Trg;
     }
 
     std::cout<<"Error          : ";
