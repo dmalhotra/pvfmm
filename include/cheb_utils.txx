@@ -34,7 +34,7 @@ T machine_eps(){
  * { T0[in[0]], ..., T0[in[n-1]], T1[in[0]], ..., T(d-1)[in[n-1]] }
  */
 template <class T>
-inline void cheb_poly(int d, T* in, int n, T* out){
+inline void cheb_poly(int d, const T* in, int n, T* out){
   if(d==0){
     for(int i=0;i<n;i++)
       out[i]=(fabs(in[i])<=1?1.0:0);
@@ -105,7 +105,7 @@ T cheb_approx(T* fn_v, int cheb_deg, int dof, T* out){
         x[i]=-cos((i+(T)0.5)*const_pi<T>()/d);
 
       std::vector<Y> p(d*d);
-      cheb_poly(d-1,&x[0],d,&p[0]);
+      cheb_poly(cheb_deg,&x[0],d,&p[0]);
       for(int i=0;i<d*d;i++)
         p[i]=p[i]*2.0/d;
       Matrix<Y> Mp1(d,d,&p[0],false);
@@ -164,7 +164,7 @@ T cheb_approx(T* fn_v, int cheb_deg, int dof, T* out){
     }
   }
 
-  return cheb_err(out,d-1,dof);
+  return cheb_err(out,cheb_deg,dof);
 }
 
 /**
@@ -209,7 +209,7 @@ void gll_quadrature(int deg, T* x_, T* w){//*
   T eps=machine_eps<T>()*64;
   int d=deg+1;
   assert(d>1);
-  int N=d-1;
+  int N=deg;
 
   Vector<T> x(d,x_,false);
   for(int i=0;i<d;i++)
@@ -262,22 +262,22 @@ T gll2cheb(T* fn_v, int deg, int dof, T* out){//*
 
       Vector<T> w(d);
       Vector<T> x_legn(d); // GLL nodes.
-      gll_quadrature(d-1, &x_legn[0], &w[0]);
+      gll_quadrature(deg, &x_legn[0], &w[0]);
 
       Matrix<T> P(d,d); //GLL node 2 GLL coeff.
-      legn_poly(d-1,&x_legn[0],d,&P[0][0]);
+      legn_poly(deg,&x_legn[0],d,&P[0][0]);
       for(int i=0;i<d;i++)
         for(int j=0;j<d;j++)
-          P[i][j]*=w[j]*0.5*(i<d-1?(2*i+1):(i));
+          P[i][j]*=w[j]*0.5*(i<deg?(2*i+1):(i));
 
       Matrix<T> M_gll2cheb(d,d); //GLL coeff 2 cheb node.
-      legn_poly(d-1,&x[0],d,&M_gll2cheb[0][0]);
+      legn_poly(deg,&x[0],d,&M_gll2cheb[0][0]);
 
       Matrix<T> M_g2c; //GLL node to cheb node.
       M_g2c=M_gll2cheb.Transpose()*P;
 
       std::vector<Y> p(d*d);
-      cheb_poly(d-1,&x[0],d,&p[0]);
+      cheb_poly(deg,&x[0],d,&p[0]);
       for(int i=0;i<d*d;i++)
         p[i]=p[i]*2.0/d;
       Matrix<Y> Mp1(d,d,&p[0],false);
@@ -338,7 +338,7 @@ T gll2cheb(T* fn_v, int deg, int dof, T* out){//*
     }
   }
 
-  return cheb_err(out,d-1,dof);
+  return cheb_err(out,deg,dof);
 }
 
 /**
@@ -352,7 +352,7 @@ T cheb_approx(T (*fn)(T,T,T), int cheb_deg, T* coord, T s, std::vector<T>& out){
     x[i]=cos((i+(T)0.5)*const_pi<T>()/d);
 
   std::vector<T> p;
-  cheb_poly(d-1,&x[0],d,&p[0]);
+  cheb_poly(cheb_deg,&x[0],d,&p[0]);
 
   std::vector<T> x1(d);
   std::vector<T> x2(d);
@@ -375,7 +375,7 @@ T cheb_approx(T (*fn)(T,T,T), int cheb_deg, T* coord, T s, std::vector<T>& out){
   }
 
   out.resize((d*(d+1)*(d+2))/6);
-  return cheb_approx(&fn_v[0], d-1, 1, &out[0]);
+  return cheb_approx(&fn_v[0], cheb_deg, 1, &out[0]);
 }
 
 /**
@@ -383,66 +383,100 @@ T cheb_approx(T (*fn)(T,T,T), int cheb_deg, T* coord, T s, std::vector<T>& out){
  * a regular grid defined by in_x, in_y, in_z the values in the input vector.
  */
 template <class T>
-void cheb_eval(Vector<T>& coeff_, int cheb_deg, std::vector<T>& in_x, std::vector<T>& in_y, std::vector<T>& in_z, Vector<T>& out){
-  int d=cheb_deg+1;
-  int dof=coeff_.Dim()/((d*(d+1)*(d+2))/6);
-  assert(coeff_.Dim()==(size_t)(d*(d+1)*(d+2)*dof)/6);
+void cheb_eval(const Vector<T>& coeff_, int cheb_deg, const std::vector<T>& in_x, const std::vector<T>& in_y, const std::vector<T>& in_z, Vector<T>& out, mem::MemoryManager* mem_mgr){
+  size_t d=(size_t)cheb_deg+1;
+  size_t n_coeff=(d*(d+1)*(d+2))/6;
+  size_t dof=coeff_.Dim()/n_coeff;
+  assert(coeff_.Dim()==dof*n_coeff);
 
-  std::vector<T> coeff(d*d*d*dof);
-  {// Rearrange data
-    int indx=0;
-    for(int l=0;l<dof;l++)
-    for(int i=0;i<d;i++)
-    for(int j=0;i+j<d;j++)
-    for(int k=0;i+j+k<d;k++){
-      coeff[(k+(j+(i+l*d)*d)*d)]=coeff_[indx];
-      indx++;
-    }
-  }
-
-  int n1=in_x.size();
-  int n2=in_y.size();
-  int n3=in_z.size();
+  // Resize out
+  size_t n1=in_x.size();
+  size_t n2=in_y.size();
+  size_t n3=in_z.size();
   out.Resize(n1*n2*n3*dof);
   if(n1==0 || n2==0 || n3==0) return;
 
+  // Precomputation
   std::vector<T> p1(n1*d);
   std::vector<T> p2(n2*d);
   std::vector<T> p3(n3*d);
-  cheb_poly(d-1,&in_x[0],n1,&p1[0]);
-  cheb_poly(d-1,&in_y[0],n2,&p2[0]);
-  cheb_poly(d-1,&in_z[0],n3,&p3[0]);
-
-  std::vector<T> fn_v1(n1*d *d );
-  std::vector<T> fn_v2(n1*d *n3);
-  std::vector<T> fn_v3(n1*n2*n3);
+  cheb_poly(cheb_deg,&in_x[0],n1,&p1[0]);
+  cheb_poly(cheb_deg,&in_y[0],n2,&p2[0]);
+  cheb_poly(cheb_deg,&in_z[0],n3,&p3[0]);
   Matrix<T> Mp1(d,n1,&p1[0],false);
   Matrix<T> Mp2(d,n2,&p2[0],false);
   Matrix<T> Mp3(d,n3,&p3[0],false);
-  Matrix<T> Mp2_=Mp2.Transpose();
-  Matrix<T> Mp3_=Mp3.Transpose();
-  for(int k=0;k<dof;k++){
-    {
-      Matrix<T> M0(d*d,d,&coeff[k*d*d*d],false);
-      Matrix<T> M1(d*d,n1,&fn_v1[0],false);
-      M1=M0*Mp1;
-    }
-    {
-      Matrix<T> M0(d,d*n1,&fn_v1[0],false);
-      Matrix<T> M1(n3,d*n1,&fn_v2[0],false);
-      M1=Mp3_*M0;
-    }
-    {
-      int dn1=d*n1;
-      int n2n1=n2*n1;
-      for(int i=0;i<n3;i++){
-        Matrix<T> M0(d,n1,&fn_v2[i*dn1],false);
-        Matrix<T> M1(n2,n1,&fn_v3[i*n2n1],false);
-        M1=Mp2_*M0;
+
+  // Create work buffers
+  size_t buff_size=std::max(d,n1)*std::max(d,n2)*std::max(d,n3)*dof;
+  T* buff=(double*)(mem_mgr?mem_mgr->malloc(2*buff_size*sizeof(T)):
+                                     malloc(2*buff_size*sizeof(T)));
+  Vector<T> v1(buff_size,buff+buff_size*0,false);
+  Vector<T> v2(buff_size,buff+buff_size*1,false);
+
+  { // Rearrange coefficients into a tensor.
+    Vector<T> coeff(d*d*d*dof,&v1[0],false);
+    coeff.SetZero();
+    size_t indx=0;
+    for(size_t l=0;l<dof;l++){
+      for(size_t i=0;i<d;i++){
+        for(size_t j=0;i+j<d;j++){
+          T* coeff_ptr=&coeff[(j+(i+l*d)*d)*d];
+          for(size_t k=0;i+j+k<d;k++){
+            coeff_ptr[k]=coeff_[indx];
+            indx++;
+          }
+        }
       }
     }
-    mem::memcopy(&out[n1*n2*n3*k],&fn_v3[0],n1*n2*n3*sizeof(T));
   }
+
+  { // Apply Mp1
+    Matrix<T> Mi  ( d* d*dof, d,&v1[0],false);
+    Matrix<T> Mo  ( d* d*dof,n1,&v2[0],false);
+    Matrix<T>::DGEMM(Mo, Mi, Mp1, 0);
+
+    Matrix<T> Mo_t(n1, d* d*dof,&v1[0],false);
+    for(size_t i=0;i<Mo.Dim(0);i++)
+    for(size_t j=0;j<Mo.Dim(1);j++){
+      Mo_t[j][i]=Mo[i][j];
+    }
+  }
+  { // Apply Mp2
+    Matrix<T> Mi  (n1* d*dof, d,&v1[0],false);
+    Matrix<T> Mo  (n1* d*dof,n2,&v2[0],false);
+    Matrix<T>::DGEMM(Mo, Mi, Mp2, 0);
+
+    Matrix<T> Mo_t(n2,n1* d*dof,&v1[0],false);
+    for(size_t i=0;i<Mo.Dim(0);i++)
+    for(size_t j=0;j<Mo.Dim(1);j++){
+      Mo_t[j][i]=Mo[i][j];
+    }
+  }
+  { // Apply Mp3
+    Matrix<T> Mi  (n2*n1*dof, d,&v1[0],false);
+    Matrix<T> Mo  (n2*n1*dof,n3,&v2[0],false);
+    Matrix<T>::DGEMM(Mo, Mi, Mp3, 0);
+
+    Matrix<T> Mo_t(n3,n2*n1*dof,&v1[0],false);
+    for(size_t i=0;i<Mo.Dim(0);i++)
+    for(size_t j=0;j<Mo.Dim(1);j++){
+      Mo_t[j][i]=Mo[i][j];
+    }
+  }
+
+  { // Copy to out
+    Matrix<T> Mo  ( n3*n2*n1,dof,&v1[0],false);
+    Matrix<T> Mo_t(dof,n3*n2*n1,&out[0],false);
+    for(size_t i=0;i<Mo.Dim(0);i++)
+    for(size_t j=0;j<Mo.Dim(1);j++){
+      Mo_t[j][i]=Mo[i][j];
+    }
+  }
+
+  // Free memory
+  if(mem_mgr )mem_mgr->free(buff);
+  else                 free(buff);
 }
 
 /**
@@ -475,9 +509,9 @@ inline void cheb_eval(Vector<T>& coeff_, int cheb_deg, std::vector<T>& coord, Ve
   Matrix<T> px(d,n);
   Matrix<T> py(d,n);
   Matrix<T> pz(d,n);
-  cheb_poly(d-1,&(coord_[0][0]),n,&(px[0][0]));
-  cheb_poly(d-1,&(coord_[1][0]),n,&(py[0][0]));
-  cheb_poly(d-1,&(coord_[2][0]),n,&(pz[0][0]));
+  cheb_poly(cheb_deg,&(coord_[0][0]),n,&(px[0][0]));
+  cheb_poly(cheb_deg,&(coord_[1][0]),n,&(py[0][0]));
+  cheb_poly(cheb_deg,&(coord_[2][0]),n,&(pz[0][0]));
 
   Matrix<T> M_coeff0(d*d*dof, d, &coeff[0], false);
   Matrix<T> M0 = (M_coeff0 * px).Transpose(); // {n, dof*d*d}
@@ -507,7 +541,7 @@ inline void cheb_eval(int cheb_deg, T* coord, T* coeff0,T* buff){
 
   T* p=&buff[0];
   T* p_=&buff[3*d];
-  cheb_poly(d-1,&coord[0],3,&p[0]);
+  cheb_poly(cheb_deg,&coord[0],3,&p[0]);
 
   for(int i=0;i<d;i++){
     p_[i]=p[i*3];
@@ -1086,82 +1120,115 @@ std::vector<T> cheb_nodes(int deg, int dim){
   return y;
 }
 
-template <class T>
-void cheb_diff(T* A, int deg, T* B){
-  int d=deg+1;
-  static Matrix<T> M;
-  #pragma omp critical (CHEB_DIFF)
-  if(M.Dim(0)!=d){
-    M.Resize(d,d);
-    for(int i=0;i<d;i++){
-      for(int j=0;j<d;j++) M[j][i]=0;
-      for(int j=1-(i%2);j<i-1;j=j+2){
-        M[j][i]=2*i*2;
-      }
-      if(i%2==1) M[0][i]-=i*2;
-    }
-  }
-  Matrix<T> MA(d,1,A,false);
-  Matrix<T> MB(d,1,B,false);
-  MB=M*MA;
-}
-
 
 template <class T>
-void cheb_diff(T* A, int deg, int dim, int curr_dim, T* B){
-  int d=deg+1;
+void cheb_diff(const Vector<T>& A, int deg, int diff_dim, Vector<T>& B, mem::MemoryManager* mem_mgr=NULL){
+  size_t d=deg+1;
+
+  // Precompute
   static Matrix<T> M;
   #pragma omp critical (CHEB_DIFF1)
   if(M.Dim(0)!=(size_t)d){
     M.Resize(d,d);
-    for(int i=0;i<d;i++){
-      for(int j=0;j<d;j++) M[j][i]=0;
-      for(int j=1-(i%2);j<i;j=j+2){
+    for(size_t i=0;i<d;i++){
+      for(size_t j=0;j<d;j++) M[j][i]=0;
+      for(size_t j=1-(i%2);j<i;j=j+2){
         M[j][i]=2*i*2;
       }
       if(i%2==1) M[0][i]-=i*2;
     }
   }
-  int n1=(int)(pow((T)d,curr_dim)+0.5);
-  int n2=(int)(pow((T)d,dim-curr_dim-1)+0.5);
-  for(int i=0;i<n2;i++){
-    Matrix<T> MA(d,n1,&A[i*n1*d],false);
-    Matrix<T> MB(d,n1,&B[i*n1*d],false);
-    MB=M*MA;
+
+  // Create work buffers
+  size_t buff_size=A.Dim();
+  T* buff=(double*)(mem_mgr?mem_mgr->malloc(2*buff_size*sizeof(T)):
+                                     malloc(2*buff_size*sizeof(T)));
+  T* buff1=buff+buff_size*0;
+  T* buff2=buff+buff_size*1;
+
+  size_t n1=(size_t)(pow((T)d,diff_dim)+0.5);
+  size_t n2=A.Dim()/(n1*d);
+
+  for(size_t k=0;k<n2;k++){ // Rearrange A to make diff_dim the last array dimension
+    Matrix<T> Mi(d,       n1,    &A[d*n1*k],false);
+    Matrix<T> Mo(d,A.Dim()/d,&buff1[  n1*k],false);
+    for(size_t i=0;i< d;i++)
+    for(size_t j=0;j<n1;j++){
+      Mo[i][j]=Mi[i][j];
+    }
   }
+
+  { // Apply M
+    Matrix<T> Mi(d,A.Dim()/d,&buff1[0],false);
+    Matrix<T> Mo(d,A.Dim()/d,&buff2[0],false);
+    Matrix<T>::DGEMM(Mo, M, Mi, 0);
+  }
+
+  for(size_t k=0;k<n2;k++){ // Rearrange and write output to B
+    Matrix<T> Mi(d,A.Dim()/d,&buff2[  n1*k],false);
+    Matrix<T> Mo(d,       n1,    &B[d*n1*k],false);
+    for(size_t i=0;i< d;i++)
+    for(size_t j=0;j<n1;j++){
+      Mo[i][j]=Mi[i][j];
+    }
+  }
+
+  // Free memory
+  if(mem_mgr )mem_mgr->free(buff);
+  else                 free(buff);
 }
 
 template <class T>
-void cheb_grad(T* A, int deg, T* B){
-  int dim=3;
-  int d=deg+1;
-  int n1 =(d*(d+1)*(d+2))/6;
-  int n1_=(int)(pow((T)d,dim)+0.5);
-  Vector<T> A_(n1_); A_.SetZero();
-  Vector<T> B_(n1_); B_.SetZero();
+void cheb_grad(const Vector<T>& A, int deg, Vector<T>& B, mem::MemoryManager* mem_mgr){
+  size_t dim=3;
+  size_t d=(size_t)deg+1;
+  size_t n_coeff =(d*(d+1)*(d+2))/6;
+  size_t n_coeff_=(size_t)(pow((T)d,dim)+0.5);
+  size_t dof=A.Dim()/n_coeff;
+
+  // Create work buffers
+  T* buff=(double*)(mem_mgr?mem_mgr->malloc(2*n_coeff_*dof*sizeof(T)):
+                                     malloc(2*n_coeff_*dof*sizeof(T)));
+  Vector<T> A_(n_coeff_*dof,buff+n_coeff_*0); A_.SetZero();
+  Vector<T> B_(n_coeff_*dof,buff+n_coeff_*1); B_.SetZero();
 
   {// Rearrange data
-    int indx=0;
-    for(int i=0;i<d;i++)
-    for(int j=0;i+j<d;j++)
-    for(int k=0;i+j+k<d;k++){
-      A_[k+(j+i*d)*d]=A[indx];
-      indx++;
-    }
-  }
-
-  for(int l=0;l<dim;l++){
-    cheb_diff(&A_[0],d-1,dim,l,&B_[0]);
-    {// Rearrange data
-      int indx=l*n1;
-      for(int i=0;i<d;i++)
-      for(int j=0;i+j<d;j++)
-      for(int k=0;i+j+k<d;k++){
-        B[indx]=B_[k+(j+i*d)*d];
-        indx++;
+    size_t indx=0;
+    for(size_t l=0;l<dof;l++){
+      for(size_t i=0;i<d;i++){
+        for(size_t j=0;i+j<d;j++){
+          T* A_ptr=&A_[(j+(i+l*d)*d)*d];
+          for(size_t k=0;i+j+k<d;k++){
+            A_ptr[k]=A[indx];
+            indx++;
+          }
+        }
       }
     }
   }
+
+  B.Resize(A.Dim()*dim);
+  for(size_t q=0;q<dim;q++){
+    // Compute derivative in direction q
+    cheb_diff(A_,deg,q,B_);
+
+    for(size_t l=0;l<dof;l++){// Rearrange data
+      size_t indx=(q+l*dim)*n_coeff;
+      for(size_t i=0;i<d;i++){
+        for(size_t j=0;i+j<d;j++){
+          T* B_ptr=&B_[(j+(i+l*d)*d)*d];
+          for(size_t k=0;i+j+k<d;k++){
+            B[indx]=B_ptr[k];
+            indx++;
+          }
+        }
+      }
+    }
+  }
+
+  // Free memory
+  if(mem_mgr )mem_mgr->free(buff);
+  else                 free(buff);
 }
 
 template <class T>
@@ -1185,7 +1252,11 @@ void cheb_div(T* A_, int deg, T* B_){
   Matrix<T> MB(n1,1,&B[0],false);
   Matrix<T> MC(n1,1);
   for(int i=0;i<3;i++){
-    cheb_diff(&A[n1*i],d-1,3,i,MC[0]);
+    {
+      Vector<T> A_vec(n1,&A[n1*i],false);
+      Vector<T> B_vec(n1,MC[0],false);
+      cheb_diff(A_vec,3,i,B_vec);
+    }
     MB+=MC;
   }
   {// Rearrange data
@@ -1223,8 +1294,14 @@ void cheb_curl(T* A_, int deg, T* B_){
     Matrix<T> MB(n1,1,&B[n1*i],false);
     int j1=(i+1)%3;
     int j2=(i+2)%3;
-    cheb_diff(&A[n1*j1],d-1,3,j2,MC1[0]);
-    cheb_diff(&A[n1*j2],d-1,3,j1,MC2[0]);
+    {
+      Vector<T> A1(n1,&A[n1*j1],false);
+      Vector<T> A2(n1,&A[n1*j2],false);
+      Vector<T> B1(n1,MC1[0],false);
+      Vector<T> B2(n1,MC2[0],false);
+      cheb_diff(A1,deg,j2,B2);
+      cheb_diff(A1,deg,j1,B2);
+    }
     MB=MC2;
     MB-=MC1;
   }
@@ -1256,8 +1333,8 @@ void cheb_laplacian(T* A, int deg, T* B){
     Matrix<T> M (1,n1,&B[n1*i],false);
     for(int j=0;j<n1;j++) M[0][j]=0;
     for(int j=0;j<3;j++){
-      cheb_diff(&A[n1*i],d-1,3,j,C1);
-      cheb_diff( C1     ,d-1,3,j,C2);
+      cheb_diff(&A[n1*i],deg,3,j,C1);
+      cheb_diff( C1     ,deg,3,j,C2);
       M+=M_;
     }
   }

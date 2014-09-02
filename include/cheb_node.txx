@@ -250,10 +250,8 @@ template <class Real_t>
 void Cheb_Node<Real_t>::Gradient(){
   int dim=3;//this->Dim();
   if(this->IsLeaf() && ChebData().Dim()>0){
-    int n3=((cheb_deg+1)*(cheb_deg+2)*(cheb_deg+3))/6;
     Vector<Real_t> coeff(ChebData().Dim()*dim);
-    for(int i=0;i<data_dof;i++)
-      cheb_grad(&(ChebData()[n3*i]),cheb_deg,&coeff[n3*i*dim]);
+    cheb_grad(ChebData(),cheb_deg,coeff);
     ChebData().Swap(coeff);
 
     Real_t scale=pow(2,this->depth);

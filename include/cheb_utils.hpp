@@ -34,7 +34,7 @@ T cheb_approx(T* fn_v, int d, int dof, T* out);
  * a regular grid defined by in_x, in_y, in_z the values in the input vector.
  */
 template <class T>
-void cheb_eval(Vector<T>& coeff_, int cheb_deg, std::vector<T>& in_x, std::vector<T>& in_y, std::vector<T>& in_z, Vector<T>& out);
+void cheb_eval(const Vector<T>& coeff_, int cheb_deg, const std::vector<T>& in_x, const std::vector<T>& in_y, const std::vector<T>& in_z, Vector<T>& out, mem::MemoryManager* mem_mgr=NULL);
 
 /**
  * \brief Evaluates polynomial values from input coefficients at points on
@@ -78,7 +78,7 @@ template <class T>
 std::vector<T> cheb_nodes(int deg, int dim);
 
 template <class T>
-void cheb_grad(T* A, int deg, T* B);
+void cheb_grad(const Vector<T>& A, int deg, Vector<T>& B, mem::MemoryManager* mem_mgr=NULL);
 
 template <class T>
 void cheb_laplacian(T* A, int deg, T* B);
