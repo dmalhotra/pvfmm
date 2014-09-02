@@ -44,6 +44,7 @@ PrecompMat<T>::PrecompMat(bool homogen, int max_d): homogeneous(homogen), max_de
 template <class T>
 Matrix<T>& PrecompMat<T>::Mat(int l, Mat_Type type, size_t indx){
   int level=(homogeneous?0:l+PRECOMP_MIN_DEPTH);
+  assert(level*Type_Count+type<mat.size());
   #pragma omp critical (PrecompMAT)
   if(indx>=mat[level*Type_Count+type].size()){
     mat[level*Type_Count+type].resize(indx+1);
@@ -55,6 +56,7 @@ Matrix<T>& PrecompMat<T>::Mat(int l, Mat_Type type, size_t indx){
 template <class T>
 Permutation<T>& PrecompMat<T>::Perm_R(int l, Mat_Type type, size_t indx){
   int level=l+PRECOMP_MIN_DEPTH;
+  assert(level*Type_Count+type<perm_r.size());
   #pragma omp critical (PrecompMAT)
   if(indx>=perm_r[level*Type_Count+type].size()){
     perm_r[level*Type_Count+type].resize(indx+1);
@@ -66,6 +68,7 @@ Permutation<T>& PrecompMat<T>::Perm_R(int l, Mat_Type type, size_t indx){
 template <class T>
 Permutation<T>& PrecompMat<T>::Perm_C(int l, Mat_Type type, size_t indx){
   int level=l+PRECOMP_MIN_DEPTH;
+  assert(level*Type_Count+type<perm_c.size());
   #pragma omp critical (PrecompMAT)
   if(indx>=perm_c[level*Type_Count+type].size()){
     perm_c[level*Type_Count+type].resize(indx+1);
@@ -295,7 +298,6 @@ void PrecompMat<T>::LoadFile(const char* fname, MPI_Comm comm){
       max_depth=max_depth_;
       mat.resize(mat_size);
     }
-
     for(size_t i=0;i<mat_size;i++){
       int n;
       n=*(int*)f_ptr; f_ptr+=sizeof(int);
@@ -313,6 +315,14 @@ void PrecompMat<T>::LoadFile(const char* fname, MPI_Comm comm){
           mem::memcopy(&M[0][0], f_ptr, sizeof(T)*n1*n2); f_ptr+=sizeof(T)*n1*n2;
         }
       }
+    }
+
+    // Resize perm_r, perm_c
+    perm_r.resize((max_depth_+PRECOMP_MIN_DEPTH)*Type_Count);
+    perm_c.resize((max_depth_+PRECOMP_MIN_DEPTH)*Type_Count);
+    for(size_t i=0;i<perm_r.size();i++){
+      perm_r[i].resize(500);
+      perm_c[i].resize(500);
     }
   }
   if(f_data!=NULL) delete[] f_data;
