@@ -95,8 +95,8 @@ std::vector<Perm_Type>& InteracList<Node_t>::PermutList(Mat_Type t, size_t i){
 template <class Node_t>
 std::vector<Node_t*> InteracList<Node_t>::BuildList(Node_t* n, Mat_Type t){
   std::vector<Node_t*> interac_list(ListCount(t),NULL);
-  int n_collg=(int)pow(3,dim);
-  int n_child=(int)pow(2,dim);
+  int n_collg=(int)pow(3.0,(int)dim);
+  int n_child=(int)pow(2.0,(int)dim);
   int rel_coord[3];
 
   switch (t){
@@ -367,7 +367,7 @@ int InteracList<Node_t>::class_hash(int* c_){
  */
 template <class Node_t>
 void InteracList<Node_t>::InitList(int max_r, int min_r, int step, Mat_Type t){
-  size_t count=(size_t)(pow((max_r*2)/step+1,dim)-(min_r>0?pow((min_r*2)/step-1,dim):0));
+  size_t count=(size_t)(pow((max_r*2)/step+1.0,(int)dim)-(min_r>0?pow((min_r*2)/step-1.0,(int)dim):0));
   Matrix<int>& M=rel_coord[t];
   M.Resize(count,dim);
   hash_lut[t].assign(PVFMM_MAX_COORD_HASH, -1);

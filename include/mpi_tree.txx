@@ -866,20 +866,20 @@ inline int balanceOctree (std::vector<MortonId > &in, std::vector<MortonId > &ou
         MPI_Request recvRequest;
         MPI_Request sendRequest;
 
-        if(rank > 0) {
-          MPI_Irecv(&lastOnPrev, 1, par::Mpi_datatype<MortonId>::value(), rank-1, 1, comm, &recvRequest);
+        if(new_rank > 0) {
+          MPI_Irecv(&lastOnPrev, 1, par::Mpi_datatype<MortonId>::value(), new_rank-1, 1, new_comm, &recvRequest);
         }
-        if(rank < (size-1)) {
-          MPI_Issend( &lastOctant, 1, par::Mpi_datatype<MortonId>::value(), rank+1, 1, comm,  &sendRequest);
+        if(new_rank < (new_size-1)) {
+          MPI_Issend( &lastOctant, 1, par::Mpi_datatype<MortonId>::value(), new_rank+1, 1, new_comm,  &sendRequest);
         }
 
-        if(rank > 0) {
+        if(new_rank > 0) {
           MPI_Status statusWait;
           MPI_Wait(&recvRequest, &statusWait);
           nxt_mid = lastOnPrev.NextId();
         }
 
-        if(rank < (size-1)) {
+        if(new_rank < (new_size-1)) {
           MPI_Status statusWait;
           MPI_Wait(&sendRequest, &statusWait);
         }
@@ -902,13 +902,16 @@ inline int balanceOctree (std::vector<MortonId > &in, std::vector<MortonId > &ou
         }
         nxt_mid=out[i].NextId();
       }
-      if(rank==size-1){
+      if(new_rank==new_size-1){
         while(nxt_mid.GetDepth()>0){
           out1.push_back(nxt_mid);
           nxt_mid=nxt_mid.NextId();
         }
       }
       out.swap(out1);
+    }
+    if(new_size<size){
+      par::partitionW<MortonId>(out, NULL , comm);
     }
   }
 

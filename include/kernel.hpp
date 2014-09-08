@@ -11,6 +11,8 @@
 
 #include <pvfmm_common.hpp>
 #include <mem_mgr.hpp>
+#include <vector.hpp>
+#include <matrix.hpp>
 
 #ifndef _PVFMM_FMM_KERNEL_HPP_
 #define _PVFMM_FMM_KERNEL_HPP_
