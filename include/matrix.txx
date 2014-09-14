@@ -455,9 +455,9 @@ void Matrix<T>::SVD(Matrix<T>& tU, Matrix<T>& tS, Matrix<T>& tVT){
   int wssize1 = 5*(m<n?m:n);
   wssize = (wssize>wssize1?wssize:wssize1);
 
-  T* wsbuf = new T[wssize];
+  T* wsbuf = mem::aligned_malloc<T>(wssize);
   pvfmm::mat::svd(&JOBU, &JOBVT, &m, &n, &M[0][0], &m, &tS[0][0], &tVT[0][0], &m, &tU[0][0], &k, wsbuf, &wssize, &INFO);
-  delete[] wsbuf;
+  mem::aligned_free<T>(wsbuf);
 
   if(INFO!=0) std::cout<<INFO<<'\n';
   assert(INFO==0);

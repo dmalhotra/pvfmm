@@ -35,8 +35,9 @@
 #define COLLEAGUE_COUNT 27 // 3^COORD_DIM
 
 #define MEM_ALIGN 64
-#define DEVICE_BUFFER_SIZE 1024 //in MB
+#define DEVICE_BUFFER_SIZE 1024LL //in MB
 #define V_BLK_CACHE 25 //in KB
+#define GLOBAL_MEM_BUFF 1024LL*10LL //in MB
 
 #ifndef __DEVICE_SYNC__
 #define __DEVICE_SYNC__ 0 // No device synchronization by default.
@@ -53,6 +54,8 @@
 #else
 #define ASSERT_WITH_MSG(cond, msg)
 #endif
+
+#include <stacktrace.h>
 
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push,target(mic))

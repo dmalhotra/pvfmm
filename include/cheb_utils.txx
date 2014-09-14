@@ -127,7 +127,7 @@ T cheb_approx(T* fn_v, int cheb_deg, int dof, T* out, mem::MemoryManager* mem_mg
   // Create work buffers
   size_t buff_size=dof*d*d*d;
   Y* buff=(Y*)(mem_mgr?mem_mgr->malloc(2*buff_size*sizeof(Y)):
-                                malloc(2*buff_size*sizeof(Y)));
+             mem::aligned_malloc<char>(2*buff_size*sizeof(Y)));
   Y* buff1=buff+buff_size*0;
   Y* buff2=buff+buff_size*1;
 
@@ -189,7 +189,8 @@ T cheb_approx(T* fn_v, int cheb_deg, int dof, T* out, mem::MemoryManager* mem_mg
   }
 
   // Free memory
-  if(mem_mgr )mem_mgr->free(buff);
+  if(mem_mgr)     mem_mgr->free(buff);
+  else mem::aligned_free((char*)buff);
 
   return cheb_err(out,cheb_deg,dof);
 }
@@ -437,7 +438,7 @@ void cheb_eval(const Vector<T>& coeff_, int cheb_deg, const std::vector<T>& in_x
   // Create work buffers
   size_t buff_size=std::max(d,n1)*std::max(d,n2)*std::max(d,n3)*dof;
   T* buff=(T*)(mem_mgr?mem_mgr->malloc(2*buff_size*sizeof(T)):
-                                malloc(2*buff_size*sizeof(T)));
+             mem::aligned_malloc<char>(2*buff_size*sizeof(T)));
   Vector<T> v1(buff_size,buff+buff_size*0,false);
   Vector<T> v2(buff_size,buff+buff_size*1,false);
 
@@ -461,7 +462,7 @@ void cheb_eval(const Vector<T>& coeff_, int cheb_deg, const std::vector<T>& in_x
   { // Apply Mp1
     Matrix<T> Mi  ( d* d*dof, d,&v1[0],false);
     Matrix<T> Mo  ( d* d*dof,n1,&v2[0],false);
-    Matrix<T>::DGEMM(Mo, Mi, Mp1, 0);
+    Matrix<T>::DGEMM(Mo, Mi, Mp1);
 
     Matrix<T> Mo_t(n1, d* d*dof,&v1[0],false);
     for(size_t i=0;i<Mo.Dim(0);i++)
@@ -472,7 +473,7 @@ void cheb_eval(const Vector<T>& coeff_, int cheb_deg, const std::vector<T>& in_x
   { // Apply Mp2
     Matrix<T> Mi  (n1* d*dof, d,&v1[0],false);
     Matrix<T> Mo  (n1* d*dof,n2,&v2[0],false);
-    Matrix<T>::DGEMM(Mo, Mi, Mp2, 0);
+    Matrix<T>::DGEMM(Mo, Mi, Mp2);
 
     Matrix<T> Mo_t(n2,n1* d*dof,&v1[0],false);
     for(size_t i=0;i<Mo.Dim(0);i++)
@@ -483,7 +484,7 @@ void cheb_eval(const Vector<T>& coeff_, int cheb_deg, const std::vector<T>& in_x
   { // Apply Mp3
     Matrix<T> Mi  (n2*n1*dof, d,&v1[0],false);
     Matrix<T> Mo  (n2*n1*dof,n3,&v2[0],false);
-    Matrix<T>::DGEMM(Mo, Mi, Mp3, 0);
+    Matrix<T>::DGEMM(Mo, Mi, Mp3);
 
     Matrix<T> Mo_t(n3,n2*n1*dof,&v1[0],false);
     for(size_t i=0;i<Mo.Dim(0);i++)
@@ -502,8 +503,8 @@ void cheb_eval(const Vector<T>& coeff_, int cheb_deg, const std::vector<T>& in_x
   }
 
   // Free memory
-  if(mem_mgr )mem_mgr->free(buff);
-  else                 free(buff);
+  if(mem_mgr)     mem_mgr->free(buff);
+  else mem::aligned_free((char*)buff);
 }
 
 /**
@@ -1169,7 +1170,7 @@ void cheb_diff(const Vector<T>& A, int deg, int diff_dim, Vector<T>& B, mem::Mem
   // Create work buffers
   size_t buff_size=A.Dim();
   T* buff=(T*)(mem_mgr?mem_mgr->malloc(2*buff_size*sizeof(T)):
-                                malloc(2*buff_size*sizeof(T)));
+             mem::aligned_malloc<char>(2*buff_size*sizeof(T)));
   T* buff1=buff+buff_size*0;
   T* buff2=buff+buff_size*1;
 
@@ -1188,7 +1189,7 @@ void cheb_diff(const Vector<T>& A, int deg, int diff_dim, Vector<T>& B, mem::Mem
   { // Apply M
     Matrix<T> Mi(d,A.Dim()/d,&buff1[0],false);
     Matrix<T> Mo(d,A.Dim()/d,&buff2[0],false);
-    Matrix<T>::DGEMM(Mo, M, Mi, 0);
+    Matrix<T>::DGEMM(Mo, M, Mi);
   }
 
   for(size_t k=0;k<n2;k++){ // Rearrange and write output to B
@@ -1201,8 +1202,8 @@ void cheb_diff(const Vector<T>& A, int deg, int diff_dim, Vector<T>& B, mem::Mem
   }
 
   // Free memory
-  if(mem_mgr )mem_mgr->free(buff);
-  else                 free(buff);
+  if(mem_mgr)     mem_mgr->free(buff);
+  else mem::aligned_free((char*)buff);
 }
 
 template <class T>
@@ -1215,7 +1216,7 @@ void cheb_grad(const Vector<T>& A, int deg, Vector<T>& B, mem::MemoryManager* me
 
   // Create work buffers
   T* buff=(T*)(mem_mgr?mem_mgr->malloc(2*n_coeff_*dof*sizeof(T)):
-                                malloc(2*n_coeff_*dof*sizeof(T)));
+             mem::aligned_malloc<char>(2*n_coeff_*dof*sizeof(T)));
   Vector<T> A_(n_coeff_*dof,buff+n_coeff_*0); A_.SetZero();
   Vector<T> B_(n_coeff_*dof,buff+n_coeff_*1); B_.SetZero();
 
@@ -1254,8 +1255,8 @@ void cheb_grad(const Vector<T>& A, int deg, Vector<T>& B, mem::MemoryManager* me
   }
 
   // Free memory
-  if(mem_mgr )mem_mgr->free(buff);
-  else                 free(buff);
+  if(mem_mgr)     mem_mgr->free(buff);
+  else mem::aligned_free((char*)buff);
 }
 
 template <class T>
@@ -1352,8 +1353,8 @@ void cheb_laplacian(T* A, int deg, T* B){
   int d=deg+1;
   int n1=(int)(pow((T)d,dim)+0.5);
 
-  T* C1=new T[n1];
-  T* C2=new T[n1];
+  T* C1=mem::aligned_malloc<T>(n1);
+  T* C2=mem::aligned_malloc<T>(n1);
 
   Matrix<T> M_(1,n1,C2,false);
   for(int i=0;i<3;i++){
@@ -1366,8 +1367,8 @@ void cheb_laplacian(T* A, int deg, T* B){
     }
   }
 
-  delete[] C1;
-  delete[] C2;
+  mem::aligned_free<T>(C1);
+  mem::aligned_free<T>(C2);
 }
 
 /*

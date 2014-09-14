@@ -689,10 +689,10 @@ template <class T>
 void laplace_poten_(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
 //void laplace_poten(T* r_src_, int src_cnt, T* v_src_, int dof, T* r_trg_, int trg_cnt, T* k_out_){
 //  int dim=3; //Only supporting 3D
-//  T* r_src=new T[src_cnt*dim];
-//  T* r_trg=new T[trg_cnt*dim];
-//  T* v_src=new T[src_cnt    ];
-//  T* k_out=new T[trg_cnt    ];
+//  T* r_src=mem::aligned_malloc<T>(src_cnt*dim);
+//  T* r_trg=mem::aligned_malloc<T>(trg_cnt*dim);
+//  T* v_src=mem::aligned_malloc<T>(src_cnt    );
+//  T* k_out=mem::aligned_malloc<T>(trg_cnt    );
 //  mem::memcopy(r_src,r_src_,src_cnt*dim*sizeof(T));
 //  mem::memcopy(r_trg,r_trg_,trg_cnt*dim*sizeof(T));
 //  mem::memcopy(v_src,v_src_,src_cnt    *sizeof(T));
@@ -795,10 +795,10 @@ void laplace_poten_(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_
 
 //  for (int t=0; t<trg_cnt; t++)
 //    k_out_[t] += k_out[t];
-//  delete[] r_src;
-//  delete[] r_trg;
-//  delete[] v_src;
-//  delete[] k_out;
+//  mem::aligned_free(r_src);
+//  mem::aligned_free(r_trg);
+//  mem::aligned_free(v_src);
+//  mem::aligned_free(k_out);
 }
 
 // Laplace double layer potential.
@@ -1285,8 +1285,8 @@ namespace
   void laplaceSSEShuffle(const int ns, const int nt, double const src[], double const trg[], double const den[], double pot[], mem::MemoryManager* mem_mgr=NULL)
   {
     double* buff=NULL;
-    if(mem_mgr) buff=(double*)mem_mgr->malloc((ns+1+nt)*3*sizeof(double));
-    else buff=(double*)malloc((ns+1+nt)*3*sizeof(double));
+    if(mem_mgr) buff=(double*)mem_mgr->malloc(sizeof(double)*(ns+1+nt)*3);
+    else        buff=     mem::aligned_malloc       <double>((ns+1+nt)*3);
 
     double* buff_=buff;
     pvfmm::Vector<double> xs(ns+1,buff_,false); buff_+=ns+1;
@@ -1325,7 +1325,7 @@ namespace
     laplaceSSE(ns,nt,&xs[x_shift],&ys[y_shift],&zs[z_shift],&xt[0],&yt[0],&zt[0],den,pot);
 
     if(mem_mgr) mem_mgr->free(buff);
-    else free(buff);
+    else    mem::aligned_free(buff);
     return;
   }
 

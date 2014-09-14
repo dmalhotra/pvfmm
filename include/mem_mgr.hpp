@@ -31,9 +31,16 @@ class MemoryManager{
 
   public:
 
+    static const char init_mem_val=42;
+
     MemoryManager(size_t N){
       buff_size=N;
       buff=(char*)::malloc(buff_size); assert(buff);
+      { // Debugging
+        #ifndef NDEBUG
+        for(size_t i=0;i<buff_size;i++) buff[i]=init_mem_val;
+        #endif
+      }
       n_dummy_indx=new_node();
       size_t n_indx=new_node();
       node& n_dummy=node_buff[n_dummy_indx-1];
@@ -65,10 +72,17 @@ class MemoryManager{
       }
 
       omp_destroy_lock(&omp_lock);
+      { // Debugging
+        #ifndef NDEBUG
+        for(size_t i=0;i<buff_size;i++){
+          assert(buff[i]==init_mem_val);
+        }
+        #endif
+      }
       if(buff) ::free(buff);
     }
 
-    void* malloc(size_t size){
+    void* malloc(size_t size) const{
       size_t alignment=MEM_ALIGN;
       assert(alignment <= 0x8000);
       if(!size) return NULL;
@@ -83,11 +97,17 @@ class MemoryManager{
       }else if(it->first==size){ // Found exact size block
         size_t n_indx=it->second;
         node& n=node_buff[n_indx-1];
-        //assert(n.size==it->first);
-        //assert(n.it==it);
-        //assert(n.free);
+        assert(n.size==it->first);
+        assert(n.it==it);
+        assert(n.free);
 
         n.free=false;
+        { // Debugging
+          #ifndef NDEBUG
+          for(size_t i=0;i<n.size;i++) assert(((char*)n.mem_ptr)[i]==init_mem_val);
+          #endif
+        }
+
         free_map.erase(it);
         ((size_t*)n.mem_ptr)[0]=n_indx;
         r = (uintptr_t)&((size_t*)n.mem_ptr)[1];
@@ -96,9 +116,9 @@ class MemoryManager{
         size_t n_free_indx=new_node();
         node& n_free=node_buff[n_free_indx-1];
         node& n     =node_buff[n_indx-1];
-        //assert(n.size==it->first);
-        //assert(n.it==it);
-        //assert(n.free);
+        assert(n.size==it->first);
+        assert(n.it==it);
+        assert(n.free);
 
         n_free=n;
         n_free.size-=size;
@@ -113,6 +133,11 @@ class MemoryManager{
         n.free=false;
         n.size=size;
         n.next=n_free_indx;
+        { // Debugging
+          #ifndef NDEBUG
+          for(size_t i=0;i<n.size;i++) assert(((char*)n.mem_ptr)[i]==init_mem_val);
+          #endif
+        }
 
         free_map.erase(it);
         n_free.it=free_map.insert(std::make_pair(n_free.size,n_free_indx));
@@ -126,18 +151,32 @@ class MemoryManager{
       return (void*)o;
     }
 
-    void free(void* p_){
+    void free(void* p_) const{
       if(!p_) return;
       void* p=((void*)((uintptr_t)p_-((uint16_t*)p_)[-1]));
       if(p<&buff[0] || p>=&buff[buff_size]) return ::free(p);
 
       size_t n_indx=((size_t*)p)[-1];
       assert(n_indx>0 && n_indx<=node_buff.size());
-      ((size_t*)p)[-1]=0;
 
       omp_set_lock(&omp_lock);
       node& n=node_buff[n_indx-1];
       assert(!n.free && n.size>0 && n.mem_ptr==&((size_t*)p)[-1]);
+
+      { // Debugging
+        #ifndef NDEBUG
+        for(char* c=((char*)p )-sizeof(  size_t);c<((char*)p );c++) *c=init_mem_val;
+        for(char* c=((char*)p_)-sizeof(uint16_t);c<((char*)p_);c++) *c=init_mem_val;
+        //((size_t*)p)[-1]=0;
+        //((uint16_t*)p_)[-1]=0;
+        size_t alignment=MEM_ALIGN;
+        size_t size=n.size-(sizeof(size_t) + --alignment + 2);
+        for(size_t i=0;i<size;i++) ((char*)p_)[i]=init_mem_val;
+        //for(char* c=((char*)p_)-(sizeof(size_t)+2); c<((char*)p_)+size; c++){
+        //  *c=init_mem_val;
+        //}
+        #endif
+      }
       n.free=true;
 
       if(n.prev!=0 && node_buff[n.prev-1].free){
@@ -173,7 +212,7 @@ class MemoryManager{
       omp_unset_lock(&omp_lock);
     }
 
-    void print(){
+    void print() const{
       if(!buff_size) return;
       omp_set_lock(&omp_lock);
 
@@ -253,7 +292,7 @@ class MemoryManager{
 
     MemoryManager(const MemoryManager& m);
 
-    size_t new_node(){
+    size_t new_node() const{
       if(node_stack.empty()){
         node_buff.resize(node_buff.size()+1);
         node_stack.push(node_buff.size());
@@ -265,7 +304,7 @@ class MemoryManager{
       return indx;
     }
 
-    void delete_node(size_t indx){
+    void delete_node(size_t indx) const{
       assert(indx);
       assert(indx<=node_buff.size());
       node& n=node_buff[indx-1];
@@ -278,13 +317,15 @@ class MemoryManager{
 
     char* buff;
     size_t buff_size;
-    std::vector<node> node_buff;
-    std::stack<size_t> node_stack;
-    std::multimap<size_t, size_t> free_map;
     size_t n_dummy_indx;
 
-    omp_lock_t omp_lock;
+    mutable std::vector<node> node_buff;
+    mutable std::stack<size_t> node_stack;
+    mutable std::multimap<size_t, size_t> free_map;
+    mutable omp_lock_t omp_lock;
 };
+
+const MemoryManager glbMemMgr(GLOBAL_MEM_BUFF*1024LL*1024LL);
 
 }//end namespace
 }//end namespace

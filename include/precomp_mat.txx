@@ -254,7 +254,7 @@ void PrecompMat<T>::LoadFile(const char* fname, MPI_Comm comm){
       //f_size=ftell (f);
     }
     if(f_size>0){
-      f_data=new char[f_size];
+      f_data=mem::aligned_malloc<char>(f_size);
       fseek (f, 0, SEEK_SET);
       MY_FREAD(f_data,sizeof(char),f_size,f);
       fclose(f);
@@ -270,7 +270,7 @@ void PrecompMat<T>::LoadFile(const char* fname, MPI_Comm comm){
     return;
   }
 
-  if(f_data==NULL) f_data=new char[f_size];
+  if(f_data==NULL) f_data=mem::aligned_malloc<char>(f_size);
   char* f_ptr=f_data;
   int max_send_size=1000000000;
   while(f_size>0){
@@ -325,7 +325,7 @@ void PrecompMat<T>::LoadFile(const char* fname, MPI_Comm comm){
       perm_c[i].resize(500);
     }
   }
-  if(f_data!=NULL) delete[] f_data;
+  if(f_data!=NULL) mem::aligned_free<char>(f_data);
   Profile::Toc();
   Profile::Toc();
 }

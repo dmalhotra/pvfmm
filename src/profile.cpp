@@ -51,10 +51,10 @@ void Profile::Tic(const char* name_, const MPI_Comm* comm_,bool sync_, int verbo
     if(comm_!=NULL) MPI_Comm_rank(*comm_,&rank);
     if(!rank){
       for(size_t i=0;i<name.size();i++) std::cout<<"    ";
-      std::cout << "\033[1;31m"<<std::string(name_)<<"\033[0m {\n";
+      std::cout << "\033[1;31m"<<name_<<"\033[0m {\n";
     }
     #endif
-    name.push(std::string(name_));
+    name.push(name_);
     comm.push((MPI_Comm*)comm_);
     sync.push(sync_);
     max_mem.push_back(MEM);
@@ -133,21 +133,21 @@ void Profile::print(const MPI_Comm* comm_){
   int width=10;
   size_t level=0;
   if(!rank && e_log.size()>0){
-    std::cout<<"\n"<<std::setw(width*3-2*level)<<std::string(" ");
-    std::cout<<"  "<<std::setw(width)<<std::string("t_min");
-    std::cout<<"  "<<std::setw(width)<<std::string("t_avg");
-    std::cout<<"  "<<std::setw(width)<<std::string("t_max");
-    std::cout<<"  "<<std::setw(width)<<std::string("f_min");
-    std::cout<<"  "<<std::setw(width)<<std::string("f_avg");
-    std::cout<<"  "<<std::setw(width)<<std::string("f_max");
+    std::cout<<"\n"<<std::setw(width*3-2*level)<<" ";
+    std::cout<<"  "<<std::setw(width)<<"t_min";
+    std::cout<<"  "<<std::setw(width)<<"t_avg";
+    std::cout<<"  "<<std::setw(width)<<"t_max";
+    std::cout<<"  "<<std::setw(width)<<"f_min";
+    std::cout<<"  "<<std::setw(width)<<"f_avg";
+    std::cout<<"  "<<std::setw(width)<<"f_max";
 
-    std::cout<<"  "<<std::setw(width)<<std::string("f/s_min");
-    std::cout<<"  "<<std::setw(width)<<std::string("f/s_max");
-    std::cout<<"  "<<std::setw(width)<<std::string("f/s_total");
+    std::cout<<"  "<<std::setw(width)<<"f/s_min";
+    std::cout<<"  "<<std::setw(width)<<"f/s_max";
+    std::cout<<"  "<<std::setw(width)<<"f/s_total";
 
-    std::cout<<"  "<<std::setw(width)<<std::string("m_init");
-    std::cout<<"  "<<std::setw(width)<<std::string("m_max");
-    std::cout<<"  "<<std::setw(width)<<std::string("m_final")<<'\n';
+    std::cout<<"  "<<std::setw(width)<<"m_init";
+    std::cout<<"  "<<std::setw(width)<<"m_max";
+    std::cout<<"  "<<std::setw(width)<<"m_final"<<'\n';
   }
 
   std::stack<std::string> out_stack;
@@ -237,12 +237,10 @@ void Profile::print(const MPI_Comm* comm_){
               k+=(e_log[l]?1:-1);
               l++;
             }
-            if(l<e_log.size()?e_log[l]:false)
-              s1+=std::string("| ");
-            else
-              s1+=std::string("  ");
+            if(l<e_log.size()?e_log[l]:false) s1+="| ";
+            else s1+="  ";
           }
-          s1+=std::string("\n");
+          s1+="\n";
         }// */
         out_stack.push(s1);
       }

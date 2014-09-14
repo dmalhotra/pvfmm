@@ -21,7 +21,7 @@ namespace mem{
   // Aligned memory allocation.
   // Alignment must be power of 2 (1,2,4,8,16...)
   template <class T>
-  T* aligned_malloc(size_t size_, size_t alignment=MEM_ALIGN);
+  T* aligned_malloc(size_t size_=1, size_t alignment=MEM_ALIGN);
 
   // Aligned memory free.
   template <class T>
