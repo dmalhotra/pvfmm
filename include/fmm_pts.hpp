@@ -15,7 +15,6 @@
 #include <interac_list.hpp>
 #include <precomp_mat.hpp>
 #include <fft_wrapper.hpp>
-#include <mem_utils.hpp>
 #include <mpi_node.hpp>
 #include <mem_mgr.hpp>
 #include <vector.hpp>

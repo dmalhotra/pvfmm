@@ -10,7 +10,7 @@
 #include <iomanip>
 
 #include <device_wrapper.hpp>
-#include <mem_utils.hpp>
+#include <mem_mgr.hpp>
 #include <profile.hpp>
 
 namespace pvfmm{
@@ -42,7 +42,7 @@ Vector<T>::Vector(size_t dim_, T* data_, bool own_data_){
   own_data=own_data_;
   if(own_data){
     if(dim>0){
-      data_ptr=mem::aligned_malloc<T>(capacity);
+      data_ptr=mem::aligned_new<T>(capacity);
 #if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
       Profile::Add_MEM(capacity*sizeof(T));
 #endif
@@ -59,7 +59,7 @@ Vector<T>::Vector(const Vector<T>& V){
   capacity=dim;
   own_data=true;
   if(dim>0){
-    data_ptr=mem::aligned_malloc<T>(capacity);
+    data_ptr=mem::aligned_new<T>(capacity);
 #if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
     Profile::Add_MEM(capacity*sizeof(T));
 #endif
@@ -75,7 +75,7 @@ Vector<T>::Vector(const std::vector<T>& V){
   capacity=dim;
   own_data=true;
   if(dim>0){
-    data_ptr=mem::aligned_malloc<T>(capacity);
+    data_ptr=mem::aligned_new<T>(capacity);
 #if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
     Profile::Add_MEM(capacity*sizeof(T));
 #endif
@@ -90,7 +90,7 @@ Vector<T>::~Vector(){
   FreeDevice(false);
   if(own_data){
     if(data_ptr!=NULL){
-      mem::aligned_free(data_ptr);
+      mem::aligned_delete(data_ptr);
 #if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
       Profile::Add_MEM(-capacity*sizeof(T));
 #endif
@@ -189,14 +189,14 @@ void Vector<T>::Resize(size_t dim_,bool fit_size){
 
   {
     if(data_ptr!=NULL){
-      mem::aligned_free(data_ptr); data_ptr=NULL;
+      mem::aligned_delete(data_ptr); data_ptr=NULL;
 #if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
       Profile::Add_MEM(-capacity*sizeof(T));
 #endif
     }
     capacity=dim_;
     if(capacity>0){
-      data_ptr=mem::aligned_malloc<T>(capacity);
+      data_ptr=mem::aligned_new<T>(capacity);
 #if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
       Profile::Add_MEM(capacity*sizeof(T));
 #endif
@@ -219,14 +219,14 @@ Vector<T>& Vector<T>::operator=(const Vector<T>& V){
     FreeDevice(false);
     if(own_data && capacity<V.dim){
       if(data_ptr!=NULL){
-        mem::aligned_free(data_ptr); data_ptr=NULL;
+        mem::aligned_delete(data_ptr); data_ptr=NULL;
 #if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
         Profile::Add_MEM(-capacity*sizeof(T));
 #endif
       }
       capacity=V.dim;
       if(capacity>0){
-        data_ptr=mem::aligned_malloc<T>(capacity);
+        data_ptr=mem::aligned_new<T>(capacity);
 #if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
         Profile::Add_MEM(capacity*sizeof(T));
 #endif
@@ -246,14 +246,14 @@ Vector<T>& Vector<T>::operator=(const std::vector<T>& V){
     FreeDevice(false);
     if(own_data && capacity<V.size()){
       if(data_ptr!=NULL){
-        mem::aligned_free(data_ptr); data_ptr=NULL;
+        mem::aligned_delete(data_ptr); data_ptr=NULL;
 #if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
         Profile::Add_MEM(-capacity*sizeof(T));
 #endif
       }
       capacity=V.size();
       if(capacity>0){
-        data_ptr=mem::aligned_malloc<T>(capacity);
+        data_ptr=mem::aligned_new<T>(capacity);
 #if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
         Profile::Add_MEM(capacity*sizeof(T));
 #endif

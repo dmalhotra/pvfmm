@@ -307,9 +307,9 @@ namespace mat{
       T *S, T *U, int *LDU, T *VT, int *LDVT, T *WORK, int *LWORK,
       int *INFO){
     const size_t dim[2]={std::max(*N,*M), std::min(*N,*M)};
-    T* U_=mem::aligned_malloc<T>(dim[0]*dim[0]); memset(U_, 0, dim[0]*dim[0]*sizeof(T));
-    T* V_=mem::aligned_malloc<T>(dim[1]*dim[1]); memset(V_, 0, dim[1]*dim[1]*sizeof(T));
-    T* S_=mem::aligned_malloc<T>(dim[0]*dim[1]);
+    T* U_=mem::aligned_new<T>(dim[0]*dim[0]); memset(U_, 0, dim[0]*dim[0]*sizeof(T));
+    T* V_=mem::aligned_new<T>(dim[1]*dim[1]); memset(V_, 0, dim[1]*dim[1]*sizeof(T));
+    T* S_=mem::aligned_new<T>(dim[0]*dim[1]);
 
     const size_t lda=*LDA;
     const size_t ldu=*LDU;
@@ -364,9 +364,9 @@ namespace mat{
       S[i]=S[i]*(S[i]<0.0?-1.0:1.0);
     }
 
-    mem::aligned_free<T>(U_);
-    mem::aligned_free<T>(S_);
-    mem::aligned_free<T>(V_);
+    mem::aligned_delete<T>(U_);
+    mem::aligned_delete<T>(S_);
+    mem::aligned_delete<T>(V_);
 
     if(0){ // Verify
       const size_t dim[2]={std::max(*N,*M), std::min(*N,*M)};
@@ -422,9 +422,9 @@ namespace mat{
     int n = n1;
     int k = (m<n?m:n);
 
-    T* tU =mem::aligned_malloc<T>(m*k);
-    T* tS =mem::aligned_malloc<T>(k);
-    T* tVT=mem::aligned_malloc<T>(k*n);
+    T* tU =mem::aligned_new<T>(m*k);
+    T* tS =mem::aligned_new<T>(k);
+    T* tVT=mem::aligned_new<T>(k*n);
 
     //SVD
     int INFO=0;
@@ -436,14 +436,14 @@ namespace mat{
     int wssize1 = 5*(m<n?m:n);
     wssize = (wssize>wssize1?wssize:wssize1);
 
-    T* wsbuf = mem::aligned_malloc<T>(wssize);
+    T* wsbuf = mem::aligned_new<T>(wssize);
 
     svd(&JOBU, &JOBVT, &m, &n, &M[0], &m, &tS[0], &tU[0], &m, &tVT[0], &k,
         wsbuf, &wssize, &INFO);
     if(INFO!=0)
       std::cout<<INFO<<'\n';
     assert(INFO==0);
-    mem::aligned_free<T>(wsbuf);
+    mem::aligned_delete<T>(wsbuf);
 
     T eps_=tS[0]*eps;
     for(int i=0;i<k;i++)
@@ -460,9 +460,9 @@ namespace mat{
     }
 
     gemm<T>('T','T',n,m,k,1.0,&tVT[0],k,&tU[0],m,0.0,M_,n);
-    mem::aligned_free<T>(tU);
-    mem::aligned_free<T>(tS);
-    mem::aligned_free<T>(tVT);
+    mem::aligned_delete<T>(tU);
+    mem::aligned_delete<T>(tS);
+    mem::aligned_delete<T>(tVT);
   }
 
 }//end namespace

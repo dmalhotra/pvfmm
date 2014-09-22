@@ -14,7 +14,7 @@
 
 #include <device_wrapper.hpp>
 #include <mat_utils.hpp>
-#include <mem_utils.hpp>
+#include <mem_mgr.hpp>
 #include <profile.hpp>
 
 namespace pvfmm{
@@ -51,7 +51,7 @@ Matrix<T>::Matrix(size_t dim1, size_t dim2, T* data_, bool own_data_){
   own_data=own_data_;
   if(own_data){
     if(dim[0]*dim[1]>0){
-      data_ptr=mem::aligned_malloc<T>(dim[0]*dim[1]);
+      data_ptr=mem::aligned_new<T>(dim[0]*dim[1]);
 #if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
       Profile::Add_MEM(dim[0]*dim[1]*sizeof(T));
 #endif
@@ -68,7 +68,7 @@ Matrix<T>::Matrix(const Matrix<T>& M){
   dim[1]=M.dim[1];
   own_data=true;
   if(dim[0]*dim[1]>0){
-    data_ptr=mem::aligned_malloc<T>(dim[0]*dim[1]);
+    data_ptr=mem::aligned_new<T>(dim[0]*dim[1]);
 #if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
     Profile::Add_MEM(dim[0]*dim[1]*sizeof(T));
 #endif
@@ -83,7 +83,7 @@ Matrix<T>::~Matrix(){
   FreeDevice(false);
   if(own_data){
     if(data_ptr!=NULL){
-      mem::aligned_free(data_ptr);
+      mem::aligned_delete(data_ptr);
 #if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
       Profile::Add_MEM(-dim[0]*dim[1]*sizeof(T));
 #endif
@@ -181,7 +181,7 @@ void Matrix<T>::Resize(size_t i, size_t j){
   FreeDevice(false);
   if(own_data){
     if(data_ptr!=NULL){
-      mem::aligned_free(data_ptr);
+      mem::aligned_delete(data_ptr);
 #if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
       Profile::Add_MEM(-dim[0]*dim[1]*sizeof(T));
 #endif
@@ -192,7 +192,7 @@ void Matrix<T>::Resize(size_t i, size_t j){
   dim[1]=j;
   if(own_data){
     if(dim[0]*dim[1]>0){
-      data_ptr=mem::aligned_malloc<T>(dim[0]*dim[1]);
+      data_ptr=mem::aligned_new<T>(dim[0]*dim[1]);
 #if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
       Profile::Add_MEM(dim[0]*dim[1]*sizeof(T));
 #endif
@@ -213,13 +213,13 @@ Matrix<T>& Matrix<T>::operator=(const Matrix<T>& M){
     FreeDevice(false);
     if(own_data && dim[0]*dim[1]!=M.dim[0]*M.dim[1]){
       if(data_ptr!=NULL){
-        mem::aligned_free(data_ptr); data_ptr=NULL;
+        mem::aligned_delete(data_ptr); data_ptr=NULL;
 #if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
         Profile::Add_MEM(-dim[0]*dim[1]*sizeof(T));
 #endif
       }
       if(M.dim[0]*M.dim[1]>0){
-        data_ptr=mem::aligned_malloc<T>(M.dim[0]*M.dim[1]);
+        data_ptr=mem::aligned_new<T>(M.dim[0]*M.dim[1]);
 #if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
         Profile::Add_MEM(M.dim[0]*M.dim[1]*sizeof(T));
 #endif
@@ -455,9 +455,9 @@ void Matrix<T>::SVD(Matrix<T>& tU, Matrix<T>& tS, Matrix<T>& tVT){
   int wssize1 = 5*(m<n?m:n);
   wssize = (wssize>wssize1?wssize:wssize1);
 
-  T* wsbuf = mem::aligned_malloc<T>(wssize);
+  T* wsbuf = mem::aligned_new<T>(wssize);
   pvfmm::mat::svd(&JOBU, &JOBVT, &m, &n, &M[0][0], &m, &tS[0][0], &tVT[0][0], &m, &tU[0][0], &k, wsbuf, &wssize, &INFO);
-  mem::aligned_free<T>(wsbuf);
+  mem::aligned_delete<T>(wsbuf);
 
   if(INFO!=0) std::cout<<INFO<<'\n';
   assert(INFO==0);

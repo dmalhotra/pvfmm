@@ -5,8 +5,8 @@
 #include <execinfo.h>
 #include <cxxabi.h>
 
-#ifndef _STACKTRACE_H_
-#define _STACKTRACE_H_
+#ifndef _PVFMM_STACKTRACE_H_
+#define _PVFMM_STACKTRACE_H_
 
 namespace pvfmm{
 
@@ -58,7 +58,7 @@ inline void abortHandler( int signum, siginfo_t* si, void* unused ){
   #pragma omp critical (STACK_TRACE)
   if(first_time){
     first_time=false;
-    char* name = NULL;
+    const char* name = NULL;
     switch( signum ){
       case SIGABRT: name = "SIGABRT";  break;
       case SIGSEGV: name = "SIGSEGV";  break;
@@ -88,11 +88,9 @@ inline int SetSigHandler(){
   sigaction( SIGFPE,  &sa, NULL );
   sigaction( SIGPIPE, &sa, NULL );
 
-  return -1;
+  return 0;
 }
-
-const int sig_handler=SetSigHandler();
 
 }//end namespace
 
-#endif // _STACKTRACE_H_
+#endif // _PVFMM_STACKTRACE_H_

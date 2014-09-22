@@ -13,7 +13,6 @@
 #include <algorithm>
 
 #include <legendre_rule.hpp>
-#include <mem_utils.hpp>
 #include <mat_utils.hpp>
 #include <mem_mgr.hpp>
 #include <matrix.hpp>
@@ -126,8 +125,7 @@ T cheb_approx(T* fn_v, int cheb_deg, int dof, T* out, mem::MemoryManager* mem_mg
 
   // Create work buffers
   size_t buff_size=dof*d*d*d;
-  Y* buff=(Y*)(mem_mgr?mem_mgr->malloc(2*buff_size*sizeof(Y)):
-             mem::aligned_malloc<char>(2*buff_size*sizeof(Y)));
+  Y* buff=mem::aligned_new<Y>(2*buff_size,mem_mgr);
   Y* buff1=buff+buff_size*0;
   Y* buff2=buff+buff_size*1;
 
@@ -189,8 +187,7 @@ T cheb_approx(T* fn_v, int cheb_deg, int dof, T* out, mem::MemoryManager* mem_mg
   }
 
   // Free memory
-  if(mem_mgr)     mem_mgr->free(buff);
-  else mem::aligned_free((char*)buff);
+  mem::aligned_delete<Y>(buff,mem_mgr);
 
   return cheb_err(out,cheb_deg,dof);
 }
@@ -437,8 +434,7 @@ void cheb_eval(const Vector<T>& coeff_, int cheb_deg, const std::vector<T>& in_x
 
   // Create work buffers
   size_t buff_size=std::max(d,n1)*std::max(d,n2)*std::max(d,n3)*dof;
-  T* buff=(T*)(mem_mgr?mem_mgr->malloc(2*buff_size*sizeof(T)):
-             mem::aligned_malloc<char>(2*buff_size*sizeof(T)));
+  T* buff=mem::aligned_new<T>(2*buff_size,mem_mgr);
   Vector<T> v1(buff_size,buff+buff_size*0,false);
   Vector<T> v2(buff_size,buff+buff_size*1,false);
 
@@ -503,8 +499,7 @@ void cheb_eval(const Vector<T>& coeff_, int cheb_deg, const std::vector<T>& in_x
   }
 
   // Free memory
-  if(mem_mgr)     mem_mgr->free(buff);
-  else mem::aligned_free((char*)buff);
+  mem::aligned_delete<T>(buff,mem_mgr);
 }
 
 /**
@@ -868,10 +863,10 @@ std::vector<T> integ_pyramid(int m, T* s, T r, int nx, const Kernel<T>& kernel, 
     x_.swap(x_new);
   }
 
-  Vector<T> k_out(   ny*nz*k_dim,(T*)mem_mgr.malloc(   ny*nz*k_dim*sizeof(T)),false); //Output of kernel evaluation.
-  Vector<T> I0   (   ny*m *k_dim,(T*)mem_mgr.malloc(   ny*m *k_dim*sizeof(T)),false);
-  Vector<T> I1   (   m *m *k_dim,(T*)mem_mgr.malloc(   m *m *k_dim*sizeof(T)),false);
-  Vector<T> I2   (m *m *m *k_dim,(T*)mem_mgr.malloc(m *m *m *k_dim*sizeof(T)),false); I2.SetZero();
+  Vector<T> k_out(   ny*nz*k_dim,mem::aligned_new<T>(   ny*nz*k_dim,&mem_mgr),false); //Output of kernel evaluation.
+  Vector<T> I0   (   ny*m *k_dim,mem::aligned_new<T>(   ny*m *k_dim,&mem_mgr),false);
+  Vector<T> I1   (   m *m *k_dim,mem::aligned_new<T>(   m *m *k_dim,&mem_mgr),false);
+  Vector<T> I2   (m *m *m *k_dim,mem::aligned_new<T>(m *m *m *k_dim,&mem_mgr),false); I2.SetZero();
   if(x_.size()>1)
   for(int k=0; k<x_.size()-1; k++){
     T x0=x_[k];
@@ -991,10 +986,10 @@ std::vector<T> integ_pyramid(int m, T* s, T r, int nx, const Kernel<T>& kernel, 
                      +m*(m+1)*(m+2)/3*k_dim)*nx*(x_.size()-1));
 
   std::vector<T> I2_(&I2[0], &I2[0]+I2.Dim());
-  mem_mgr.free(&k_out[0]);
-  mem_mgr.free(&I0   [0]);
-  mem_mgr.free(&I1   [0]);
-  mem_mgr.free(&I2   [0]);
+  mem::aligned_delete<T>(&k_out[0],&mem_mgr);
+  mem::aligned_delete<T>(&I0   [0],&mem_mgr);
+  mem::aligned_delete<T>(&I1   [0],&mem_mgr);
+  mem::aligned_delete<T>(&I2   [0],&mem_mgr);
   return I2_;
 }
 
@@ -1169,8 +1164,7 @@ void cheb_diff(const Vector<T>& A, int deg, int diff_dim, Vector<T>& B, mem::Mem
 
   // Create work buffers
   size_t buff_size=A.Dim();
-  T* buff=(T*)(mem_mgr?mem_mgr->malloc(2*buff_size*sizeof(T)):
-             mem::aligned_malloc<char>(2*buff_size*sizeof(T)));
+  T* buff=mem::aligned_new<T>(2*buff_size,mem_mgr);
   T* buff1=buff+buff_size*0;
   T* buff2=buff+buff_size*1;
 
@@ -1202,8 +1196,7 @@ void cheb_diff(const Vector<T>& A, int deg, int diff_dim, Vector<T>& B, mem::Mem
   }
 
   // Free memory
-  if(mem_mgr)     mem_mgr->free(buff);
-  else mem::aligned_free((char*)buff);
+  mem::aligned_delete(buff,mem_mgr);
 }
 
 template <class T>
@@ -1215,8 +1208,7 @@ void cheb_grad(const Vector<T>& A, int deg, Vector<T>& B, mem::MemoryManager* me
   size_t dof=A.Dim()/n_coeff;
 
   // Create work buffers
-  T* buff=(T*)(mem_mgr?mem_mgr->malloc(2*n_coeff_*dof*sizeof(T)):
-             mem::aligned_malloc<char>(2*n_coeff_*dof*sizeof(T)));
+  T* buff=mem::aligned_new<T>(2*n_coeff_*dof,mem_mgr);
   Vector<T> A_(n_coeff_*dof,buff+n_coeff_*0); A_.SetZero();
   Vector<T> B_(n_coeff_*dof,buff+n_coeff_*1); B_.SetZero();
 
@@ -1255,8 +1247,7 @@ void cheb_grad(const Vector<T>& A, int deg, Vector<T>& B, mem::MemoryManager* me
   }
 
   // Free memory
-  if(mem_mgr)     mem_mgr->free(buff);
-  else mem::aligned_free((char*)buff);
+  mem::aligned_delete<T>(buff,mem_mgr);
 }
 
 template <class T>
@@ -1353,8 +1344,8 @@ void cheb_laplacian(T* A, int deg, T* B){
   int d=deg+1;
   int n1=(int)(pow((T)d,dim)+0.5);
 
-  T* C1=mem::aligned_malloc<T>(n1);
-  T* C2=mem::aligned_malloc<T>(n1);
+  T* C1=mem::aligned_new<T>(n1);
+  T* C2=mem::aligned_new<T>(n1);
 
   Matrix<T> M_(1,n1,C2,false);
   for(int i=0;i<3;i++){
@@ -1367,8 +1358,8 @@ void cheb_laplacian(T* A, int deg, T* B){
     }
   }
 
-  mem::aligned_free<T>(C1);
-  mem::aligned_free<T>(C2);
+  mem::aligned_delete<T>(C1);
+  mem::aligned_delete<T>(C2);
 }
 
 /*

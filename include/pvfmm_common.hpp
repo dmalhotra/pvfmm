@@ -37,7 +37,7 @@
 #define MEM_ALIGN 64
 #define DEVICE_BUFFER_SIZE 1024LL //in MB
 #define V_BLK_CACHE 25 //in KB
-#define GLOBAL_MEM_BUFF 1024LL*10LL //in MB
+#define GLOBAL_MEM_BUFF 1024LL*0LL //in MB
 
 #ifndef __DEVICE_SYNC__
 #define __DEVICE_SYNC__ 0 // No device synchronization by default.

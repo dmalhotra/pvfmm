@@ -10,7 +10,7 @@
 #include <cstdlib>
 #include <vector>
 
-#include <mem_utils.hpp>
+#include <mem_mgr.hpp>
 #include <profile.hpp>
 #include <vector.hpp>
 #include <matrix.hpp>

@@ -17,7 +17,7 @@
 #include <dtypes.h>
 #include <parUtils.h>
 #include <cheb_utils.hpp>
-#include <mem_utils.hpp>
+#include <mem_mgr.hpp>
 #include <profile.hpp>
 
 namespace pvfmm{

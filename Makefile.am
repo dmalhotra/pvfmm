@@ -61,7 +61,6 @@ lib_libfmm_a_HEADERS = \
 									include/matrix.hpp \
 									include/mat_utils.hpp \
 									include/mem_mgr.hpp \
-									include/mem_utils.hpp \
 									include/mortonid.hpp \
 									include/mpi_node.hpp \
 									include/mpi_tree.hpp \
@@ -84,7 +83,7 @@ lib_libfmm_a_HEADERS = \
 									include/kernel.txx \
 									include/matrix.txx \
 									include/mat_utils.txx \
-									include/mem_utils.txx \
+									include/mem_mgr.txx \
 									include/mortonid.txx \
 									include/mpi_node.txx \
 									include/mpi_tree.txx \
@@ -104,6 +103,7 @@ lib_libpvfmm_a_SOURCES = \
 									src/device_wrapper.cpp \
 									src/fmm_gll.cpp \
 									src/legendre_rule.cpp \
+									src/mem_mgr.cpp \
 									src/mortonid.cpp \
 									src/profile.cpp \
 									src/tree_node.cpp
