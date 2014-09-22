@@ -8,7 +8,7 @@
 #include <cmath>
 
 #include <matrix.hpp>
-#include <mem_utils.hpp>
+#include <mem_mgr.hpp>
 
 namespace pvfmm{
 

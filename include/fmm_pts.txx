@@ -627,8 +627,8 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
       //Compute FFTW plan.
       int nnn[3]={n1,n1,n1};
       Real_t *fftw_in, *fftw_out;
-      fftw_in  = mem::aligned_malloc<Real_t>(  n3 *aux_ker_dim[0]*aux_ker_dim[1]*sizeof(Real_t));
-      fftw_out = mem::aligned_malloc<Real_t>(2*n3_*aux_ker_dim[0]*aux_ker_dim[1]*sizeof(Real_t));
+      fftw_in  = mem::aligned_new<Real_t>(  n3 *aux_ker_dim[0]*aux_ker_dim[1]*sizeof(Real_t));
+      fftw_out = mem::aligned_new<Real_t>(2*n3_*aux_ker_dim[0]*aux_ker_dim[1]*sizeof(Real_t));
       #pragma omp critical (FFTW_PLAN)
       {
         if (!vprecomp_fft_flag){
@@ -645,8 +645,8 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
       M=M_;
 
       //Free memory.
-      mem::aligned_free<Real_t>(fftw_in);
-      mem::aligned_free<Real_t>(fftw_out);
+      mem::aligned_delete<Real_t>(fftw_in);
+      mem::aligned_delete<Real_t>(fftw_out);
       break;
     }
     case V1_Type:
@@ -1871,12 +1871,12 @@ void FMM_Pts<FMMNode>::FFT_UpEquiv(size_t dof, size_t m, size_t ker_dim0, Vector
     if(!vlist_fft_flag){
       int nnn[3]={(int)n1,(int)n1,(int)n1};
       void *fftw_in, *fftw_out;
-      fftw_in  = mem::aligned_malloc<Real_t>(  n3 *ker_dim0*chld_cnt);
-      fftw_out = mem::aligned_malloc<Real_t>(2*n3_*ker_dim0*chld_cnt);
+      fftw_in  = mem::aligned_new<Real_t>(  n3 *ker_dim0*chld_cnt);
+      fftw_out = mem::aligned_new<Real_t>(2*n3_*ker_dim0*chld_cnt);
       vlist_fftplan = FFTW_t<Real_t>::fft_plan_many_dft_r2c(COORD_DIM,nnn,ker_dim0*chld_cnt,
           (Real_t*)fftw_in, NULL, 1, n3, (typename FFTW_t<Real_t>::cplx*)(fftw_out),NULL, 1, n3_, FFTW_ESTIMATE);
-      mem::aligned_free<Real_t>((Real_t*)fftw_in );
-      mem::aligned_free<Real_t>((Real_t*)fftw_out);
+      mem::aligned_delete<Real_t>((Real_t*)fftw_in );
+      mem::aligned_delete<Real_t>((Real_t*)fftw_out);
       vlist_fft_flag=true;
     }
   }
@@ -1959,12 +1959,12 @@ void FMM_Pts<FMMNode>::FFT_Check2Equiv(size_t dof, size_t m, size_t ker_dim1, Ve
       //Build FFTW plan.
       int nnn[3]={(int)n1,(int)n1,(int)n1};
       Real_t *fftw_in, *fftw_out;
-      fftw_in  = mem::aligned_malloc<Real_t>(2*n3_*ker_dim1*chld_cnt);
-      fftw_out = mem::aligned_malloc<Real_t>(  n3 *ker_dim1*chld_cnt);
+      fftw_in  = mem::aligned_new<Real_t>(2*n3_*ker_dim1*chld_cnt);
+      fftw_out = mem::aligned_new<Real_t>(  n3 *ker_dim1*chld_cnt);
       vlist_ifftplan = FFTW_t<Real_t>::fft_plan_many_dft_c2r(COORD_DIM,nnn,ker_dim1*chld_cnt,
           (typename FFTW_t<Real_t>::cplx*)fftw_in, NULL, 1, n3_, (Real_t*)(fftw_out),NULL, 1, n3, FFTW_ESTIMATE);
-      mem::aligned_free<Real_t>(fftw_in);
-      mem::aligned_free<Real_t>(fftw_out);
+      mem::aligned_delete<Real_t>(fftw_in);
+      mem::aligned_delete<Real_t>(fftw_out);
       vlist_ifft_flag=true;
     }
   }
@@ -2417,8 +2417,8 @@ void VListHadamard(size_t dof, size_t M_dim, size_t ker_dim0, size_t ker_dim1, V
   size_t chld_cnt=1UL<<COORD_DIM;
   size_t fftsize_in =M_dim*ker_dim0*chld_cnt*2;
   size_t fftsize_out=M_dim*ker_dim1*chld_cnt*2;
-  Real_t* zero_vec0=mem::aligned_malloc<Real_t>(fftsize_in );
-  Real_t* zero_vec1=mem::aligned_malloc<Real_t>(fftsize_out);
+  Real_t* zero_vec0=mem::aligned_new<Real_t>(fftsize_in );
+  Real_t* zero_vec1=mem::aligned_new<Real_t>(fftsize_out);
   size_t n_out=fft_out.Dim()/fftsize_out;
 
   // Set buff_out to zero.
@@ -2432,8 +2432,8 @@ void VListHadamard(size_t dof, size_t M_dim, size_t ker_dim0, size_t ker_dim1, V
   size_t mat_cnt=precomp_mat.Dim();
   size_t blk1_cnt=interac_dsp.Dim()/mat_cnt;
   const size_t V_BLK_SIZE=V_BLK_CACHE*64/sizeof(Real_t);
-  Real_t** IN_ =new Real_t*[2*V_BLK_SIZE*blk1_cnt*mat_cnt];
-  Real_t** OUT_=new Real_t*[2*V_BLK_SIZE*blk1_cnt*mat_cnt];
+  Real_t** IN_ =mem::aligned_new<Real_t*>(2*V_BLK_SIZE*blk1_cnt*mat_cnt);
+  Real_t** OUT_=mem::aligned_new<Real_t*>(2*V_BLK_SIZE*blk1_cnt*mat_cnt);
   #pragma omp parallel for
   for(size_t interac_blk1=0; interac_blk1<blk1_cnt*mat_cnt; interac_blk1++){
     size_t interac_dsp0 = (interac_blk1==0?0:interac_dsp[interac_blk1-1]);
@@ -2453,6 +2453,8 @@ void VListHadamard(size_t dof, size_t M_dim, size_t ker_dim0, size_t ker_dim1, V
     size_t a=( pid   *M_dim)/omp_p;
     size_t b=((pid+1)*M_dim)/omp_p;
 
+    for(int in_dim=0;in_dim<ker_dim0;in_dim++)
+    for(int ot_dim=0;ot_dim<ker_dim1;ot_dim++)
     for(size_t     blk1=0;     blk1<blk1_cnt;    blk1++)
     for(size_t        k=a;        k<       b;       k++)
     for(size_t mat_indx=0; mat_indx< mat_cnt;mat_indx++){
@@ -2464,15 +2466,8 @@ void VListHadamard(size_t dof, size_t M_dim, size_t ker_dim0, size_t ker_dim1, V
       Real_t** IN = IN_ + 2*V_BLK_SIZE*interac_blk1;
       Real_t** OUT= OUT_+ 2*V_BLK_SIZE*interac_blk1;
 
-      Real_t* M = precomp_mat[mat_indx] + k*chld_cnt*chld_cnt*2;
-#ifdef __SSE__
-      if (mat_indx +1 < mat_cnt){ // Prefetch
-        _mm_prefetch(((char *)(precomp_mat[mat_indx+1] + k*chld_cnt*chld_cnt*2)), _MM_HINT_T0);
-        _mm_prefetch(((char *)(precomp_mat[mat_indx+1] + k*chld_cnt*chld_cnt*2) + 64), _MM_HINT_T0);
-      }
-#endif
-      for(int in_dim=0;in_dim<ker_dim0;in_dim++)
-      for(int ot_dim=0;ot_dim<ker_dim1;ot_dim++){
+      Real_t* M = precomp_mat[mat_indx] + k*chld_cnt*chld_cnt*2 + (ot_dim+in_dim*ker_dim1)*M_dim*128;
+      {
         for(size_t j=0;j<interac_cnt;j+=2){
           Real_t* M_   = M;
           Real_t* IN0  = IN [j+0] + (in_dim*M_dim+k)*chld_cnt*2;
@@ -2496,7 +2491,6 @@ void VListHadamard(size_t dof, size_t M_dim, size_t ker_dim0, size_t ker_dim1, V
 
           matmult_8x8x2(M_, IN0, IN1, OUT0, OUT1);
         }
-        M += M_dim*128;
       }
     }
   }
@@ -2507,10 +2501,10 @@ void VListHadamard(size_t dof, size_t M_dim, size_t ker_dim0, size_t ker_dim1, V
   }
 
   // Free memory
-  delete[] IN_ ;
-  delete[] OUT_;
-  mem::aligned_free<Real_t>(zero_vec0);
-  mem::aligned_free<Real_t>(zero_vec1);
+  mem::aligned_delete<Real_t*>(IN_ );
+  mem::aligned_delete<Real_t*>(OUT_);
+  mem::aligned_delete<Real_t>(zero_vec0);
+  mem::aligned_delete<Real_t>(zero_vec1);
 }
 
 template <class FMMNode>
@@ -2638,7 +2632,7 @@ void FMM_Pts<FMMNode>::V_ListSetup(SetupData<Real_t>&  setup_data, std::vector<M
         std::vector<FMMNode*>& nodes_out_=nodes_blk_out[blk0];
         for(size_t i=0;i<nodes_in_.size();i++) nodes_in_[i]->node_id=i;
         { // Next blocking level.
-          size_t n_blk1=nodes_out_.size()*(ker_dim0+ker_dim1)*sizeof(Real_t)/(64*V_BLK_CACHE);
+          size_t n_blk1=nodes_out_.size()*(2)*sizeof(Real_t)/(64*V_BLK_CACHE);
           if(n_blk1==0) n_blk1=1;
 
           size_t interac_dsp_=0;
@@ -2662,7 +2656,7 @@ void FMM_Pts<FMMNode>::V_ListSetup(SetupData<Real_t>&  setup_data, std::vector<M
     }
 
     { // Set interac_data.
-      size_t data_size=sizeof(size_t)*5; // m, dof, ker_dim0, ker_dim1, n_blk0
+      size_t data_size=sizeof(size_t)*6; // buff_size, m, dof, ker_dim0, ker_dim1, n_blk0
       for(size_t blk0=0;blk0<n_blk0;blk0++){
         data_size+=sizeof(size_t)+    fft_vec[blk0].size()*sizeof(size_t);
         data_size+=sizeof(size_t)+   ifft_vec[blk0].size()*sizeof(size_t);

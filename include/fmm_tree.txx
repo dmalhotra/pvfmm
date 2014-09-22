@@ -13,7 +13,7 @@
 
 #include <mpi_node.hpp>
 #include <fmm_node.hpp>
-#include <mem_utils.hpp>
+#include <mem_mgr.hpp>
 #include <mortonid.hpp>
 #include <profile.hpp>
 #include <vector.hpp>
@@ -359,7 +359,7 @@ void FMM_Tree<FMM_Mat_t>::MultipoleReduceBcast() {
       s_iter++;
     }
 
-    char* send_buff=new char[send_size];
+    char* send_buff=mem::aligned_new<char>(send_size);
     char* buff_iter=send_buff;
     ((size_t*)buff_iter)[0]=s_node_cnt[0];
     ((size_t*)buff_iter)[1]=s_node_cnt[1];
@@ -386,7 +386,7 @@ void FMM_Tree<FMM_Mat_t>::MultipoleReduceBcast() {
     char* recv_buff=NULL;
     if(partner<(size_t)num_p){
       MPI_Sendrecv(&send_size,        1,  MPI_INT, partner, 0, &recv_size,         1,  MPI_INT, partner, 0, *this->Comm(), &status);
-      recv_buff=new char[recv_size];
+      recv_buff=mem::aligned_new<char>(recv_size);
       MPI_Sendrecv(send_buff, send_size, MPI_BYTE, partner, 0,  recv_buff, recv_size, MPI_BYTE, partner, 0, *this->Comm(), &status);
     }
 
@@ -405,9 +405,9 @@ void FMM_Tree<FMM_Mat_t>::MultipoleReduceBcast() {
             MPI_Send( recv_buff, recv_size, MPI_BYTE, partner0, 0, *this->Comm());
           }else if( rank-p0_start < (bit_mask0<<1) ){
             //Receive
-            if(recv_size>0) delete[] recv_buff;
+            if(recv_size>0) mem::aligned_delete<char>(recv_buff);
             MPI_Recv(&recv_size,         1, MPI_INT , partner0, 0, *this->Comm(), &status);
-            recv_buff=new char[recv_size];
+            recv_buff=mem::aligned_new<char>(recv_size);
             MPI_Recv( recv_buff, recv_size, MPI_BYTE, partner0, 0, *this->Comm(), &status);
           }
         }
@@ -471,8 +471,8 @@ void FMM_Tree<FMM_Mat_t>::MultipoleReduceBcast() {
       }
       send_nodes[merge_indx]=recv_nodes[merge_indx];
     }
-    delete[] send_buff;
-    delete[] recv_buff;
+    mem::aligned_delete<char>(send_buff);
+    mem::aligned_delete<char>(recv_buff);
   }
 
   for(int i=0;i<2;i++)
