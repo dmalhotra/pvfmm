@@ -21,15 +21,15 @@
 namespace pvfmm{
 
 template <class FMM_Mat_t>
-void FMM_Tree<FMM_Mat_t>::Initialize(typename FMM_Node_t::NodeData* init_data) {
+void FMM_Tree<FMM_Mat_t>::Initialize(typename Node_t::NodeData* init_data) {
   Profile::Tic("InitTree",this->Comm(),true);{
 
   //Build octree from points.
-  MPI_Tree<FMM_Node_t>::Initialize(init_data);
+  MPI_Tree<Node_t>::Initialize(init_data);
 
   Profile::Tic("InitFMMData",this->Comm(),true,5);
   { //Initialize FMM data.
-    std::vector<FMM_Node_t*>& nodes=this->GetNodeList();
+    std::vector<Node_t*>& nodes=this->GetNodeList();
     #pragma omp parallel for
     for(size_t i=0;i<nodes.size();i++){
       if(nodes[i]->FMMData()==NULL) nodes[i]->FMMData()=new typename FMM_Mat_t::FMMData;
@@ -99,14 +99,14 @@ void FMM_Tree<FMM_Mat_t>::SetupFMM(FMM_Mat_t* fmm_mat_) {
 
   Profile::Tic("CollectNodeData",this->Comm(),false,3);
   //Build node list.
-  FMM_Node_t* n=dynamic_cast<FMM_Node_t*>(this->PostorderFirst());
-  std::vector<FMM_Node_t*> all_nodes;
+  Node_t* n=dynamic_cast<Node_t*>(this->PostorderFirst());
+  std::vector<Node_t*> all_nodes;
   while(n!=NULL){
     all_nodes.push_back(n);
-    n=static_cast<FMM_Node_t*>(this->PostorderNxt(n));
+    n=static_cast<Node_t*>(this->PostorderNxt(n));
   }
   //Collect node data into continuous array.
-  std::vector<Vector<FMM_Node_t*> > node_lists; // TODO: Remove this parameter, not really needed
+  std::vector<Vector<Node_t*> > node_lists; // TODO: Remove this parameter, not really needed
   fmm_mat->CollectNodeData(all_nodes, node_data_buff, node_lists);
   Profile::Toc();
 
@@ -258,7 +258,7 @@ void FMM_Tree<FMM_Mat_t>::UpwardPass() {
 
 template <class FMM_Mat_t>
 void FMM_Tree<FMM_Mat_t>::BuildInteracLists() {
-  std::vector<FMM_Node_t*>& n_list=this->GetNodeList();
+  std::vector<Node_t*>& n_list=this->GetNodeList();
 
   // Build interaction lists.
   int omp_p=omp_get_max_threads();
@@ -269,7 +269,7 @@ void FMM_Tree<FMM_Mat_t>::BuildInteracLists() {
       size_t a=(k*j)/omp_p;
       size_t b=(k*(j+1))/omp_p;
       for(size_t i=a;i<b;i++){
-        FMM_Node_t* n=n_list[i];
+        Node_t* n=n_list[i];
         n->interac_list.resize(Type_Count);
         n->interac_list[S2U_Type]=interac_list.BuildList(n,S2U_Type);
         n->interac_list[U2U_Type]=interac_list.BuildList(n,U2U_Type);
@@ -302,15 +302,15 @@ void FMM_Tree<FMM_Mat_t>::MultipoleReduceBcast() {
   size_t max_child=(1UL<<this->Dim());
 
   //Initialize initial send nodes.
-  std::vector<FMM_Node_t*> send_nodes[2];
+  std::vector<Node_t*> send_nodes[2];
 
   //Initialize send_node[0]
-  FMM_Node_t* tmp_node=static_cast<FMM_Node_t*>(this->RootNode());
+  Node_t* tmp_node=static_cast<Node_t*>(this->RootNode());
   assert(!tmp_node->IsGhost());
   while(!tmp_node->IsLeaf()){
-    FMM_Node_t* tmp_node_=NULL;
+    Node_t* tmp_node_=NULL;
     for(size_t i=0;i<max_child;i++){
-      tmp_node_=static_cast<FMM_Node_t*>(tmp_node->Child(i));
+      tmp_node_=static_cast<Node_t*>(tmp_node->Child(i));
       if(tmp_node_!=NULL) if(!tmp_node_->IsGhost()) break;
     }
     tmp_node=tmp_node_; assert(tmp_node!=NULL);
@@ -320,14 +320,14 @@ void FMM_Tree<FMM_Mat_t>::MultipoleReduceBcast() {
   send_nodes[0].resize(n[0]);
   send_nodes[0][n[0]-1]=tmp_node;
   for(int i=n[0]-1;i>0;i--)
-    send_nodes[0][i-1]=static_cast<FMM_Node_t*>(send_nodes[0][i]->Parent());
+    send_nodes[0][i-1]=static_cast<Node_t*>(send_nodes[0][i]->Parent());
 
   //Initialize send_node[1]
-  tmp_node=static_cast<FMM_Node_t*>(this->RootNode());
+  tmp_node=static_cast<Node_t*>(this->RootNode());
   while(!tmp_node->IsLeaf()){
-    FMM_Node_t* tmp_node_=NULL;
+    Node_t* tmp_node_=NULL;
     for(int i=max_child-1;i>=0;i--){
-      tmp_node_=static_cast<FMM_Node_t*>(tmp_node->Child(i));
+      tmp_node_=static_cast<Node_t*>(tmp_node->Child(i));
       if(tmp_node_!=NULL) if(!tmp_node_->IsGhost()) break;
     }
     tmp_node=tmp_node_; assert(tmp_node!=NULL);
@@ -336,7 +336,7 @@ void FMM_Tree<FMM_Mat_t>::MultipoleReduceBcast() {
   send_nodes[1].resize(n[1]);
   send_nodes[1][n[1]-1]=tmp_node;
   for(int i=n[1]-1;i>0;i--)
-    send_nodes[1][i-1]=static_cast<FMM_Node_t*>(send_nodes[1][i]->Parent());
+    send_nodes[1][i-1]=static_cast<Node_t*>(send_nodes[1][i]->Parent());
 
   //Hypercube reduction.
   while(bit_mask<(size_t)num_p){
@@ -423,7 +423,7 @@ void FMM_Tree<FMM_Mat_t>::MultipoleReduceBcast() {
       std::vector<MortonId> r_mid[2];
       r_mid[0].resize(r_node_cnt[0]);
       r_mid[1].resize(r_node_cnt[1]);
-      std::vector<FMM_Node_t*> recv_nodes[2];
+      std::vector<Node_t*> recv_nodes[2];
       recv_nodes[0].resize(r_node_cnt[0]);
       recv_nodes[1].resize(r_node_cnt[1]);
       std::vector<PackedData> recv_data[2];
@@ -464,7 +464,7 @@ void FMM_Tree<FMM_Mat_t>::MultipoleReduceBcast() {
           }
         }
         if(i>=send_nodes[merge_indx].size() || new_branch){
-            recv_nodes[merge_indx][i]=static_cast<FMM_Node_t*>(this->NewNode());
+            recv_nodes[merge_indx][i]=static_cast<Node_t*>(this->NewNode());
             recv_nodes[merge_indx][i]->SetCoord(r_mid[merge_indx][i]);
             recv_nodes[merge_indx][i]->InitMultipole(recv_data[merge_indx][i]);
         }
@@ -492,13 +492,13 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
   bool device=true;
 
   Profile::Tic("Setup",this->Comm(),true,3);
-  std::vector<FMM_Node_t*> leaf_nodes;
+  std::vector<Node_t*> leaf_nodes;
   int max_depth=0;
   { // Build leaf node list
     int max_depth_loc=0;
-    std::vector<FMM_Node_t*>& nodes=this->GetNodeList();
+    std::vector<Node_t*>& nodes=this->GetNodeList();
     for(size_t i=0;i<nodes.size();i++){
-      FMM_Node_t* n=nodes[i];
+      Node_t* n=nodes[i];
       if(!n->IsGhost() && n->IsLeaf()) leaf_nodes.push_back(n);
       if(n->Depth()>max_depth_loc) max_depth_loc=n->Depth();
     }
@@ -517,7 +517,7 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
 
   if(bndry==Periodic){ //Add contribution from periodic infinite tiling.
     Profile::Tic("BoundaryCondition",this->Comm(),false,5);
-    fmm_mat->PeriodicBC(dynamic_cast<FMM_Node_t*>(this->RootNode()));
+    fmm_mat->PeriodicBC(dynamic_cast<Node_t*>(this->RootNode()));
     Profile::Toc();
   }
 
@@ -669,7 +669,7 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
 
 template <class FMM_Mat_t>
 void FMM_Tree<FMM_Mat_t>::Copy_FMMOutput() {
-  std::vector<FMM_Node_t*>& all_nodes=this->GetNodeList();
+  std::vector<Node_t*>& all_nodes=this->GetNodeList();
   int omp_p=omp_get_max_threads();
 
   // Copy output to the tree.

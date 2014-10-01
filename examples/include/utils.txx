@@ -111,7 +111,7 @@ void CheckFMMOutput(pvfmm::FMM_Tree<FMM_Mat_t>* mytree, const pvfmm::Kernel<type
 
 template <class FMMTree_t>
 void CheckChebOutput(FMMTree_t* mytree, typename TestFn<typename FMMTree_t::Real_t>::Fn_t fn_poten, int fn_dof, std::string t_name){
-  typedef typename FMMTree_t::FMM_Node_t FMMNode_t;
+  typedef typename FMMTree_t::Node_t FMMNode_t;
   typedef typename FMMTree_t::Real_t Real_t;
 
   MPI_Comm c1=*mytree->Comm();
@@ -125,7 +125,7 @@ void CheckChebOutput(FMMTree_t* mytree, typename TestFn<typename FMMTree_t::Real
     FMMNode_t* node=static_cast<FMMNode_t*>(mytree->PreorderFirst());
     while(node!=NULL){
       if(node->IsLeaf() && !node->IsGhost()) nodes.push_back(node);
-      node=static_cast<FMMNode_t*>(mytree->PreorderNxt(node));
+      node=static_cast<FMMNode_t*>(mytree->PreorderNxt((FMMNode_t*)node));
     }
     if(nodes.size()==0) return;
   }
