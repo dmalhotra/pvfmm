@@ -70,6 +70,7 @@ lib_libfmm_a_HEADERS = \
 									include/precomp_mat.hpp \
 									include/profile.hpp \
 									include/quad_utils.hpp \
+									include/stacktrace.h \
 									include/tree.hpp \
 									include/tree_node.hpp \
 									include/vector.hpp \
