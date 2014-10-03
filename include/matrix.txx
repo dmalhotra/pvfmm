@@ -139,10 +139,18 @@ typename Matrix<T>::Device& Matrix<T>::AllocDevice(bool copy){
 template <class T>
 void Matrix<T>::Device2Host(T* host_ptr){
   dev.lock_idx=DeviceWrapper::device2host((char*)data_ptr,dev.dev_ptr,(char*)(host_ptr==NULL?data_ptr:host_ptr),dim[0]*dim[1]*sizeof(T));
+//#if defined(PVFMM_HAVE_CUDA)
+//  cudaEventCreate(&lock);
+//  cudaEventRecord(lock, 0);
+//#endif
 }
 
 template <class T>
 void Matrix<T>::Device2HostWait(){
+//#if defined(PVFMM_HAVE_CUDA)
+//  cudaEventSynchronize(lock);
+//  cudaEventDestroy(lock);
+//#endif
   DeviceWrapper::wait(dev.lock_idx);
   dev.lock_idx=-1;
 }
@@ -300,7 +308,7 @@ Matrix<T> Matrix<T>::operator*(const Matrix<T>& M){
 }
 
 template <class T>
-void Matrix<T>::DGEMM(Matrix<T>& M_r, const Matrix<T>& A, const Matrix<T>& B, T beta){
+void Matrix<T>::GEMM(Matrix<T>& M_r, const Matrix<T>& A, const Matrix<T>& B, T beta){
   assert(A.dim[1]==B.dim[0]);
   assert(M_r.dim[0]==A.dim[0]);
   assert(M_r.dim[1]==B.dim[1]);
@@ -310,6 +318,19 @@ void Matrix<T>::DGEMM(Matrix<T>& M_r, const Matrix<T>& A, const Matrix<T>& B, T 
   mat::gemm<T>('N','N',B.dim[1],A.dim[0],A.dim[1],
       1.0,B.data_ptr,B.dim[1],A.data_ptr,A.dim[1],beta,M_r.data_ptr,M_r.dim[1]);
 }
+
+// cublasgemm wrapper
+#if defined(PVFMM_HAVE_CUDA)
+template <class T>
+void Matrix<T>::CUBLASGEMM(Matrix<T>& M_r, const Matrix<T>& A, const Matrix<T>& B, T beta){
+  assert(A.dim[1]==B.dim[0]);
+  assert(M_r.dim[0]==A.dim[0]);
+  assert(M_r.dim[1]==B.dim[1]);
+  Profile::Add_FLOP(2*(((long long)A.dim[0])*A.dim[1])*B.dim[1]);
+  mat::cublasgemm('N', 'N', B.dim[1], A.dim[0], A.dim[1],
+      1.0, B.data_ptr, B.dim[1], A.data_ptr, A.dim[1], beta, M_r.data_ptr, M_r.dim[1]);
+}
+#endif
 
 #define myswap(t,a,b) {t c=a;a=b;b=c;}
 template <class T>

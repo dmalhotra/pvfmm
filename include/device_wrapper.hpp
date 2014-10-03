@@ -8,6 +8,12 @@
 #include <cstdlib>
 #include <stdint.h>
 
+// Cuda Headers
+#if defined(PVFMM_HAVE_CUDA)
+#include <cuda_runtime_api.h>
+#include <cublas_v2.h>
+#endif
+
 #include <pvfmm_common.hpp>
 #include <vector.hpp>
 
@@ -71,7 +77,6 @@ transfer, use:
     MIC_Lock::wait_lock(wait_lock_idx);
 */
 
-  #define NUM_LOCKS 1000000
   class MIC_Lock{
     public:
 
@@ -92,6 +97,22 @@ transfer, use:
       MIC_Lock(){}; // private constructor for static class.
       static int lock_idx;
   };
+
+#if defined(PVFMM_HAVE_CUDA)
+  class CUDA_Lock {
+    public:
+      static void init(size_t num_stream=1);
+      static void finalize();
+
+      static cudaStream_t *acquire_stream(int idx=0);
+      static cublasHandle_t *acquire_handle();
+      static void wait(int idx=0);
+    private:
+      CUDA_Lock();
+      static std::vector<cudaStream_t> stream;
+      static cublasHandle_t handle;
+  };
+#endif
 
 }//end namespace
 #ifdef __INTEL_OFFLOAD

@@ -16,4 +16,9 @@ namespace pvfmm{
   Vector<char>::Device MIC_Lock::lock_vec_;
   int MIC_Lock::lock_idx;
 
+#if defined(PVFMM_HAVE_CUDA)
+  std::vector<cudaStream_t> CUDA_Lock::stream;
+  cublasHandle_t CUDA_Lock::handle;
+#endif
+
 }//end namespace

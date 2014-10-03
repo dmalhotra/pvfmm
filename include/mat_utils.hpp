@@ -20,6 +20,9 @@ namespace mat{
   void gemm(char TransA, char TransB,  int M,  int N,  int K,  T alpha,  T *A,  int lda,  T *B,  int ldb,  T beta, T *C,  int ldc);
 
   template <class T>
+  void cublasgemm(char TransA, char TransB,  int M,  int N,  int K,  T alpha,  T *A,  int lda,  T *B,  int ldb,  T beta, T *C,  int ldc);
+
+  template <class T>
   void svd(char *JOBU, char *JOBVT, int *M, int *N, T *A, int *LDA,
       T *S, T *U, int *LDU, T *VT, int *LDVT, T *WORK, int *LWORK,
       int *INFO);

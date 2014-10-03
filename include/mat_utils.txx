@@ -17,6 +17,12 @@
 #include <lapack.h>
 #include <matrix.hpp>
 
+#include <device_wrapper.hpp>
+#if defined(PVFMM_HAVE_CUDA)
+#include <cuda_runtime_api.h>
+#include <cublas_v2.h>
+#endif
+
 namespace pvfmm{
 namespace mat{
 
@@ -74,6 +80,35 @@ namespace mat{
   inline void gemm<double>(char TransA, char TransB,  int M,  int N,  int K,  double alpha,  double *A,  int lda,  double *B,  int ldb,  double beta, double *C,  int ldc){
       dgemm_(&TransA, &TransB, &M, &N, &K, &alpha, A, &lda, B, &ldb, &beta, C, &ldc);
   }
+
+  #if defined(PVFMM_HAVE_CUDA)
+  //template <class T>
+  //inline void cublasgemm(char TransA, char TransB, int M, int N, int K, T alpha, T*A, int lda, T *B, int ldb, T beta, T *C, int ldc){
+  //  assert(false);
+  //}
+
+  template<>
+  inline void cublasgemm<float>(char TransA, char TransB, int M, int N, int K, float alpha, float *A, int lda, float *B, int ldb, float beta, float *C, int ldc) {
+    cublasOperation_t cublasTransA, cublasTransB;
+    cublasHandle_t *handle = CUDA_Lock::acquire_handle();
+    if (TransA == 'T' || TransA == 't') cublasTransA = CUBLAS_OP_T;
+    else if (TransA == 'N' || TransA == 'n') cublasTransA = CUBLAS_OP_N;
+    if (TransB == 'T' || TransB == 't') cublasTransB = CUBLAS_OP_T;
+    else if (TransB == 'N' || TransB == 'n') cublasTransB = CUBLAS_OP_N;
+    cublasStatus_t status = cublasSgemm(*handle, cublasTransA, cublasTransB, M, N, K, &alpha, A, lda, B, ldb, &beta, C, ldc);
+  }
+
+  template<>
+  inline void cublasgemm<double>(char TransA, char TransB, int M, int N, int K, double alpha, double *A, int lda, double *B, int ldb, double beta, double *C, int ldc){
+    cublasOperation_t cublasTransA, cublasTransB;
+    cublasHandle_t *handle = CUDA_Lock::acquire_handle();
+    if (TransA == 'T' || TransA == 't') cublasTransA = CUBLAS_OP_T;
+    else if (TransA == 'N' || TransA == 'n') cublasTransA = CUBLAS_OP_N;
+    if (TransB == 'T' || TransB == 't') cublasTransB = CUBLAS_OP_T;
+    else if (TransB == 'N' || TransB == 'n') cublasTransB = CUBLAS_OP_N;
+    cublasStatus_t status = cublasDgemm(*handle, cublasTransA, cublasTransB, M, N, K, &alpha, A, lda, B, ldb, &beta, C, ldc);
+  }
+  #endif
 
   #define U(i,j) U_[(i)*dim[0]+(j)]
   #define S(i,j) S_[(i)*dim[1]+(j)]

@@ -458,7 +458,7 @@ void cheb_eval(const Vector<T>& coeff_, int cheb_deg, const std::vector<T>& in_x
   { // Apply Mp1
     Matrix<T> Mi  ( d* d*dof, d,&v1[0],false);
     Matrix<T> Mo  ( d* d*dof,n1,&v2[0],false);
-    Matrix<T>::DGEMM(Mo, Mi, Mp1);
+    Matrix<T>::GEMM(Mo, Mi, Mp1);
 
     Matrix<T> Mo_t(n1, d* d*dof,&v1[0],false);
     for(size_t i=0;i<Mo.Dim(0);i++)
@@ -469,7 +469,7 @@ void cheb_eval(const Vector<T>& coeff_, int cheb_deg, const std::vector<T>& in_x
   { // Apply Mp2
     Matrix<T> Mi  (n1* d*dof, d,&v1[0],false);
     Matrix<T> Mo  (n1* d*dof,n2,&v2[0],false);
-    Matrix<T>::DGEMM(Mo, Mi, Mp2);
+    Matrix<T>::GEMM(Mo, Mi, Mp2);
 
     Matrix<T> Mo_t(n2,n1* d*dof,&v1[0],false);
     for(size_t i=0;i<Mo.Dim(0);i++)
@@ -480,7 +480,7 @@ void cheb_eval(const Vector<T>& coeff_, int cheb_deg, const std::vector<T>& in_x
   { // Apply Mp3
     Matrix<T> Mi  (n2*n1*dof, d,&v1[0],false);
     Matrix<T> Mo  (n2*n1*dof,n3,&v2[0],false);
-    Matrix<T>::DGEMM(Mo, Mi, Mp3);
+    Matrix<T>::GEMM(Mo, Mi, Mp3);
 
     Matrix<T> Mo_t(n3,n2*n1*dof,&v1[0],false);
     for(size_t i=0;i<Mo.Dim(0);i++)
@@ -1183,7 +1183,7 @@ void cheb_diff(const Vector<T>& A, int deg, int diff_dim, Vector<T>& B, mem::Mem
   { // Apply M
     Matrix<T> Mi(d,A.Dim()/d,&buff1[0],false);
     Matrix<T> Mo(d,A.Dim()/d,&buff2[0],false);
-    Matrix<T>::DGEMM(Mo, M, Mi);
+    Matrix<T>::GEMM(Mo, M, Mi);
   }
 
   for(size_t k=0;k<n2;k++){ // Rearrange and write output to B

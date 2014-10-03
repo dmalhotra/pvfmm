@@ -86,6 +86,10 @@ are given below:
      module swap PrgEnv-pgi PrgEnv-intel
      ./configure MPICXX="CC" F77="ftn"
 
+`Stampede (TACC)' (CUDA build)
+     module load fftw3 cuda
+     ./configure CXXFLAGS="-mavx -wd3218 -wd2570 -no-offload" --with-fftw="$TACC_FFTW3_DIR" FLIBS=" " --with-cuda="$TACC_CUDA_DIR" NVCCFLAGS="-arch=compute_35 -code=sm_35"
+
 `Stampede (TACC)' (Offload build)
      module load fftw3
      ./configure CXXFLAGS="-mavx -wd3218 -wd2570" --with-fftw="$TACC_FFTW3_DIR" FLIBS=" "

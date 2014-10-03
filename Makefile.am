@@ -46,6 +46,7 @@ lib_libfmm_a_HEADERS = \
 									include/blas.h \
 									include/cheb_node.hpp \
 									include/cheb_utils.hpp \
+									include/cuda_func.hpp \
 									include/device_wrapper.hpp \
 									include/dtypes.h \
 									include/fft_wrapper.hpp \
@@ -108,6 +109,10 @@ lib_libpvfmm_a_SOURCES = \
 									src/profile.cpp \
 									src/tree_node.cpp
 
+if NVCC_OK
+lib_libpvfmm_a_SOURCES += src/cuda_func.cu
+endif
+
 dist_noinst_SCRIPTS = autogen.sh
 
 core: $(pkglib_LIBRARIES)
@@ -120,8 +125,8 @@ all: #all-docs all-examples
 
 if NVCC_OK
 
-%.o : %.cu
-	$(NVCC) $(NVCCFLAGS) $< -o $@
+.cu.o :
+	$(NVCC) $(NVCCFLAGS) ${INCLUDE_PVFMM} -c $< -o $@
 
 endif
 

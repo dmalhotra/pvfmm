@@ -56,7 +56,7 @@ then
       AC_CHECK_FILE(/usr/local/cuda/include,[CUDA_CFLAGS+=" -I/usr/local/cuda/include"],[CUDA_CFLAGS=""])
       AC_CHECK_FILE(/usr/local/cuda/lib64,[CUDA_LDFLAGS+=" -L/usr/local/cuda/lib64"],[])
    fi
-   CUDA_LDFLAGS+=" -lcuda -lcudart"
+   CUDA_LDFLAGS+=" -lcuda -lcudart -lcublas"
 
 
    # -----------------------------------------
@@ -132,14 +132,17 @@ EOF
 
    # And the header and the lib
    AC_CHECK_HEADER([cuda.h], [], AC_MSG_FAILURE([Couldn't find cuda.h]), [#include <cuda.h>])
+   AC_CHECK_HEADER([cuda_runtime_api.h], [], AC_MSG_FAILURE([Couldn't find cuda_runtime_api.h]), [#include <cuda_runtime_api.h>])
+   AC_CHECK_HEADER([cublas.h], [], AC_MSG_FAILURE([Couldn't find cublas.h]), [#include <cublas.h>])
    AC_CHECK_LIB([cuda], [cuInit], [], AC_MSG_FAILURE([Couldn't find libcuda]))
    AC_CHECK_LIB([cudart], [cudaMalloc], [], AC_MSG_FAILURE([Couldn't find libcudart]))
+   AC_CHECK_LIB([cublas], [cublasInit], [], AC_MSG_FAILURE([Couldn't find libcublas]))
 
    # Returning to the original flags
    CXXFLAGS=${ax_save_CXXFLAGS}
    LIBS=${ax_save_LIBS}
 
-   AC_DEFINE(HAVE_CUDA,1,[Define if we have FFTW])
+   AC_DEFINE(HAVE_CUDA,1,[Define if we have CUDA])
 fi
 
 

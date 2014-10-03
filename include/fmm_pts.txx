@@ -1407,7 +1407,7 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
           }
         }
       }
-      { // Determine scaling and output_perm
+      { // Determine output_perm
         size_t vec_size=M_dim1*dof;
         for(size_t k=1;k<interac_blk_dsp.size();k++){
           for(size_t i=0;i<n_out;i++){
@@ -1487,6 +1487,111 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
   }
 }
 
+#if defined(PVFMM_HAVE_CUDA)
+#include <cuda_func.hpp>
+
+template <class Real_t, int SYNC>
+void EvalListGPU(SetupData<Real_t>& setup_data, Vector<char>& dev_buffer, MPI_Comm& comm) {
+  cudaStream_t* stream = pvfmm::CUDA_Lock::acquire_stream();
+
+  Profile::Tic("Host2Device",&comm,false,25);
+  typename Matrix<char>::Device    interac_data;
+  typename Vector<char>::Device            buff;
+  typename Matrix<char>::Device  precomp_data_d;
+  typename Matrix<char>::Device  interac_data_d;
+  typename Matrix<Real_t>::Device  input_data_d;
+  typename Matrix<Real_t>::Device output_data_d;
+
+  interac_data  = setup_data.interac_data;
+  buff          =              dev_buffer. AllocDevice(false);
+  precomp_data_d= setup_data.precomp_data->AllocDevice(false);
+  interac_data_d= setup_data.interac_data. AllocDevice(false);
+  input_data_d  = setup_data.  input_data->AllocDevice(false);
+  output_data_d = setup_data. output_data->AllocDevice(false);
+  Profile::Toc();
+
+  { // Set interac_data.
+    size_t data_size, M_dim0, M_dim1, dof;
+    Vector<size_t> interac_blk;
+    Vector<size_t> interac_cnt;
+    Vector<size_t> interac_mat;
+    Vector<size_t> input_perm_d;
+    Vector<size_t> output_perm_d;
+
+    { // Set interac_data.
+      char* data_ptr=&interac_data  [0][0];
+      char*  dev_ptr=&interac_data_d[0][0];
+
+      data_size=((size_t*)data_ptr)[0]; data_ptr+=data_size;      dev_ptr += data_size;
+      data_size=((size_t*)data_ptr)[0]; data_ptr+=sizeof(size_t); dev_ptr += sizeof(size_t);
+      M_dim0   =((size_t*)data_ptr)[0]; data_ptr+=sizeof(size_t); dev_ptr += sizeof(size_t);
+      M_dim1   =((size_t*)data_ptr)[0]; data_ptr+=sizeof(size_t); dev_ptr += sizeof(size_t);
+      dof      =((size_t*)data_ptr)[0]; data_ptr+=sizeof(size_t); dev_ptr += sizeof(size_t);
+
+      interac_blk.ReInit(((size_t*)data_ptr)[0],(size_t*)(data_ptr+sizeof(size_t)),false);
+      data_ptr += sizeof(size_t) + sizeof(size_t)*interac_blk.Dim();
+      dev_ptr  += sizeof(size_t) + sizeof(size_t)*interac_blk.Dim();
+
+      interac_cnt.ReInit(((size_t*)data_ptr)[0],(size_t*)(data_ptr+sizeof(size_t)),false);
+      data_ptr += sizeof(size_t) + sizeof(size_t)*interac_cnt.Dim();
+      dev_ptr  += sizeof(size_t) + sizeof(size_t)*interac_cnt.Dim();
+
+      interac_mat.ReInit(((size_t*)data_ptr)[0],(size_t*)(data_ptr+sizeof(size_t)),false);
+      data_ptr += sizeof(size_t) + sizeof(size_t)*interac_mat.Dim();
+      dev_ptr  += sizeof(size_t) + sizeof(size_t)*interac_mat.Dim();
+
+      input_perm_d.ReInit(((size_t*)data_ptr)[0],(size_t*)(dev_ptr+sizeof(size_t)),false);
+      data_ptr += sizeof(size_t) + sizeof(size_t)*input_perm_d.Dim();
+      dev_ptr  += sizeof(size_t) + sizeof(size_t)*input_perm_d.Dim();
+
+      output_perm_d.ReInit(((size_t*)data_ptr)[0],(size_t*)(dev_ptr+sizeof(size_t)),false);
+      data_ptr += sizeof(size_t) + sizeof(size_t)*output_perm_d.Dim();
+      dev_ptr  += sizeof(size_t) + sizeof(size_t)*output_perm_d.Dim();
+    }
+
+    { // interactions
+      size_t interac_indx = 0;
+      size_t interac_blk_dsp = 0;
+      cudaError_t error;
+      for (size_t k = 0; k < interac_blk.Dim(); k++) {
+        size_t vec_cnt=0;
+        for(size_t j=interac_blk_dsp;j<interac_blk_dsp+interac_blk[k];j++) vec_cnt+=interac_cnt[j];
+
+        char *buff_in_d  =&buff[0];
+        char *buff_out_d =&buff[vec_cnt*dof*M_dim0*sizeof(Real_t)];
+
+        { // Input permutation.
+          in_perm_gpu<Real_t>(&precomp_data_d[0][0], &input_data_d[0][0], buff_in_d,
+                              &input_perm_d[interac_indx*4], vec_cnt, M_dim0, stream);
+        }
+
+        size_t vec_cnt0 = 0;
+        for (size_t j = interac_blk_dsp; j < interac_blk_dsp + interac_blk[k];) {
+          size_t vec_cnt1 = 0;
+          size_t interac_mat0 = interac_mat[j];
+          for (; j < interac_blk_dsp + interac_blk[k] && interac_mat[j] == interac_mat0; j++) vec_cnt1 += interac_cnt[j];
+          Matrix<Real_t> M_d(M_dim0, M_dim1, (Real_t*)(precomp_data_d.dev_ptr + interac_mat0), false);
+          Matrix<Real_t> Ms_d(dof*vec_cnt1, M_dim0, (Real_t*)(buff_in_d +  M_dim0*vec_cnt0*dof*sizeof(Real_t)), false);
+          Matrix<Real_t> Mt_d(dof*vec_cnt1, M_dim1, (Real_t*)(buff_out_d + M_dim1*vec_cnt0*dof*sizeof(Real_t)), false);
+          Matrix<Real_t>::CUBLASGEMM(Mt_d, Ms_d, M_d);
+          vec_cnt0 += vec_cnt1;
+        }
+
+        { // Input permutation.
+          out_perm_gpu<Real_t>(&precomp_data_d[0][0], &output_data_d[0][0], buff_out_d,
+                               &output_perm_d[interac_indx*4], vec_cnt, M_dim1, stream);
+        }
+
+        interac_indx += vec_cnt;
+        interac_blk_dsp += interac_blk[k];
+      }
+    }
+  }
+
+	if(SYNC) CUDA_Lock::wait();
+}
+#endif
+
 template <class FMMNode>
 template <int SYNC>
 void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
@@ -1497,6 +1602,13 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
     Profile::Toc();
     return;
   }
+
+#if defined(PVFMM_HAVE_CUDA)
+  if (device) {
+    EvalListGPU<Real_t, SYNC>(setup_data, this->dev_buffer, this->comm);
+    return;
+  }
+#endif
 
   Profile::Tic("Host2Device",&this->comm,false,25);
   typename Vector<char>::Device          buff;
@@ -1636,7 +1748,7 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
           {
             Matrix<Real_t> Ms(dof*vec_cnt1, M_dim0, (Real_t*)(buff_in +M_dim0*vec_cnt0*dof*sizeof(Real_t)), false);
             Matrix<Real_t> Mt(dof*vec_cnt1, M_dim1, (Real_t*)(buff_out+M_dim1*vec_cnt0*dof*sizeof(Real_t)), false);
-            Matrix<Real_t>::DGEMM(Mt,Ms,M);
+            Matrix<Real_t>::GEMM(Mt,Ms,M);
           }
           #else
           #pragma omp parallel for
@@ -1645,7 +1757,7 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
             size_t b=(dof*vec_cnt1*(tid+1))/omp_p;
             Matrix<Real_t> Ms(b-a, M_dim0, (Real_t*)(buff_in +M_dim0*vec_cnt0*dof*sizeof(Real_t))+M_dim0*a, false);
             Matrix<Real_t> Mt(b-a, M_dim1, (Real_t*)(buff_out+M_dim1*vec_cnt0*dof*sizeof(Real_t))+M_dim1*a, false);
-            Matrix<Real_t>::DGEMM(Mt,Ms,M);
+            Matrix<Real_t>::GEMM(Mt,Ms,M);
           }
           #endif
           vec_cnt0+=vec_cnt1;
@@ -1837,7 +1949,7 @@ void FMM_Pts<FMMNode>::PeriodicBC(FMMNode* node){
   assert(dnward_equiv.Dim()==M.Dim(1)*dof);
   Matrix<Real_t> d_equiv(dof,M.Dim(0),&dnward_equiv[0],false);
   Matrix<Real_t> u_equiv(dof,M.Dim(1),&upward_equiv[0],false);
-  Matrix<Real_t>::DGEMM(d_equiv,u_equiv,M);
+  Matrix<Real_t>::GEMM(d_equiv,u_equiv,M);
 }
 
 
@@ -2013,7 +2125,7 @@ void FMM_Pts<FMMNode>::FFT_Check2Equiv(size_t dof, size_t m, size_t ker_dim1, Ve
         for(size_t j=0;j<chld_cnt;j++){
           Matrix<Real_t> d_check(dof,M.Dim(0),&buffer[n*ker_dim1*dof*j],false);
           Matrix<Real_t> d_equiv(dof,M.Dim(1),&output_data[0] + ifft_vec[node_idx] + M.Dim(1)*dof*j,false);
-          Matrix<Real_t>::DGEMM(d_equiv,d_check,M,1.0);
+          Matrix<Real_t>::GEMM(d_equiv,d_check,M,1.0);
         }
       }
     }
@@ -3101,6 +3213,11 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
     return;
   }
 
+  bool have_gpu=false;
+#if defined(PVFMM_HAVE_CUDA)
+  have_gpu=true;
+#endif
+
   Profile::Tic("Host2Device",&this->comm,false,25);
   typename Vector<char>::Device          buff;
   //typename Matrix<char>::Device  precomp_data;
@@ -3108,7 +3225,7 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
   typename Matrix<Real_t>::Device  coord_data;
   typename Matrix<Real_t>::Device  input_data;
   typename Matrix<Real_t>::Device output_data;
-  if(device){
+  if(device && !have_gpu){
     buff        =       this-> dev_buffer. AllocDevice(false);
     interac_data= setup_data.interac_data. AllocDevice(false);
     //if(setup_data.precomp_data!=NULL) precomp_data= setup_data.precomp_data->AllocDevice(false);
@@ -3213,7 +3330,7 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
       size_t thread_buff_size=buff.dim/sizeof(Real_t)/omp_p;
       for(int i=0;i<omp_p;i++) thread_buff[i]=(Real_t*)&buff[i*thread_buff_size*sizeof(Real_t)];
 
-      #pragma omp parallel for
+      #pragma omp parallel for schedule(dynamic)
       for(size_t i=0;i<n_out;i++)
       if(trg_interac_cnt[i]>0 && trg_cnt[i]>0){
         int thread_id=omp_get_thread_num();
@@ -3273,7 +3390,7 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
 
           Matrix<Real_t>  in_vec(dof, M.Dim(0),             t_value, false);
           Matrix<Real_t> tmp_vec(dof, M.Dim(1),dof*M.Dim(0)+t_value, false);
-          Matrix<Real_t>::DGEMM(tmp_vec, in_vec, M, 0.0);
+          Matrix<Real_t>::GEMM(tmp_vec, in_vec, M, 0.0);
 
           Matrix<Real_t> out_vec(dof, M.Dim(1), output_data[0]+trg_value[i], false);
           {// Scaling (ker_dim0)

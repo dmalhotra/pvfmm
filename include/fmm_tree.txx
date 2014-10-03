@@ -506,7 +506,7 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
   }
   Profile::Toc();
 
-  #ifdef __INTEL_OFFLOAD
+  #if defined(__INTEL_OFFLOAD) || defined(PVFMM_HAVE_CUDA)
   if(device){ // Host2Device:Src
     Profile::Tic("Host2Device:Src",this->Comm(),false,5);
     if(setup_data[0+MAX_DEPTH*2]. coord_data!=NULL) setup_data[0+MAX_DEPTH*2]. coord_data->AllocDevice(true);
@@ -558,7 +558,7 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
       Profile::Toc();
     }
 
-    #ifdef __INTEL_OFFLOAD
+    #if defined(__INTEL_OFFLOAD) || defined(PVFMM_HAVE_CUDA)
     if(i==0 && device){ // Host2Device:Mult
       Profile::Tic("Host2Device:Mult",this->Comm(),false,5);
       if(setup_data[0+MAX_DEPTH*1]. input_data!=NULL) setup_data[0+MAX_DEPTH*1]. input_data->AllocDevice(true);
@@ -605,7 +605,7 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
     }
   }
 
-  #ifdef __INTEL_OFFLOAD
+  #if defined(__INTEL_OFFLOAD) || defined(PVFMM_HAVE_CUDA)
   Profile::Tic("D2H_Wait:LocExp",this->Comm(),false,5);
   if(device) if(setup_data[0+MAX_DEPTH*2].output_data!=NULL){
     Real_t* dev_ptr=(Real_t*)&fmm_mat->dev_buffer[0];
@@ -644,7 +644,7 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
   }
   Profile::Toc();
 
-  #ifdef __INTEL_OFFLOAD
+  #if defined(__INTEL_OFFLOAD) || defined(PVFMM_HAVE_CUDA)
   Profile::Tic("D2H_Wait:Trg",this->Comm(),false,5);
   if(device) if(setup_data[0+MAX_DEPTH*0].output_data!=NULL){
     Real_t* dev_ptr=(Real_t*)&fmm_mat->dev_buffer[0];

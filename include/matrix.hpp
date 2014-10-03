@@ -93,7 +93,10 @@ class Matrix{
 
   Matrix<T> operator*(const Matrix<T>& M);
 
-  static void DGEMM(Matrix<T>& M_r, const Matrix<T>& A, const Matrix<T>& B, T beta=0.0);
+  static void GEMM(Matrix<T>& M_r, const Matrix<T>& A, const Matrix<T>& B, T beta=0.0);
+
+  // cublasgemm wrapper
+  static void CUBLASGEMM(Matrix<T>& M_r, const Matrix<T>& A, const Matrix<T>& B, T beta=0.0);
 
   void RowPerm(const Permutation<T>& P);
   void ColPerm(const Permutation<T>& P);
@@ -116,6 +119,9 @@ class Matrix{
 
   Device dev;
   Vector<char> dev_sig;
+#if defined(PVFMM_HAVE_CUDA)
+  cudaEvent_t lock;
+#endif
 };
 
 

@@ -15,18 +15,6 @@
 namespace pvfmm{
 namespace mem{
 
-#define PVFMMDefinePOD(type) template<> bool TypeTraits<type>::IsPOD(){return true;};
-PVFMMDefinePOD(char);
-PVFMMDefinePOD(float);
-PVFMMDefinePOD(double);
-PVFMMDefinePOD(int);
-PVFMMDefinePOD(long long);
-PVFMMDefinePOD(unsigned long);
-PVFMMDefinePOD(char*);
-PVFMMDefinePOD(float*);
-PVFMMDefinePOD(double*);
-#undef PVFMMDefinePOD
-
 MemoryManager::MemoryManager(size_t N){
   buff_size=N;
   { // Allocate buff

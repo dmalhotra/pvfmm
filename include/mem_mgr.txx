@@ -24,6 +24,17 @@ bool TypeTraits<T>::IsPOD(){
   return false;
 }
 
+#define PVFMMDefinePOD(type) template<> bool TypeTraits<type>::IsPOD(){return true;};
+PVFMMDefinePOD(char);
+PVFMMDefinePOD(float);
+PVFMMDefinePOD(double);
+PVFMMDefinePOD(int);
+PVFMMDefinePOD(long long);
+PVFMMDefinePOD(unsigned long);
+PVFMMDefinePOD(char*);
+PVFMMDefinePOD(float*);
+PVFMMDefinePOD(double*);
+#undef PVFMMDefinePOD
 
 
 MemoryManager::MemHead* MemoryManager::GetMemHead(void* p){
@@ -224,9 +235,12 @@ T* aligned_new(size_t n_elem, const MemoryManager* mem_mgr){
       assert(Ai==(A+i));
     }
   }else{
+    #ifndef NDEBUG
+    #pragma omp parallel for
     for(size_t i=0;i<n_elem*sizeof(T);i++){
       ((char*)A)[i]=0;
     }
+    #endif
   }
 
   assert(A);
@@ -245,11 +259,14 @@ void aligned_delete(T* A, const MemoryManager* mem_mgr){
       (A+i)->~T();
     }
   }else{
+    #ifndef NDEBUG
     MemoryManager::MemHead* mem_head=MemoryManager::GetMemHead(A);
     size_t n_elem=mem_head->n_elem;
+    #pragma omp parallel for
     for(size_t i=0;i<n_elem*sizeof(T);i++){
       ((char*)A)[i]=0;
     }
+    #endif
   }
 
   static MemoryManager def_mem_mgr(0);
