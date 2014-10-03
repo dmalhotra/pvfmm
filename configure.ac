@@ -25,8 +25,14 @@ AC_PROG_INSTALL
 AC_PROG_MKDIR_P
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
-AC_PROG_RANLIB
-#AM_PROG_AR
+#AC_PROG_RANLIB
+##AM_PROG_AR
+
+# automake 1.12 seems to require AM_PROG_AR, but automake 1.11 doesn't
+# recognize it
+m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
+LT_INIT
+AC_PROG_LIBTOOL
 
 # Check for CUDA
 AX_CHECK_CUDA
@@ -59,6 +65,9 @@ DX_PDF_FEATURE(OFF)
 DX_PS_FEATURE(OFF)
 DX_INIT_DOXYGEN($PACKAGE_NAME, Doxyfile, doc/doxygen)
 
+
+AX_CXX_DEF_TEMPLATE_ARG
+CHECK_QUAD_PRECISION
 
 # Check for math libs
 AC_CHECK_LIB([m],[cos])
@@ -160,7 +169,7 @@ AC_SUBST(FLIBS)
 
 
 # Checks for header files.
-AC_CHECK_HEADERS([stdint.h stdlib.h stddef.h])
+AC_CHECK_HEADERS([stdint.h cstdlib cstddef])
 
 
 # Checks for typedefs, structures, and compiler characteristics.

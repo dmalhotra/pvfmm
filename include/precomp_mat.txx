@@ -6,8 +6,16 @@
  * Handles storage of precomputed translation matrices.
  */
 
-#include <sys/stat.h>
+#include <omp.h>
+#include <cassert>
 #include <stdint.h>
+#ifdef PVFMM_HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
+
+#include <mem_mgr.hpp>
+#include <profile.hpp>
+#include <vector.hpp>
 
 namespace pvfmm{
 
@@ -21,10 +29,13 @@ PrecompMat<T>::PrecompMat(bool homogen, int max_d): homogeneous(homogen), max_de
     mat[i].resize(500);
 
   perm.resize(Type_Count);
-  perm_r.resize(Type_Count);
-  perm_c.resize(Type_Count);
   for(size_t i=0;i<Type_Count;i++){
     perm[i].resize(Perm_Count);
+  }
+
+  perm_r.resize((max_d+PRECOMP_MIN_DEPTH)*Type_Count);
+  perm_c.resize((max_d+PRECOMP_MIN_DEPTH)*Type_Count);
+  for(size_t i=0;i<perm_r.size();i++){
     perm_r[i].resize(500);
     perm_c[i].resize(500);
   }
@@ -33,6 +44,7 @@ PrecompMat<T>::PrecompMat(bool homogen, int max_d): homogeneous(homogen), max_de
 template <class T>
 Matrix<T>& PrecompMat<T>::Mat(int l, Mat_Type type, size_t indx){
   int level=(homogeneous?0:l+PRECOMP_MIN_DEPTH);
+  assert(level*Type_Count+type<mat.size());
   #pragma omp critical (PrecompMAT)
   if(indx>=mat[level*Type_Count+type].size()){
     mat[level*Type_Count+type].resize(indx+1);
@@ -42,23 +54,27 @@ Matrix<T>& PrecompMat<T>::Mat(int l, Mat_Type type, size_t indx){
 }
 
 template <class T>
-Permutation<T>& PrecompMat<T>::Perm_R(Mat_Type type, size_t indx){
+Permutation<T>& PrecompMat<T>::Perm_R(int l, Mat_Type type, size_t indx){
+  int level=l+PRECOMP_MIN_DEPTH;
+  assert(level*Type_Count+type<perm_r.size());
   #pragma omp critical (PrecompMAT)
-  if(indx>=perm_r[type].size()){
-    perm_r[type].resize(indx+1);
+  if(indx>=perm_r[level*Type_Count+type].size()){
+    perm_r[level*Type_Count+type].resize(indx+1);
     assert(false); //TODO: this is not thread safe.
   }
-  return perm_r[type][indx];
+  return perm_r[level*Type_Count+type][indx];
 }
 
 template <class T>
-Permutation<T>& PrecompMat<T>::Perm_C(Mat_Type type, size_t indx){
+Permutation<T>& PrecompMat<T>::Perm_C(int l, Mat_Type type, size_t indx){
+  int level=l+PRECOMP_MIN_DEPTH;
+  assert(level*Type_Count+type<perm_c.size());
   #pragma omp critical (PrecompMAT)
-  if(indx>=perm_c[type].size()){
-    perm_c[type].resize(indx+1);
+  if(indx>=perm_c[level*Type_Count+type].size()){
+    perm_c[level*Type_Count+type].resize(indx+1);
     assert(false); //TODO: this is not thread safe.
   }
-  return perm_c[type][indx];
+  return perm_c[level*Type_Count+type][indx];
 }
 
 template <class T>
@@ -76,23 +92,27 @@ size_t PrecompMat<T>::CompactData(int l, Mat_Type type, Matrix<char>& comp_data,
   int omp_p=omp_get_max_threads();
 
   { // Determine memory size.
-    indx_size+=2*sizeof(size_t); //total_size, mat_cnt
-    indx_size+=mat_cnt*(1+2+2)*sizeof(size_t); //Mat, Perm_R, Perm_C.
+    indx_size+=3*sizeof(size_t); //total_size, mat_cnt, max_depth
+    indx_size+=mat_cnt*(1+(2+2)*max_depth)*sizeof(size_t); //Mat, Perm_R, Perm_C.
     indx_size=((uintptr_t)indx_size+(uintptr_t)(MEM_ALIGN-1)) & ~ (uintptr_t)(MEM_ALIGN-1);
+
     for(size_t j=0;j<mat_cnt;j++){
-      Matrix     <T>& M =Mat( l,type,j);
-      Permutation<T>& Pr=Perm_R(type,j);
-      Permutation<T>& Pc=Perm_C(type,j);
+      Matrix     <T>& M =Mat   (l,type,j);
       if(M.Dim(0)>0 && M.Dim(1)>0){
         mem_size+=M.Dim(0)*M.Dim(1)*sizeof(T); mem_size=((uintptr_t)mem_size+(uintptr_t)(MEM_ALIGN-1)) & ~ (uintptr_t)(MEM_ALIGN-1);
       }
-      if(Pr.Dim()>0){
-        mem_size+=Pr.Dim()*sizeof(PERM_INT_T); mem_size=((uintptr_t)mem_size+(uintptr_t)(MEM_ALIGN-1)) & ~ (uintptr_t)(MEM_ALIGN-1);
-        mem_size+=Pr.Dim()*sizeof(T);          mem_size=((uintptr_t)mem_size+(uintptr_t)(MEM_ALIGN-1)) & ~ (uintptr_t)(MEM_ALIGN-1);
-      }
-      if(Pc.Dim()>0){
-        mem_size+=Pc.Dim()*sizeof(PERM_INT_T); mem_size=((uintptr_t)mem_size+(uintptr_t)(MEM_ALIGN-1)) & ~ (uintptr_t)(MEM_ALIGN-1);
-        mem_size+=Pc.Dim()*sizeof(T);          mem_size=((uintptr_t)mem_size+(uintptr_t)(MEM_ALIGN-1)) & ~ (uintptr_t)(MEM_ALIGN-1);
+
+      for(size_t l=0;l<max_depth;l++){
+        Permutation<T>& Pr=Perm_R(l,type,j);
+        Permutation<T>& Pc=Perm_C(l,type,j);
+        if(Pr.Dim()>0){
+          mem_size+=Pr.Dim()*sizeof(PERM_INT_T); mem_size=((uintptr_t)mem_size+(uintptr_t)(MEM_ALIGN-1)) & ~ (uintptr_t)(MEM_ALIGN-1);
+          mem_size+=Pr.Dim()*sizeof(T);          mem_size=((uintptr_t)mem_size+(uintptr_t)(MEM_ALIGN-1)) & ~ (uintptr_t)(MEM_ALIGN-1);
+        }
+        if(Pc.Dim()>0){
+          mem_size+=Pc.Dim()*sizeof(PERM_INT_T); mem_size=((uintptr_t)mem_size+(uintptr_t)(MEM_ALIGN-1)) & ~ (uintptr_t)(MEM_ALIGN-1);
+          mem_size+=Pc.Dim()*sizeof(T);          mem_size=((uintptr_t)mem_size+(uintptr_t)(MEM_ALIGN-1)) & ~ (uintptr_t)(MEM_ALIGN-1);
+        }
       }
     }
   }
@@ -109,52 +129,58 @@ size_t PrecompMat<T>::CompactData(int l, Mat_Type type, Matrix<char>& comp_data,
 
     ((size_t*)indx_ptr)[0]=indx_size+mem_size; indx_ptr+=sizeof(size_t);
     ((size_t*)indx_ptr)[0]= mat_cnt          ; indx_ptr+=sizeof(size_t);
+    ((size_t*)indx_ptr)[0]= max_depth        ; indx_ptr+=sizeof(size_t);
     for(size_t j=0;j<mat_cnt;j++){
-      Matrix     <T>& M =Mat( l,type,j);
-      Permutation<T>& Pr=Perm_R(type,j);
-      Permutation<T>& Pc=Perm_C(type,j);
-
+      Matrix     <T>& M =Mat   (l,type,j);
       ((size_t*)indx_ptr)[0]=data_offset; indx_ptr+=sizeof(size_t);
       data_offset+=M.Dim(0)*M.Dim(1)*sizeof(T); data_offset=((uintptr_t)data_offset+(uintptr_t)(MEM_ALIGN-1)) & ~ (uintptr_t)(MEM_ALIGN-1);
 
-      ((size_t*)indx_ptr)[0]=data_offset; indx_ptr+=sizeof(size_t);
-      data_offset+=Pr.Dim()*sizeof(PERM_INT_T); data_offset=((uintptr_t)data_offset+(uintptr_t)(MEM_ALIGN-1)) & ~ (uintptr_t)(MEM_ALIGN-1);
-      ((size_t*)indx_ptr)[0]=data_offset; indx_ptr+=sizeof(size_t);
-      data_offset+=Pr.Dim()*sizeof(T);          data_offset=((uintptr_t)data_offset+(uintptr_t)(MEM_ALIGN-1)) & ~ (uintptr_t)(MEM_ALIGN-1);
+      for(size_t l=0;l<max_depth;l++){
+        Permutation<T>& Pr=Perm_R(l,type,j);
+        ((size_t*)indx_ptr)[0]=data_offset; indx_ptr+=sizeof(size_t);
+        data_offset+=Pr.Dim()*sizeof(PERM_INT_T); data_offset=((uintptr_t)data_offset+(uintptr_t)(MEM_ALIGN-1)) & ~ (uintptr_t)(MEM_ALIGN-1);
+        ((size_t*)indx_ptr)[0]=data_offset; indx_ptr+=sizeof(size_t);
+        data_offset+=Pr.Dim()*sizeof(T);          data_offset=((uintptr_t)data_offset+(uintptr_t)(MEM_ALIGN-1)) & ~ (uintptr_t)(MEM_ALIGN-1);
 
-      ((size_t*)indx_ptr)[0]=data_offset; indx_ptr+=sizeof(size_t);
-      data_offset+=Pc.Dim()*sizeof(PERM_INT_T); data_offset=((uintptr_t)data_offset+(uintptr_t)(MEM_ALIGN-1)) & ~ (uintptr_t)(MEM_ALIGN-1);
-      ((size_t*)indx_ptr)[0]=data_offset; indx_ptr+=sizeof(size_t);
-      data_offset+=Pc.Dim()*sizeof(T);          data_offset=((uintptr_t)data_offset+(uintptr_t)(MEM_ALIGN-1)) & ~ (uintptr_t)(MEM_ALIGN-1);
+        Permutation<T>& Pc=Perm_C(l,type,j);
+        ((size_t*)indx_ptr)[0]=data_offset; indx_ptr+=sizeof(size_t);
+        data_offset+=Pc.Dim()*sizeof(PERM_INT_T); data_offset=((uintptr_t)data_offset+(uintptr_t)(MEM_ALIGN-1)) & ~ (uintptr_t)(MEM_ALIGN-1);
+        ((size_t*)indx_ptr)[0]=data_offset; indx_ptr+=sizeof(size_t);
+        data_offset+=Pc.Dim()*sizeof(T);          data_offset=((uintptr_t)data_offset+(uintptr_t)(MEM_ALIGN-1)) & ~ (uintptr_t)(MEM_ALIGN-1);
+      }
     }
+
   }
   { // Copy data.
     char* indx_ptr=comp_data[0]+offset;
     size_t& total_size=((size_t*)indx_ptr)[0]; indx_ptr+=sizeof(size_t);
     size_t&   mat_cnt =((size_t*)indx_ptr)[0]; indx_ptr+=sizeof(size_t);
-    Vector<size_t> data_offset((1+2+2)*mat_cnt, (size_t*)indx_ptr, false);
+    size_t&  max_depth=((size_t*)indx_ptr)[0]; indx_ptr+=sizeof(size_t);
+    Matrix<size_t> data_offset(mat_cnt,1+(2+2)*max_depth, (size_t*)indx_ptr, false);
     offset+=total_size;
 
     for(size_t j=0;j<mat_cnt;j++){
-      Matrix     <T>& M =Mat( l,type,j);
-      Permutation<T>& Pr=Perm_R(type,j);
-      Permutation<T>& Pc=Perm_C(type,j);
-
+      Matrix     <T>& M =Mat   (l,type,j);
       if(M.Dim(0)>0 && M.Dim(1)>0){
         #pragma omp parallel for
         for(int tid=0;tid<omp_p;tid++){
           size_t a=(M.Dim(0)*M.Dim(1)* tid   )/omp_p;
           size_t b=(M.Dim(0)*M.Dim(1)*(tid+1))/omp_p;
-          mem::memcopy(comp_data[0]+data_offset[5*j+0]+a*sizeof(T), &M[0][a], (b-a)*sizeof(T));
+          mem::memcopy(comp_data[0]+data_offset[j][0]+a*sizeof(T), &M[0][a], (b-a)*sizeof(T));
         }
       }
-      if(Pr.Dim()>0){
-        mem::memcopy(comp_data[0]+data_offset[5*j+1], &Pr.perm[0], Pr.Dim()*sizeof(PERM_INT_T));
-        mem::memcopy(comp_data[0]+data_offset[5*j+2], &Pr.scal[0], Pr.Dim()*sizeof(         T));
-      }
-      if(Pc.Dim()>0){
-        mem::memcopy(comp_data[0]+data_offset[5*j+3], &Pc.perm[0], Pc.Dim()*sizeof(PERM_INT_T));
-        mem::memcopy(comp_data[0]+data_offset[5*j+4], &Pc.scal[0], Pc.Dim()*sizeof(         T));
+
+      for(size_t l=0;l<max_depth;l++){
+        Permutation<T>& Pr=Perm_R(l,type,j);
+        Permutation<T>& Pc=Perm_C(l,type,j);
+        if(Pr.Dim()>0){
+          mem::memcopy(comp_data[0]+data_offset[j][1+4*l+0], &Pr.perm[0], Pr.Dim()*sizeof(PERM_INT_T));
+          mem::memcopy(comp_data[0]+data_offset[j][1+4*l+1], &Pr.scal[0], Pr.Dim()*sizeof(         T));
+        }
+        if(Pc.Dim()>0){
+          mem::memcopy(comp_data[0]+data_offset[j][1+4*l+2], &Pc.perm[0], Pc.Dim()*sizeof(PERM_INT_T));
+          mem::memcopy(comp_data[0]+data_offset[j][1+4*l+3], &Pc.scal[0], Pc.Dim()*sizeof(         T));
+        }
       }
     }
   }
@@ -228,7 +254,7 @@ void PrecompMat<T>::LoadFile(const char* fname, MPI_Comm comm){
       //f_size=ftell (f);
     }
     if(f_size>0){
-      f_data=new char[f_size];
+      f_data=mem::aligned_new<char>(f_size);
       fseek (f, 0, SEEK_SET);
       MY_FREAD(f_data,sizeof(char),f_size,f);
       fclose(f);
@@ -244,7 +270,7 @@ void PrecompMat<T>::LoadFile(const char* fname, MPI_Comm comm){
     return;
   }
 
-  if(f_data==NULL) f_data=new char[f_size];
+  if(f_data==NULL) f_data=mem::aligned_new<char>(f_size);
   char* f_ptr=f_data;
   int max_send_size=1000000000;
   while(f_size>0){
@@ -272,7 +298,6 @@ void PrecompMat<T>::LoadFile(const char* fname, MPI_Comm comm){
       max_depth=max_depth_;
       mat.resize(mat_size);
     }
-
     for(size_t i=0;i<mat_size;i++){
       int n;
       n=*(int*)f_ptr; f_ptr+=sizeof(int);
@@ -291,8 +316,16 @@ void PrecompMat<T>::LoadFile(const char* fname, MPI_Comm comm){
         }
       }
     }
+
+    // Resize perm_r, perm_c
+    perm_r.resize((max_depth_+PRECOMP_MIN_DEPTH)*Type_Count);
+    perm_c.resize((max_depth_+PRECOMP_MIN_DEPTH)*Type_Count);
+    for(size_t i=0;i<perm_r.size();i++){
+      perm_r[i].resize(500);
+      perm_c[i].resize(500);
+    }
   }
-  if(f_data!=NULL) delete[] f_data;
+  mem::aligned_delete<char>(f_data);
   Profile::Toc();
   Profile::Toc();
 }

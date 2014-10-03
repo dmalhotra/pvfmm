@@ -5,7 +5,7 @@
  */
 
 template <class FMM_Mat_t>
-void CheckFMMOutput(pvfmm::FMM_Tree<FMM_Mat_t>* mytree, pvfmm::Kernel<typename FMM_Mat_t::Real_t>* mykernel){
+void CheckFMMOutput(pvfmm::FMM_Tree<FMM_Mat_t>* mytree, const pvfmm::Kernel<typename FMM_Mat_t::Real_t>* mykernel){
   if(mykernel==NULL) return;
 
   // Find out number of OMP thereads.
@@ -83,9 +83,9 @@ void CheckFMMOutput(pvfmm::FMM_Tree<FMM_Mat_t>* mytree, pvfmm::Kernel<typename F
   for(int i=0;i<np;i++){
     size_t a=(i*glb_trg_cnt)/np;
     size_t b=((i+1)*glb_trg_cnt)/np;
-    mykernel->ker_poten(&src_coord[0], src_cnt, &src_value[0], dof, &glb_trg_coord[a*3], b-a, &trg_poten_dir[a*trg_dof  ]);
+    mykernel->ker_poten(&src_coord[0], src_cnt, &src_value[0], dof, &glb_trg_coord[a*3], b-a, &trg_poten_dir[a*trg_dof  ],NULL);
   }
-  MPI_Allreduce(&trg_poten_dir[0], &glb_trg_poten_dir[0], trg_poten_dir.size(), pvfmm::par::Mpi_datatype<Real_t>::value(), MPI_SUM, c1);
+  MPI_Allreduce(&trg_poten_dir[0], &glb_trg_poten_dir[0], trg_poten_dir.size(), pvfmm::par::Mpi_datatype<Real_t>::value(), pvfmm::par::Mpi_datatype<Real_t>::sum(), c1);
   pvfmm::Profile::Toc();
 
   //Compute error.
@@ -99,8 +99,8 @@ void CheckFMMOutput(pvfmm::FMM_Tree<FMM_Mat_t>* mytree, pvfmm::Kernel<typename F
       if(max>max_) max_=max;
     }
     Real_t glb_max, glb_max_err;
-    MPI_Reduce(&max_   , &glb_max    , 1, pvfmm::par::Mpi_datatype<Real_t>::value(), MPI_MAX, 0, c1);
-    MPI_Reduce(&max_err, &glb_max_err, 1, pvfmm::par::Mpi_datatype<Real_t>::value(), MPI_MAX, 0, c1);
+    MPI_Reduce(&max_   , &glb_max    , 1, pvfmm::par::Mpi_datatype<Real_t>::value(), pvfmm::par::Mpi_datatype<Real_t>::max(), 0, c1);
+    MPI_Reduce(&max_err, &glb_max_err, 1, pvfmm::par::Mpi_datatype<Real_t>::value(), pvfmm::par::Mpi_datatype<Real_t>::max(), 0, c1);
     if(!myrank){
       std::cout<<"Maximum Absolute Error ["<<mykernel->ker_name<<"] :  "<<std::scientific<<glb_max_err<<'\n';
       std::cout<<"Maximum Relative Error ["<<mykernel->ker_name<<"] :  "<<std::scientific<<glb_max_err/glb_max<<'\n';
@@ -111,7 +111,7 @@ void CheckFMMOutput(pvfmm::FMM_Tree<FMM_Mat_t>* mytree, pvfmm::Kernel<typename F
 
 template <class FMMTree_t>
 void CheckChebOutput(FMMTree_t* mytree, typename TestFn<typename FMMTree_t::Real_t>::Fn_t fn_poten, int fn_dof, std::string t_name){
-  typedef typename FMMTree_t::FMM_Node_t FMMNode_t;
+  typedef typename FMMTree_t::Node_t FMMNode_t;
   typedef typename FMMTree_t::Real_t Real_t;
 
   MPI_Comm c1=*mytree->Comm();
@@ -125,7 +125,7 @@ void CheckChebOutput(FMMTree_t* mytree, typename TestFn<typename FMMTree_t::Real
     FMMNode_t* node=static_cast<FMMNode_t*>(mytree->PreorderFirst());
     while(node!=NULL){
       if(node->IsLeaf() && !node->IsGhost()) nodes.push_back(node);
-      node=static_cast<FMMNode_t*>(mytree->PreorderNxt(node));
+      node=static_cast<FMMNode_t*>(mytree->PreorderNxt((FMMNode_t*)node));
     }
     if(nodes.size()==0) return;
   }
@@ -164,12 +164,13 @@ void CheckChebOutput(FMMTree_t* mytree, typename TestFn<typename FMMTree_t::Real
           }
         }
       }
-      err_avg[tid]/=n_pts;
+      for(size_t k=0;k<dof*fn_dof;k++)
+        err_avg[tid*dof*fn_dof+k]/=n_pts;
     }
     for(size_t tid=1;tid<omp_p;tid++)
       for(size_t k=0;k<dof*fn_dof;k++)
         err_avg[k]+=err_avg[tid*dof*fn_dof+k];
-    MPI_Allreduce(&err_avg[0], &glb_err_avg[0], dof*fn_dof, pvfmm::par::Mpi_datatype<Real_t>::value(), MPI_SUM, c1);
+    MPI_Allreduce(&err_avg[0], &glb_err_avg[0], dof*fn_dof, pvfmm::par::Mpi_datatype<Real_t>::value(), pvfmm::par::Mpi_datatype<Real_t>::sum(), c1);
   }
   { // Write error to file.
     int nn_x=1;
@@ -209,8 +210,8 @@ void CheckChebOutput(FMMTree_t* mytree, typename TestFn<typename FMMTree_t::Real
     delete[] fn_out;
     pvfmm::Matrix<Real_t> M_global    (nn_z*fn_dof*dof,nn_y*nn_x,NULL,true);
     pvfmm::Matrix<Real_t> M_global_err(nn_z*fn_dof*dof,nn_y*nn_x,NULL,true);
-    MPI_Reduce(&M_out    [0][0], &M_global    [0][0], nn_x*nn_y*nn_z*fn_dof*dof, pvfmm::par::Mpi_datatype<Real_t>::value(), MPI_SUM, 0, c1);
-    MPI_Reduce(&M_out_err[0][0], &M_global_err[0][0], nn_x*nn_y*nn_z*fn_dof*dof, pvfmm::par::Mpi_datatype<Real_t>::value(), MPI_SUM, 0, c1);
+    MPI_Reduce(&M_out    [0][0], &M_global    [0][0], nn_x*nn_y*nn_z*fn_dof*dof, pvfmm::par::Mpi_datatype<Real_t>::value(), pvfmm::par::Mpi_datatype<Real_t>::sum(), 0, c1);
+    MPI_Reduce(&M_out_err[0][0], &M_global_err[0][0], nn_x*nn_y*nn_z*fn_dof*dof, pvfmm::par::Mpi_datatype<Real_t>::value(), pvfmm::par::Mpi_datatype<Real_t>::sum(), 0, c1);
 
     //std::string fname;
     //fname=std::string("result/"    )+t_name+std::string(".mat");
@@ -259,10 +260,10 @@ void CheckChebOutput(FMMTree_t* mytree, typename TestFn<typename FMMTree_t::Real
 
   Real_t global_l2, global_l2_err;
   Real_t global_max, global_max_err;
-  MPI_Reduce(&l2     [0], &global_l2     , 1, pvfmm::par::Mpi_datatype<Real_t>::value(), MPI_SUM, 0, c1);
-  MPI_Reduce(&l2_err [0], &global_l2_err , 1, pvfmm::par::Mpi_datatype<Real_t>::value(), MPI_SUM, 0, c1);
-  MPI_Reduce(&max    [0], &global_max    , 1, pvfmm::par::Mpi_datatype<Real_t>::value(), MPI_MAX, 0, c1);
-  MPI_Reduce(&max_err[0], &global_max_err, 1, pvfmm::par::Mpi_datatype<Real_t>::value(), MPI_MAX, 0, c1);
+  MPI_Reduce(&l2     [0], &global_l2     , 1, pvfmm::par::Mpi_datatype<Real_t>::value(), pvfmm::par::Mpi_datatype<Real_t>::sum(), 0, c1);
+  MPI_Reduce(&l2_err [0], &global_l2_err , 1, pvfmm::par::Mpi_datatype<Real_t>::value(), pvfmm::par::Mpi_datatype<Real_t>::sum(), 0, c1);
+  MPI_Reduce(&max    [0], &global_max    , 1, pvfmm::par::Mpi_datatype<Real_t>::value(), pvfmm::par::Mpi_datatype<Real_t>::max(), 0, c1);
+  MPI_Reduce(&max_err[0], &global_max_err, 1, pvfmm::par::Mpi_datatype<Real_t>::value(), pvfmm::par::Mpi_datatype<Real_t>::max(), 0, c1);
   if(!myrank){
     std::cout<<"Absolute L2 Error ["<<t_name<<"]     :  "<<std::scientific<<sqrt(global_l2_err)<<'\n';
     std::cout<<"Relative L2 Error ["<<t_name<<"]     :  "<<std::scientific<<sqrt(global_l2_err/global_l2)<<'\n';

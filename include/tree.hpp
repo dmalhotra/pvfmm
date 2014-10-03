@@ -5,13 +5,15 @@
  * \brief This file contains the definition of the base class for a tree.
  */
 
-// TODO Add Euler Tour based parallel traversal.
+#include <cassert>
+#include <vector>
+
+#include <pvfmm_common.hpp>
+#include <tree_node.hpp>
+#include <mem_mgr.hpp>
 
 #ifndef _PVFMM_TREE_HPP_
 #define _PVFMM_TREE_HPP_
-
-#include <pvfmm_common.hpp>
-#include <iostream>
 
 namespace pvfmm{
 
@@ -28,7 +30,7 @@ class Tree{
   /**
    * \brief Constructor.
    */
-  Tree(): dim(0), root_node(NULL), max_depth(MAX_DEPTH) { };
+  Tree(): dim(0), root_node(NULL), max_depth(MAX_DEPTH), memgr(DEVICE_BUFFER_SIZE*1024l*1024l) { };
 
   /**
    * \brief Virtual destructor.
@@ -92,6 +94,7 @@ class Tree{
   Node_t* root_node;    // pointer to root node
   int max_depth;        // maximum tree depth
   std::vector<TreeNode*> node_lst;
+  mem::MemoryManager memgr;
 };
 
 }//end namespace

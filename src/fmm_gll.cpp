@@ -10,6 +10,7 @@
 #include <fmm_tree.hpp>
 #include <cheb_utils.hpp>
 #include <vector.hpp>
+#include <cheb_node.hpp>
 
 typedef pvfmm::FMM_Node<pvfmm::Cheb_Node<double> > FMMNode_t;
 typedef pvfmm::FMM_Cheb<FMMNode_t> FMM_Mat_t;
@@ -58,7 +59,7 @@ extern "C" {
         fmm_data->fmm_mat_laplace_grad=new FMM_Mat_t;
         fmm_mat=((FMM_Mat_t*)fmm_data->fmm_mat_laplace_grad);
 
-        fmm_data->kernel_laplace_grad=pvfmm::LaplaceKernel<double>::grad_ker;
+        fmm_data->kernel_laplace_grad=&pvfmm::LaplaceKernel<double>::grad_ker();
         mykernel=(pvfmm::Kernel<double>*)fmm_data->kernel_laplace_grad;
 
         fmm_data->tree_laplace_grad=new FMM_Tree_t(fmm_data->comm);

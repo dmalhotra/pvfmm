@@ -5,6 +5,8 @@
  * \brief This file contains implementation of the class MortonId.
  */
 
+#include <cmath>
+
 namespace pvfmm{
 
 inline MortonId::MortonId():x(0), y(0), z(0), depth(0){}
@@ -13,7 +15,7 @@ inline MortonId::MortonId(MortonId m, unsigned char depth_):x(m.x), y(m.y), z(m.
 
 template <class T>
 inline MortonId::MortonId(T x_f,T y_f, T z_f, unsigned char depth_): depth(depth_){
-  UINT_T max_int=((UINT_T)1)<<(MAX_DEPTH);
+  static UINT_T max_int=((UINT_T)1)<<(MAX_DEPTH);
   x=(UINT_T)floor(x_f*max_int);
   y=(UINT_T)floor(y_f*max_int);
   z=(UINT_T)floor(z_f*max_int);
@@ -21,7 +23,7 @@ inline MortonId::MortonId(T x_f,T y_f, T z_f, unsigned char depth_): depth(depth
 
 template <class T>
 inline MortonId::MortonId(T* coord, unsigned char depth_): depth(depth_){
-  UINT_T max_int=((UINT_T)1)<<(MAX_DEPTH);
+  static UINT_T max_int=((UINT_T)1)<<(MAX_DEPTH);
   x=(UINT_T)floor(coord[0]*max_int);
   y=(UINT_T)floor(coord[1]*max_int);
   z=(UINT_T)floor(coord[2]*max_int);
@@ -29,8 +31,8 @@ inline MortonId::MortonId(T* coord, unsigned char depth_): depth(depth_){
 
 template <class T>
 inline void MortonId::GetCoord(T* coord){
-  UINT_T max_int=((UINT_T)1)<<(MAX_DEPTH);
-  T s=1.0/((T)max_int);
+  static UINT_T max_int=((UINT_T)1)<<(MAX_DEPTH);
+  static T s=1.0/((T)max_int);
   coord[0]=x*s;
   coord[1]=y*s;
   coord[2]=z*s;

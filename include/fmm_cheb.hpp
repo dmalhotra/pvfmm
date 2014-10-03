@@ -6,16 +6,20 @@
  * This handles all the translations through matrix multiplications.
  */
 
-#ifndef _PVFMM_FMM_CHEB_HPP_
-#define _PVFMM_FMM_CHEB_HPP_
+#include <mpi.h>
+#include <vector>
+#include <cstdlib>
 
 #include <pvfmm_common.hpp>
-#include <mpi.h>
-#include <matrix.hpp>
 #include <precomp_mat.hpp>
-#include <cheb_utils.hpp>
-#include <cheb_node.hpp>
+#include <mem_mgr.hpp>
 #include <fmm_pts.hpp>
+#include <vector.hpp>
+#include <matrix.hpp>
+#include <kernel.hpp>
+
+#ifndef _PVFMM_FMM_CHEB_HPP_
+#define _PVFMM_FMM_CHEB_HPP_
 
 namespace pvfmm{
 
@@ -44,7 +48,7 @@ class FMM_Cheb: public FMM_Pts<FMMNode>{
   /**
    * \brief Constructor.
    */
-  FMM_Cheb(){};
+  FMM_Cheb(mem::MemoryManager* mem_mgr=NULL){};
 
   /**
    * \brief Virtual destructor.
@@ -105,7 +109,7 @@ class FMM_Cheb: public FMM_Pts<FMMNode>{
    */
   virtual void CopyOutput(FMMNode** nodes, size_t n){
     for(size_t i=0;i<n;i++){
-      nodes[i]->DataDOF()=this->kernel.ker_dim[1];
+      nodes[i]->DataDOF()=this->kernel->ker_dim[1];
       if(nodes[i]->IsLeaf() && !nodes[i]->IsGhost()){
         Vector<Real_t>& cheb_data=nodes[i]->ChebData();
         Vector<Real_t>& cheb_out =((FMMData*)nodes[i]->FMMData())->cheb_out;

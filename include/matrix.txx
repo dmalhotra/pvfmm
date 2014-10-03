@@ -5,23 +5,33 @@
  * \brief This file contains inplementation of the class Matrix.
  */
 
-#include <cstring>
+#include <omp.h>
+#include <cmath>
+#include <cstdlib>
 #include <cassert>
+#include <iostream>
 #include <iomanip>
-#include <typeinfo>
-#include <profile.hpp>
+
+#include <device_wrapper.hpp>
 #include <mat_utils.hpp>
+#include <mem_mgr.hpp>
+#include <profile.hpp>
 
 namespace pvfmm{
 
 template <class T>
 std::ostream& operator<<(std::ostream& output, const Matrix<T>& M){
+  std::ios::fmtflags f(std::cout.flags());
   output<<std::fixed<<std::setprecision(4)<<std::setiosflags(std::ios::left);
   for(size_t i=0;i<M.Dim(0);i++){
-    for(size_t j=0;j<M.Dim(1);j++)
-      output<<std::setw(10)<<M(i,j)<<' ';
+    for(size_t j=0;j<M.Dim(1);j++){
+      float f=((float)M(i,j));
+      if(fabs(f)<1e-25) f=0;
+      output<<std::setw(10)<<((double)f)<<' ';
+    }
     output<<";\n";
   }
+  std::cout.flags(f);
   return output;
 }
 
@@ -41,8 +51,8 @@ Matrix<T>::Matrix(size_t dim1, size_t dim2, T* data_, bool own_data_){
   own_data=own_data_;
   if(own_data){
     if(dim[0]*dim[1]>0){
-      data_ptr=mem::aligned_malloc<T>(dim[0]*dim[1]);
-#ifndef __MIC__
+      data_ptr=mem::aligned_new<T>(dim[0]*dim[1]);
+#if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
       Profile::Add_MEM(dim[0]*dim[1]*sizeof(T));
 #endif
       if(data_!=NULL) mem::memcopy(data_ptr,data_,dim[0]*dim[1]*sizeof(T));
@@ -58,8 +68,8 @@ Matrix<T>::Matrix(const Matrix<T>& M){
   dim[1]=M.dim[1];
   own_data=true;
   if(dim[0]*dim[1]>0){
-    data_ptr=mem::aligned_malloc<T>(dim[0]*dim[1]);
-#ifndef __MIC__
+    data_ptr=mem::aligned_new<T>(dim[0]*dim[1]);
+#if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
     Profile::Add_MEM(dim[0]*dim[1]*sizeof(T));
 #endif
     mem::memcopy(data_ptr,M.data_ptr,dim[0]*dim[1]*sizeof(T));
@@ -73,8 +83,8 @@ Matrix<T>::~Matrix(){
   FreeDevice(false);
   if(own_data){
     if(data_ptr!=NULL){
-      mem::aligned_free(data_ptr);
-#ifndef __MIC__
+      mem::aligned_delete(data_ptr);
+#if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
       Profile::Add_MEM(-dim[0]*dim[1]*sizeof(T));
 #endif
     }
@@ -129,18 +139,18 @@ typename Matrix<T>::Device& Matrix<T>::AllocDevice(bool copy){
 template <class T>
 void Matrix<T>::Device2Host(T* host_ptr){
   dev.lock_idx=DeviceWrapper::device2host((char*)data_ptr,dev.dev_ptr,(char*)(host_ptr==NULL?data_ptr:host_ptr),dim[0]*dim[1]*sizeof(T));
-#if defined(PVFMM_HAVE_CUDA)
-  cudaEventCreate(&lock);
-  cudaEventRecord(lock, 0);
-#endif
+//#if defined(PVFMM_HAVE_CUDA)
+//  cudaEventCreate(&lock);
+//  cudaEventRecord(lock, 0);
+//#endif
 }
 
 template <class T>
 void Matrix<T>::Device2HostWait(){
-#if defined(PVFMM_HAVE_CUDA)
-  cudaEventSynchronize(lock);
-  cudaEventDestroy(lock);
-#endif
+//#if defined(PVFMM_HAVE_CUDA)
+//  cudaEventSynchronize(lock);
+//  cudaEventDestroy(lock);
+//#endif
   DeviceWrapper::wait(dev.lock_idx);
   dev.lock_idx=-1;
 }
@@ -179,8 +189,8 @@ void Matrix<T>::Resize(size_t i, size_t j){
   FreeDevice(false);
   if(own_data){
     if(data_ptr!=NULL){
-      mem::aligned_free(data_ptr);
-#ifndef __MIC__
+      mem::aligned_delete(data_ptr);
+#if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
       Profile::Add_MEM(-dim[0]*dim[1]*sizeof(T));
 #endif
 
@@ -190,8 +200,8 @@ void Matrix<T>::Resize(size_t i, size_t j){
   dim[1]=j;
   if(own_data){
     if(dim[0]*dim[1]>0){
-      data_ptr=mem::aligned_malloc<T>(dim[0]*dim[1]);
-#ifndef __MIC__
+      data_ptr=mem::aligned_new<T>(dim[0]*dim[1]);
+#if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
       Profile::Add_MEM(dim[0]*dim[1]*sizeof(T));
 #endif
     }else
@@ -211,14 +221,14 @@ Matrix<T>& Matrix<T>::operator=(const Matrix<T>& M){
     FreeDevice(false);
     if(own_data && dim[0]*dim[1]!=M.dim[0]*M.dim[1]){
       if(data_ptr!=NULL){
-        mem::aligned_free(data_ptr); data_ptr=NULL;
-#ifndef __MIC__
+        mem::aligned_delete(data_ptr); data_ptr=NULL;
+#if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
         Profile::Add_MEM(-dim[0]*dim[1]*sizeof(T));
 #endif
       }
       if(M.dim[0]*M.dim[1]>0){
-        data_ptr=mem::aligned_malloc<T>(M.dim[0]*M.dim[1]);
-#ifndef __MIC__
+        data_ptr=mem::aligned_new<T>(M.dim[0]*M.dim[1]);
+#if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
         Profile::Add_MEM(M.dim[0]*M.dim[1]*sizeof(T));
 #endif
       }
@@ -292,32 +302,32 @@ Matrix<T> Matrix<T>::operator*(const Matrix<T>& M){
   Profile::Add_FLOP(2*(((long long)dim[0])*dim[1])*M.dim[1]);
 
   Matrix<T> M_r(dim[0],M.dim[1],NULL);
-  mat::gemm('N','N',M.dim[1],dim[0],dim[1],
+  mat::gemm<T>('N','N',M.dim[1],dim[0],dim[1],
       1.0,M.data_ptr,M.dim[1],data_ptr,dim[1],0.0,M_r.data_ptr,M_r.dim[1]);
   return M_r;
 }
 
 template <class T>
-void Matrix<T>::DGEMM(Matrix<T>& M_r, const Matrix<T>& A, const Matrix<T>& B, T beta){
+void Matrix<T>::GEMM(Matrix<T>& M_r, const Matrix<T>& A, const Matrix<T>& B, T beta){
   assert(A.dim[1]==B.dim[0]);
   assert(M_r.dim[0]==A.dim[0]);
   assert(M_r.dim[1]==B.dim[1]);
-#ifndef __MIC__
+#if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
   Profile::Add_FLOP(2*(((long long)A.dim[0])*A.dim[1])*B.dim[1]);
 #endif
-  mat::gemm('N','N',B.dim[1],A.dim[0],A.dim[1],
+  mat::gemm<T>('N','N',B.dim[1],A.dim[0],A.dim[1],
       1.0,B.data_ptr,B.dim[1],A.data_ptr,A.dim[1],beta,M_r.data_ptr,M_r.dim[1]);
 }
 
-// cublasXgemm wrapper
+// cublasgemm wrapper
 #if defined(PVFMM_HAVE_CUDA)
 template <class T>
-void Matrix<T>::CUBLASXGEMM(Matrix<T>& M_r, const Matrix<T>& A, const Matrix<T>& B, T beta){
+void Matrix<T>::CUBLASGEMM(Matrix<T>& M_r, const Matrix<T>& A, const Matrix<T>& B, T beta){
   assert(A.dim[1]==B.dim[0]);
   assert(M_r.dim[0]==A.dim[0]);
   assert(M_r.dim[1]==B.dim[1]);
   Profile::Add_FLOP(2*(((long long)A.dim[0])*A.dim[1])*B.dim[1]);
-  mat::cublasXgemm('N', 'N', B.dim[1], A.dim[0], A.dim[1],
+  mat::cublasgemm('N', 'N', B.dim[1], A.dim[0], A.dim[1],
       1.0, B.data_ptr, B.dim[1], A.data_ptr, A.dim[1], beta, M_r.data_ptr, M_r.dim[1]);
 }
 #endif
@@ -446,15 +456,50 @@ void Matrix<T>::Transpose(Matrix<T>& M_r, const Matrix<T>& M){
 #undef B1
 
 template <class T>
-Matrix<T> Matrix<T>::pinv(){
-  T eps=(typeid(T)==typeid(float)?4*1e-5:4*1e-9);
-  return pinv(eps);
+void Matrix<T>::SVD(Matrix<T>& tU, Matrix<T>& tS, Matrix<T>& tVT){
+  pvfmm::Matrix<T>& M=*this;
+  pvfmm::Matrix<T> M_=M;
+  int n=M.Dim(0);
+  int m=M.Dim(1);
+
+  int k = (m<n?m:n);
+  tU.Resize(n,k); tU.SetZero();
+  tS.Resize(k,k); tS.SetZero();
+  tVT.Resize(k,m); tVT.SetZero();
+
+  //SVD
+  int INFO=0;
+  char JOBU  = 'S';
+  char JOBVT = 'S';
+
+  int wssize = 3*(m<n?m:n)+(m>n?m:n);
+  int wssize1 = 5*(m<n?m:n);
+  wssize = (wssize>wssize1?wssize:wssize1);
+
+  T* wsbuf = mem::aligned_new<T>(wssize);
+  pvfmm::mat::svd(&JOBU, &JOBVT, &m, &n, &M[0][0], &m, &tS[0][0], &tVT[0][0], &m, &tU[0][0], &k, wsbuf, &wssize, &INFO);
+  mem::aligned_delete<T>(wsbuf);
+
+  if(INFO!=0) std::cout<<INFO<<'\n';
+  assert(INFO==0);
+
+  for(size_t i=1;i<k;i++){
+    tS[i][i]=tS[0][i];
+    tS[0][i]=0;
+  }
+  //std::cout<<tU*tS*tVT-M_<<'\n';
 }
 
 template <class T>
 Matrix<T> Matrix<T>::pinv(T eps){
+  if(eps<0){
+    eps=1.0;
+    while(eps+(T)1.0>1.0) eps*=0.5;
+    eps=sqrt(eps);
+  }
   Matrix<T> M_r(dim[1],dim[0]);
   mat::pinv(data_ptr,dim[0],dim[1],eps,M_r.data_ptr);
+  this->Resize(0,0);
   return M_r;
 }
 
@@ -464,7 +509,7 @@ Matrix<T> Matrix<T>::pinv(T eps){
 template <class T>
 std::ostream& operator<<(std::ostream& output, const Permutation<T>& P){
   output<<std::setprecision(4)<<std::setiosflags(std::ios::left);
-  size_t size=P.perm.size();
+  size_t size=P.perm.Dim();
   for(size_t i=0;i<size;i++) output<<std::setw(10)<<P.perm[i]<<' ';
   output<<";\n";
   for(size_t i=0;i<size;i++) output<<std::setw(10)<<P.scal[i]<<' ';

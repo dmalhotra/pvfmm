@@ -1,12 +1,14 @@
 /**
- * \file mpi_node.cpp
+ * \file mpi_node.txx
  * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 12-11-2010
  * \brief This file contains the implementation of the class MPI_Node.
  */
 
-#include <assert.h>
-#include <iostream>
+#include <cmath>
+
+#include <matrix.hpp>
+#include <mem_mgr.hpp>
 
 namespace pvfmm{
 
@@ -269,7 +271,7 @@ PackedData MPI_Node<T>::Pack(bool ghost, void* buff_ptr, size_t offset){
 
   PackedData p0;
   // Determine data length.
-  p0.length =sizeof(size_t)+sizeof(int)+sizeof(MortonId);
+  p0.length =sizeof(size_t)+sizeof(int)+sizeof(long long)+sizeof(MortonId);
   for(size_t j=0;j<pt_coord.size();j++){
     p0.length+=3*sizeof(size_t);
     if(pt_coord  [j]) p0.length+=(pt_coord  [j]->Dim())*sizeof(Real_t);
@@ -293,6 +295,9 @@ PackedData MPI_Node<T>::Pack(bool ghost, void* buff_ptr, size_t offset){
 
   ((int*)data_ptr)[0]=this->Depth();
   data_ptr+=sizeof(int);
+
+  ((long long*)data_ptr)[0]=this->NodeCost();
+  data_ptr+=sizeof(long long);
 
   ((MortonId*)data_ptr)[0]=this->GetMortonId();
   data_ptr+=sizeof(MortonId);
@@ -347,6 +352,9 @@ void MPI_Node<T>::Unpack(PackedData p0, bool own_data){
   this->depth=(((int*)data_ptr)[0]);
   data_ptr+=sizeof(int);
 
+  this->NodeCost()=(((long long*)data_ptr)[0]);
+  data_ptr+=sizeof(long long);
+
   this->SetCoord(((MortonId*)data_ptr)[0]);
   data_ptr+=sizeof(MortonId);
 
@@ -354,7 +362,11 @@ void MPI_Node<T>::Unpack(PackedData p0, bool own_data){
     if(pt_coord[j]){
       Vector<Real_t>& vec=*pt_coord[j];
       size_t vec_sz=(((size_t*)data_ptr)[0]); data_ptr+=sizeof(size_t);
-      vec.ReInit(vec_sz,(Real_t*)data_ptr,own_data);
+      if(own_data){
+        vec=Vector<Real_t>(vec_sz,(Real_t*)data_ptr,false);
+      }else{
+        vec.ReInit(vec_sz,(Real_t*)data_ptr,false);
+      }
       data_ptr+=vec_sz*sizeof(Real_t);
     }else{
       assert(!((size_t*)data_ptr)[0]);
@@ -363,7 +375,11 @@ void MPI_Node<T>::Unpack(PackedData p0, bool own_data){
     if(pt_value[j]){
       Vector<Real_t>& vec=*pt_value[j];
       size_t vec_sz=(((size_t*)data_ptr)[0]); data_ptr+=sizeof(size_t);
-      vec.ReInit(vec_sz,(Real_t*)data_ptr,own_data);
+      if(own_data){
+        vec=Vector<Real_t>(vec_sz,(Real_t*)data_ptr,false);
+      }else{
+        vec.ReInit(vec_sz,(Real_t*)data_ptr,false);
+      }
       data_ptr+=vec_sz*sizeof(Real_t);
     }else{
       assert(!((size_t*)data_ptr)[0]);
@@ -372,7 +388,11 @@ void MPI_Node<T>::Unpack(PackedData p0, bool own_data){
     if(pt_scatter[j]){
       Vector<size_t>& vec=*pt_scatter[j];
       size_t vec_sz=(((size_t*)data_ptr)[0]); data_ptr+=sizeof(size_t);
-      vec.ReInit(vec_sz,(size_t*)data_ptr,own_data);
+      if(own_data){
+        vec=Vector<size_t>(vec_sz,(size_t*)data_ptr,false);
+      }else{
+        vec.ReInit(vec_sz,(size_t*)data_ptr,false);
+      }
       data_ptr+=vec_sz*sizeof(size_t);
     }else{
       assert(!((size_t*)data_ptr)[0]);

@@ -22,7 +22,7 @@ HOW TO GET PvFMM
 ================
 
    For the latest stable release of PvFMM 
-       <URL: padas.ices.utexas.edu/pvmm.tgz>
+       <URL: padas.ices.utexas.edu/pvfmm.tgz>
 
 LICENSE
 =======
@@ -42,7 +42,7 @@ USING PvFMM
 
    The file examples/Makefile can be used as a template makefile for any
    project using the library. In general the MakeVariables file should
-   be included in any makefile and CXXFLAGS_PVFMM and LDFLAGS_FMM should
+   be included in any makefile and CXXFLAGS_PVFMM and LDFLAGS_PVFMM should
    be used to compile the code.
 
    Two very simple examples illustrating usage of the library are available:

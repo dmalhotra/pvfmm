@@ -5,17 +5,23 @@
  * \brief This file contains wrapper functions for PvFMM.
  */
 
-#ifndef _PVFMM_HPP_
-#define _PVFMM_HPP_
-
 #include <mpi.h>
+#include <vector>
 #include <cstdlib>
-#include <iostream>
+#include <cmath>
 
 #include <pvfmm_common.hpp>
-#include <fmm_cheb.hpp>
-#include <fmm_node.hpp>
+#include <cheb_node.hpp>
+#include <mpi_node.hpp>
 #include <fmm_tree.hpp>
+#include <fmm_node.hpp>
+#include <fmm_cheb.hpp>
+#include <fmm_pts.hpp>
+#include <vector.hpp>
+#include <parUtils.h>
+
+#ifndef _PVFMM_HPP_
+#define _PVFMM_HPP_
 
 namespace pvfmm{
 
@@ -23,7 +29,7 @@ typedef FMM_Node<Cheb_Node<double> > ChebFMM_Node;
 typedef FMM_Cheb<ChebFMM_Node>       ChebFMM;
 typedef FMM_Tree<ChebFMM>            ChebFMM_Tree;
 typedef ChebFMM_Node::NodeData       ChebFMM_Data;
-typedef void (*ChebFn)(double* , int , double*);
+typedef void (*ChebFn)(const double* , int , double*);
 
 ChebFMM_Tree* ChebFMM_CreateTree(int cheb_deg, int data_dim, ChebFn fn_ptr, std::vector<double>& trg_coord, MPI_Comm& comm,
                                  double tol=1e-6, int max_pts=100, BoundaryType bndry=FreeSpace, int init_depth=0){
@@ -98,8 +104,10 @@ typedef FMM_Pts<PtFMM_Node>         PtFMM;
 typedef FMM_Tree<PtFMM>             PtFMM_Tree;
 typedef PtFMM_Node::NodeData        PtFMM_Data;
 
-PtFMM_Tree* PtFMM_CreateTree(std::vector<double>& src_coord, std::vector<double>& src_value, std::vector<double>& trg_coord, MPI_Comm& comm,
-                                 int max_pts=100, BoundaryType bndry=FreeSpace, int init_depth=0){
+PtFMM_Tree* PtFMM_CreateTree(std::vector<double>&  src_coord, std::vector<double>&  src_value,
+                             std::vector<double>& surf_coord, std::vector<double>& surf_value,
+                             std::vector<double>& trg_coord, MPI_Comm& comm, int max_pts=100,
+                             BoundaryType bndry=FreeSpace, int init_depth=0){
   int np, myrank;
   MPI_Comm_size(comm, &np);
   MPI_Comm_rank(comm, &myrank);
@@ -112,12 +120,14 @@ PtFMM_Tree* PtFMM_CreateTree(std::vector<double>& src_coord, std::vector<double>
   tree_data.max_pts=max_pts;
 
   // Set source points.
-  tree_data.pt_coord=src_coord;
-  tree_data.src_coord=src_coord;
-  tree_data.src_value=src_value;
+  tree_data. src_coord= src_coord;
+  tree_data. src_value= src_value;
+  tree_data.surf_coord=surf_coord;
+  tree_data.surf_value=surf_value;
 
   // Set target points.
   tree_data.trg_coord=trg_coord;
+  tree_data. pt_coord=trg_coord;
 
   PtFMM_Tree* tree=new PtFMM_Tree(comm);
   tree->Initialize(&tree_data);
@@ -125,7 +135,15 @@ PtFMM_Tree* PtFMM_CreateTree(std::vector<double>& src_coord, std::vector<double>
   return tree;
 }
 
-void PtFMM_Evaluate(PtFMM_Tree* tree, std::vector<double>& trg_val, size_t loc_size=0, std::vector<double>* src_val=NULL){
+PtFMM_Tree* PtFMM_CreateTree(std::vector<double>&  src_coord, std::vector<double>&  src_value,
+                             std::vector<double>& trg_coord, MPI_Comm& comm, int max_pts=100,
+                             BoundaryType bndry=FreeSpace, int init_depth=0){
+  std::vector<double> surf_coord;
+  std::vector<double> surf_value;
+  return PtFMM_CreateTree(src_coord, src_value, surf_coord,surf_value, trg_coord, comm, max_pts, bndry, init_depth);
+}
+
+void PtFMM_Evaluate(PtFMM_Tree* tree, std::vector<double>& trg_val, size_t loc_size=0, std::vector<double>* src_val=NULL, std::vector<double>* surf_val=NULL){
   if(src_val){
     std::vector<size_t> src_scatter_;
     std::vector<PtFMM_Node*>& nodes=tree->GetNodeList();
@@ -146,6 +164,31 @@ void PtFMM_Evaluate(PtFMM_Tree* tree, std::vector<double>& trg_val, size_t loc_s
         Vector<double>& src_value_=nodes[i]->src_value;
         for(size_t j=0;j<src_value_.Dim();j++){
           src_value_[j]=src_value[indx];
+          indx++;
+        }
+      }
+    }
+  }
+  if(surf_val){
+    std::vector<size_t> surf_scatter_;
+    std::vector<PtFMM_Node*>& nodes=tree->GetNodeList();
+    for(size_t i=0;i<nodes.size();i++){
+      if(nodes[i]->IsLeaf() && !nodes[i]->IsGhost()){
+        Vector<size_t>& surf_scatter=nodes[i]->surf_scatter;
+        for(size_t j=0;j<surf_scatter.Dim();j++) surf_scatter_.push_back(surf_scatter[j]);
+      }
+    }
+
+    Vector<double> surf_value=*surf_val;
+    Vector<size_t> surf_scatter=surf_scatter_;
+    par::ScatterForward(surf_value,surf_scatter,*tree->Comm());
+
+    size_t indx=0;
+    for(size_t i=0;i<nodes.size();i++){
+      if(nodes[i]->IsLeaf() && !nodes[i]->IsGhost()){
+        Vector<double>& surf_value_=nodes[i]->surf_value;
+        for(size_t j=0;j<surf_value_.Dim();j++){
+          surf_value_[j]=surf_value[indx];
           indx++;
         }
       }

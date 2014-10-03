@@ -5,24 +5,24 @@
  * \brief This file contains definition of DeviceWrapper.
  */
 
+#include <cstdlib>
+#include <stdint.h>
+
+// Cuda Headers
+#if defined(PVFMM_HAVE_CUDA)
+#include <cuda_runtime_api.h>
+#include <cublas_v2.h>
+#endif
+
+#include <pvfmm_common.hpp>
+#include <vector.hpp>
+
 #ifndef _PVFMM_DEVICE_WRAPPER_HPP_
 #define _PVFMM_DEVICE_WRAPPER_HPP_
 
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push,target(mic))
 #endif
-
-// Cuda Header
-#if defined(PVFMM_HAVE_CUDA)
-#include <cuda_runtime_api.h>
-#include <cublas_v2.h>
-#endif
-
-#include <cstdlib>
-#include <cassert>
-#include <stdint.h>
-#include <pvfmm_common.hpp>
-
 namespace pvfmm{
 
 namespace DeviceWrapper{
@@ -31,8 +31,10 @@ namespace DeviceWrapper{
 
   void free_device(char* dev_handle, uintptr_t dev_ptr);
 
+  template <int SYNC=__DEVICE_SYNC__>
   int host2device(char* host_ptr, char* dev_handle, uintptr_t dev_ptr, size_t len);
 
+  template <int SYNC=__DEVICE_SYNC__>
   int device2host(char* dev_handle, uintptr_t dev_ptr, char* host_ptr, size_t len);
 
   void wait(int lock_idx);
@@ -58,7 +60,7 @@ Note: Any MIC offload section should look like this:
       MIC_Lock::release_lock(lock_idx);
     }
 
-    #ifdef __MIC_ASYNCH__
+    #ifdef __DEVICE_SYNC__
     MIC_Lock::wait_lock(lock_idx);
     #endif
 
@@ -75,7 +77,6 @@ transfer, use:
     MIC_Lock::wait_lock(wait_lock_idx);
 */
 
-  #define NUM_LOCKS 1000000
   class MIC_Lock{
     public:
 
@@ -97,25 +98,23 @@ transfer, use:
       static int lock_idx;
   };
 
-  #if defined(PVFMM_HAVE_CUDA)
-  #define NUM_STREAM 2
+#if defined(PVFMM_HAVE_CUDA)
   class CUDA_Lock {
     public:
-      CUDA_Lock();
-      static void init();
-      static void terminate();
-      static cudaStream_t *acquire_stream(int idx);
+      static void init(size_t num_stream=1);
+      static void finalize();
+
+      static cudaStream_t *acquire_stream(int idx=0);
       static cublasHandle_t *acquire_handle();
-      static void wait(int idx);
+      static void wait(int idx=0);
     private:
-      static cudaStream_t stream[NUM_STREAM];
+      CUDA_Lock();
+      static std::vector<cudaStream_t> stream;
       static cublasHandle_t handle;
-      static bool cuda_init;
   };
-  #endif
+#endif
 
 }//end namespace
-
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
 #endif

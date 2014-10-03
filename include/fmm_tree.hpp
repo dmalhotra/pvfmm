@@ -5,14 +5,17 @@
  * \brief This file contains the definition of the FMM_Tree class.
  */
 
+#include <mpi.h>
+#include <vector>
+
+#include <pvfmm_common.hpp>
+#include <interac_list.hpp>
+#include <fmm_node.hpp>
+#include <mpi_tree.hpp>
+#include <matrix.hpp>
+
 #ifndef _PVFMM_FMM_TREE_HPP_
 #define _PVFMM_FMM_TREE_HPP_
-
-#include <iostream>
-#include <mpi.h>
-#include <pvfmm_common.hpp>
-#include <mpi_tree.hpp>
-#include <fmm_node.hpp>
 
 namespace pvfmm{
 
@@ -24,14 +27,13 @@ class FMM_Tree: public MPI_Tree<typename FMM_Mat_t::FMMNode_t>{
 
  public:
 
-  typedef typename FMM_Mat_t::FMMNode_t FMM_Node_t;
-  typedef typename FMM_Node_t::Node_t Node_t;
+  typedef typename FMM_Mat_t::FMMNode_t Node_t;
   typedef typename FMM_Mat_t::Real_t Real_t;
 
   /**
    * \brief Constructor.
    */
-  FMM_Tree(MPI_Comm c): MPI_Tree<FMM_Node_t>(c), fmm_mat(NULL), bndry(FreeSpace) { };
+  FMM_Tree(MPI_Comm c): MPI_Tree<Node_t>(c), fmm_mat(NULL), bndry(FreeSpace) { };
 
   /**
    * \brief Virtual destructor.
@@ -42,7 +44,7 @@ class FMM_Tree: public MPI_Tree<typename FMM_Mat_t::FMMNode_t>{
   /**
    * \brief Initialize the distributed MPI tree.
    */
-  virtual void Initialize(typename FMM_Node_t::NodeData* data_) ;
+  virtual void Initialize(typename Node_t::NodeData* data_) ;
 
   /**
    * \brief Initialize FMM_Tree.
@@ -93,7 +95,7 @@ class FMM_Tree: public MPI_Tree<typename FMM_Mat_t::FMMNode_t>{
 
 
   std::vector<Matrix<Real_t> > node_data_buff;
-  InteracList<FMM_Node_t> interac_list;
+  InteracList<Node_t> interac_list;
   FMM_Mat_t* fmm_mat; //Computes all FMM translations.
   BoundaryType bndry;
 

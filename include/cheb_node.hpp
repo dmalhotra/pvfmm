@@ -5,15 +5,17 @@
  * \brief This is a derived cheb class of MPI_Node.
  */
 
-#ifndef _PVFMM_CHEB_NODE_HPP_
-#define _PVFMM_CHEB_NODE_HPP_
+#include <vector>
+#include <cstdlib>
+#include <stdint.h>
 
 #include <pvfmm_common.hpp>
-#include <assert.h>
-#include <vector.hpp>
+#include <tree_node.hpp>
 #include <mpi_node.hpp>
-#include <mortonid.hpp>
-#include <cheb_utils.hpp>
+#include <vector.hpp>
+
+#ifndef _PVFMM_CHEB_NODE_HPP_
+#define _PVFMM_CHEB_NODE_HPP_
 
 namespace pvfmm{
 
@@ -25,7 +27,7 @@ class Cheb_Node: public MPI_Node<Real_t>{
 
  public:
 
-  typedef void (*fn_ptr)(Real_t* coord, int n, Real_t* out);
+  typedef void (*fn_ptr)(const Real_t* coord, int n, Real_t* out);
 
   /**
    * \brief Base class for node data. Contains initialization data for the node.
@@ -84,7 +86,7 @@ class Cheb_Node: public MPI_Node<Real_t>{
   /**
    * \brief Returns the cost of this node. Used for load balancing.
    */
-  virtual Real_t NodeCost(){return 1;}
+  virtual long long& NodeCost(){return MPI_Node<Real_t>::NodeCost();}
 
   /**
    * \brief Degree of Chebyshev polynomials used.

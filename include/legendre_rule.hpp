@@ -1,7 +1,8 @@
-#ifndef _LEGENDRE_RULE_HPP_
-#define _LEGENDRE_RULE_HPP_
 
 # include <cstring>
+
+#ifndef _LEGENDRE_RULE_HPP_
+#define _LEGENDRE_RULE_HPP_
 
 void cdgqf ( int nt, int kind, double alpha, double beta, double t[],
   double wts[] );

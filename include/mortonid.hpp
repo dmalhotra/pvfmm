@@ -5,13 +5,13 @@
  * \brief This file contains definition of the class MortonId.
  */
 
-#ifndef _PVFMM_MORTONID_HPP_
-#define _PVFMM_MORTONID_HPP_
+#include <vector>
+#include <stdint.h>
 
 #include <pvfmm_common.hpp>
-#include <iostream>
-#include <stdint.h>
-#include <vector>
+
+#ifndef _PVFMM_MORTONID_HPP_
+#define _PVFMM_MORTONID_HPP_
 
 namespace pvfmm{
 

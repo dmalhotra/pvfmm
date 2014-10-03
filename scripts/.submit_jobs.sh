@@ -19,6 +19,7 @@ eval $mpi_proc_;
 eval  $threads_;
 eval $testcase_;
 eval    $n_pts_;
+eval    $m_pts_;
 eval        $m_;
 eval        $q_;
 eval      $tol_;
@@ -31,7 +32,7 @@ declare -a     args=();
 declare -a    fname=();
 for (( k=0; k<${#nodes[@]}; k++ )) ; do
   if [ "${nodes[k]}" == ":" ]; then continue; fi;
-  args[$k]="-omp ${threads[k]} -test ${testcase[k]} -N ${n_pts[k]} -m ${m[k]} -q ${q[k]} -d ${depth[k]} -tol ${tol[k]}";
+  args[$k]="-omp ${threads[k]} -test ${testcase[k]} -N ${n_pts[k]} -M ${m_pts[k]} -m ${m[k]} -q ${q[k]} -d ${depth[k]} -tol ${tol[k]}";
   case $HOSTNAME in
     *titan*) #titan.ccs.ornl.gov
         fname[$k]="host_titan";
@@ -48,7 +49,7 @@ for (( k=0; k<${#nodes[@]}; k++ )) ; do
     *) # none of the known machines
         fname[$k]="host_${HOSTNAME}";
   esac
-  fname[$k]="${fname[$k]}_n${nodes[k]}_mpi${mpi_proc[k]}_omp${threads[k]}_test${testcase[k]}_N${n_pts[k]}_m${m[k]}_q${q[k]}_d${depth[k]}_tol${tol[k]}";
+  fname[$k]="${fname[$k]}_n${nodes[k]}_mpi${mpi_proc[k]}_omp${threads[k]}_test${testcase[k]}_N${n_pts[k]}_M${m_pts[k]}_m${m[k]}_q${q[k]}_d${depth[k]}_tol${tol[k]}";
   if (( ${unif[k]} )) ; then
     args[$k]="${args[$k]} -unif";
     fname[$k]="${fname[$k]}_unif";
@@ -117,7 +118,7 @@ for (( k=0; k<${#nodes[@]}; k++ )) ; do
         qsub -l nodes=${NODES}:ppn=$((${MPI_PROC}/${NODES})) \
              -o ${FNAME}.out -e ${FNAME}.err \
              -l walltime=${TOTAL_TIME} \
-             ./scripts/.job.qsub
+             ./scripts/.job.ronaldo
       ;;
     *) # none of the known machines
       if command -v qsub >/dev/null; then # Portable Batch System

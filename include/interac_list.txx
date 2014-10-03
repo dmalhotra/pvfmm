@@ -7,10 +7,10 @@
  * symmetry class for each interaction.
  */
 
-#include <math.h>
-#include <algorithm>
-#include <tree_node.hpp>
-#include <precomp_mat.hpp>
+#include <cmath>
+#include <cassert>
+
+#include <parUtils.h>
 #include <ompUtils.h>
 
 namespace pvfmm{
@@ -20,11 +20,16 @@ namespace pvfmm{
  */
 template <class Node_t>
 void InteracList<Node_t>::Initialize(unsigned int dim_, PrecompMat<Real_t>* mat_){
+  #ifdef PVFMM_NO_SYMMETRIES
+  use_symmetries=false;
+  #else
+  use_symmetries=true;
+  #endif
+
   dim=dim_;
   assert(dim==3); //Only supporting 3D for now.
   mat=mat_;
 
-  class_count.resize(Type_Count);
   interac_class.resize(Type_Count);
   perm_list.resize(Type_Count);
   rel_coord.resize(Type_Count);
@@ -90,8 +95,8 @@ std::vector<Perm_Type>& InteracList<Node_t>::PermutList(Mat_Type t, size_t i){
 template <class Node_t>
 std::vector<Node_t*> InteracList<Node_t>::BuildList(Node_t* n, Mat_Type t){
   std::vector<Node_t*> interac_list(ListCount(t),NULL);
-  int n_collg=(int)pow(3,dim);
-  int n_child=(int)pow(2,dim);
+  int n_collg=(int)pow(3.0,(int)dim);
+  int n_child=(int)pow(2.0,(int)dim);
   int rel_coord[3];
 
   switch (t){
@@ -279,22 +284,27 @@ Matrix<typename Node_t::Real_t>& InteracList<Node_t>::ClassMat(int l, Mat_Type t
 template <class Node_t>
 Permutation<typename Node_t::Real_t>& InteracList<Node_t>::Perm_R(int l, Mat_Type type, size_t indx){
   size_t indx0=InteracClass(type, indx);
-  Matrix<Real_t>& M0=mat->Mat(l, type, indx0);
-  Permutation<Real_t>& row_perm=mat->Perm_R(type, indx);
+  Matrix     <Real_t>& M0      =mat->Mat   (l, type, indx0);
+  Permutation<Real_t>& row_perm=mat->Perm_R(l, type, indx );
   if(M0.Dim(0)==0 || M0.Dim(1)==0) return row_perm;
 
   //Get the necessary permutations.
   if(row_perm.Dim()==0){
-    std::vector<Perm_Type>& p_list=PermutList(type, indx);
-    row_perm=Permutation<Real_t>(M0.Dim(0));
-    for(int i=p_list.size()-1; i>=0; i--){
-      Permutation<Real_t>& pr=mat->Perm(type, R_Perm + p_list[i]);
-      if(pr.Dim()!=M0.Dim(0)){
-        row_perm=Permutation<Real_t>();
-        break;
-      }
-      row_perm=pr.Transpose()*row_perm;
+    std::vector<Perm_Type> p_list=PermutList(type, indx);
+    for(int i=0;i<l;i++) p_list.push_back(Scaling);
+    Permutation<Real_t> row_perm_=Permutation<Real_t>(M0.Dim(0));
+    for(int i=0;i<C_Perm;i++){
+      Permutation<Real_t>& pr=mat->Perm(type, R_Perm + i);
+      if(!pr.Dim()) row_perm_=Permutation<Real_t>(0);
     }
+
+    if(row_perm_.Dim()>0)
+    for(int i=p_list.size()-1; i>=0; i--){
+      assert(type!=V_Type);
+      Permutation<Real_t>& pr=mat->Perm(type, R_Perm + p_list[i]);
+      row_perm_=pr.Transpose()*row_perm_;
+    }
+    row_perm=row_perm_;
   }
   return row_perm;
 }
@@ -302,22 +312,27 @@ Permutation<typename Node_t::Real_t>& InteracList<Node_t>::Perm_R(int l, Mat_Typ
 template <class Node_t>
 Permutation<typename Node_t::Real_t>& InteracList<Node_t>::Perm_C(int l, Mat_Type type, size_t indx){
   size_t indx0=InteracClass(type, indx);
-  Matrix<Real_t>& M0=mat->Mat(l, type, indx0);
-  Permutation<Real_t>& col_perm=mat->Perm_C(type, indx);
+  Matrix     <Real_t>& M0      =mat->Mat   (l, type, indx0);
+  Permutation<Real_t>& col_perm=mat->Perm_C(l, type, indx );
   if(M0.Dim(0)==0 || M0.Dim(1)==0) return col_perm;
 
   //Get the necessary permutations.
   if(col_perm.Dim()==0){
-    std::vector<Perm_Type>& p_list=PermutList(type, indx);
-    col_perm=Permutation<Real_t>(M0.Dim(1));
-    for(int i=p_list.size()-1; i>=0; i--){
-      Permutation<Real_t>& pc=mat->Perm(type, C_Perm + p_list[i]);
-      if(pc.Dim()!=M0.Dim(1)){
-        col_perm=Permutation<Real_t>();
-        break;
-      }
-      col_perm=col_perm*pc;
+    std::vector<Perm_Type> p_list=PermutList(type, indx);
+    for(int i=0;i<l;i++) p_list.push_back(Scaling);
+    Permutation<Real_t> col_perm_=Permutation<Real_t>(M0.Dim(1));
+    for(int i=0;i<C_Perm;i++){
+      Permutation<Real_t>& pc=mat->Perm(type, C_Perm + i);
+      if(!pc.Dim()) col_perm_=Permutation<Real_t>(0);
     }
+
+    if(col_perm_.Dim()>0)
+    for(int i=p_list.size()-1; i>=0; i--){
+      assert(type!=V_Type);
+      Permutation<Real_t>& pc=mat->Perm(type, C_Perm + p_list[i]);
+      col_perm_=col_perm_*pc;
+    }
+    col_perm=col_perm_;
   }
   return col_perm;
 }
@@ -325,7 +340,7 @@ Permutation<typename Node_t::Real_t>& InteracList<Node_t>::Perm_C(int l, Mat_Typ
 /**
  * \brief A hash function defined on the relative coordinates of octants.
  */
-#define MAX_HASH 2000
+#define PVFMM_MAX_COORD_HASH 2000
 template <class Node_t>
 int InteracList<Node_t>::coord_hash(int* c){
   const int n=5;
@@ -334,6 +349,7 @@ int InteracList<Node_t>::coord_hash(int* c){
 
 template <class Node_t>
 int InteracList<Node_t>::class_hash(int* c_){
+  if(!use_symmetries) return coord_hash(c_);
   int c[3]={abs(c_[0]), abs(c_[1]), abs(c_[2])};
   if(c[1]>c[0] && c[1]>c[2])
     {int tmp=c[0]; c[0]=c[1]; c[1]=tmp;}
@@ -351,24 +367,21 @@ int InteracList<Node_t>::class_hash(int* c_){
  */
 template <class Node_t>
 void InteracList<Node_t>::InitList(int max_r, int min_r, int step, Mat_Type t){
-  size_t count=(size_t)(pow((max_r*2)/step+1,dim)-(min_r>0?pow((min_r*2)/step-1,dim):0));
+  size_t count=(size_t)(pow((max_r*2)/step+1.0,(int)dim)-(min_r>0?pow((min_r*2)/step-1.0,(int)dim):0));
   Matrix<int>& M=rel_coord[t];
   M.Resize(count,dim);
-  hash_lut[t].assign(MAX_HASH, -1);
+  hash_lut[t].assign(PVFMM_MAX_COORD_HASH, -1);
 
-  class_count[t]=0;
-  std::vector<int> class_size_hash(MAX_HASH, 0);
-  std::vector<int> class_disp_hash(MAX_HASH, 0);
+  std::vector<int> class_size_hash(PVFMM_MAX_COORD_HASH, 0);
+  std::vector<int> class_disp_hash(PVFMM_MAX_COORD_HASH, 0);
   for(int k=-max_r;k<=max_r;k+=step)
   for(int j=-max_r;j<=max_r;j+=step)
   for(int i=-max_r;i<=max_r;i+=step)
   if(abs(i)>=min_r || abs(j)>=min_r || abs(k) >= min_r){
     int c[3]={i,j,k};
-    int& idx=class_size_hash[class_hash(c)];
-    if(idx==0) class_count[t]++;
-    idx++;
+    class_size_hash[class_hash(c)]++;
   }
-  omp_par::scan(&class_size_hash[0], &class_disp_hash[0], MAX_HASH);
+  omp_par::scan(&class_size_hash[0], &class_disp_hash[0], PVFMM_MAX_COORD_HASH);
 
   size_t count_=0;
   for(int k=-max_r;k<=max_r;k+=step)
@@ -386,11 +399,17 @@ void InteracList<Node_t>::InitList(int max_r, int min_r, int step, Mat_Type t){
 
   interac_class[t].resize(count);
   perm_list[t].resize(count);
-  std::vector<int> coord(3);
-  for(size_t j=0;j<count;j++){
+  if(!use_symmetries){ // Set interac_class=self
+    for(size_t j=0;j<count;j++){
+      int c_hash = coord_hash(&M[j][0]);
+      interac_class[t][j]=hash_lut[t][c_hash];
+    }
+  }
+  else for(size_t j=0;j<count;j++){
     if(M[j][0]<0) perm_list[t][j].push_back(ReflecX);
     if(M[j][1]<0) perm_list[t][j].push_back(ReflecY);
     if(M[j][2]<0) perm_list[t][j].push_back(ReflecZ);
+    int coord[3];
     coord[0]=abs(M[j][0]);
     coord[1]=abs(M[j][1]);
     coord[2]=abs(M[j][2]);
@@ -412,6 +431,6 @@ void InteracList<Node_t>::InitList(int max_r, int min_r, int step, Mat_Type t){
     interac_class[t][j]=hash_lut[t][c_hash];
   }
 }
-#undef MAX_HASH
+#undef PVFMM_MAX_COORD_HASH
 
 }//end namespace

@@ -21,7 +21,6 @@ EXTRA_DIST = \
 									$(EX_DIR)/src \
 									$(EX_DIR)/include \
 									$(EX_DIR)/Makefile \
-									$(EX_DIR)/scripts \
 									$(DX_CONFIG) \
 									scripts
 
@@ -47,6 +46,7 @@ lib_libfmm_a_HEADERS = \
 									include/blas.h \
 									include/cheb_node.hpp \
 									include/cheb_utils.hpp \
+									include/cuda_func.hpp \
 									include/device_wrapper.hpp \
 									include/dtypes.h \
 									include/fft_wrapper.hpp \
@@ -61,7 +61,7 @@ lib_libfmm_a_HEADERS = \
 									include/legendre_rule.hpp \
 									include/matrix.hpp \
 									include/mat_utils.hpp \
-									include/mem_utils.hpp \
+									include/mem_mgr.hpp \
 									include/mortonid.hpp \
 									include/mpi_node.hpp \
 									include/mpi_tree.hpp \
@@ -69,6 +69,7 @@ lib_libfmm_a_HEADERS = \
 									include/parUtils.h \
 									include/precomp_mat.hpp \
 									include/profile.hpp \
+									include/quad_utils.hpp \
 									include/tree.hpp \
 									include/tree_node.hpp \
 									include/vector.hpp \
@@ -83,16 +84,16 @@ lib_libfmm_a_HEADERS = \
 									include/kernel.txx \
 									include/matrix.txx \
 									include/mat_utils.txx \
-									include/mem_utils.txx \
+									include/mem_mgr.txx \
 									include/mortonid.txx \
 									include/mpi_node.txx \
 									include/mpi_tree.txx \
 									include/ompUtils.txx \
 									include/parUtils.txx \
 									include/precomp_mat.txx \
+									include/quad_utils.txx \
 									include/tree.txx \
-									include/vector.txx \
-									include/cuda_func.hpp
+									include/vector.txx
 
 #nodist_lib_libpvfmm_a_HEADERS = \
 #									include/pvfmm_config.h
@@ -100,18 +101,16 @@ lib_libfmm_a_HEADERS = \
 # the sources to add to the library and to add to the source distribution
 lib_libpvfmm_a_SOURCES = \
 									$(lib_libpvfmm_a_HEADERS) \
+									src/device_wrapper.cpp \
 									src/fmm_gll.cpp \
 									src/legendre_rule.cpp \
+									src/mem_mgr.cpp \
 									src/mortonid.cpp \
 									src/profile.cpp \
 									src/tree_node.cpp
 
 if NVCC_OK
-
-lib_libpvfmm_a_SOURCES = \
-									$(lib_libpvfmm_a_HEADERS) \
-									src/cuda_func.cu
-
+lib_libpvfmm_a_SOURCES += src/cuda_func.cu
 endif
 
 dist_noinst_SCRIPTS = autogen.sh
@@ -224,6 +223,7 @@ clean-local: clean-doxygen
 	cd $(EX_DIR) && $(MAKE) clean;
 	$(RM) -r $(RESULT_DIR)/*
 	$(RM) *~ */*~ */*/*~
+	$(RM) ./lib/*
 
 #------------------------------------------------------------------------------
 

@@ -7,6 +7,7 @@
 
 #include <mortonid.hpp>
 #include <iostream>
+#include <cstdlib>
 #include <cmath>
 
 namespace pvfmm{

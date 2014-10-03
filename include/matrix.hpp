@@ -5,18 +5,18 @@
  * \brief This file contains definition of the class Matrix.
  */
 
+#include <stdint.h>
+#include <cstdlib>
+
+#include <pvfmm_common.hpp>
+#include <vector.hpp>
+
 #ifndef _PVFMM_MATRIX_HPP_
 #define _PVFMM_MATRIX_HPP_
-
-#include <cstdlib>
-#include <vector>
-#include <iostream>
-#include <vector.hpp>
 
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push,target(mic))
 #endif
-
 namespace pvfmm{
 
 template <class T>
@@ -31,9 +31,6 @@ class Matrix{
   public:
 
   struct
-#ifdef __INTEL_OFFLOAD
-  __attribute__ ((target(mic)))
-#endif
   Device{
 
     Device& operator=(Matrix& M){
@@ -96,10 +93,10 @@ class Matrix{
 
   Matrix<T> operator*(const Matrix<T>& M);
 
-  static void DGEMM(Matrix<T>& M_r, const Matrix<T>& A, const Matrix<T>& B, T beta=0.0);
+  static void GEMM(Matrix<T>& M_r, const Matrix<T>& A, const Matrix<T>& B, T beta=0.0);
 
-  // cublasXgemm wrapper
-  static void CUBLASXGEMM(Matrix<T>& M_r, const Matrix<T>& A, const Matrix<T>& B, T beta=0.0);
+  // cublasgemm wrapper
+  static void CUBLASGEMM(Matrix<T>& M_r, const Matrix<T>& A, const Matrix<T>& B, T beta=0.0);
 
   void RowPerm(const Permutation<T>& P);
   void ColPerm(const Permutation<T>& P);
@@ -108,9 +105,11 @@ class Matrix{
 
   static void Transpose(Matrix<T>& M_r, const Matrix<T>& M);
 
-  Matrix<T> pinv();
+  // Original matrix is destroyed.
+  void SVD(Matrix<T>& tU, Matrix<T>& tS, Matrix<T>& tVT);
 
-  Matrix<T> pinv(T eps);
+  // Original matrix is destroyed.
+  Matrix<T> pinv(T eps=-1);
 
   private:
 
@@ -165,11 +164,10 @@ class Permutation{
 };
 
 }//end namespace
-
-#include <matrix.txx>
-
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
 #endif
+
+#include <matrix.txx>
 
 #endif //_PVFMM_MATRIX_HPP_

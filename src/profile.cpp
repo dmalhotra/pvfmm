@@ -11,6 +11,7 @@
 #include <sstream>
 #include <iomanip>
 #include <cassert>
+#include <cstdlib>
 #include <string>
 #include <vector>
 #include <stack>
@@ -21,6 +22,7 @@ namespace pvfmm{
 
 void Profile::Add_FLOP(long long inc){
 #if __PROFILE__ >= 0
+  if(!enable_state) return;
   #pragma omp critical (FLOP)
   FLOP+=inc;
 #endif
@@ -28,6 +30,7 @@ void Profile::Add_FLOP(long long inc){
 
 void Profile::Add_MEM(long long inc){
 #if __PROFILE__ >= 0
+  if(!enable_state) return;
   #pragma omp critical (MEM)
   {
   MEM+=inc;
@@ -40,6 +43,7 @@ void Profile::Add_MEM(long long inc){
 void Profile::Tic(const char* name_, const MPI_Comm* comm_,bool sync_, int verbose){
 #if __PROFILE__ >= 0
   //sync_=true;
+  if(!enable_state) return;
   if(verbose<=__PROFILE__ && verb_level.size()==enable_depth){
     if(comm_!=NULL && sync_) MPI_Barrier(*comm_);
     #ifdef __VERBOSE__
@@ -47,10 +51,10 @@ void Profile::Tic(const char* name_, const MPI_Comm* comm_,bool sync_, int verbo
     if(comm_!=NULL) MPI_Comm_rank(*comm_,&rank);
     if(!rank){
       for(size_t i=0;i<name.size();i++) std::cout<<"    ";
-      std::cout << "\033[1;31m"<<std::string(name_)<<"\033[0m {\n";
+      std::cout << "\033[1;31m"<<name_<<"\033[0m {\n";
     }
     #endif
-    name.push(std::string(name_));
+    name.push(name_);
     comm.push((MPI_Comm*)comm_);
     sync.push(sync_);
     max_mem.push_back(MEM);
@@ -71,6 +75,7 @@ void Profile::Tic(const char* name_, const MPI_Comm* comm_,bool sync_, int verbo
 
 void Profile::Toc(){
 #if __PROFILE__ >= 0
+  if(!enable_state) return;
   ASSERT_WITH_MSG(!verb_level.empty(),"Unbalanced extra Toc()");
   if(verb_level.top()<=__PROFILE__ && verb_level.size()==enable_depth){
     ASSERT_WITH_MSG(!name.empty() && !comm.empty() && !sync.empty() && !max_mem.empty(),"Unbalanced extra Toc()");
@@ -88,7 +93,9 @@ void Profile::Toc(){
     m_log.push_back(MEM);
     max_m_log.push_back(max_mem.back());
 
+    #ifndef NDEBUG
     if(comm_!=NULL && sync_) MPI_Barrier(*comm_);
+    #endif
     name.pop();
     comm.pop();
     sync.pop();
@@ -99,7 +106,6 @@ void Profile::Toc(){
     if(comm_!=NULL) MPI_Comm_rank(*comm_,&rank);
     if(!rank){
       for(size_t i=0;i<name.size();i++) std::cout<<"    ";
-      //std::cout<<"-"<<name_<<'\n';
       std::cout<<"}\n";
     }
     #endif
@@ -126,22 +132,22 @@ void Profile::print(const MPI_Comm* comm_){
   std::stack<long long> mm;
   int width=10;
   size_t level=0;
-  if(!rank){
-    std::cout<<"\n"<<std::setw(width*3-2*level)<<std::string(" ");
-    std::cout<<"  "<<std::setw(width)<<std::string("t_min");
-    std::cout<<"  "<<std::setw(width)<<std::string("t_avg");
-    std::cout<<"  "<<std::setw(width)<<std::string("t_max");
-    std::cout<<"  "<<std::setw(width)<<std::string("f_min");
-    std::cout<<"  "<<std::setw(width)<<std::string("f_avg");
-    std::cout<<"  "<<std::setw(width)<<std::string("f_max");
+  if(!rank && e_log.size()>0){
+    std::cout<<"\n"<<std::setw(width*3-2*level)<<" ";
+    std::cout<<"  "<<std::setw(width)<<"t_min";
+    std::cout<<"  "<<std::setw(width)<<"t_avg";
+    std::cout<<"  "<<std::setw(width)<<"t_max";
+    std::cout<<"  "<<std::setw(width)<<"f_min";
+    std::cout<<"  "<<std::setw(width)<<"f_avg";
+    std::cout<<"  "<<std::setw(width)<<"f_max";
 
-    std::cout<<"  "<<std::setw(width)<<std::string("f/s_min");
-    std::cout<<"  "<<std::setw(width)<<std::string("f/s_max");
-    std::cout<<"  "<<std::setw(width)<<std::string("f/s_total");
+    std::cout<<"  "<<std::setw(width)<<"f/s_min";
+    std::cout<<"  "<<std::setw(width)<<"f/s_max";
+    std::cout<<"  "<<std::setw(width)<<"f/s_total";
 
-    std::cout<<"  "<<std::setw(width)<<std::string("m_init");
-    std::cout<<"  "<<std::setw(width)<<std::string("m_max");
-    std::cout<<"  "<<std::setw(width)<<std::string("m_final")<<'\n';
+    std::cout<<"  "<<std::setw(width)<<"m_init";
+    std::cout<<"  "<<std::setw(width)<<"m_max";
+    std::cout<<"  "<<std::setw(width)<<"m_final"<<'\n';
   }
 
   std::stack<std::string> out_stack;
@@ -231,12 +237,10 @@ void Profile::print(const MPI_Comm* comm_){
               k+=(e_log[l]?1:-1);
               l++;
             }
-            if(l<e_log.size()?e_log[l]:false)
-              s1+=std::string("| ");
-            else
-              s1+=std::string("  ");
+            if(l<e_log.size()?e_log[l]:false) s1+="| ";
+            else s1+="  ";
           }
-          s1+=std::string("\n");
+          s1+="\n";
         }// */
         out_stack.push(s1);
       }
@@ -267,6 +271,7 @@ void Profile::reset(){
 
 long long Profile::FLOP=0;
 long long Profile::MEM=0;
+bool Profile::enable_state=false;
 std::stack<bool> Profile::sync;
 std::stack<std::string> Profile::name;
 std::stack<MPI_Comm*> Profile::comm;

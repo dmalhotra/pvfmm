@@ -5,22 +5,24 @@
  * \brief This file contains implementation of the class Vector.
  */
 
-#include <cstdlib>
-#include <cstring>
 #include <cassert>
+#include <iostream>
 #include <iomanip>
-#include <profile.hpp>
-#include <mem_utils.hpp>
+
 #include <device_wrapper.hpp>
+#include <mem_mgr.hpp>
+#include <profile.hpp>
 
 namespace pvfmm{
 
 template <class T>
 std::ostream& operator<<(std::ostream& output, const Vector<T>& V){
+  std::ios::fmtflags f(std::cout.flags());
   output<<std::fixed<<std::setprecision(4)<<std::setiosflags(std::ios::left);
   for(size_t i=0;i<V.Dim();i++)
     output<<std::setw(10)<<V[i]<<' ';
   output<<";\n";
+  std::cout.flags(f);
   return output;
 }
 
@@ -40,8 +42,8 @@ Vector<T>::Vector(size_t dim_, T* data_, bool own_data_){
   own_data=own_data_;
   if(own_data){
     if(dim>0){
-      data_ptr=mem::aligned_malloc<T>(capacity);
-#ifndef __MIC__
+      data_ptr=mem::aligned_new<T>(capacity);
+#if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
       Profile::Add_MEM(capacity*sizeof(T));
 #endif
       if(data_!=NULL) mem::memcopy(data_ptr,data_,dim*sizeof(T));
@@ -57,8 +59,8 @@ Vector<T>::Vector(const Vector<T>& V){
   capacity=dim;
   own_data=true;
   if(dim>0){
-    data_ptr=mem::aligned_malloc<T>(capacity);
-#ifndef __MIC__
+    data_ptr=mem::aligned_new<T>(capacity);
+#if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
     Profile::Add_MEM(capacity*sizeof(T));
 #endif
     mem::memcopy(data_ptr,V.data_ptr,dim*sizeof(T));
@@ -73,8 +75,8 @@ Vector<T>::Vector(const std::vector<T>& V){
   capacity=dim;
   own_data=true;
   if(dim>0){
-    data_ptr=mem::aligned_malloc<T>(capacity);
-#ifndef __MIC__
+    data_ptr=mem::aligned_new<T>(capacity);
+#if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
     Profile::Add_MEM(capacity*sizeof(T));
 #endif
     mem::memcopy(data_ptr,&V[0],dim*sizeof(T));
@@ -88,8 +90,8 @@ Vector<T>::~Vector(){
   FreeDevice(false);
   if(own_data){
     if(data_ptr!=NULL){
-      mem::aligned_free(data_ptr);
-#ifndef __MIC__
+      mem::aligned_delete(data_ptr);
+#if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
       Profile::Add_MEM(-capacity*sizeof(T));
 #endif
     }
@@ -187,15 +189,15 @@ void Vector<T>::Resize(size_t dim_,bool fit_size){
 
   {
     if(data_ptr!=NULL){
-      mem::aligned_free(data_ptr); data_ptr=NULL;
-#ifndef __MIC__
+      mem::aligned_delete(data_ptr); data_ptr=NULL;
+#if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
       Profile::Add_MEM(-capacity*sizeof(T));
 #endif
     }
     capacity=dim_;
     if(capacity>0){
-      data_ptr=mem::aligned_malloc<T>(capacity);
-#ifndef __MIC__
+      data_ptr=mem::aligned_new<T>(capacity);
+#if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
       Profile::Add_MEM(capacity*sizeof(T));
 #endif
     }
@@ -217,15 +219,15 @@ Vector<T>& Vector<T>::operator=(const Vector<T>& V){
     FreeDevice(false);
     if(own_data && capacity<V.dim){
       if(data_ptr!=NULL){
-        mem::aligned_free(data_ptr); data_ptr=NULL;
-#ifndef __MIC__
+        mem::aligned_delete(data_ptr); data_ptr=NULL;
+#if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
         Profile::Add_MEM(-capacity*sizeof(T));
 #endif
       }
       capacity=V.dim;
       if(capacity>0){
-        data_ptr=mem::aligned_malloc<T>(capacity);
-#ifndef __MIC__
+        data_ptr=mem::aligned_new<T>(capacity);
+#if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
         Profile::Add_MEM(capacity*sizeof(T));
 #endif
       }
@@ -244,15 +246,15 @@ Vector<T>& Vector<T>::operator=(const std::vector<T>& V){
     FreeDevice(false);
     if(own_data && capacity<V.size()){
       if(data_ptr!=NULL){
-        mem::aligned_free(data_ptr); data_ptr=NULL;
-#ifndef __MIC__
+        mem::aligned_delete(data_ptr); data_ptr=NULL;
+#if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
         Profile::Add_MEM(-capacity*sizeof(T));
 #endif
       }
       capacity=V.size();
       if(capacity>0){
-        data_ptr=mem::aligned_malloc<T>(capacity);
-#ifndef __MIC__
+        data_ptr=mem::aligned_new<T>(capacity);
+#if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
         Profile::Add_MEM(capacity*sizeof(T));
 #endif
       }

@@ -5,19 +5,22 @@
  * \brief This file contains the definition of the FMM_Node class.
  */
 
-#ifndef _PVFMM_FMM_NODE_HPP_
-#define _PVFMM_FMM_NODE_HPP_
+#include <vector>
+#include <cstdlib>
 
-#include <mpi.h>
-#include <iostream>
 #include <pvfmm_common.hpp>
+#include <tree_node.hpp>
 #include <mpi_node.hpp>
 #include <fmm_pts.hpp>
+#include <vector.hpp>
+
+#ifndef _PVFMM_FMM_NODE_HPP_
+#define _PVFMM_FMM_NODE_HPP_
 
 namespace pvfmm{
 
 /**
- * \brief Base class for node of FMM_Tree.
+ * \brief Base class for node of FMM_Node.
  */
 template <class Node>
 class FMM_Node: public Node{

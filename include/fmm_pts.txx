@@ -5,11 +5,14 @@
  * \brief This file contains the implementation of the FMM_Pts class.
  */
 
-#include <mpi.h>
-#include <set>
+#include <omp.h>
+#include <cmath>
+#include <cstdlib>
+#include <cassert>
 #include <sstream>
-#include <fft_wrapper.hpp>
-#include <mat_utils.hpp>
+#include <iostream>
+#include <stdint.h>
+#include <set>
 #ifdef PVFMM_HAVE_SYS_STAT_H
 #include <sys/stat.h>
 #endif
@@ -17,19 +20,20 @@
 #ifdef __SSE__
 #include <xmmintrin.h>
 #endif
+#ifdef __SSE2__
+#include <emmintrin.h>
+#endif
 #ifdef __SSE3__
 #include <pmmintrin.h>
 #endif
 #ifdef __AVX__
 #include <immintrin.h>
 #endif
-#ifdef __INTEL_OFFLOAD
+#if defined(__MIC__)
 #include <immintrin.h>
 #endif
 
-#ifdef __INTEL_OFFLOAD0
-#pragma offload_attribute(push,target(mic))
-#endif
+#include <profile.hpp>
 
 namespace pvfmm{
 
@@ -149,9 +153,6 @@ std::vector<Real_t> conv_grid(int p, Real_t* c, int depth){
   }
   return grid;
 }
-#ifdef __INTEL_OFFLOAD0
-#pragma offload_attribute(pop)
-#endif
 
 template <class Real_t>
 void FMM_Data<Real_t>::Clear(){
@@ -218,11 +219,23 @@ template <class FMMNode>
 void FMM_Pts<FMMNode>::Initialize(int mult_order, const MPI_Comm& comm_, const Kernel<Real_t>* kernel_, const Kernel<Real_t>* aux_kernel_){
   Profile::Tic("InitFMM_Pts",&comm_,true);{
 
+  bool verbose=false;
+  #ifndef NDEBUG
+  #ifdef __VERBOSE__
+  int rank;
+  MPI_Comm_rank(comm_,&rank);
+  if(!rank) verbose=true;
+  #endif
+  #endif
+  if(    kernel_)     kernel_->Initialize(verbose);
+  if(aux_kernel_) aux_kernel_->Initialize(verbose);
+
   multipole_order=mult_order;
   comm=comm_;
-  kernel=*kernel_;
-  aux_kernel=*(aux_kernel_?aux_kernel_:kernel_);
-  assert(kernel.ker_dim[0]==aux_kernel.ker_dim[0]);
+  kernel=kernel_;
+  assert(kernel!=NULL);
+  aux_kernel=(aux_kernel_?aux_kernel_:kernel_);
+  assert(kernel->ker_dim[0]==aux_kernel->ker_dim[0]);
 
   mat=new PrecompMat<Real_t>(Homogen(), MAX_DEPTH+1);
   if(this->mat_fname.size()==0){
@@ -244,7 +257,11 @@ void FMM_Pts<FMMNode>::Initialize(int mult_order, const MPI_Comm& comm_, const K
     }
     #endif
 
-    st<<"Precomp_"<<kernel.ker_name.c_str()<<"_m"<<mult_order<<(typeid(Real_t)==typeid(float)?"_f":"")<<".data";
+    st<<"Precomp_"<<kernel->ker_name.c_str()<<"_m"<<mult_order;
+    if(sizeof(Real_t)==8) st<<"";
+    else if(sizeof(Real_t)==4) st<<"_f";
+    else st<<"_t"<<sizeof(Real_t);
+    st<<".data";
     this->mat_fname=st.str();
   }
   this->mat->LoadFile(mat_fname.c_str(), this->comm);
@@ -296,34 +313,6 @@ Permutation<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::PrecompPerm(Mat_Type ty
   Permutation<Real_t>& P_ = mat->Perm((Mat_Type)type, perm_indx);
   if(P_.Dim()!=0) return P_;
 
-  Matrix<size_t> swap_xy(10,9);
-  Matrix<size_t> swap_xz(10,9);
-  {
-      for(int i=0;i<9;i++)
-      for(int j=0;j<9;j++){
-        swap_xy[i][j]=j;
-        swap_xz[i][j]=j;
-      }
-      swap_xy[3][0]=1; swap_xy[3][1]=0; swap_xy[3][2]=2;
-      swap_xz[3][0]=2; swap_xz[3][1]=1; swap_xz[3][2]=0;
-
-
-      swap_xy[6][0]=1; swap_xy[6][1]=0; swap_xy[6][2]=2;
-      swap_xy[6][3]=4; swap_xy[6][4]=3; swap_xy[6][5]=5;
-
-      swap_xz[6][0]=2; swap_xz[6][1]=1; swap_xz[6][2]=0;
-      swap_xz[6][3]=5; swap_xz[6][4]=4; swap_xz[6][5]=3;
-
-
-      swap_xy[9][0]=4; swap_xy[9][1]=3; swap_xy[9][2]=5;
-      swap_xy[9][3]=1; swap_xy[9][4]=0; swap_xy[9][5]=2;
-      swap_xy[9][6]=7; swap_xy[9][7]=6; swap_xy[9][8]=8;
-
-      swap_xz[9][0]=8; swap_xz[9][1]=7; swap_xz[9][2]=6;
-      swap_xz[9][3]=5; swap_xz[9][4]=4; swap_xz[9][5]=3;
-      swap_xz[9][6]=2; swap_xz[9][7]=1; swap_xz[9][8]=0;
-  }
-
   //Compute the matrix.
   Permutation<Real_t> P;
   switch (type){
@@ -348,38 +337,67 @@ Permutation<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::PrecompPerm(Mat_Type ty
     case D2D_Type:
     {
       Real_t eps=1e-10;
-      int dof=kernel.ker_dim[0];
+      int dof=kernel->ker_dim[0];
       size_t p_indx=perm_indx % C_Perm;
+      Permutation<Real_t>& ker_perm=kernel->perm_vec[p_indx];
+      assert(dof==ker_perm.Dim());
+
       Real_t c[3]={-0.5,-0.5,-0.5};
       std::vector<Real_t> trg_coord=d_check_surf(this->MultipoleOrder(),c,0);
       int n_trg=trg_coord.size()/3;
+
       P=Permutation<Real_t>(n_trg*dof);
-      if(p_indx==ReflecX || p_indx==ReflecY || p_indx==ReflecZ){
+      if(p_indx==ReflecX || p_indx==ReflecY || p_indx==ReflecZ){ // Set P.perm
         for(int i=0;i<n_trg;i++)
         for(int j=0;j<n_trg;j++){
           if(fabs(trg_coord[i*3+0]-trg_coord[j*3+0]*(p_indx==ReflecX?-1.0:1.0))<eps)
           if(fabs(trg_coord[i*3+1]-trg_coord[j*3+1]*(p_indx==ReflecY?-1.0:1.0))<eps)
           if(fabs(trg_coord[i*3+2]-trg_coord[j*3+2]*(p_indx==ReflecZ?-1.0:1.0))<eps){
             for(int k=0;k<dof;k++){
-              P.perm[j*dof+k]=i*dof+k;
+              P.perm[j*dof+k]=i*dof+ker_perm.perm[k];
             }
           }
         }
-        if(dof==3) //stokes_vel (and like kernels)
-        for(int j=0;j<n_trg;j++)
-          P.scal[j*dof+(int)p_indx]*=-1.0;
-      }else if(p_indx==SwapXY || p_indx==SwapXZ)
-      for(int i=0;i<n_trg;i++)
-      for(int j=0;j<n_trg;j++){
-        if(fabs(trg_coord[i*3+0]-trg_coord[j*3+(p_indx==SwapXY?1:2)])<eps)
-        if(fabs(trg_coord[i*3+1]-trg_coord[j*3+(p_indx==SwapXY?0:1)])<eps)
-        if(fabs(trg_coord[i*3+2]-trg_coord[j*3+(p_indx==SwapXY?2:0)])<eps){
+      }else if(p_indx==SwapXY || p_indx==SwapXZ){
+        for(int i=0;i<n_trg;i++)
+        for(int j=0;j<n_trg;j++){
+          if(fabs(trg_coord[i*3+0]-trg_coord[j*3+(p_indx==SwapXY?1:2)])<eps)
+          if(fabs(trg_coord[i*3+1]-trg_coord[j*3+(p_indx==SwapXY?0:1)])<eps)
+          if(fabs(trg_coord[i*3+2]-trg_coord[j*3+(p_indx==SwapXY?2:0)])<eps){
+            for(int k=0;k<dof;k++){
+              P.perm[j*dof+k]=i*dof+ker_perm.perm[k];
+            }
+          }
+        }
+      }else{
+        for(int j=0;j<n_trg;j++){
           for(int k=0;k<dof;k++){
-            P.perm[j*dof+k]=i*dof+(p_indx==SwapXY?swap_xy[dof][k]:swap_xz[dof][k]);
+            P.perm[j*dof+k]=j*dof+ker_perm.perm[k];
           }
         }
       }
 
+      if(p_indx==Scaling && this->Homogen()){ // Set level-by-level scaling
+        const Vector<Real_t>& scal_exp=kernel->src_scal;
+        assert(dof==scal_exp.Dim());
+
+        Vector<Real_t> scal(scal_exp.Dim());
+        for(size_t i=0;i<scal_exp.Dim();i++){
+          scal[i]=pow(2.0,(perm_indx<C_Perm?1.0:-1.0)*scal_exp[i]);
+        }
+        for(int j=0;j<n_trg;j++){
+          for(int i=0;i<dof;i++){
+            P.scal[j*dof+i]*=scal[i];
+          }
+        }
+      }
+      { // Set P.scal
+        for(int j=0;j<n_trg;j++){
+          for(int i=0;i<dof;i++){
+            P.scal[j*dof+i]*=ker_perm.scal[i];
+          }
+        }
+      }
       break;
     }
     case D2T_Type:
@@ -450,8 +468,8 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
 
   //Compute the matrix.
   Matrix<Real_t> M;
-  int* ker_dim=kernel.ker_dim;
-  int* aux_ker_dim=aux_kernel.ker_dim;
+  const int* ker_dim=kernel->ker_dim;
+  const int* aux_ker_dim=aux_kernel->ker_dim;
   //int omp_p=omp_get_max_threads();
   switch (type){
 
@@ -469,10 +487,12 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
 
       // Evaluate potential at check surface due to equivalent surface.
       Matrix<Real_t> M_e2c(n_ue*aux_ker_dim[0],n_uc*aux_ker_dim[1]);
-      Kernel<Real_t>::Eval(&ue_coord[0], n_ue,
-                           &uc_coord[0], n_uc, &(M_e2c[0][0]),
-                           aux_kernel.ker_poten, aux_ker_dim);
-      M=M_e2c.pinv(); //check 2 equivalent
+      aux_kernel->BuildMatrix(&ue_coord[0], n_ue,
+                             &uc_coord[0], n_uc, &(M_e2c[0][0]));
+
+      Real_t eps=1.0;
+      while(eps+(Real_t)1.0>1.0) eps*=0.5;
+      M=M_e2c.pinv(sqrt(eps)); //check 2 equivalent
       break;
     }
     case DC2DE_Type:
@@ -489,10 +509,12 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
 
       // Evaluate potential at check surface due to equivalent surface.
       Matrix<Real_t> M_e2c(n_eq*aux_ker_dim[0],n_ch*aux_ker_dim[1]);
-      Kernel<Real_t>::Eval(&equiv_surf[0], n_eq,
-                           &check_surf[0], n_ch, &(M_e2c[0][0]),
-                           aux_kernel.ker_poten,aux_ker_dim);
-      M=M_e2c.pinv(); //check 2 equivalent
+      aux_kernel->BuildMatrix(&equiv_surf[0], n_eq,
+                             &check_surf[0], n_ch, &(M_e2c[0][0]));
+
+      Real_t eps=1.0;
+      while(eps+(Real_t)1.0>1.0) eps*=0.5;
+      M=M_e2c.pinv(sqrt(eps)); //check 2 equivalent
       break;
     }
     case S2U_Type:
@@ -516,9 +538,8 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
 
       // Evaluate potential at check surface due to equivalent surface.
       Matrix<Real_t> M_ce2c(n_ue*aux_ker_dim[0],n_uc*aux_ker_dim[1]);
-      Kernel<Real_t>::Eval(&equiv_surf[0], n_ue,
-                           &check_surf[0], n_uc, &(M_ce2c[0][0]),
-                           aux_kernel.ker_poten, aux_ker_dim);
+      aux_kernel->BuildMatrix(&equiv_surf[0], n_ue,
+                             &check_surf[0], n_uc, &(M_ce2c[0][0]));
       Matrix<Real_t>& M_c2e = Precomp(level, UC2UE_Type, 0);
       M=M_ce2c*M_c2e;
       break;
@@ -540,9 +561,8 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
 
       // Evaluate potential at check surface due to equivalent surface.
       Matrix<Real_t> M_pe2c(n_de*aux_ker_dim[0],n_dc*aux_ker_dim[1]);
-      Kernel<Real_t>::Eval(&equiv_surf[0], n_de,
-                           &check_surf[0], n_dc, &(M_pe2c[0][0]),
-                           aux_kernel.ker_poten,aux_ker_dim);
+      aux_kernel->BuildMatrix(&equiv_surf[0], n_de,
+                             &check_surf[0], n_dc, &(M_pe2c[0][0]));
       Matrix<Real_t>& M_c2e=Precomp(level,DC2DE_Type,0);
       M=M_pe2c*M_c2e;
       break;
@@ -566,7 +586,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
       // Evaluate potential at target points due to equivalent surface.
       {
         M     .Resize(n_eq*ker_dim [0], n_trg*ker_dim [1]);
-        kernel.BuildMatrix(&equiv_surf[0], n_eq, &trg_coord[0], n_trg, &(M     [0][0]));
+        kernel->BuildMatrix(&equiv_surf[0], n_eq, &trg_coord[0], n_trg, &(M     [0][0]));
       }
       break;
     }
@@ -598,7 +618,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
       std::vector<Real_t> r_trg(COORD_DIM,0.0);
       std::vector<Real_t> conv_poten(n3*aux_ker_dim[0]*aux_ker_dim[1]);
       std::vector<Real_t> conv_coord=conv_grid(MultipoleOrder(),coord_diff,level);
-      Kernel<Real_t>::Eval(&conv_coord[0],n3,&r_trg[0],1,&conv_poten[0],aux_kernel.ker_poten,aux_ker_dim);
+      aux_kernel->BuildMatrix(&conv_coord[0],n3,&r_trg[0],1,&conv_poten[0]);
 
       //Rearrange data.
       Matrix<Real_t> M_conv(n3,aux_ker_dim[0]*aux_ker_dim[1],&conv_poten[0],false);
@@ -606,9 +626,9 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
 
       //Compute FFTW plan.
       int nnn[3]={n1,n1,n1};
-      void *fftw_in, *fftw_out;
-      fftw_in  = fftw_malloc(  n3 *aux_ker_dim[0]*aux_ker_dim[1]*sizeof(Real_t));
-      fftw_out = fftw_malloc(2*n3_*aux_ker_dim[0]*aux_ker_dim[1]*sizeof(Real_t));
+      Real_t *fftw_in, *fftw_out;
+      fftw_in  = mem::aligned_new<Real_t>(  n3 *aux_ker_dim[0]*aux_ker_dim[1]*sizeof(Real_t));
+      fftw_out = mem::aligned_new<Real_t>(2*n3_*aux_ker_dim[0]*aux_ker_dim[1]*sizeof(Real_t));
       #pragma omp critical (FFTW_PLAN)
       {
         if (!vprecomp_fft_flag){
@@ -625,8 +645,8 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
       M=M_;
 
       //Free memory.
-      fftw_free(fftw_in);
-      fftw_free(fftw_out);
+      mem::aligned_delete<Real_t>(fftw_in);
+      mem::aligned_delete<Real_t>(fftw_out);
       break;
     }
     case V1_Type:
@@ -694,7 +714,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
       // Evaluate potential at target points due to equivalent surface.
       {
         M     .Resize(n_eq*ker_dim [0],n_trg*ker_dim [1]);
-        kernel.BuildMatrix(&equiv_surf[0], n_eq, &trg_coord[0], n_trg, &(M     [0][0]));
+        kernel->BuildMatrix(&equiv_surf[0], n_eq, &trg_coord[0], n_trg, &(M     [0][0]));
       }
       break;
     }
@@ -721,22 +741,21 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
               for(size_t k=0;k<aux_ker_dim[0];k++)
                 M_zero_avg[i*aux_ker_dim[0]+k][j*aux_ker_dim[0]+k]-=1.0/n_surf;
         }
-        for(int level=0; level>-BC_LEVELS; level--){
+        for(int level=0; level>=-BC_LEVELS; level--){
+          // Compute M_l2l
           M_l2l[-level] = this->Precomp(level, D2D_Type, 0);
-          if(M_l2l[-level].Dim(0)==0 || M_l2l[-level].Dim(1)==0){
-            Matrix<Real_t>& M0 = interac_list.ClassMat(level, D2D_Type, 0);
-            Permutation<Real_t>& Pr = this->interac_list.Perm_R(level, D2D_Type, 0);
-            Permutation<Real_t>& Pc = this->interac_list.Perm_C(level, D2D_Type, 0);
-            M_l2l[-level] = Pr*M0*Pc;
+          assert(M_l2l[-level].Dim(0)>0 && M_l2l[-level].Dim(1)>0);
+
+          // Compute M_m2m
+          for(size_t mat_indx=0; mat_indx<mat_cnt_m2m; mat_indx++){
+            Matrix<Real_t> M=this->Precomp(level, U2U_Type, mat_indx);
+            assert(M.Dim(0)>0 && M_m2m>0);
+            if(mat_indx==0) M_m2m[-level] = M_zero_avg*M;
+            else M_m2m[-level] += M_zero_avg*M;
           }
-          M_m2m[-level] = M_zero_avg*this->Precomp(level, U2U_Type, 0);
 
-          for(size_t mat_indx=1; mat_indx<mat_cnt_m2m; mat_indx++)
-            M_m2m[-level] += M_zero_avg*this->Precomp(level, U2U_Type, mat_indx);
-        }
-
-        for(int level=-BC_LEVELS;level<=0;level++){
-          if(!Homogen() || level==-BC_LEVELS){
+          // Compute M_m2l
+          if(!Homogen() || level==0){
             Real_t s=(1UL<<(-level));
             Real_t ue_coord[3]={0,0,0};
             Real_t dc_coord[3]={0,0,0};
@@ -752,27 +771,27 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
               ue_coord[0]=x0*s; ue_coord[1]=x1*s; ue_coord[2]=x2*s;
               std::vector<Real_t> src_coord=u_equiv_surf(MultipoleOrder(), ue_coord, level);
               Matrix<Real_t> M_tmp(n_surf*aux_ker_dim[0], n_surf*aux_ker_dim[1]);
-              Kernel<Real_t>::Eval(&src_coord[0], n_surf,
-                                   &trg_coord[0], n_surf, &(M_tmp[0][0]),
-                                   aux_kernel.ker_poten, aux_ker_dim);
+              aux_kernel->BuildMatrix(&src_coord[0], n_surf,
+                                     &trg_coord[0], n_surf, &(M_tmp[0][0]));
               M_ue2dc+=M_tmp;
             }
 
             // Shift by constant.
-            Real_t scale_adj=(Homogen()?pow(0.5, level*aux_kernel.poten_scale):1);
             for(size_t i=0;i<M_ue2dc.Dim(0);i++){
               std::vector<Real_t> avg(aux_ker_dim[1],0);
               for(size_t j=0; j<M_ue2dc.Dim(1); j+=aux_ker_dim[1])
                 for(int k=0; k<aux_ker_dim[1]; k++) avg[k]+=M_ue2dc[i][j+k];
               for(int k=0; k<aux_ker_dim[1]; k++) avg[k]/=n_surf;
               for(size_t j=0; j<M_ue2dc.Dim(1); j+=aux_ker_dim[1])
-                for(int k=0; k<aux_ker_dim[1]; k++) M_ue2dc[i][j+k]=(M_ue2dc[i][j+k]-avg[k])*scale_adj;
+                for(int k=0; k<aux_ker_dim[1]; k++) M_ue2dc[i][j+k]-=avg[k];
             }
 
             Matrix<Real_t>& M_dc2de = Precomp(level, DC2DE_Type, 0);
             M_m2l[-level]=M_ue2dc*M_dc2de;
-          }else M_m2l[-level]=M_m2l[1-level];
+          }else M_m2l[-level]=M_m2l[-level-1];
+        }
 
+        for(int level=-BC_LEVELS;level<=0;level++){
           if(level==-BC_LEVELS) M = M_m2l[-level];
           else                  M = M_m2l[-level] + M_m2m[-level]*M*M_l2l[-level];
 
@@ -781,17 +800,17 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
             { // M_de2dc TODO: For homogeneous kernels, compute only once.
               // Coord of downward check surface
               Real_t c[3]={0,0,0};
-              std::vector<Real_t> check_surf=d_check_surf(MultipoleOrder(),c,0);
+              int level_=(Homogen()?0:level);
+              std::vector<Real_t> check_surf=d_check_surf(MultipoleOrder(),c,level_);
               size_t n_ch=check_surf.size()/3;
 
               // Coord of downward equivalent surface
-              std::vector<Real_t> equiv_surf=d_equiv_surf(MultipoleOrder(),c,0);
+              std::vector<Real_t> equiv_surf=d_equiv_surf(MultipoleOrder(),c,level_);
               size_t n_eq=equiv_surf.size()/3;
 
               // Evaluate potential at check surface due to equivalent surface.
-              Kernel<Real_t>::Eval(&equiv_surf[0], n_eq,
-                                   &check_surf[0], n_ch, &(M_de2dc[0][0]),
-                                   aux_kernel.ker_poten,aux_ker_dim);
+              aux_kernel->BuildMatrix(&equiv_surf[0], n_eq,
+                                     &check_surf[0], n_ch, &(M_de2dc[0][0]));
             }
             Matrix<Real_t> M_ue2dc=M*M_de2dc;
 
@@ -827,9 +846,8 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
           { // Evaluate potential at corner due to upward and dnward equivalent surface.
             { // Error from local expansion.
               Matrix<Real_t> M_e2pt(n_surf*aux_ker_dim[0],n_corner*aux_ker_dim[1]);
-              Kernel<Real_t>::Eval(&dn_equiv_surf[0], n_surf,
-                                   &corner_pts[0], n_corner, &(M_e2pt[0][0]),
-                                   aux_kernel.ker_poten,aux_ker_dim);
+              aux_kernel->BuildMatrix(&dn_equiv_surf[0], n_surf,
+                                     &corner_pts[0], n_corner, &(M_e2pt[0][0]));
               M_err=M*M_e2pt;
             }
             for(size_t k=0;k<4;k++){ // Error from colleagues of root.
@@ -841,9 +859,8 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
                                     corner_pts[k*COORD_DIM+2]-j2};
                 if(fabs(pt_coord[0]-0.5)>1.0 || fabs(pt_coord[1]-0.5)>1.0 || fabs(pt_coord[2]-0.5)>1.0){
                   Matrix<Real_t> M_e2pt(n_surf*aux_ker_dim[0],aux_ker_dim[1]);
-                  Kernel<Real_t>::Eval(&up_equiv_surf[0], n_surf,
-                                       &pt_coord[0], 1, &(M_e2pt[0][0]),
-                                       aux_kernel.ker_poten,aux_ker_dim);
+                  aux_kernel->BuildMatrix(&up_equiv_surf[0], n_surf,
+                                         &pt_coord[0], 1, &(M_e2pt[0][0]));
                   for(size_t i=0;i<M_e2pt.Dim(0);i++)
                     for(size_t j=0;j<M_e2pt.Dim(1);j++)
                       M_err[i][k*aux_ker_dim[1]+j]+=M_e2pt[i][j];
@@ -923,11 +940,8 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
 
 template <class FMMNode>
 void FMM_Pts<FMMNode>::PrecompAll(Mat_Type type, int level){
-  int depth=(Homogen()?1:MAX_DEPTH);
   if(level==-1){
-    for(int l=0;l<depth;l++){
-      std::stringstream level_str;
-      level_str<<"level="<<l;
+    for(int l=0;l<MAX_DEPTH;l++){
       PrecompAll(type, l);
     }
     return;
@@ -995,6 +1009,11 @@ void FMM_Pts<FMMNode>::CollectNodeData(std::vector<FMMNode*>& node, std::vector<
     n_list[indx]=node_lst;
     size_t buff_size=node_lst.size()*vec_sz;
     buff_size+=(extra_size.size()>indx?extra_size[indx]:0);
+    #pragma omp parallel for
+    for(size_t i=0;i<node.size();i++){ // Clear data
+      Vector<Real_t>& upward_equiv=node[i]->FMMData()->upward_equiv;
+      upward_equiv.ReInit(0);
+    }
     buff[indx].Resize(1,buff_size);
     #pragma omp parallel for
     for(size_t i=0;i<node_lst.size();i++){
@@ -1027,6 +1046,11 @@ void FMM_Pts<FMMNode>::CollectNodeData(std::vector<FMMNode*>& node, std::vector<
     n_list[indx]=node_lst;
     size_t buff_size=node_lst.size()*vec_sz;
     buff_size+=(extra_size.size()>indx?extra_size[indx]:0);
+    #pragma omp parallel for
+    for(size_t i=0;i<node.size();i++){ // Clear data
+      Vector<Real_t>& dnward_equiv=node[i]->FMMData()->dnward_equiv;
+      dnward_equiv.ReInit(0);
+    }
     buff[indx].Resize(1,buff_size);
     #pragma omp parallel for
     for(size_t i=0;i<node_lst.size();i++){
@@ -1068,7 +1092,7 @@ void FMM_Pts<FMMNode>::CollectNodeData(std::vector<FMMNode*>& node, std::vector<
   }
   {// 4. src_val
     int indx=4;
-    int src_dof=kernel.ker_dim[0];
+    int src_dof=kernel->ker_dim[0];
     int surf_dof=COORD_DIM+src_dof;
     std::vector< FMMNode* > node_lst;
     size_t buff_size=0;
@@ -1081,23 +1105,22 @@ void FMM_Pts<FMMNode>::CollectNodeData(std::vector<FMMNode*>& node, std::vector<
     n_list[indx]=node_lst;
 
     #pragma omp parallel for
-    for(size_t i=0;i<node_lst.size();i++){ // Move data before resizing buff[indx]
+    for(size_t i=0;i<node.size();i++){ // Move data before resizing buff[indx]
       { // src_value
-        Vector<Real_t>& src_value=node_lst[i]->src_value;
+        Vector<Real_t>& src_value=node[i]->src_value;
         Vector<Real_t> new_buff=src_value;
-        src_value.ReInit(new_buff.Dim(), &new_buff[0]);
+        src_value.Swap(new_buff);
       }
       { // surf_value
-        Vector<Real_t>& surf_value=node_lst[i]->surf_value;
+        Vector<Real_t>& surf_value=node[i]->surf_value;
         Vector<Real_t> new_buff=surf_value;
-        surf_value.ReInit(new_buff.Dim(), &new_buff[0]);
+        surf_value.Swap(new_buff);
       }
     }
 
     buff[indx].Resize(1,buff_size+(extra_size.size()>indx?extra_size[indx]:0));
     Real_t* buff_ptr=&buff[indx][0][0];
     for(size_t i=0;i<node_lst.size();i++){
-      FMMData* fmm_data=((FMMData*)node_lst[i]->FMMData());
       { // src_value
         Vector<Real_t>& src_value=node_lst[i]->src_value;
         mem::memcopy(buff_ptr,&src_value[0],src_value.Dim()*sizeof(Real_t));
@@ -1115,21 +1138,26 @@ void FMM_Pts<FMMNode>::CollectNodeData(std::vector<FMMNode*>& node, std::vector<
   }
   {// 5. trg_val
     int indx=5;
-    int trg_dof=kernel.ker_dim[1];
+    int trg_dof=kernel->ker_dim[1];
     std::vector< FMMNode* > node_lst;
     size_t buff_size=0;
     for(size_t i=0;i<node.size();i++)
       if(node[i]->IsLeaf() && !node[i]->IsGhost()){
         node_lst.push_back(node[i]);
-        FMMData* fmm_data=((FMMData*)node[i]->FMMData());
         buff_size+=(node[i]->trg_coord.Dim()/COORD_DIM)*trg_dof;
       }
     n_list[indx]=node_lst;
 
+    #pragma omp parallel for
+    for(size_t i=0;i<node.size();i++){ // Clear data
+      { // trg_value
+        Vector<Real_t>& trg_value=node[i]->trg_value;
+        trg_value.ReInit(0);
+      }
+    }
     buff[indx].Resize(1,buff_size+(extra_size.size()>indx?extra_size[indx]:0));
     Real_t* buff_ptr=&buff[indx][0][0];
     for(size_t i=0;i<node_lst.size();i++){
-      FMMData* fmm_data=((FMMData*)node_lst[i]->FMMData());
       { // trg_value
         Vector<Real_t>& trg_value=node_lst[i]->trg_value;
         trg_value.ReInit((node_lst[i]->trg_coord.Dim()/COORD_DIM)*trg_dof, buff_ptr, false);
@@ -1138,7 +1166,6 @@ void FMM_Pts<FMMNode>::CollectNodeData(std::vector<FMMNode*>& node, std::vector<
     }
     #pragma omp parallel for
     for(size_t i=0;i<node_lst.size();i++){
-      FMMData* fmm_data=((FMMData*)node_lst[i]->FMMData());
       Vector<Real_t>& trg_value=node_lst[i]->trg_value;
       trg_value.SetZero();
     }
@@ -1152,7 +1179,6 @@ void FMM_Pts<FMMNode>::CollectNodeData(std::vector<FMMNode*>& node, std::vector<
     for(size_t i=0;i<node.size();i++)
       if(node[i]->IsLeaf()){
         node_lst.push_back(node[i]);
-        FMMData* fmm_data=((FMMData*)node[i]->FMMData());
         buff_size+=node[i]->src_coord.Dim();
         buff_size+=node[i]->surf_coord.Dim();
         buff_size+=node[i]->trg_coord.Dim();
@@ -1160,22 +1186,21 @@ void FMM_Pts<FMMNode>::CollectNodeData(std::vector<FMMNode*>& node, std::vector<
     n_list[indx]=node_lst;
 
     #pragma omp parallel for
-    for(size_t i=0;i<node_lst.size();i++){ // Move data before resizing buff[indx]
-      FMMData* fmm_data=((FMMData*)node_lst[i]->FMMData());
+    for(size_t i=0;i<node.size();i++){ // Move data before resizing buff[indx]
       { // src_coord
-        Vector<Real_t>& src_coord=node_lst[i]->src_coord;
+        Vector<Real_t>& src_coord=node[i]->src_coord;
         Vector<Real_t> new_buff=src_coord;
-        src_coord.ReInit(new_buff.Dim(), &new_buff[0]);
+        src_coord.Swap(new_buff);
       }
       { // surf_coord
-        Vector<Real_t>& surf_coord=node_lst[i]->surf_coord;
+        Vector<Real_t>& surf_coord=node[i]->surf_coord;
         Vector<Real_t> new_buff=surf_coord;
-        surf_coord.ReInit(new_buff.Dim(), &new_buff[0]);
+        surf_coord.Swap(new_buff);
       }
       { // trg_coord
-        Vector<Real_t>& trg_coord=node_lst[i]->trg_coord;
+        Vector<Real_t>& trg_coord=node[i]->trg_coord;
         Vector<Real_t> new_buff=trg_coord;
-        trg_coord.ReInit(new_buff.Dim(), &new_buff[0]);
+        trg_coord.Swap(new_buff);
       }
     }
 
@@ -1185,7 +1210,6 @@ void FMM_Pts<FMMNode>::CollectNodeData(std::vector<FMMNode*>& node, std::vector<
 
     Real_t* buff_ptr=&buff[indx][0][0];
     for(size_t i=0;i<node_lst.size();i++){
-      FMMData* fmm_data=((FMMData*)node_lst[i]->FMMData());
       { // src_coord
         Vector<Real_t>& src_coord=node_lst[i]->src_coord;
         mem::memcopy(buff_ptr,&src_coord[0],src_coord.Dim()*sizeof(Real_t));
@@ -1232,7 +1256,7 @@ void FMM_Pts<FMMNode>::CollectNodeData(std::vector<FMMNode*>& node, std::vector<
 
 template <class FMMNode>
 void FMM_Pts<FMMNode>::SetupPrecomp(SetupData<Real_t>& setup_data, bool device){
-  if(setup_data.precomp_data==NULL) return;
+  if(setup_data.precomp_data==NULL || setup_data.level>MAX_DEPTH) return;
 
   Profile::Tic("SetupPrecomp",&this->comm,true,25);
   { // Build precomp_data
@@ -1282,7 +1306,6 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
     std::vector<size_t> interac_blk;
     std::vector<size_t>  input_perm;
     std::vector<size_t> output_perm;
-    std::vector<Real_t> scaling;
     size_t dof=0, M_dim0=0, M_dim1=0;
 
     size_t precomp_offset=0;
@@ -1291,13 +1314,14 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
 
       Mat_Type& interac_type=interac_type_lst[type_indx];
       size_t mat_cnt=this->interac_list.ListCount(interac_type);
-      Vector<size_t> precomp_data_offset;
+      Matrix<size_t> precomp_data_offset;
       { // Load precomp_data for interac_type.
         Matrix<char>& precomp_data=*setup_data.precomp_data;
         char* indx_ptr=precomp_data[0]+precomp_offset;
         size_t total_size=((size_t*)indx_ptr)[0]; indx_ptr+=sizeof(size_t);
-        /*size_t mat_cnt_  =((size_t*)indx_ptr)[0];*/ indx_ptr+=sizeof(size_t);
-        precomp_data_offset.ReInit((1+2+2)*mat_cnt, (size_t*)indx_ptr, false);
+        size_t mat_cnt_  =((size_t*)indx_ptr)[0]; indx_ptr+=sizeof(size_t);
+        size_t max_depth =((size_t*)indx_ptr)[0]; indx_ptr+=sizeof(size_t);
+        precomp_data_offset.ReInit(mat_cnt_,(1+(2+2)*max_depth), (size_t*)indx_ptr, false);
         precomp_offset+=total_size;
       }
 
@@ -1346,7 +1370,8 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
             interac_dsp[i][j]=interac_dsp_;
             if(trg_interac_list[i][j]!=NULL) interac_dsp_++;
           }
-          if(interac_dsp_*vec_size>buff_size){
+          if(interac_dsp_*vec_size>buff_size) // Comment to disable symmetries.
+          {
             interac_blk.push_back(j-interac_blk_dsp.back());
             interac_blk_dsp.push_back(j);
 
@@ -1356,7 +1381,7 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
 
             assert(interac_dsp_*vec_size<=buff_size); // Problem too big for buff_size.
           }
-          interac_mat.push_back(precomp_data_offset[5*this->interac_list.InteracClass(interac_type,j)+0]);
+          interac_mat.push_back(precomp_data_offset[this->interac_list.InteracClass(interac_type,j)][0]);
           interac_cnt.push_back(interac_dsp_-interac_dsp[0][j]);
         }
         interac_blk.push_back(mat_cnt-interac_blk_dsp.back());
@@ -1371,8 +1396,9 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
             for(size_t j=interac_blk_dsp[k-1];j<interac_blk_dsp[k];j++){
               FMMNode_t* trg_node=src_interac_list[i][j];
               if(trg_node!=NULL){
-                input_perm .push_back(precomp_data_offset[5*j+1]); // prem
-                input_perm .push_back(precomp_data_offset[5*j+2]); // scal
+                size_t depth=trg_node->Depth();
+                input_perm .push_back(precomp_data_offset[j][1+4*depth+0]); // prem
+                input_perm .push_back(precomp_data_offset[j][1+4*depth+1]); // scal
                 input_perm .push_back(interac_dsp[trg_node->node_id][j]*vec_size*sizeof(Real_t)); // trg_ptr
                 input_perm .push_back((size_t)(& input_vector[i][0][0]- input_data[0])); // src_ptr
                 assert(input_vector[i]->Dim()==vec_size);
@@ -1381,27 +1407,15 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
           }
         }
       }
-      { // Determine scaling and output_perm
+      { // Determine output_perm
         size_t vec_size=M_dim1*dof;
         for(size_t k=1;k<interac_blk_dsp.size();k++){
           for(size_t i=0;i<n_out;i++){
-            Real_t scaling_=0.0;
-            if(!this->Homogen()) scaling_=1.0;
-            else if(interac_type==S2U_Type) scaling_=pow(0.5, COORD_DIM                                *((FMMNode*)nodes_out[i])->Depth());
-            else if(interac_type==U2U_Type) scaling_=1.0;
-            else if(interac_type==D2D_Type) scaling_=1.0;
-            else if(interac_type==D2T_Type) scaling_=pow(0.5,          -setup_data.kernel->poten_scale *((FMMNode*)nodes_out[i])->Depth());
-            else if(interac_type== U0_Type) scaling_=pow(0.5,(COORD_DIM-setup_data.kernel->poten_scale)*((FMMNode*)nodes_out[i])->Depth());
-            else if(interac_type== U1_Type) scaling_=pow(0.5,(COORD_DIM-setup_data.kernel->poten_scale)*((FMMNode*)nodes_out[i])->Depth());
-            else if(interac_type== U2_Type) scaling_=pow(0.5,(COORD_DIM-setup_data.kernel->poten_scale)*((FMMNode*)nodes_out[i])->Depth());
-            else if(interac_type==  W_Type) scaling_=pow(0.5,          -setup_data.kernel->poten_scale *((FMMNode*)nodes_out[i])->Depth());
-            else if(interac_type==  X_Type) scaling_=pow(0.5, COORD_DIM                                *((FMMNode*)nodes_out[i])->Depth());
-
             for(size_t j=interac_blk_dsp[k-1];j<interac_blk_dsp[k];j++){
               if(trg_interac_list[i][j]!=NULL){
-                scaling.push_back(scaling_); // scaling
-                output_perm.push_back(precomp_data_offset[5*j+3]); // prem
-                output_perm.push_back(precomp_data_offset[5*j+4]); // scal
+                size_t depth=((FMMNode*)nodes_out[i])->Depth();
+                output_perm.push_back(precomp_data_offset[j][1+4*depth+2]); // prem
+                output_perm.push_back(precomp_data_offset[j][1+4*depth+3]); // scal
                 output_perm.push_back(interac_dsp[               i ][j]*vec_size*sizeof(Real_t)); // src_ptr
                 output_perm.push_back((size_t)(&output_vector[i][0][0]-output_data[0])); // trg_ptr
                 assert(output_vector[i]->Dim()==vec_size);
@@ -1421,7 +1435,6 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
       data_size+=sizeof(size_t)+interac_mat.size()*sizeof(size_t);
       data_size+=sizeof(size_t)+ input_perm.size()*sizeof(size_t);
       data_size+=sizeof(size_t)+output_perm.size()*sizeof(size_t);
-      data_size+=sizeof(size_t)+scaling.size()*sizeof(Real_t);
       if(interac_data.Dim(0)*interac_data.Dim(1)<sizeof(size_t)){
         data_size+=sizeof(size_t);
         interac_data.Resize(1,data_size);
@@ -1463,10 +1476,6 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
       ((size_t*)data_ptr)[0]=output_perm.size(); data_ptr+=sizeof(size_t);
       mem::memcopy(data_ptr, &output_perm[0], output_perm.size()*sizeof(size_t));
       data_ptr+=output_perm.size()*sizeof(size_t);
-
-      ((size_t*)data_ptr)[0]=scaling.size(); data_ptr+=sizeof(size_t);
-      mem::memcopy(data_ptr, &scaling[0], scaling.size()*sizeof(Real_t));
-      data_ptr+=scaling.size()*sizeof(Real_t);
     }
   }
   Profile::Toc();
@@ -1478,56 +1487,40 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
   }
 }
 
-template <class FMMNode>
-void FMM_Pts<FMMNode>::EvalList_cuda(SetupData<Real_t>& setup_data) {
-  typename Vector<char>::Device buff;
-  typename Vector<char>::Device buff_d;
-  typename Matrix<char>::Device precomp_data;
-  typename Matrix<char>::Device precomp_data_d;
-  typename Matrix<char>::Device interac_data;
-  typename Matrix<char>::Device interac_data_d;
-  typename Matrix<Real_t>::Device input_data;
-  typename Matrix<Real_t>::Device input_data_d;
-  typename Matrix<Real_t>::Device output_data;
+#if defined(PVFMM_HAVE_CUDA)
+#include <cuda_func.hpp>
+
+template <class Real_t, int SYNC>
+void EvalListGPU(SetupData<Real_t>& setup_data, Vector<char>& dev_buffer, MPI_Comm& comm) {
+  cudaStream_t* stream = pvfmm::CUDA_Lock::acquire_stream();
+
+  Profile::Tic("Host2Device",&comm,false,25);
+  typename Matrix<char>::Device    interac_data;
+  typename Vector<char>::Device            buff;
+  typename Matrix<char>::Device  precomp_data_d;
+  typename Matrix<char>::Device  interac_data_d;
+  typename Matrix<Real_t>::Device  input_data_d;
   typename Matrix<Real_t>::Device output_data_d;
 
+  interac_data  = setup_data.interac_data;
+  buff          =              dev_buffer. AllocDevice(false);
+  precomp_data_d= setup_data.precomp_data->AllocDevice(false);
+  interac_data_d= setup_data.interac_data. AllocDevice(false);
+  input_data_d  = setup_data.  input_data->AllocDevice(false);
+  output_data_d = setup_data. output_data->AllocDevice(false);
+  Profile::Toc();
 
-  /* Take CPU pointer first. */
-  {
-    buff        =       this-> cpu_buffer;
-    precomp_data=*setup_data.precomp_data;
-    interac_data= setup_data.interac_data;
-    input_data  =*setup_data.  input_data;
-    output_data =*setup_data. output_data;
-  }
-  /* Take GPU pointer now. */
-  {
-    buff_d = this->dev_buffer.AllocDevice(false);
-    precomp_data_d = setup_data.precomp_data->AllocDevice(false);
-    interac_data_d = setup_data.interac_data.AllocDevice(false);
-    input_data_d = setup_data.input_data->AllocDevice(false);
-    output_data_d = setup_data.output_data->AllocDevice(false);
-  }
-  {
+  { // Set interac_data.
     size_t data_size, M_dim0, M_dim1, dof;
-
-    /* CPU pointers */
     Vector<size_t> interac_blk;
     Vector<size_t> interac_cnt;
     Vector<size_t> interac_mat;
-    Vector<size_t> input_perm;
-    Vector<size_t> output_perm;
-    Vector<Real_t> scaling;
+    Vector<size_t> input_perm_d;
+    Vector<size_t> output_perm_d;
 
-    /* GPU pointers */
-    char *input_perm_d, *output_perm_d, *scaling_d;
-
-    {
-      char* data_ptr=&interac_data[0][0];
-      char *dev_ptr;
-
-      /* Take GPU initial pointer for later computation. */
-      dev_ptr = (char *) interac_data_d.dev_ptr;
+    { // Set interac_data.
+      char* data_ptr=&interac_data  [0][0];
+      char*  dev_ptr=&interac_data_d[0][0];
 
       data_size=((size_t*)data_ptr)[0]; data_ptr+=data_size;      dev_ptr += data_size;
       data_size=((size_t*)data_ptr)[0]; data_ptr+=sizeof(size_t); dev_ptr += sizeof(size_t);
@@ -1535,79 +1528,59 @@ void FMM_Pts<FMMNode>::EvalList_cuda(SetupData<Real_t>& setup_data) {
       M_dim1   =((size_t*)data_ptr)[0]; data_ptr+=sizeof(size_t); dev_ptr += sizeof(size_t);
       dof      =((size_t*)data_ptr)[0]; data_ptr+=sizeof(size_t); dev_ptr += sizeof(size_t);
 
-      /* Update CPU and GPU pointers at the same time. */
-      /* CPU pointer */
       interac_blk.ReInit(((size_t*)data_ptr)[0],(size_t*)(data_ptr+sizeof(size_t)),false);
       data_ptr += sizeof(size_t) + sizeof(size_t)*interac_blk.Dim();
       dev_ptr  += sizeof(size_t) + sizeof(size_t)*interac_blk.Dim();
 
-      //len_interac_cnt = ((size_t*)data_ptr)[0];
-      /* CPU pointer */
       interac_cnt.ReInit(((size_t*)data_ptr)[0],(size_t*)(data_ptr+sizeof(size_t)),false);
       data_ptr += sizeof(size_t) + sizeof(size_t)*interac_cnt.Dim();
       dev_ptr  += sizeof(size_t) + sizeof(size_t)*interac_cnt.Dim();
 
-      //len_interac_mat = ((size_t *) data_ptr)[0];
-      /* CPU pointer */
       interac_mat.ReInit(((size_t*)data_ptr)[0],(size_t*)(data_ptr+sizeof(size_t)),false);
       data_ptr += sizeof(size_t) + sizeof(size_t)*interac_mat.Dim();
       dev_ptr  += sizeof(size_t) + sizeof(size_t)*interac_mat.Dim();
 
-      input_perm.ReInit(((size_t*)data_ptr)[0],(size_t*)(data_ptr+sizeof(size_t)),false);
-      /* GPU pointer */
-      input_perm_d = dev_ptr + sizeof(size_t);
-      data_ptr += sizeof(size_t) + sizeof(size_t)*input_perm.Dim();
-      dev_ptr  += sizeof(size_t) + sizeof(size_t)*input_perm.Dim();
+      input_perm_d.ReInit(((size_t*)data_ptr)[0],(size_t*)(dev_ptr+sizeof(size_t)),false);
+      data_ptr += sizeof(size_t) + sizeof(size_t)*input_perm_d.Dim();
+      dev_ptr  += sizeof(size_t) + sizeof(size_t)*input_perm_d.Dim();
 
-      output_perm.ReInit(((size_t*)data_ptr)[0],(size_t*)(data_ptr+sizeof(size_t)),false);
-      /* GPU pointer */
-      output_perm_d = dev_ptr + sizeof(size_t);
-      data_ptr += sizeof(size_t) + sizeof(size_t)*output_perm.Dim();
-      dev_ptr  += sizeof(size_t) + sizeof(size_t)*output_perm.Dim();
-
-      scaling.ReInit(((size_t*)data_ptr)[0],(Real_t*)(data_ptr+sizeof(size_t)),false);
-      /* GPU pointer */
-      scaling_d = dev_ptr + sizeof(size_t);
-      data_ptr += sizeof(size_t) + sizeof(size_t)*scaling.Dim();
-      dev_ptr  += sizeof(size_t) + sizeof(size_t)*scaling.Dim();
+      output_perm_d.ReInit(((size_t*)data_ptr)[0],(size_t*)(dev_ptr+sizeof(size_t)),false);
+      data_ptr += sizeof(size_t) + sizeof(size_t)*output_perm_d.Dim();
+      dev_ptr  += sizeof(size_t) + sizeof(size_t)*output_perm_d.Dim();
     }
 
-    {
+    { // interactions
       size_t interac_indx = 0;
       size_t interac_blk_dsp = 0;
       cudaError_t error;
       for (size_t k = 0; k < interac_blk.Dim(); k++) {
-        size_t vec_cnt = 0;
+        size_t vec_cnt=0;
+        for(size_t j=interac_blk_dsp;j<interac_blk_dsp+interac_blk[k];j++) vec_cnt+=interac_cnt[j];
 
-        for (size_t j = interac_blk_dsp; j < interac_blk_dsp + interac_blk[k]; j++)
-          vec_cnt += interac_cnt[j];
+        char *buff_in_d  =&buff[0];
+        char *buff_out_d =&buff[vec_cnt*dof*M_dim0*sizeof(Real_t)];
 
-        /* GPU Kernel call */
-        char *buff_in_d = (char *) buff_d.dev_ptr;
-        char *buff_out_d = (char *) (buff_d.dev_ptr + vec_cnt*dof*M_dim0*sizeof(Real_t));
-
-        cuda_func<Real_t>::in_perm_h ((char *)precomp_data_d.dev_ptr, input_perm_d,
-            (char *) input_data_d.dev_ptr, buff_in_d, interac_indx,  M_dim0, vec_cnt);
+        { // Input permutation.
+          in_perm_gpu<Real_t>(&precomp_data_d[0][0], &input_data_d[0][0], buff_in_d,
+                              &input_perm_d[interac_indx*4], vec_cnt, M_dim0, stream);
+        }
 
         size_t vec_cnt0 = 0;
         for (size_t j = interac_blk_dsp; j < interac_blk_dsp + interac_blk[k];) {
           size_t vec_cnt1 = 0;
           size_t interac_mat0 = interac_mat[j];
-
-          for (; j < interac_blk_dsp + interac_blk[k] && interac_mat[j] == interac_mat0; j++)
-            vec_cnt1 += interac_cnt[j];
-
-          /* GPU Gemm */
+          for (; j < interac_blk_dsp + interac_blk[k] && interac_mat[j] == interac_mat0; j++) vec_cnt1 += interac_cnt[j];
           Matrix<Real_t> M_d(M_dim0, M_dim1, (Real_t*)(precomp_data_d.dev_ptr + interac_mat0), false);
           Matrix<Real_t> Ms_d(dof*vec_cnt1, M_dim0, (Real_t*)(buff_in_d +  M_dim0*vec_cnt0*dof*sizeof(Real_t)), false);
           Matrix<Real_t> Mt_d(dof*vec_cnt1, M_dim1, (Real_t*)(buff_out_d + M_dim1*vec_cnt0*dof*sizeof(Real_t)), false);
-          Matrix<Real_t>::CUBLASXGEMM(Mt_d, Ms_d, M_d);
-
+          Matrix<Real_t>::CUBLASGEMM(Mt_d, Ms_d, M_d);
           vec_cnt0 += vec_cnt1;
         }
 
-        cuda_func<Real_t>::out_perm_h (scaling_d, (char *) precomp_data_d.dev_ptr, output_perm_d,
-            (char *) output_data_d.dev_ptr, buff_out_d, interac_indx, M_dim1, vec_cnt);
+        { // Input permutation.
+          out_perm_gpu<Real_t>(&precomp_data_d[0][0], &output_data_d[0][0], buff_out_d,
+                               &output_perm_d[interac_indx*4], vec_cnt, M_dim1, stream);
+        }
 
         interac_indx += vec_cnt;
         interac_blk_dsp += interac_blk[k];
@@ -1615,11 +1588,12 @@ void FMM_Pts<FMMNode>::EvalList_cuda(SetupData<Real_t>& setup_data) {
     }
   }
 
-  // Sync.
-	//CUDA_Lock::wait(0);
+	if(SYNC) CUDA_Lock::wait();
 }
+#endif
 
 template <class FMMNode>
+template <int SYNC>
 void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
   if(setup_data.interac_data.Dim(0)==0 || setup_data.interac_data.Dim(1)==0){
     Profile::Tic("Host2Device",&this->comm,false,25);
@@ -1631,7 +1605,7 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
 
 #if defined(PVFMM_HAVE_CUDA)
   if (device) {
-    EvalList_cuda(setup_data);
+    EvalListGPU<Real_t, SYNC>(setup_data, this->dev_buffer, this->comm);
     return;
   }
 #endif
@@ -1658,11 +1632,11 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
   Profile::Toc();
 
   Profile::Tic("DeviceComp",&this->comm,false,20);
-  #ifdef __INTEL_OFFLOAD
   int lock_idx=-1;
   int wait_lock_idx=-1;
   if(device) wait_lock_idx=MIC_Lock::curr_lock();
   if(device) lock_idx=MIC_Lock::get_lock();
+  #ifdef __INTEL_OFFLOAD
   #pragma offload if(device) target(mic:0) signal(&MIC_Lock::lock_vec[device?lock_idx:0])
   #endif
   { // Offloaded computation.
@@ -1674,7 +1648,6 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
     Vector<size_t> interac_mat;
     Vector<size_t>  input_perm;
     Vector<size_t> output_perm;
-    Vector<Real_t> scaling;
     { // Set interac_data.
       char* data_ptr=&interac_data[0][0];
 
@@ -1698,14 +1671,9 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
 
       output_perm.ReInit(((size_t*)data_ptr)[0],(size_t*)(data_ptr+sizeof(size_t)),false);
       data_ptr+=sizeof(size_t)+output_perm.Dim()*sizeof(size_t);
-
-      scaling.ReInit(((size_t*)data_ptr)[0],(Real_t*)(data_ptr+sizeof(size_t)),false);
-      data_ptr+=sizeof(size_t)+scaling.Dim()*sizeof(Real_t);
     }
 
-    #ifdef __INTEL_OFFLOAD
     if(device) MIC_Lock::wait_lock(wait_lock_idx);
-    #endif
 
     //Compute interaction from Chebyshev source density.
     { // interactions
@@ -1780,7 +1748,7 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
           {
             Matrix<Real_t> Ms(dof*vec_cnt1, M_dim0, (Real_t*)(buff_in +M_dim0*vec_cnt0*dof*sizeof(Real_t)), false);
             Matrix<Real_t> Mt(dof*vec_cnt1, M_dim1, (Real_t*)(buff_out+M_dim1*vec_cnt0*dof*sizeof(Real_t)), false);
-            Matrix<Real_t>::DGEMM(Mt,Ms,M);
+            Matrix<Real_t>::GEMM(Mt,Ms,M);
           }
           #else
           #pragma omp parallel for
@@ -1789,7 +1757,7 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
             size_t b=(dof*vec_cnt1*(tid+1))/omp_p;
             Matrix<Real_t> Ms(b-a, M_dim0, (Real_t*)(buff_in +M_dim0*vec_cnt0*dof*sizeof(Real_t))+M_dim0*a, false);
             Matrix<Real_t> Mt(b-a, M_dim1, (Real_t*)(buff_out+M_dim1*vec_cnt0*dof*sizeof(Real_t))+M_dim1*a, false);
-            Matrix<Real_t>::DGEMM(Mt,Ms,M);
+            Matrix<Real_t>::GEMM(Mt,Ms,M);
           }
           #endif
           vec_cnt0+=vec_cnt1;
@@ -1810,7 +1778,6 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
             if(tid<omp_p-1) while(b<vec_cnt && out_ptr==output_perm[(interac_indx+b)*4+3]) b++;
           }
           for(size_t i=a;i<b;i++){ // Compute permutations.
-            Real_t scaling_factor=scaling[interac_indx+i];
             const PERM_INT_T*  perm=(PERM_INT_T*)(precomp_data[0]+output_perm[(interac_indx+i)*4+0]);
             const     Real_t*  scal=(    Real_t*)(precomp_data[0]+output_perm[(interac_indx+i)*4+1]);
             const     Real_t* v_in =(    Real_t*)(    buff_out   +output_perm[(interac_indx+i)*4+2]);
@@ -1830,29 +1797,29 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
               assert(((uintptr_t)(v_out+j_end  ))%64==0);
               size_t j=0;
               for(;j<j_start;j++ ){
-                v_out[j]+=v_in[perm[j]]*scal[j]*scaling_factor;
+                v_out[j]+=v_in[perm[j]]*scal[j];
               }
               for(;j<j_end  ;j+=8){
                 v_old=_mm512_load_pd(v_out+j);
                 v8=_mm512_setr_pd(
-                    v_in[perm[j+0]]*scal[j+0]*scaling_factor,
-                    v_in[perm[j+1]]*scal[j+1]*scaling_factor,
-                    v_in[perm[j+2]]*scal[j+2]*scaling_factor,
-                    v_in[perm[j+3]]*scal[j+3]*scaling_factor,
-                    v_in[perm[j+4]]*scal[j+4]*scaling_factor,
-                    v_in[perm[j+5]]*scal[j+5]*scaling_factor,
-                    v_in[perm[j+6]]*scal[j+6]*scaling_factor,
-                    v_in[perm[j+7]]*scal[j+7]*scaling_factor);
+                    v_in[perm[j+0]]*scal[j+0],
+                    v_in[perm[j+1]]*scal[j+1],
+                    v_in[perm[j+2]]*scal[j+2],
+                    v_in[perm[j+3]]*scal[j+3],
+                    v_in[perm[j+4]]*scal[j+4],
+                    v_in[perm[j+5]]*scal[j+5],
+                    v_in[perm[j+6]]*scal[j+6],
+                    v_in[perm[j+7]]*scal[j+7]);
                 v_old=_mm512_add_pd(v_old, v8);
                 _mm512_storenrngo_pd(v_out+j,v_old);
               }
               for(;j<M_dim1 ;j++ ){
-                v_out[j]+=v_in[perm[j]]*scal[j]*scaling_factor;
+                v_out[j]+=v_in[perm[j]]*scal[j];
               }
             }
             #else
             for(size_t j=0;j<M_dim1;j++ ){
-              v_out[j]+=v_in[perm[j]]*scal[j]*scaling_factor;
+              v_out[j]+=v_in[perm[j]]*scal[j];
             }
             #endif
           }
@@ -1863,16 +1830,14 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
       }
     }
 
-    #ifdef __INTEL_OFFLOAD
     if(device) MIC_Lock::release_lock(lock_idx);
-    #endif
   }
 
-  #ifndef __MIC_ASYNCH__
   #ifdef __INTEL_OFFLOAD
-  #pragma offload if(device) target(mic:0)
-  {if(device) MIC_Lock::wait_lock(lock_idx);}
-  #endif
+  if(SYNC){
+    #pragma offload if(device) target(mic:0)
+    {if(device) MIC_Lock::wait_lock(lock_idx);}
+  }
   #endif
 
   Profile::Toc();
@@ -1885,7 +1850,7 @@ void FMM_Pts<FMMNode>::Source2UpSetup(SetupData<Real_t>&  setup_data, std::vecto
   if(this->MultipoleOrder()==0) return;
   { // Set setup_data
     setup_data.level=level;
-    setup_data.kernel=&aux_kernel;
+    setup_data.kernel=aux_kernel;
     setup_data.interac_type.resize(1);
     setup_data.interac_type[0]=S2U_Type;
 
@@ -1937,7 +1902,7 @@ void FMM_Pts<FMMNode>::Up2UpSetup(SetupData<Real_t>& setup_data, std::vector<Mat
   if(this->MultipoleOrder()==0) return;
   { // Set setup_data
     setup_data.level=level;
-    setup_data.kernel=&aux_kernel;
+    setup_data.kernel=aux_kernel;
     setup_data.interac_type.resize(1);
     setup_data.interac_type[0]=U2U_Type;
 
@@ -1984,7 +1949,7 @@ void FMM_Pts<FMMNode>::PeriodicBC(FMMNode* node){
   assert(dnward_equiv.Dim()==M.Dim(1)*dof);
   Matrix<Real_t> d_equiv(dof,M.Dim(0),&dnward_equiv[0],false);
   Matrix<Real_t> u_equiv(dof,M.Dim(1),&upward_equiv[0],false);
-  Matrix<Real_t>::DGEMM(d_equiv,u_equiv,M);
+  Matrix<Real_t>::GEMM(d_equiv,u_equiv,M);
 }
 
 
@@ -2018,12 +1983,12 @@ void FMM_Pts<FMMNode>::FFT_UpEquiv(size_t dof, size_t m, size_t ker_dim0, Vector
     if(!vlist_fft_flag){
       int nnn[3]={(int)n1,(int)n1,(int)n1};
       void *fftw_in, *fftw_out;
-      fftw_in  = mem::aligned_malloc<Real_t>(  n3 *ker_dim0*chld_cnt);
-      fftw_out = mem::aligned_malloc<Real_t>(2*n3_*ker_dim0*chld_cnt);
+      fftw_in  = mem::aligned_new<Real_t>(  n3 *ker_dim0*chld_cnt);
+      fftw_out = mem::aligned_new<Real_t>(2*n3_*ker_dim0*chld_cnt);
       vlist_fftplan = FFTW_t<Real_t>::fft_plan_many_dft_r2c(COORD_DIM,nnn,ker_dim0*chld_cnt,
           (Real_t*)fftw_in, NULL, 1, n3, (typename FFTW_t<Real_t>::cplx*)(fftw_out),NULL, 1, n3_, FFTW_ESTIMATE);
-      mem::aligned_free<Real_t>((Real_t*)fftw_in );
-      mem::aligned_free<Real_t>((Real_t*)fftw_out);
+      mem::aligned_delete<Real_t>((Real_t*)fftw_in );
+      mem::aligned_delete<Real_t>((Real_t*)fftw_out);
       vlist_fft_flag=true;
     }
   }
@@ -2058,7 +2023,7 @@ void FMM_Pts<FMMNode>::FFT_UpEquiv(size_t dof, size_t m, size_t ker_dim0, Vector
         //Compute flops.
         #ifndef FFTW3_MKL
         double add, mul, fma;
-        fftw_flops(vlist_fftplan, &add, &mul, &fma);
+        FFTW_t<Real_t>::fftw_flops(vlist_fftplan, &add, &mul, &fma);
         #ifndef __INTEL_OFFLOAD0
         Profile::Add_FLOP((long long)(add+mul+2*fma));
         #endif
@@ -2105,13 +2070,13 @@ void FMM_Pts<FMMNode>::FFT_Check2Equiv(size_t dof, size_t m, size_t ker_dim1, Ve
     if(!vlist_ifft_flag){
       //Build FFTW plan.
       int nnn[3]={(int)n1,(int)n1,(int)n1};
-      void *fftw_in, *fftw_out;
-      fftw_in  = fftw_malloc(2*n3_*ker_dim1*sizeof(Real_t)*chld_cnt);
-      fftw_out = fftw_malloc(  n3 *ker_dim1*sizeof(Real_t)*chld_cnt);
+      Real_t *fftw_in, *fftw_out;
+      fftw_in  = mem::aligned_new<Real_t>(2*n3_*ker_dim1*chld_cnt);
+      fftw_out = mem::aligned_new<Real_t>(  n3 *ker_dim1*chld_cnt);
       vlist_ifftplan = FFTW_t<Real_t>::fft_plan_many_dft_c2r(COORD_DIM,nnn,ker_dim1*chld_cnt,
           (typename FFTW_t<Real_t>::cplx*)fftw_in, NULL, 1, n3_, (Real_t*)(fftw_out),NULL, 1, n3, FFTW_ESTIMATE);
-      fftw_free(fftw_in);
-      fftw_free(fftw_out);
+      mem::aligned_delete<Real_t>(fftw_in);
+      mem::aligned_delete<Real_t>(fftw_out);
       vlist_ifft_flag=true;
     }
   }
@@ -2141,7 +2106,7 @@ void FMM_Pts<FMMNode>::FFT_Check2Equiv(size_t dof, size_t m, size_t ker_dim1, Ve
         //Compute flops.
         #ifndef FFTW3_MKL
         double add, mul, fma;
-        fftw_flops(vlist_ifftplan, &add, &mul, &fma);
+        FFTW_t<Real_t>::fftw_flops(vlist_ifftplan, &add, &mul, &fma);
         #ifndef __INTEL_OFFLOAD0
         Profile::Add_FLOP((long long)(add+mul+2*fma));
         #endif
@@ -2160,12 +2125,402 @@ void FMM_Pts<FMMNode>::FFT_Check2Equiv(size_t dof, size_t m, size_t ker_dim1, Ve
         for(size_t j=0;j<chld_cnt;j++){
           Matrix<Real_t> d_check(dof,M.Dim(0),&buffer[n*ker_dim1*dof*j],false);
           Matrix<Real_t> d_equiv(dof,M.Dim(1),&output_data[0] + ifft_vec[node_idx] + M.Dim(1)*dof*j,false);
-          Matrix<Real_t>::DGEMM(d_equiv,d_check,M,1.0);
+          Matrix<Real_t>::GEMM(d_equiv,d_check,M,1.0);
         }
       }
     }
   }
 }
+
+template<class Real_t>
+inline void matmult_8x8x2(Real_t*& M_, Real_t*& IN0, Real_t*& IN1, Real_t*& OUT0, Real_t*& OUT1){
+  // Generic code.
+  Real_t out_reg000, out_reg001, out_reg010, out_reg011;
+  Real_t out_reg100, out_reg101, out_reg110, out_reg111;
+  Real_t  in_reg000,  in_reg001,  in_reg010,  in_reg011;
+  Real_t  in_reg100,  in_reg101,  in_reg110,  in_reg111;
+  Real_t   m_reg000,   m_reg001,   m_reg010,   m_reg011;
+  Real_t   m_reg100,   m_reg101,   m_reg110,   m_reg111;
+  //#pragma unroll
+  for(int i1=0;i1<8;i1+=2){
+    Real_t* IN0_=IN0;
+    Real_t* IN1_=IN1;
+
+    out_reg000=OUT0[ 0]; out_reg001=OUT0[ 1];
+    out_reg010=OUT0[ 2]; out_reg011=OUT0[ 3];
+    out_reg100=OUT1[ 0]; out_reg101=OUT1[ 1];
+    out_reg110=OUT1[ 2]; out_reg111=OUT1[ 3];
+    //#pragma unroll
+    for(int i2=0;i2<8;i2+=2){
+      m_reg000=M_[ 0]; m_reg001=M_[ 1];
+      m_reg010=M_[ 2]; m_reg011=M_[ 3];
+      m_reg100=M_[16]; m_reg101=M_[17];
+      m_reg110=M_[18]; m_reg111=M_[19];
+
+      in_reg000=IN0_[0]; in_reg001=IN0_[1];
+      in_reg010=IN0_[2]; in_reg011=IN0_[3];
+      in_reg100=IN1_[0]; in_reg101=IN1_[1];
+      in_reg110=IN1_[2]; in_reg111=IN1_[3];
+
+      out_reg000 += m_reg000*in_reg000 - m_reg001*in_reg001;
+      out_reg001 += m_reg000*in_reg001 + m_reg001*in_reg000;
+      out_reg010 += m_reg010*in_reg000 - m_reg011*in_reg001;
+      out_reg011 += m_reg010*in_reg001 + m_reg011*in_reg000;
+
+      out_reg000 += m_reg100*in_reg010 - m_reg101*in_reg011;
+      out_reg001 += m_reg100*in_reg011 + m_reg101*in_reg010;
+      out_reg010 += m_reg110*in_reg010 - m_reg111*in_reg011;
+      out_reg011 += m_reg110*in_reg011 + m_reg111*in_reg010;
+
+      out_reg100 += m_reg000*in_reg100 - m_reg001*in_reg101;
+      out_reg101 += m_reg000*in_reg101 + m_reg001*in_reg100;
+      out_reg110 += m_reg010*in_reg100 - m_reg011*in_reg101;
+      out_reg111 += m_reg010*in_reg101 + m_reg011*in_reg100;
+
+      out_reg100 += m_reg100*in_reg110 - m_reg101*in_reg111;
+      out_reg101 += m_reg100*in_reg111 + m_reg101*in_reg110;
+      out_reg110 += m_reg110*in_reg110 - m_reg111*in_reg111;
+      out_reg111 += m_reg110*in_reg111 + m_reg111*in_reg110;
+
+      M_+=32; // Jump to (column+2).
+      IN0_+=4;
+      IN1_+=4;
+    }
+    OUT0[ 0]=out_reg000; OUT0[ 1]=out_reg001;
+    OUT0[ 2]=out_reg010; OUT0[ 3]=out_reg011;
+    OUT1[ 0]=out_reg100; OUT1[ 1]=out_reg101;
+    OUT1[ 2]=out_reg110; OUT1[ 3]=out_reg111;
+    M_+=4-64*2; // Jump back to first column (row+2).
+    OUT0+=4;
+    OUT1+=4;
+  }
+}
+
+#if defined(__AVX__) || defined(__SSE3__)
+template<>
+inline void matmult_8x8x2<double>(double*& M_, double*& IN0, double*& IN1, double*& OUT0, double*& OUT1){
+#ifdef __AVX__ //AVX code.
+  __m256d out00,out01,out10,out11;
+  __m256d out20,out21,out30,out31;
+  double* in0__ = IN0;
+  double* in1__ = IN1;
+
+  out00 = _mm256_load_pd(OUT0);
+  out01 = _mm256_load_pd(OUT1);
+  out10 = _mm256_load_pd(OUT0+4);
+  out11 = _mm256_load_pd(OUT1+4);
+  out20 = _mm256_load_pd(OUT0+8);
+  out21 = _mm256_load_pd(OUT1+8);
+  out30 = _mm256_load_pd(OUT0+12);
+  out31 = _mm256_load_pd(OUT1+12);
+  for(int i2=0;i2<8;i2+=2){
+    __m256d m00;
+    __m256d ot00;
+    __m256d mt0,mtt0;
+    __m256d in00,in00_r,in01,in01_r;
+    in00 = _mm256_broadcast_pd((const __m128d*)in0__);
+    in00_r = _mm256_permute_pd(in00,5);
+    in01 = _mm256_broadcast_pd((const __m128d*)in1__);
+    in01_r = _mm256_permute_pd(in01,5);
+
+    m00 = _mm256_load_pd(M_);
+
+    mt0 = _mm256_unpacklo_pd(m00,m00);
+    ot00 = _mm256_mul_pd(mt0,in00);
+    mtt0 = _mm256_unpackhi_pd(m00,m00);
+    out00 = _mm256_add_pd(out00,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in00_r)));
+
+    ot00 = _mm256_mul_pd(mt0,in01);
+    out01 = _mm256_add_pd(out01,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in01_r)));
+
+    m00 = _mm256_load_pd(M_+4);
+
+    mt0 = _mm256_unpacklo_pd(m00,m00);
+    ot00 = _mm256_mul_pd(mt0,in00);
+    mtt0 = _mm256_unpackhi_pd(m00,m00);
+    out10 = _mm256_add_pd(out10,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in00_r)));
+
+    ot00 = _mm256_mul_pd(mt0,in01);
+    out11 = _mm256_add_pd(out11,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in01_r)));
+
+    m00 = _mm256_load_pd(M_+8);
+
+    mt0 = _mm256_unpacklo_pd(m00,m00);
+    ot00 = _mm256_mul_pd(mt0,in00);
+    mtt0 = _mm256_unpackhi_pd(m00,m00);
+    out20 = _mm256_add_pd(out20,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in00_r)));
+
+    ot00 = _mm256_mul_pd(mt0,in01);
+    out21 = _mm256_add_pd(out21,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in01_r)));
+
+    m00 = _mm256_load_pd(M_+12);
+
+    mt0 = _mm256_unpacklo_pd(m00,m00);
+    ot00 = _mm256_mul_pd(mt0,in00);
+    mtt0 = _mm256_unpackhi_pd(m00,m00);
+    out30 = _mm256_add_pd(out30,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in00_r)));
+
+    ot00 = _mm256_mul_pd(mt0,in01);
+    out31 = _mm256_add_pd(out31,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in01_r)));
+
+
+    in00 = _mm256_broadcast_pd((const __m128d*) (in0__+2));
+    in00_r = _mm256_permute_pd(in00,5);
+    in01 = _mm256_broadcast_pd((const __m128d*) (in1__+2));
+    in01_r = _mm256_permute_pd(in01,5);
+
+    m00 = _mm256_load_pd(M_+16);
+
+    mt0 = _mm256_unpacklo_pd(m00,m00);
+    ot00 = _mm256_mul_pd(mt0,in00);
+    mtt0 = _mm256_unpackhi_pd(m00,m00);
+    out00 = _mm256_add_pd(out00,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in00_r)));
+
+    ot00 = _mm256_mul_pd(mt0,in01);
+    out01 = _mm256_add_pd(out01,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in01_r)));
+
+    m00 = _mm256_load_pd(M_+20);
+
+    mt0 = _mm256_unpacklo_pd(m00,m00);
+    ot00 = _mm256_mul_pd(mt0,in00);
+    mtt0 = _mm256_unpackhi_pd(m00,m00);
+    out10 = _mm256_add_pd(out10,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in00_r)));
+
+    ot00 = _mm256_mul_pd(mt0,in01);
+    out11 = _mm256_add_pd(out11,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in01_r)));
+
+    m00 = _mm256_load_pd(M_+24);
+
+    mt0 = _mm256_unpacklo_pd(m00,m00);
+    ot00 = _mm256_mul_pd(mt0,in00);
+    mtt0 = _mm256_unpackhi_pd(m00,m00);
+    out20 = _mm256_add_pd(out20,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in00_r)));
+
+    ot00 = _mm256_mul_pd(mt0,in01);
+    out21 = _mm256_add_pd(out21,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in01_r)));
+
+    m00 = _mm256_load_pd(M_+28);
+
+    mt0 = _mm256_unpacklo_pd(m00,m00);
+    ot00 = _mm256_mul_pd(mt0,in00);
+    mtt0 = _mm256_unpackhi_pd(m00,m00);
+    out30 = _mm256_add_pd(out30,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in00_r)));
+
+    ot00 = _mm256_mul_pd(mt0,in01);
+    out31 = _mm256_add_pd(out31,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in01_r)));
+
+    M_ += 32;
+    in0__ += 4;
+    in1__ += 4;
+  }
+  _mm256_store_pd(OUT0,out00);
+  _mm256_store_pd(OUT1,out01);
+  _mm256_store_pd(OUT0+4,out10);
+  _mm256_store_pd(OUT1+4,out11);
+  _mm256_store_pd(OUT0+8,out20);
+  _mm256_store_pd(OUT1+8,out21);
+  _mm256_store_pd(OUT0+12,out30);
+  _mm256_store_pd(OUT1+12,out31);
+#elif defined __SSE3__ // SSE code.
+  __m128d out00, out01, out10, out11;
+  __m128d in00, in01, in10, in11;
+  __m128d m00, m01, m10, m11;
+  //#pragma unroll
+  for(int i1=0;i1<8;i1+=2){
+    double* IN0_=IN0;
+    double* IN1_=IN1;
+
+    out00 =_mm_load_pd (OUT0  );
+    out10 =_mm_load_pd (OUT0+2);
+    out01 =_mm_load_pd (OUT1  );
+    out11 =_mm_load_pd (OUT1+2);
+    //#pragma unroll
+    for(int i2=0;i2<8;i2+=2){
+      m00 =_mm_load1_pd (M_   );
+      m10 =_mm_load1_pd (M_+ 2);
+      m01 =_mm_load1_pd (M_+16);
+      m11 =_mm_load1_pd (M_+18);
+
+      in00 =_mm_load_pd (IN0_  );
+      in10 =_mm_load_pd (IN0_+2);
+      in01 =_mm_load_pd (IN1_  );
+      in11 =_mm_load_pd (IN1_+2);
+
+      out00 = _mm_add_pd   (out00, _mm_mul_pd(m00 , in00 ));
+      out00 = _mm_add_pd   (out00, _mm_mul_pd(m01 , in10 ));
+      out01 = _mm_add_pd   (out01, _mm_mul_pd(m00 , in01 ));
+      out01 = _mm_add_pd   (out01, _mm_mul_pd(m01 , in11 ));
+      out10 = _mm_add_pd   (out10, _mm_mul_pd(m10 , in00 ));
+      out10 = _mm_add_pd   (out10, _mm_mul_pd(m11 , in10 ));
+      out11 = _mm_add_pd   (out11, _mm_mul_pd(m10 , in01 ));
+      out11 = _mm_add_pd   (out11, _mm_mul_pd(m11 , in11 ));
+
+
+      m00 =_mm_load1_pd (M_+   1);
+      m10 =_mm_load1_pd (M_+ 2+1);
+      m01 =_mm_load1_pd (M_+16+1);
+      m11 =_mm_load1_pd (M_+18+1);
+      in00 =_mm_shuffle_pd (in00,in00,_MM_SHUFFLE2(0,1));
+      in01 =_mm_shuffle_pd (in01,in01,_MM_SHUFFLE2(0,1));
+      in10 =_mm_shuffle_pd (in10,in10,_MM_SHUFFLE2(0,1));
+      in11 =_mm_shuffle_pd (in11,in11,_MM_SHUFFLE2(0,1));
+      out00 = _mm_addsub_pd(out00, _mm_mul_pd(m00, in00));
+      out00 = _mm_addsub_pd(out00, _mm_mul_pd(m01, in10));
+      out01 = _mm_addsub_pd(out01, _mm_mul_pd(m00, in01));
+      out01 = _mm_addsub_pd(out01, _mm_mul_pd(m01, in11));
+      out10 = _mm_addsub_pd(out10, _mm_mul_pd(m10, in00));
+      out10 = _mm_addsub_pd(out10, _mm_mul_pd(m11, in10));
+      out11 = _mm_addsub_pd(out11, _mm_mul_pd(m10, in01));
+      out11 = _mm_addsub_pd(out11, _mm_mul_pd(m11, in11));
+
+      M_+=32; // Jump to (column+2).
+      IN0_+=4;
+      IN1_+=4;
+    }
+    _mm_store_pd (OUT0  ,out00);
+    _mm_store_pd (OUT0+2,out10);
+    _mm_store_pd (OUT1  ,out01);
+    _mm_store_pd (OUT1+2,out11);
+    M_+=4-64*2; // Jump back to first column (row+2).
+    OUT0+=4;
+    OUT1+=4;
+  }
+#endif
+}
+#endif
+
+#if defined(__SSE3__)
+template<>
+inline void matmult_8x8x2<float>(float*& M_, float*& IN0, float*& IN1, float*& OUT0, float*& OUT1){
+#if defined __SSE3__ // SSE code.
+  __m128 out00,out01,out10,out11;
+  __m128 out20,out21,out30,out31;
+  float* in0__ = IN0;
+  float* in1__ = IN1;
+
+  out00 = _mm_load_ps(OUT0);
+  out01 = _mm_load_ps(OUT1);
+  out10 = _mm_load_ps(OUT0+4);
+  out11 = _mm_load_ps(OUT1+4);
+  out20 = _mm_load_ps(OUT0+8);
+  out21 = _mm_load_ps(OUT1+8);
+  out30 = _mm_load_ps(OUT0+12);
+  out31 = _mm_load_ps(OUT1+12);
+  for(int i2=0;i2<8;i2+=2){
+    __m128 m00;
+    __m128 ot00;
+    __m128 mt0,mtt0;
+    __m128 in00,in00_r,in01,in01_r;
+
+
+
+    in00 = _mm_castpd_ps(_mm_load_pd1((const double*)in0__));
+    in00_r = _mm_shuffle_ps(in00,in00,_MM_SHUFFLE(2,3,0,1));
+    in01 = _mm_castpd_ps(_mm_load_pd1((const double*)in1__));
+    in01_r = _mm_shuffle_ps(in01,in01,_MM_SHUFFLE(2,3,0,1));
+
+    m00 = _mm_load_ps(M_);
+
+    mt0  = _mm_shuffle_ps(m00,m00,_MM_SHUFFLE(2,2,0,0));
+    out00= _mm_add_ps   (out00,_mm_mul_ps( mt0,in00  ));
+    mtt0 = _mm_shuffle_ps(m00,m00,_MM_SHUFFLE(3,3,1,1));
+    out00= _mm_addsub_ps(out00,_mm_mul_ps(mtt0,in00_r));
+
+    out01 = _mm_add_ps   (out01,_mm_mul_ps( mt0,in01  ));
+    out01 = _mm_addsub_ps(out01,_mm_mul_ps(mtt0,in01_r));
+
+    m00 = _mm_load_ps(M_+4);
+
+    mt0  = _mm_shuffle_ps(m00,m00,_MM_SHUFFLE(2,2,0,0));
+    out10= _mm_add_ps   (out10,_mm_mul_ps( mt0,in00  ));
+    mtt0 = _mm_shuffle_ps(m00,m00,_MM_SHUFFLE(3,3,1,1));
+    out10= _mm_addsub_ps(out10,_mm_mul_ps(mtt0,in00_r));
+
+    out11 = _mm_add_ps   (out11,_mm_mul_ps( mt0,in01  ));
+    out11 = _mm_addsub_ps(out11,_mm_mul_ps(mtt0,in01_r));
+
+    m00 = _mm_load_ps(M_+8);
+
+    mt0  = _mm_shuffle_ps(m00,m00,_MM_SHUFFLE(2,2,0,0));
+    out20= _mm_add_ps   (out20,_mm_mul_ps( mt0,in00  ));
+    mtt0 = _mm_shuffle_ps(m00,m00,_MM_SHUFFLE(3,3,1,1));
+    out20= _mm_addsub_ps(out20,_mm_mul_ps(mtt0,in00_r));
+
+    out21 = _mm_add_ps   (out21,_mm_mul_ps( mt0,in01  ));
+    out21 = _mm_addsub_ps(out21,_mm_mul_ps(mtt0,in01_r));
+
+    m00 = _mm_load_ps(M_+12);
+
+    mt0  = _mm_shuffle_ps(m00,m00,_MM_SHUFFLE(2,2,0,0));
+    out30= _mm_add_ps   (out30,_mm_mul_ps( mt0,  in00));
+    mtt0 = _mm_shuffle_ps(m00,m00,_MM_SHUFFLE(3,3,1,1));
+    out30= _mm_addsub_ps(out30,_mm_mul_ps(mtt0,in00_r));
+
+    out31 = _mm_add_ps   (out31,_mm_mul_ps( mt0,in01  ));
+    out31 = _mm_addsub_ps(out31,_mm_mul_ps(mtt0,in01_r));
+
+
+
+    in00 = _mm_castpd_ps(_mm_load_pd1((const double*) (in0__+2)));
+    in00_r = _mm_shuffle_ps(in00,in00,_MM_SHUFFLE(2,3,0,1));
+    in01 = _mm_castpd_ps(_mm_load_pd1((const double*) (in1__+2)));
+    in01_r = _mm_shuffle_ps(in01,in01,_MM_SHUFFLE(2,3,0,1));
+
+    m00 = _mm_load_ps(M_+16);
+
+    mt0  = _mm_shuffle_ps(m00,m00,_MM_SHUFFLE(2,2,0,0));
+    out00= _mm_add_ps   (out00,_mm_mul_ps( mt0,in00  ));
+    mtt0 = _mm_shuffle_ps(m00,m00,_MM_SHUFFLE(3,3,1,1));
+    out00= _mm_addsub_ps(out00,_mm_mul_ps(mtt0,in00_r));
+
+    out01 = _mm_add_ps   (out01,_mm_mul_ps( mt0,in01  ));
+    out01 = _mm_addsub_ps(out01,_mm_mul_ps(mtt0,in01_r));
+
+    m00 = _mm_load_ps(M_+20);
+
+    mt0  = _mm_shuffle_ps(m00,m00,_MM_SHUFFLE(2,2,0,0));
+    out10= _mm_add_ps   (out10,_mm_mul_ps( mt0,in00  ));
+    mtt0 = _mm_shuffle_ps(m00,m00,_MM_SHUFFLE(3,3,1,1));
+    out10= _mm_addsub_ps(out10,_mm_mul_ps(mtt0,in00_r));
+
+    out11 = _mm_add_ps   (out11,_mm_mul_ps( mt0,in01 ));
+    out11 = _mm_addsub_ps(out11,_mm_mul_ps(mtt0,in01_r));
+
+    m00 = _mm_load_ps(M_+24);
+
+    mt0  = _mm_shuffle_ps(m00,m00,_MM_SHUFFLE(2,2,0,0));
+    out20= _mm_add_ps   (out20,_mm_mul_ps( mt0,in00  ));
+    mtt0 = _mm_shuffle_ps(m00,m00,_MM_SHUFFLE(3,3,1,1));
+    out20= _mm_addsub_ps(out20,_mm_mul_ps(mtt0,in00_r));
+
+    out21 = _mm_add_ps   (out21,_mm_mul_ps( mt0,in01  ));
+    out21 = _mm_addsub_ps(out21,_mm_mul_ps(mtt0,in01_r));
+
+    m00 = _mm_load_ps(M_+28);
+
+    mt0  = _mm_shuffle_ps(m00,m00,_MM_SHUFFLE(2,2,0,0));
+    out30= _mm_add_ps   (out30,_mm_mul_ps( mt0,in00  ));
+    mtt0 = _mm_shuffle_ps(m00,m00,_MM_SHUFFLE(3,3,1,1));
+    out30= _mm_addsub_ps(out30,_mm_mul_ps(mtt0,in00_r));
+
+    out31 = _mm_add_ps   (out31,_mm_mul_ps( mt0,in01  ));
+    out31 = _mm_addsub_ps(out31,_mm_mul_ps(mtt0,in01_r));
+
+    M_ += 32;
+    in0__ += 4;
+    in1__ += 4;
+  }
+  _mm_store_ps(OUT0,out00);
+  _mm_store_ps(OUT1,out01);
+  _mm_store_ps(OUT0+4,out10);
+  _mm_store_ps(OUT1+4,out11);
+  _mm_store_ps(OUT0+8,out20);
+  _mm_store_ps(OUT1+8,out21);
+  _mm_store_ps(OUT0+12,out30);
+  _mm_store_ps(OUT1+12,out31);
+#endif
+}
+#endif
 
 template <class Real_t>
 void VListHadamard(size_t dof, size_t M_dim, size_t ker_dim0, size_t ker_dim1, Vector<size_t>& interac_dsp,
@@ -2174,8 +2529,8 @@ void VListHadamard(size_t dof, size_t M_dim, size_t ker_dim0, size_t ker_dim1, V
   size_t chld_cnt=1UL<<COORD_DIM;
   size_t fftsize_in =M_dim*ker_dim0*chld_cnt*2;
   size_t fftsize_out=M_dim*ker_dim1*chld_cnt*2;
-  Real_t* zero_vec0=mem::aligned_malloc<Real_t>(fftsize_in );
-  Real_t* zero_vec1=mem::aligned_malloc<Real_t>(fftsize_out);
+  Real_t* zero_vec0=mem::aligned_new<Real_t>(fftsize_in );
+  Real_t* zero_vec1=mem::aligned_new<Real_t>(fftsize_out);
   size_t n_out=fft_out.Dim()/fftsize_out;
 
   // Set buff_out to zero.
@@ -2188,8 +2543,9 @@ void VListHadamard(size_t dof, size_t M_dim, size_t ker_dim0, size_t ker_dim1, V
   // Build list of interaction pairs (in, out vectors).
   size_t mat_cnt=precomp_mat.Dim();
   size_t blk1_cnt=interac_dsp.Dim()/mat_cnt;
-  Real_t** IN_ =new Real_t*[2*V_BLK_SIZE*blk1_cnt*mat_cnt];
-  Real_t** OUT_=new Real_t*[2*V_BLK_SIZE*blk1_cnt*mat_cnt];
+  const size_t V_BLK_SIZE=V_BLK_CACHE*64/sizeof(Real_t);
+  Real_t** IN_ =mem::aligned_new<Real_t*>(2*V_BLK_SIZE*blk1_cnt*mat_cnt);
+  Real_t** OUT_=mem::aligned_new<Real_t*>(2*V_BLK_SIZE*blk1_cnt*mat_cnt);
   #pragma omp parallel for
   for(size_t interac_blk1=0; interac_blk1<blk1_cnt*mat_cnt; interac_blk1++){
     size_t interac_dsp0 = (interac_blk1==0?0:interac_dsp[interac_blk1-1]);
@@ -2209,6 +2565,8 @@ void VListHadamard(size_t dof, size_t M_dim, size_t ker_dim0, size_t ker_dim1, V
     size_t a=( pid   *M_dim)/omp_p;
     size_t b=((pid+1)*M_dim)/omp_p;
 
+    for(int in_dim=0;in_dim<ker_dim0;in_dim++)
+    for(int ot_dim=0;ot_dim<ker_dim1;ot_dim++)
     for(size_t     blk1=0;     blk1<blk1_cnt;    blk1++)
     for(size_t        k=a;        k<       b;       k++)
     for(size_t mat_indx=0; mat_indx< mat_cnt;mat_indx++){
@@ -2220,15 +2578,8 @@ void VListHadamard(size_t dof, size_t M_dim, size_t ker_dim0, size_t ker_dim1, V
       Real_t** IN = IN_ + 2*V_BLK_SIZE*interac_blk1;
       Real_t** OUT= OUT_+ 2*V_BLK_SIZE*interac_blk1;
 
-      Real_t* M = precomp_mat[mat_indx] + k*chld_cnt*chld_cnt*2;
-#ifdef __SSE__
-      if (mat_indx +1 < mat_cnt){ // Prefetch
-        _mm_prefetch(((char *)(precomp_mat[mat_indx+1] + k*chld_cnt*chld_cnt*2)), _MM_HINT_T0);
-        _mm_prefetch(((char *)(precomp_mat[mat_indx+1] + k*chld_cnt*chld_cnt*2) + 64), _MM_HINT_T0);
-      }
-#endif
-      for(int in_dim=0;in_dim<ker_dim0;in_dim++)
-      for(int ot_dim=0;ot_dim<ker_dim1;ot_dim++){
+      Real_t* M = precomp_mat[mat_indx] + k*chld_cnt*chld_cnt*2 + (ot_dim+in_dim*ker_dim1)*M_dim*128;
+      {
         for(size_t j=0;j<interac_cnt;j+=2){
           Real_t* M_   = M;
           Real_t* IN0  = IN [j+0] + (in_dim*M_dim+k)*chld_cnt*2;
@@ -2250,259 +2601,8 @@ void VListHadamard(size_t dof, size_t M_dim, size_t ker_dim0, size_t ker_dim1, V
           }
 #endif
 
-#ifdef __AVX__ //AVX code.
-          __m256d out00,out01,out10,out11;
-          __m256d out20,out21,out30,out31;
-          double* in0__ = IN0;
-          double* in1__ = IN1;
-
-          out00 = _mm256_load_pd(OUT0);
-          out01 = _mm256_load_pd(OUT1);
-          out10 = _mm256_load_pd(OUT0+4);
-          out11 = _mm256_load_pd(OUT1+4);
-          out20 = _mm256_load_pd(OUT0+8);
-          out21 = _mm256_load_pd(OUT1+8);
-          out30 = _mm256_load_pd(OUT0+12);
-          out31 = _mm256_load_pd(OUT1+12);
-          for(int i2=0;i2<8;i2+=2){
-            __m256d m00;
-            __m256d ot00;
-            __m256d mt0,mtt0;
-            __m256d in00,in00_r,in01,in01_r;
-            in00 = _mm256_broadcast_pd((const __m128d*)in0__);
-            in00_r = _mm256_permute_pd(in00,5);
-            in01 = _mm256_broadcast_pd((const __m128d*)in1__);
-            in01_r = _mm256_permute_pd(in01,5);
-
-            m00 = _mm256_load_pd(M_);
-
-            mt0 = _mm256_unpacklo_pd(m00,m00);
-            ot00 = _mm256_mul_pd(mt0,in00);
-            mtt0 = _mm256_unpackhi_pd(m00,m00);
-            out00 = _mm256_add_pd(out00,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in00_r)));
-
-            ot00 = _mm256_mul_pd(mt0,in01);
-            out01 = _mm256_add_pd(out01,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in01_r)));
-
-            m00 = _mm256_load_pd(M_+4);
-
-            mt0 = _mm256_unpacklo_pd(m00,m00);
-            ot00 = _mm256_mul_pd(mt0,in00);
-            mtt0 = _mm256_unpackhi_pd(m00,m00);
-            out10 = _mm256_add_pd(out10,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in00_r)));
-
-            ot00 = _mm256_mul_pd(mt0,in01);
-            out11 = _mm256_add_pd(out11,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in01_r)));
-
-            m00 = _mm256_load_pd(M_+8);
-
-            mt0 = _mm256_unpacklo_pd(m00,m00);
-            ot00 = _mm256_mul_pd(mt0,in00);
-            mtt0 = _mm256_unpackhi_pd(m00,m00);
-            out20 = _mm256_add_pd(out20,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in00_r)));
-
-            ot00 = _mm256_mul_pd(mt0,in01);
-            out21 = _mm256_add_pd(out21,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in01_r)));
-
-            m00 = _mm256_load_pd(M_+12);
-
-            mt0 = _mm256_unpacklo_pd(m00,m00);
-            ot00 = _mm256_mul_pd(mt0,in00);
-            mtt0 = _mm256_unpackhi_pd(m00,m00);
-            out30 = _mm256_add_pd(out30,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in00_r)));
-
-            ot00 = _mm256_mul_pd(mt0,in01);
-            out31 = _mm256_add_pd(out31,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in01_r)));
-
-
-            in00 = _mm256_broadcast_pd((const __m128d*) (in0__+2));
-            in00_r = _mm256_permute_pd(in00,5);
-            in01 = _mm256_broadcast_pd((const __m128d*) (in1__+2));
-            in01_r = _mm256_permute_pd(in01,5);
-
-
-            m00 = _mm256_load_pd(M_+16);
-
-            mt0 = _mm256_unpacklo_pd(m00,m00);
-            ot00 = _mm256_mul_pd(mt0,in00);
-            mtt0 = _mm256_unpackhi_pd(m00,m00);
-            out00 = _mm256_add_pd(out00,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in00_r)));
-
-            ot00 = _mm256_mul_pd(mt0,in01);
-            out01 = _mm256_add_pd(out01,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in01_r)));
-
-
-            m00 = _mm256_load_pd(M_+20);
-
-            mt0 = _mm256_unpacklo_pd(m00,m00);
-            ot00 = _mm256_mul_pd(mt0,in00);
-            mtt0 = _mm256_unpackhi_pd(m00,m00);
-            out10 = _mm256_add_pd(out10,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in00_r)));
-
-            ot00 = _mm256_mul_pd(mt0,in01);
-            out11 = _mm256_add_pd(out11,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in01_r)));
-
-            m00 = _mm256_load_pd(M_+24);
-
-            mt0 = _mm256_unpacklo_pd(m00,m00);
-            ot00 = _mm256_mul_pd(mt0,in00);
-            mtt0 = _mm256_unpackhi_pd(m00,m00);
-            out20 = _mm256_add_pd(out20,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in00_r)));
-
-            ot00 = _mm256_mul_pd(mt0,in01);
-            out21 = _mm256_add_pd(out21,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in01_r)));
-
-            m00 = _mm256_load_pd(M_+28);
-
-            mt0 = _mm256_unpacklo_pd(m00,m00);
-            ot00 = _mm256_mul_pd(mt0,in00);
-            mtt0 = _mm256_unpackhi_pd(m00,m00);
-            out30 = _mm256_add_pd(out30,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in00_r)));
-
-            ot00 = _mm256_mul_pd(mt0,in01);
-            out31 = _mm256_add_pd(out31,_mm256_addsub_pd(ot00,_mm256_mul_pd(mtt0,in01_r)));
-
-            M_ += 32;
-            in0__ += 4;
-            in1__ += 4;
-          }
-          _mm256_store_pd(OUT0,out00);
-          _mm256_store_pd(OUT1,out01);
-          _mm256_store_pd(OUT0+4,out10);
-          _mm256_store_pd(OUT1+4,out11);
-          _mm256_store_pd(OUT0+8,out20);
-          _mm256_store_pd(OUT1+8,out21);
-          _mm256_store_pd(OUT0+12,out30);
-          _mm256_store_pd(OUT1+12,out31);
-
-#elif defined __SSE3__ // SSE code.
-          __m128d out00, out01, out10, out11;
-          __m128d in00, in01, in10, in11;
-          __m128d m00, m01, m10, m11;
-          //#pragma unroll
-          for(int i1=0;i1<8;i1+=2){
-            double* IN0_=IN0;
-            double* IN1_=IN1;
-
-            out00 =_mm_load_pd (OUT0  );
-            out10 =_mm_load_pd (OUT0+2);
-            out01 =_mm_load_pd (OUT1  );
-            out11 =_mm_load_pd (OUT1+2);
-            //#pragma unroll
-            for(int i2=0;i2<8;i2+=2){
-              m00 =_mm_load1_pd (M_   );
-              m10 =_mm_load1_pd (M_+ 2);
-              m01 =_mm_load1_pd (M_+16);
-              m11 =_mm_load1_pd (M_+18);
-
-              in00 =_mm_load_pd (IN0_  );
-              in10 =_mm_load_pd (IN0_+2);
-              in01 =_mm_load_pd (IN1_  );
-              in11 =_mm_load_pd (IN1_+2);
-
-              out00 = _mm_add_pd   (out00, _mm_mul_pd(m00 , in00 ));
-              out00 = _mm_add_pd   (out00, _mm_mul_pd(m01 , in10 ));
-              out01 = _mm_add_pd   (out01, _mm_mul_pd(m00 , in01 ));
-              out01 = _mm_add_pd   (out01, _mm_mul_pd(m01 , in11 ));
-              out10 = _mm_add_pd   (out10, _mm_mul_pd(m10 , in00 ));
-              out10 = _mm_add_pd   (out10, _mm_mul_pd(m11 , in10 ));
-              out11 = _mm_add_pd   (out11, _mm_mul_pd(m10 , in01 ));
-              out11 = _mm_add_pd   (out11, _mm_mul_pd(m11 , in11 ));
-
-
-              m00 =_mm_load1_pd (M_+   1);
-              m10 =_mm_load1_pd (M_+ 2+1);
-              m01 =_mm_load1_pd (M_+16+1);
-              m11 =_mm_load1_pd (M_+18+1);
-              in00 =_mm_shuffle_pd (in00,in00,_MM_SHUFFLE2(0,1));
-              in01 =_mm_shuffle_pd (in01,in01,_MM_SHUFFLE2(0,1));
-              in10 =_mm_shuffle_pd (in10,in10,_MM_SHUFFLE2(0,1));
-              in11 =_mm_shuffle_pd (in11,in11,_MM_SHUFFLE2(0,1));
-              out00 = _mm_addsub_pd(out00, _mm_mul_pd(m00, in00));
-              out00 = _mm_addsub_pd(out00, _mm_mul_pd(m01, in10));
-              out01 = _mm_addsub_pd(out01, _mm_mul_pd(m00, in01));
-              out01 = _mm_addsub_pd(out01, _mm_mul_pd(m01, in11));
-              out10 = _mm_addsub_pd(out10, _mm_mul_pd(m10, in00));
-              out10 = _mm_addsub_pd(out10, _mm_mul_pd(m11, in10));
-              out11 = _mm_addsub_pd(out11, _mm_mul_pd(m10, in01));
-              out11 = _mm_addsub_pd(out11, _mm_mul_pd(m11, in11));
-
-              M_+=32; // Jump to (column+2).
-              IN0_+=4;
-              IN1_+=4;
-            }
-            _mm_store_pd (OUT0  ,out00);
-            _mm_store_pd (OUT0+2,out10);
-            _mm_store_pd (OUT1  ,out01);
-            _mm_store_pd (OUT1+2,out11);
-            M_+=4-64*2; // Jump back to first column (row+2).
-            OUT0+=4;
-            OUT1+=4;
-          }
-
-#else // Generic code.
-          Real_t out_reg000, out_reg001, out_reg010, out_reg011;
-          Real_t out_reg100, out_reg101, out_reg110, out_reg111;
-          Real_t  in_reg000,  in_reg001,  in_reg010,  in_reg011;
-          Real_t  in_reg100,  in_reg101,  in_reg110,  in_reg111;
-          Real_t   m_reg000,   m_reg001,   m_reg010,   m_reg011;
-          Real_t   m_reg100,   m_reg101,   m_reg110,   m_reg111;
-          //#pragma unroll
-          for(int i1=0;i1<8;i1+=2){
-            Real_t* IN0_=IN0;
-            Real_t* IN1_=IN1;
-
-            out_reg000=OUT0[ 0]; out_reg001=OUT0[ 1];
-            out_reg010=OUT0[ 2]; out_reg011=OUT0[ 3];
-            out_reg100=OUT1[ 0]; out_reg101=OUT1[ 1];
-            out_reg110=OUT1[ 2]; out_reg111=OUT1[ 3];
-            //#pragma unroll
-            for(int i2=0;i2<8;i2+=2){
-              m_reg000=M_[ 0]; m_reg001=M_[ 1];
-              m_reg010=M_[ 2]; m_reg011=M_[ 3];
-              m_reg100=M_[16]; m_reg101=M_[17];
-              m_reg110=M_[18]; m_reg111=M_[19];
-
-              in_reg000=IN0_[0]; in_reg001=IN0_[1];
-              in_reg010=IN0_[2]; in_reg011=IN0_[3];
-              in_reg100=IN1_[0]; in_reg101=IN1_[1];
-              in_reg110=IN1_[2]; in_reg111=IN1_[3];
-
-              out_reg000 += m_reg000*in_reg000 - m_reg001*in_reg001;
-              out_reg001 += m_reg000*in_reg001 + m_reg001*in_reg000;
-              out_reg010 += m_reg010*in_reg000 - m_reg011*in_reg001;
-              out_reg011 += m_reg010*in_reg001 + m_reg011*in_reg000;
-
-              out_reg000 += m_reg100*in_reg010 - m_reg101*in_reg011;
-              out_reg001 += m_reg100*in_reg011 + m_reg101*in_reg010;
-              out_reg010 += m_reg110*in_reg010 - m_reg111*in_reg011;
-              out_reg011 += m_reg110*in_reg011 + m_reg111*in_reg010;
-
-              out_reg100 += m_reg000*in_reg100 - m_reg001*in_reg101;
-              out_reg101 += m_reg000*in_reg101 + m_reg001*in_reg100;
-              out_reg110 += m_reg010*in_reg100 - m_reg011*in_reg101;
-              out_reg111 += m_reg010*in_reg101 + m_reg011*in_reg100;
-
-              out_reg100 += m_reg100*in_reg110 - m_reg101*in_reg111;
-              out_reg101 += m_reg100*in_reg111 + m_reg101*in_reg110;
-              out_reg110 += m_reg110*in_reg110 - m_reg111*in_reg111;
-              out_reg111 += m_reg110*in_reg111 + m_reg111*in_reg110;
-
-              M_+=32; // Jump to (column+2).
-              IN0_+=4;
-              IN1_+=4;
-            }
-            OUT0[ 0]=out_reg000; OUT0[ 1]=out_reg001;
-            OUT0[ 2]=out_reg010; OUT0[ 3]=out_reg011;
-            OUT1[ 0]=out_reg100; OUT1[ 1]=out_reg101;
-            OUT1[ 2]=out_reg110; OUT1[ 3]=out_reg111;
-            M_+=4-64*2; // Jump back to first column (row+2).
-            OUT0+=4;
-            OUT1+=4;
-          }
-#endif
+          matmult_8x8x2(M_, IN0, IN1, OUT0, OUT1);
         }
-        M += M_dim*128;
       }
     }
   }
@@ -2513,10 +2613,10 @@ void VListHadamard(size_t dof, size_t M_dim, size_t ker_dim0, size_t ker_dim1, V
   }
 
   // Free memory
-  delete[] IN_ ;
-  delete[] OUT_;
-  mem::aligned_free<Real_t>(zero_vec0);
-  mem::aligned_free<Real_t>(zero_vec1);
+  mem::aligned_delete<Real_t*>(IN_ );
+  mem::aligned_delete<Real_t*>(OUT_);
+  mem::aligned_delete<Real_t>(zero_vec0);
+  mem::aligned_delete<Real_t>(zero_vec1);
 }
 
 template <class FMMNode>
@@ -2525,7 +2625,7 @@ void FMM_Pts<FMMNode>::V_ListSetup(SetupData<Real_t>&  setup_data, std::vector<M
   if(level==0) return;
   { // Set setup_data
     setup_data.level=level;
-    setup_data.kernel=&aux_kernel;
+    setup_data.kernel=aux_kernel;
     setup_data.interac_type.resize(1);
     setup_data.interac_type[0]=V1_Type;
 
@@ -2562,19 +2662,20 @@ void FMM_Pts<FMMNode>::V_ListSetup(SetupData<Real_t>&  setup_data, std::vector<M
     size_t precomp_offset=0;
     Mat_Type& interac_type=setup_data.interac_type[0];
     size_t mat_cnt=this->interac_list.ListCount(interac_type);
-    Vector<size_t> precomp_data_offset;
+    Matrix<size_t> precomp_data_offset;
     std::vector<size_t> interac_mat;
     { // Load precomp_data for interac_type.
       Matrix<char>& precomp_data=*setup_data.precomp_data;
       char* indx_ptr=precomp_data[0]+precomp_offset;
       size_t total_size=((size_t*)indx_ptr)[0]; indx_ptr+=sizeof(size_t);
-      /*size_t mat_cnt_  =((size_t*)indx_ptr)[0];*/ indx_ptr+=sizeof(size_t);
-      precomp_data_offset.ReInit((1+2+2)*mat_cnt, (size_t*)indx_ptr, false);
+      size_t mat_cnt_  =((size_t*)indx_ptr)[0]; indx_ptr+=sizeof(size_t);
+      size_t max_depth =((size_t*)indx_ptr)[0]; indx_ptr+=sizeof(size_t);
+      precomp_data_offset.ReInit(mat_cnt_,1+(2+2)*max_depth, (size_t*)indx_ptr, false);
       precomp_offset+=total_size;
       for(size_t mat_id=0;mat_id<mat_cnt;mat_id++){
         Matrix<Real_t>& M0 = this->mat->Mat(level, interac_type, mat_id);
         assert(M0.Dim(0)>0 && M0.Dim(1)>0); UNUSED(M0);
-        interac_mat.push_back(precomp_data_offset[5*mat_id]);
+        interac_mat.push_back(precomp_data_offset[mat_id][0]);
       }
     }
 
@@ -2643,7 +2744,7 @@ void FMM_Pts<FMMNode>::V_ListSetup(SetupData<Real_t>&  setup_data, std::vector<M
         std::vector<FMMNode*>& nodes_out_=nodes_blk_out[blk0];
         for(size_t i=0;i<nodes_in_.size();i++) nodes_in_[i]->node_id=i;
         { // Next blocking level.
-          size_t n_blk1=nodes_out_.size()*(ker_dim0+ker_dim1)/V_BLK_SIZE; //64 vectors should fit in L1.
+          size_t n_blk1=nodes_out_.size()*(2)*sizeof(Real_t)/(64*V_BLK_CACHE);
           if(n_blk1==0) n_blk1=1;
 
           size_t interac_dsp_=0;
@@ -2667,7 +2768,7 @@ void FMM_Pts<FMMNode>::V_ListSetup(SetupData<Real_t>&  setup_data, std::vector<M
     }
 
     { // Set interac_data.
-      size_t data_size=sizeof(size_t)*5; // m, dof, ker_dim0, ker_dim1, n_blk0
+      size_t data_size=sizeof(size_t)*6; // buff_size, m, dof, ker_dim0, ker_dim1, n_blk0
       for(size_t blk0=0;blk0<n_blk0;blk0++){
         data_size+=sizeof(size_t)+    fft_vec[blk0].size()*sizeof(size_t);
         data_size+=sizeof(size_t)+   ifft_vec[blk0].size()*sizeof(size_t);
@@ -2721,15 +2822,12 @@ void FMM_Pts<FMMNode>::V_ListSetup(SetupData<Real_t>&  setup_data, std::vector<M
 template <class FMMNode>
 void FMM_Pts<FMMNode>::V_List     (SetupData<Real_t>&  setup_data, bool device){
   assert(!device); //Can not run on accelerator yet.
+
+  int np;
+  MPI_Comm_size(comm,&np);
   if(setup_data.interac_data.Dim(0)==0 || setup_data.interac_data.Dim(1)==0){
-    Profile::Tic("Host2Device",&this->comm,false,25);
-    Profile::Toc();
-    Profile::Tic("FFT",&comm,false,100);
-    Profile::Toc();
-    Profile::Tic("HadamardProduct",&comm,false,100);
-    Profile::Toc();
-    Profile::Tic("IFFT",&comm,false,100);
-    Profile::Toc();
+    if(np>1) Profile::Tic("Host2Device",&this->comm,false,25);
+    if(np>1) Profile::Toc();
     return;
   }
 
@@ -2834,10 +2932,10 @@ void FMM_Pts<FMMNode>::V_List     (SetupData<Real_t>&  setup_data, bool device){
       Vector<Real_t>  buffer(buffer_dim, (Real_t*)&buff[(input_dim+output_dim)*sizeof(Real_t)],false);
 
       { //  FFT
-        Profile::Tic("FFT",&comm,false,100);
+        if(np==1) Profile::Tic("FFT",&comm,false,100);
         Vector<Real_t>  input_data_( input_data.dim[0]* input_data.dim[1],  input_data[0], false);
         FFT_UpEquiv(dof, m, ker_dim0,  fft_vec[blk0],  input_data_, fft_in, buffer);
-        Profile::Toc();
+        if(np==1) Profile::Toc();
       }
       { // Hadamard
 #ifdef PVFMM_HAVE_PAPI
@@ -2846,9 +2944,9 @@ void FMM_Pts<FMMNode>::V_List     (SetupData<Real_t>&  setup_data, bool device){
         if (PAPI_start(EventSet) != PAPI_OK) std::cout << "handle_error3" << std::endl;
 #endif
 #endif
-        Profile::Tic("HadamardProduct",&comm,false,100);
+        if(np==1) Profile::Tic("HadamardProduct",&comm,false,100);
         VListHadamard<Real_t>(dof, M_dim, ker_dim0, ker_dim1, interac_dsp[blk0], interac_vec[blk0], precomp_mat, fft_in, fft_out);
-        Profile::Toc();
+        if(np==1) Profile::Toc();
 #ifdef PVFMM_HAVE_PAPI
 #ifdef __VERBOSE__
         if (PAPI_stop(EventSet, values) != PAPI_OK) std::cout << "handle_error4" << std::endl;
@@ -2857,11 +2955,11 @@ void FMM_Pts<FMMNode>::V_List     (SetupData<Real_t>&  setup_data, bool device){
 #endif
       }
       { // IFFT
-        Profile::Tic("IFFT",&comm,false,100);
+        if(np==1) Profile::Tic("IFFT",&comm,false,100);
         Matrix<Real_t> M(M_d.dim[0],M_d.dim[1],M_d[0],false);
         Vector<Real_t> output_data_(output_data.dim[0]*output_data.dim[1], output_data[0], false);
         FFT_Check2Equiv(dof, m, ker_dim1, ifft_vec[blk0], fft_out, output_data_, buffer, M);
-        Profile::Toc();
+        if(np==1) Profile::Toc();
       }
     }
   }
@@ -2874,7 +2972,7 @@ void FMM_Pts<FMMNode>::Down2DownSetup(SetupData<Real_t>& setup_data, std::vector
   if(this->MultipoleOrder()==0) return;
   { // Set setup_data
     setup_data.level=level;
-    setup_data.kernel=&aux_kernel;
+    setup_data.kernel=aux_kernel;
     setup_data.interac_type.resize(1);
     setup_data.interac_type[0]=D2D_Type;
 
@@ -2939,7 +3037,7 @@ void FMM_Pts<FMMNode>::SetupInteracPts(SetupData<Real_t>& setup_data, bool shift
     std::vector<size_t> trg_coord(n_out);
     std::vector<size_t> trg_value(n_out);
     std::vector<size_t> trg_cnt(n_out);
-    std::vector<Real_t> scaling(n_out,0);
+    std::vector<Real_t> scaling(n_out*(ker_dim0+ker_dim1),0);
     { // Set trg data
       Mat_Type& interac_type=interac_type_lst[0];
       for(size_t i=0;i<n_out;i++){
@@ -2948,9 +3046,17 @@ void FMM_Pts<FMMNode>::SetupInteracPts(SetupData<Real_t>& setup_data, bool shift
           trg_coord[i]=(size_t)(&output_vector[i*2+0][0][0]- coord_data[0]);
           trg_value[i]=(size_t)(&output_vector[i*2+1][0][0]-output_data[0]);
 
-          if(!this->Homogen()) scaling[i]=1.0;
-          else if(interac_type==S2U_Type) scaling[i]=pow(0.5, setup_data.kernel->poten_scale *((FMMNode*)nodes_out[i])->Depth());
-          else if(interac_type==  X_Type) scaling[i]=pow(0.5, setup_data.kernel->poten_scale *((FMMNode*)nodes_out[i])->Depth());
+          Real_t* s=&scaling[i*(ker_dim0+ker_dim1)];
+          for(size_t j=0;j<ker_dim1;j++){
+            if(!this->Homogen()) s[j]=1.0;
+            else if(interac_type==S2U_Type) s[         j]=pow(0.5, setup_data.kernel->trg_scal[j]*((FMMNode*)nodes_out[i])->Depth());
+            else if(interac_type==  X_Type) s[         j]=pow(0.5, setup_data.kernel->trg_scal[j]*((FMMNode*)nodes_out[i])->Depth());
+          }
+          for(size_t j=0;j<ker_dim0;j++){
+            if(!this->Homogen()) s[ker_dim1+j]=1.0;
+            else if(interac_type==S2U_Type) s[ker_dim1+j]=pow(0.5, setup_data.kernel->src_scal[j]*((FMMNode*)nodes_out[i])->Depth());
+            else if(interac_type==  X_Type) s[ker_dim1+j]=pow(0.5, setup_data.kernel->src_scal[j]*((FMMNode*)nodes_out[i])->Depth());
+          }
         }
       }
     }
@@ -3097,8 +3203,8 @@ void FMM_Pts<FMMNode>::SetupInteracPts(SetupData<Real_t>& setup_data, bool shift
 }
 
 template <class FMMNode>
+template <int SYNC>
 void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
-  return;
   if(setup_data.interac_data.Dim(0)==0 || setup_data.interac_data.Dim(1)==0){
     Profile::Tic("Host2Device",&this->comm,false,25);
     Profile::Toc();
@@ -3107,6 +3213,11 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
     return;
   }
 
+  bool have_gpu=false;
+#if defined(PVFMM_HAVE_CUDA)
+  have_gpu=true;
+#endif
+
   Profile::Tic("Host2Device",&this->comm,false,25);
   typename Vector<char>::Device          buff;
   //typename Matrix<char>::Device  precomp_data;
@@ -3114,7 +3225,7 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
   typename Matrix<Real_t>::Device  coord_data;
   typename Matrix<Real_t>::Device  input_data;
   typename Matrix<Real_t>::Device output_data;
-  if(device){
+  if(device && !have_gpu){
     buff        =       this-> dev_buffer. AllocDevice(false);
     interac_data= setup_data.interac_data. AllocDevice(false);
     //if(setup_data.precomp_data!=NULL) precomp_data= setup_data.precomp_data->AllocDevice(false);
@@ -3135,11 +3246,11 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
   size_t ptr_double_layer_kernel=(size_t)setup_data.kernel->dbl_layer_poten;
 
   Profile::Tic("DeviceComp",&this->comm,false,20);
-  #ifdef __INTEL_OFFLOAD
   int lock_idx=-1;
   int wait_lock_idx=-1;
   if(device) wait_lock_idx=MIC_Lock::curr_lock();
   if(device) lock_idx=MIC_Lock::get_lock();
+  #ifdef __INTEL_OFFLOAD
   if(device) ptr_single_layer_kernel=setup_data.kernel->dev_ker_poten;
   if(device) ptr_double_layer_kernel=setup_data.kernel->dev_dbl_layer_poten;
   #pragma offload if(device) target(mic:0) signal(&MIC_Lock::lock_vec[device?lock_idx:0])
@@ -3147,8 +3258,8 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
   { // Offloaded computation.
 
     // Set interac_data.
-    //size_t data_size;
-    //size_t ker_dim0;
+    size_t data_size;
+    size_t ker_dim0;
     size_t ker_dim1;
     size_t dof, n_out;
     Vector<size_t> trg_interac_cnt;
@@ -3164,8 +3275,8 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
     { // Set interac_data.
       char* data_ptr=&interac_data[0][0];
 
-      /*data_size=((size_t*)data_ptr)[0];*/ data_ptr+=sizeof(size_t);
-      /*ker_dim0=((size_t*)data_ptr)[0];*/ data_ptr+=sizeof(size_t);
+      data_size=((size_t*)data_ptr)[0]; data_ptr+=sizeof(size_t);
+      ker_dim0=((size_t*)data_ptr)[0]; data_ptr+=sizeof(size_t);
       ker_dim1=((size_t*)data_ptr)[0]; data_ptr+=sizeof(size_t);
       dof     =((size_t*)data_ptr)[0]; data_ptr+=sizeof(size_t);
 
@@ -3207,9 +3318,7 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
       }
     }
 
-    #ifdef __INTEL_OFFLOAD
     if(device) MIC_Lock::wait_lock(wait_lock_idx);
-    #endif
 
     //Compute interaction from point sources.
     { // interactions
@@ -3221,7 +3330,7 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
       size_t thread_buff_size=buff.dim/sizeof(Real_t)/omp_p;
       for(int i=0;i<omp_p;i++) thread_buff[i]=(Real_t*)&buff[i*thread_buff_size*sizeof(Real_t)];
 
-      #pragma omp parallel for
+      #pragma omp parallel for schedule(dynamic)
       for(size_t i=0;i<n_out;i++)
       if(trg_interac_cnt[i]>0 && trg_cnt[i]>0){
         int thread_id=omp_get_thread_num();
@@ -3237,7 +3346,7 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
         for(size_t j=0;j<trg_interac_cnt[i];j++){
           if(ptr_single_layer_kernel!=(size_t)NULL){// Single layer kernel
             Real_t* src_coord_=coord_data[0]+src_coord[i][2*j+0];
-            assert(thread_buff_size>=dof*M.Dim(0)+src_cnt[i][2*j+0]*COORD_DIM);
+            assert(thread_buff_size>=dof*M.Dim(0)+dof*M.Dim(1)+src_cnt[i][2*j+0]*COORD_DIM);
             for(size_t k1=0;k1<src_cnt[i][2*j+0];k1++){ // Compute shifted source coordinates.
               for(size_t k0=0;k0<COORD_DIM;k0++){
                 s_coord[k1*COORD_DIM+k0]=src_coord_[k1*COORD_DIM+k0]+shift_coord[i][j*COORD_DIM+k0];
@@ -3245,12 +3354,14 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
             }
 
             single_layer_kernel(                s_coord   , src_cnt[i][2*j+0], input_data[0]+src_value[i][2*j+0], dof,
-                                coord_data[0]+trg_coord[i], trg_cnt[i]       , t_value);
+                                coord_data[0]+trg_coord[i], trg_cnt[i]       , t_value, NULL);
             interac_cnt+=src_cnt[i][2*j+0]*trg_cnt[i];
+          }else if(src_cnt[i][2*j+0]!=0 && trg_cnt[i]!=0){
+            assert(ptr_single_layer_kernel); // Single-layer kernel not implemented
           }
           if(ptr_double_layer_kernel!=(size_t)NULL){// Double layer kernel
             Real_t* src_coord_=coord_data[0]+src_coord[i][2*j+1];
-            assert(thread_buff_size>=dof*M.Dim(0)+src_cnt[i][2*j+1]*COORD_DIM);
+            assert(thread_buff_size>=dof*M.Dim(0)+dof*M.Dim(1)+src_cnt[i][2*j+1]*COORD_DIM);
             for(size_t k1=0;k1<src_cnt[i][2*j+1];k1++){ // Compute shifted source coordinates.
               for(size_t k0=0;k0<COORD_DIM;k0++){
                 s_coord[k1*COORD_DIM+k0]=src_coord_[k1*COORD_DIM+k0]+shift_coord[i][j*COORD_DIM+k0];
@@ -3258,30 +3369,51 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
             }
 
             double_layer_kernel(                s_coord   , src_cnt[i][2*j+1], input_data[0]+src_value[i][2*j+1], dof,
-                                coord_data[0]+trg_coord[i], trg_cnt[i]       , t_value);
+                                coord_data[0]+trg_coord[i], trg_cnt[i]       , t_value, NULL);
             interac_cnt+=src_cnt[i][2*j+1]*trg_cnt[i];
+          }else if(src_cnt[i][2*j+1]!=0 && trg_cnt[i]!=0){
+            assert(ptr_double_layer_kernel); // Double-layer kernel not implemented
           }
         }
         if(M.Dim(0)>0 && M.Dim(1)>0 && interac_cnt>0){
-          assert(trg_cnt[i]*ker_dim1==M.Dim(0)); UNUSED(ker_dim1);
-          for(size_t j=0;j<dof*M.Dim(0);j++) t_value[j]*=scaling[i];
-          Matrix<Real_t>  in_vec(dof, M.Dim(0),                  t_value   , false);
+          assert(trg_cnt[i]*ker_dim1==M.Dim(0));
+          assert(trg_cnt[i]*ker_dim0==M.Dim(1));
+
+          {// Scaling (ker_dim1)
+            Real_t* s=&scaling[i*(ker_dim0+ker_dim1)];
+            for(size_t j=0;j<dof*M.Dim(0);j+=ker_dim1){
+              for(size_t k=0;k<ker_dim1;k++){
+                t_value[j+k]*=s[k];
+              }
+            }
+          }
+
+          Matrix<Real_t>  in_vec(dof, M.Dim(0),             t_value, false);
+          Matrix<Real_t> tmp_vec(dof, M.Dim(1),dof*M.Dim(0)+t_value, false);
+          Matrix<Real_t>::GEMM(tmp_vec, in_vec, M, 0.0);
+
           Matrix<Real_t> out_vec(dof, M.Dim(1), output_data[0]+trg_value[i], false);
-          Matrix<Real_t>::DGEMM(out_vec, in_vec, M, 1.0);
+          {// Scaling (ker_dim0)
+            Real_t* s=&scaling[i*(ker_dim0+ker_dim1)+ker_dim1];
+            for(size_t j=0;j<dof*M.Dim(1);j+=ker_dim0){
+              for(size_t k=0;k<ker_dim0;k++){
+                out_vec[0][j+k]+=tmp_vec[0][j+k]*s[k];
+              }
+            }
+          }
+
         }
       }
     }
 
-    #ifdef __INTEL_OFFLOAD
     if(device) MIC_Lock::release_lock(lock_idx);
-    #endif
   }
 
-  #ifndef __MIC_ASYNCH__
   #ifdef __INTEL_OFFLOAD
-  #pragma offload if(device) target(mic:0)
-  {if(device) MIC_Lock::wait_lock(lock_idx);}
-  #endif
+  if(SYNC){
+    #pragma offload if(device) target(mic:0)
+    {if(device) MIC_Lock::wait_lock(lock_idx);}
+  }
   #endif
 
   Profile::Toc();
@@ -3294,7 +3426,7 @@ void FMM_Pts<FMMNode>::X_ListSetup(SetupData<Real_t>&  setup_data, std::vector<M
   if(this->MultipoleOrder()==0) return;
   { // Set setup_data
     setup_data.level=level;
-    setup_data.kernel=&aux_kernel;
+    setup_data.kernel=aux_kernel;
     setup_data.interac_type.resize(1);
     setup_data.interac_type[0]=X_Type;
 
@@ -3347,7 +3479,7 @@ void FMM_Pts<FMMNode>::W_ListSetup(SetupData<Real_t>&  setup_data, std::vector<M
   if(this->MultipoleOrder()==0) return;
   { // Set setup_data
     setup_data.level=level;
-    setup_data.kernel=&kernel;
+    setup_data.kernel=kernel;
     setup_data.interac_type.resize(1);
     setup_data.interac_type[0]=W_Type;
 
@@ -3397,7 +3529,7 @@ template <class FMMNode>
 void FMM_Pts<FMMNode>::U_ListSetup(SetupData<Real_t>& setup_data, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device){
   { // Set setup_data
     setup_data.level=level;
-    setup_data.kernel=&kernel;
+    setup_data.kernel=kernel;
     setup_data.interac_type.resize(3);
     setup_data.interac_type[0]=U0_Type;
     setup_data.interac_type[1]=U1_Type;
@@ -3450,7 +3582,7 @@ void FMM_Pts<FMMNode>::Down2TargetSetup(SetupData<Real_t>&  setup_data, std::vec
   if(this->MultipoleOrder()==0) return;
   { // Set setup_data
     setup_data.level=level;
-    setup_data.kernel=&kernel;
+    setup_data.kernel=kernel;
     setup_data.interac_type.resize(1);
     setup_data.interac_type[0]=D2T_Type;
 
@@ -3502,9 +3634,6 @@ void FMM_Pts<FMMNode>::PostProcessing(std::vector<FMMNode_t*>& nodes){
 
 template <class FMMNode>
 void FMM_Pts<FMMNode>::CopyOutput(FMMNode** nodes, size_t n){
-//  for(size_t i=0;i<n;i++){
-//    FMMData* fmm_data=((FMMData*)nodes[i]->FMMData());
-//  }
 }
 
 }//end namespace

@@ -6,16 +6,23 @@
  * This handles all the translations for point sources and targets.
  */
 
-#ifndef _PVFMM_FMM_PTS_HPP_
-#define _PVFMM_FMM_PTS_HPP_
+#include <mpi.h>
+#include <string>
+#include <vector>
+#include <cstdlib>
 
 #include <pvfmm_common.hpp>
-#include <mpi.h>
-#include <matrix.hpp>
-#include <precomp_mat.hpp>
 #include <interac_list.hpp>
-#include <kernel.hpp>
+#include <precomp_mat.hpp>
+#include <fft_wrapper.hpp>
 #include <mpi_node.hpp>
+#include <mem_mgr.hpp>
+#include <vector.hpp>
+#include <matrix.hpp>
+#include <kernel.hpp>
+
+#ifndef _PVFMM_FMM_PTS_HPP_
+#define _PVFMM_FMM_PTS_HPP_
 
 namespace pvfmm{
 
@@ -62,7 +69,7 @@ class FMM_Data{
 template <class Real_t>
 struct SetupData{
   int level;
-  Kernel<Real_t>* kernel;
+  const Kernel<Real_t>* kernel;
   std::vector<Mat_Type> interac_type;
 
   std::vector<void*> nodes_in ;
@@ -100,8 +107,9 @@ class FMM_Pts{
   /**
    * \brief Constructor.
    */
-  FMM_Pts(): vprecomp_fft_flag(false), vlist_fft_flag(false),
-               vlist_ifft_flag(false), mat(NULL){};
+  FMM_Pts(mem::MemoryManager* mem_mgr_=NULL): mem_mgr(mem_mgr_),
+             vprecomp_fft_flag(false), vlist_fft_flag(false),
+               vlist_ifft_flag(false), mat(NULL), kernel(NULL), aux_kernel(NULL){};
 
   /**
    * \brief Virtual destructor.
@@ -118,21 +126,22 @@ class FMM_Pts{
   /**
    * \brief Order for the multipole expansion.
    */
-  int& MultipoleOrder(){return multipole_order;}
+  int MultipoleOrder(){return multipole_order;}
 
   /**
    * \brief Whether using homogeneous kernel?
    */
-  bool& Homogen(){return kernel.homogen;}
+  bool Homogen(){return kernel->homogen;}
 
   virtual void CollectNodeData(std::vector<FMMNode*>& nodes, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, std::vector<size_t> extra_size = std::vector<size_t>(0));
 
   void SetupPrecomp(SetupData<Real_t>& setup_data, bool device=false);
   void SetupInterac(SetupData<Real_t>& setup_data, bool device=false);
+  template <int SYNC=__DEVICE_SYNC__>
   void EvalList    (SetupData<Real_t>& setup_data, bool device=false); // Run on CPU by default.
-  void EvalList_cuda(SetupData<Real_t>& setup_data);
 
   void SetupInteracPts(SetupData<Real_t>& setup_data, bool shift_src, bool shift_trg, Matrix<Real_t>* M, bool device);
+  template <int SYNC=__DEVICE_SYNC__>
   void EvalListPts    (SetupData<Real_t>& setup_data, bool device=false); // Run on CPU by default.
 
   /**
@@ -219,9 +228,10 @@ class FMM_Pts{
   std::vector<Vector<Real_t> > dnwd_check_surf;
   std::vector<Vector<Real_t> > dnwd_equiv_surf;
 
+  mem::MemoryManager* mem_mgr;
   InteracList<FMMNode> interac_list;
-  Kernel<Real_t> kernel;     //The kernel function.
-  Kernel<Real_t> aux_kernel; //Auxiliary kernel for source-to-source translations.
+  const Kernel<Real_t>* kernel;    //The kernel function.
+  const Kernel<Real_t>* aux_kernel;//Auxiliary kernel for source-to-source translations.
   PrecompMat<Real_t>* mat;   //Handles storage of matrices.
   std::string mat_fname;
   int multipole_order;       //Order of multipole expansion.
@@ -231,9 +241,6 @@ class FMM_Pts{
 
 }//end namespace
 
-#if defined(PVFMM_HAVE_CUDA)
-#include <cuda_func.hpp>
-#endif
 #include <fmm_pts.txx>
 
 #endif //_PVFMM_FMM_PTS_HPP_

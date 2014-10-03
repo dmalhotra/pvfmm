@@ -7,12 +7,15 @@
  * symmetry class for each interaction.
  */
 
-#ifndef _PVFMM_INTERAC_LIST_HPP_
-#define _PVFMM_INTERAC_LIST_HPP_
+#include <vector>
+#include <cstdlib>
 
 #include <pvfmm_common.hpp>
-#include <tree_node.hpp>
 #include <precomp_mat.hpp>
+#include <matrix.hpp>
+
+#ifndef _PVFMM_INTERAC_LIST_HPP_
+#define _PVFMM_INTERAC_LIST_HPP_
 
 namespace pvfmm{
 
@@ -85,17 +88,17 @@ class InteracList{
     /**
      * \brief A hash function defined on the relative coordinates of octants.
      */
-    static int coord_hash(int* c);
+    int coord_hash(int* c);
 
-    static int class_hash(int* c);
+    int class_hash(int* c);
 
     unsigned int dim;                                //Spatial dimension.
     std::vector<Matrix<int> > rel_coord;             //Relative coordinates of interacting octant.
     std::vector<std::vector<int> > hash_lut;         //Lookup table for hash code of relative coordinates.
     std::vector<std::vector<size_t> > interac_class; //The symmetry class corresponding to each interaction.
     std::vector<std::vector<std::vector<Perm_Type> > > perm_list; //Permutation to convert it to it's interac_class.
-    std::vector<size_t> class_count;                 //Number of symmetry classes in each interaction list.
     PrecompMat<Real_t>* mat;                         //Handles storage of matrices.
+    bool use_symmetries;
 };
 
 }//end namespace

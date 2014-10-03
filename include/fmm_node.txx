@@ -5,6 +5,11 @@
  * \brief This file contains the implementation of the FMM_Node class.
  */
 
+#include <cassert>
+
+#include <mem_mgr.hpp>
+#include <mpi_node.hpp>
+
 namespace pvfmm{
 
 template <class Node>

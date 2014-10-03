@@ -5,15 +5,15 @@
  * \brief This file contains definition of the class Profile.
  */
 
-#ifndef _PVFMM_PROFILE_HPP_
-#define _PVFMM_PROFILE_HPP_
-
 #include <mpi.h>
-#include <iostream>
 #include <string>
 #include <vector>
 #include <stack>
+
 #include <pvfmm_common.hpp>
+
+#ifndef _PVFMM_PROFILE_HPP_
+#define _PVFMM_PROFILE_HPP_
 
 #ifndef __PROFILE__
 #define __PROFILE__ -1
@@ -28,6 +28,8 @@ class Profile{
 
     static void Add_MEM(long long inc);
 
+    static void Enable(bool state){enable_state=state;};
+
     static void Tic(const char* name_, const MPI_Comm* comm_=NULL,bool sync_=false, int level=0);
 
     static void Toc();
@@ -39,6 +41,7 @@ class Profile{
 
   static long long FLOP;
   static long long MEM;
+  static bool enable_state;
   static std::stack<bool> sync;
   static std::stack<std::string> name;
   static std::stack<MPI_Comm*> comm;

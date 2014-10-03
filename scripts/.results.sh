@@ -44,14 +44,14 @@ IFS=';' read -ra ERRHEADERARR <<< "$ERRHEADERSTR"
 
 
 ################### Print Column Headers ###################
-printf "%$((16+$(($Nparam+4))*11+$N*18+$Nerr*14))s\n" |tr " " "=" | tee -a ${RESULT_FNAME} #=================================================
+printf "%$((16+$(($Nparam+4))*12+$N*18+$Nerr*14))s\n" |tr " " "=" | tee -a ${RESULT_FNAME} #=================================================
 #-----------------------------------------------------------
 for (( i=0; i<$Nparam; i++ )) ; do
-  printf "%10s " "${PARAMHEADERARR[i]}" | tee -a ${RESULT_FNAME}
+  printf "%11s " "${PARAMHEADERARR[i]}" | tee -a ${RESULT_FNAME}
 done;
 printf "   |" | tee -a ${RESULT_FNAME}
 #-----------------------------------------------------------
-HEADER_FORMAT="%10s "
+HEADER_FORMAT="%11s "
 printf "${HEADER_FORMAT}" "MPI_PROC" | tee -a ${RESULT_FNAME}
 printf "${HEADER_FORMAT}"  "THREADS" | tee -a ${RESULT_FNAME}
 printf "${HEADER_FORMAT}"    "NODES" | tee -a ${RESULT_FNAME}
@@ -68,7 +68,7 @@ for (( i=0; i<$Nerr; i++ )) ; do
 done;
 printf "   |\n" | tee -a ${RESULT_FNAME}
 #-----------------------------------------------------------
-printf "%$((16+$(($Nparam+4))*11+$N*18+$Nerr*14))s\n" |tr " " "=" | tee -a ${RESULT_FNAME} #=================================================
+printf "%$((16+$(($Nparam+4))*12+$N*18+$Nerr*14))s\n" |tr " " "=" | tee -a ${RESULT_FNAME} #=================================================
 #===========================================================
 
 
@@ -111,6 +111,8 @@ for (( l=0; l<${#nodes[@]}; l++ )) ; do
     for i in ${NODE_LIST} ; do 
       NODES=$(( $NODES + $i )); 
     done;
+    PROC_NOMIC="$(grep -hir "Number of MPI processes:" ${FNAME_NOMIC} | tail -n 1 | tr -s ' ' | rev | cut -d ' ' -f 1 | rev)"
+    PROC="$(grep -hir "Number of MPI processes:" ${FNAME} | tail -n 1 | tr -s ' ' | rev | cut -d ' ' -f 1 | rev)"
     #---------------------------------------------------------------------
     # Parse Data: Time, Flop, Flop/s 
     for (( i=0; i<$N; i++ )) ; do
@@ -119,6 +121,7 @@ for (( l=0; l<${#nodes[@]}; l++ )) ; do
       T_MAX[i]="$(grep -hir "$x  " ${FNAME} | tail -n 1 | tr -s ' ' | rev | cut -d ' ' -f 10 | rev)"
       if [ "${T_MAX[i]}" == "" ]; then continue; fi;
       FP_AVG[i]="$(grep -hir "$x  " ${FNAME_NOMIC} | tail -n 1 | tr -s ' ' | rev | cut -d ' ' -f 8 | rev)"
+      FP_AVG[i]=$(echo "scale=10;${FP_AVG[i]}*${PROC_NOMIC}/${mpi_proc[l]}" | bc 2> /dev/null)
       FLOPS[i]=$(echo "scale=10;${FP_AVG[i]}/(${T_MAX[i]}+0.0001)" | bc 2> /dev/null)
 
       if [ "${FLOPS[i]}" != "" ] && [ -f ${FNAME_MIC} ] && [ -f ${FNAME_ASYNC} ] && [ -f ${FNAME_NOMIC} ] ; then 
@@ -142,13 +145,13 @@ for (( l=0; l<${#nodes[@]}; l++ )) ; do
 
 
     ######################### Print Data #################################
-    PARAM_FORMAT="%10s "
+    PARAM_FORMAT="%11s "
     for (( i=0; i<$Nparam; i++ )) ; do
       printf "${PARAM_FORMAT}" "${PARAM[i]}" >> ${RESULT_FNAME}      
     done;
     printf "   |" >> ${RESULT_FNAME}      
     #---------------------------------------------------------------------
-    printf "${PARAM_FORMAT}"            "${mpi_proc[l]}" >> ${RESULT_FNAME}      
+    printf "${PARAM_FORMAT}"            "${PROC}" >> ${RESULT_FNAME}      
     printf "${PARAM_FORMAT}"             "${threads[l]}" >> ${RESULT_FNAME}      
     printf "${PARAM_FORMAT}"               "${nodes[l]}" >> ${RESULT_FNAME}      
     printf "${PARAM_FORMAT}" "$((${NODES}/${nodes[l]}))" >> ${RESULT_FNAME}      
@@ -169,9 +172,9 @@ for (( l=0; l<${#nodes[@]}; l++ )) ; do
 
   done
   if [[  $l == $(( ${#nodes[@]}-1 )) ]] || [ "${nodes[l]}" == ":" ]; then
-    printf "%$((16+$(($Nparam+4))*11+$N*18+$Nerr*14))s\n" |tr " " "=" >> ${RESULT_FNAME}       #=================================================
+    printf "%$((16+$(($Nparam+4))*12+$N*18+$Nerr*14))s\n" |tr " " "=" >> ${RESULT_FNAME}       #=================================================
   elif [[ $subrow_cnt > 1 ]]; then
-    printf "%$((16+$(($Nparam+4))*11+$N*18+$Nerr*14))s\n" |tr " " "-" >> ${RESULT_FNAME}       #-------------------------------------------------
+    printf "%$((16+$(($Nparam+4))*12+$N*18+$Nerr*14))s\n" |tr " " "-" >> ${RESULT_FNAME}       #-------------------------------------------------
   fi
   )& # End parallel subshell
 

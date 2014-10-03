@@ -10,8 +10,9 @@
  *   Add Cuda support. Error handle is available if needed.
  */
 
-#include <vector.hpp>
-#include <device_wrapper.hpp>
+#include <omp.h>
+#include <cassert>
+#include <cstdlib>
 
 // CUDA Stream
 #if defined(PVFMM_HAVE_CUDA)
@@ -54,29 +55,32 @@ namespace DeviceWrapper{
   inline int host2device_cuda(char *host_ptr, char *dev_ptr, size_t len) {
     #if defined(PVFMM_HAVE_CUDA)
     cudaError_t error;
-    cudaStream_t *stream = CUDA_Lock::acquire_stream(0);
+    cudaStream_t *stream = CUDA_Lock::acquire_stream();
     error = cudaMemcpyAsync(dev_ptr, host_ptr, len, cudaMemcpyHostToDevice, *stream);
-    if (error != cudaSuccess)
-      std::cout<<cudaGetErrorString(error)<< '\n';
+    if (error != cudaSuccess) std::cout<<cudaGetErrorString(error)<< '\n';
     assert(error == cudaSuccess);
-    return 0;
     #endif
+    return 0;
   }
 
   inline int device2host_cuda(char *dev_ptr, char *host_ptr, size_t len) {
     #if defined(PVFMM_HAVE_CUDA)
     cudaError_t error;
-    cudaStream_t *stream = CUDA_Lock::acquire_stream(0);
+    cudaStream_t *stream = CUDA_Lock::acquire_stream();
     error = cudaMemcpyAsync(host_ptr, dev_ptr, len, cudaMemcpyDeviceToHost, *stream);
     if (error != cudaSuccess)
       std::cout<<cudaGetErrorString(error)<< '\n';
     assert(error == cudaSuccess);
-    return 0;
     #endif
+    return 0;
   }
 
 
   // MIC functions
+
+  #define ALLOC alloc_if(1) free_if(0)
+  #define FREE alloc_if(0) free_if(1)
+  #define REUSE alloc_if(0) free_if(0)
 
   inline uintptr_t alloc_device_mic(char* dev_handle, size_t len){
     assert(dev_handle!=NULL);
@@ -116,10 +120,6 @@ namespace DeviceWrapper{
         MIC_Lock::release_lock(lock_idx);
       }
     }
-    #ifndef __MIC_ASYNCH__ // Wait
-    #pragma offload target(mic:0)
-    {MIC_Lock::wait_lock(lock_idx);}
-    #endif
     return lock_idx;
     #endif
     return -1;
@@ -144,9 +144,6 @@ namespace DeviceWrapper{
         MIC_Lock::release_lock(lock_idx);
       }
     }
-    #ifndef __MIC_ASYNCH__ // Wait
-    MIC_Lock::wait_lock(lock_idx);
-    #endif
     return lock_idx;
     #endif
     return -1;
@@ -184,10 +181,15 @@ namespace DeviceWrapper{
     #endif
   }
 
+  template <int SYNC=__DEVICE_SYNC__>
   inline int host2device(char* host_ptr, char* dev_handle, uintptr_t dev_ptr, size_t len){
     int lock_idx=-1;
     #ifdef __INTEL_OFFLOAD
     lock_idx=host2device_mic(host_ptr,dev_handle,dev_ptr,len);
+    if(SYNC){
+      #pragma offload target(mic:0)
+      {MIC_Lock::wait_lock(lock_idx);}
+    }
     #elif defined(PVFMM_HAVE_CUDA)
     lock_idx=host2device_cuda(host_ptr,(char*)dev_ptr,len);
     #else
@@ -196,10 +198,12 @@ namespace DeviceWrapper{
     return lock_idx;
   }
 
+  template <int SYNC=__DEVICE_SYNC__>
   inline int device2host(char* dev_handle, uintptr_t dev_ptr, char* host_ptr, size_t len){
     int lock_idx=-1;
     #ifdef __INTEL_OFFLOAD
     lock_idx=device2host_mic(dev_handle,dev_ptr, host_ptr, len);
+    if(SYNC) MIC_Lock::wait_lock(lock_idx);
     #elif defined(PVFMM_HAVE_CUDA)
     lock_idx=device2host_cuda((char*)dev_ptr, host_ptr, len);
     #else
@@ -212,7 +216,7 @@ namespace DeviceWrapper{
     #ifdef __INTEL_OFFLOAD
     wait_mic(lock_idx);
     #elif defined(PVFMM_HAVE_CUDA)
-    //CUDA_Lock::wait(0);
+    CUDA_Lock::wait();
     #else
     ;
     #endif
@@ -229,21 +233,23 @@ namespace DeviceWrapper{
   #define have_mic 0
   #endif
 
+  #define NUM_LOCKS 1000000
   inline void MIC_Lock::init(){
+    #ifdef __INTEL_OFFLOAD
     if(have_mic) abort();// Cannot be called from MIC.
 
     lock_idx=0;
     lock_vec.Resize(NUM_LOCKS);
     lock_vec.SetZero();
-    {for(size_t i=0;i<NUM_LOCKS;i++) lock_vec [i]=1;}
-    #ifdef __INTEL_OFFLOAD
     lock_vec_=lock_vec.AllocDevice(false);
+    {for(size_t i=0;i<NUM_LOCKS;i++) lock_vec [i]=1;}
     #pragma offload target(mic:0)
     {for(size_t i=0;i<NUM_LOCKS;i++) lock_vec_[i]=1;}
     #endif
   }
 
   inline int MIC_Lock::get_lock(){
+    #ifdef __INTEL_OFFLOAD
     if(have_mic) abort();// Cannot be called from MIC.
 
     int idx;
@@ -253,10 +259,8 @@ namespace DeviceWrapper{
         int wait_lock_idx=-1;
         wait_lock_idx=MIC_Lock::curr_lock();
         MIC_Lock::wait_lock(wait_lock_idx);
-        #ifdef __INTEL_OFFLOAD
         #pragma offload target(mic:0)
         {MIC_Lock::wait_lock(wait_lock_idx);}
-        #endif
         MIC_Lock::init();
       }
       idx=lock_idx;
@@ -264,96 +268,103 @@ namespace DeviceWrapper{
       assert(lock_idx<NUM_LOCKS);
     }
     return idx;
+    #else
+    return -1;
+    #endif
   }
+  #undef NUM_LOCKS
 
   inline int MIC_Lock::curr_lock(){
+    #ifdef __INTEL_OFFLOAD
     if(have_mic) abort();// Cannot be called from MIC.
     return lock_idx-1;
+    #else
+    return -1;
+    #endif
   }
 
   inline void MIC_Lock::release_lock(int idx){ // Only call from inside an offload section
+    #ifdef __INTEL_OFFLOAD
     #ifdef __MIC__
     if(idx>=0) lock_vec_[idx]=0;
+    #endif
     #endif
   }
 
   inline void MIC_Lock::wait_lock(int idx){
-#ifdef __MIC__
+    #ifdef __INTEL_OFFLOAD
+    #ifdef __MIC__
     if(idx>=0) while(lock_vec_[idx]==1){
       _mm_delay_32(8192);
     }
-#else
+    #else
     if(idx<0 || lock_vec[idx]==0) return;
     if(lock_vec[idx]==2){
       while(lock_vec[idx]==2);
       return;
     }
     lock_vec[idx]=2;
-    #ifdef __INTEL_OFFLOAD
     #pragma offload_wait target(mic:0) wait(&lock_vec[idx])
-    #endif
     lock_vec[idx]=0;
-#endif
+    #endif
+    #endif
   }
 
-  Vector<char> MIC_Lock::lock_vec;
-  Vector<char>::Device MIC_Lock::lock_vec_;
-  int MIC_Lock::lock_idx;
 
 
-
+#if defined(PVFMM_HAVE_CUDA)
   // Implementation of Simple CUDA_Lock
 
-  #if defined(PVFMM_HAVE_CUDA)
-  CUDA_Lock::CUDA_Lock () {
-    cuda_init = false;
-  }
-
-  inline void CUDA_Lock::init () {
-    cudaError_t error;
+  inline void CUDA_Lock::init(size_t num_stream) {
+    assert(num_stream>0);
+    if(num_stream==stream.size()) return;
     cublasStatus_t status;
-    if (!cuda_init) {
-      for (int i = 0; i < NUM_STREAM; i++) {
-        error = cudaStreamCreate(&(stream[i]));
-      }
-      status = cublasCreate(&handle);
-      status = cublasSetStream(handle, stream[0]);
-      cuda_init = true;
-    }
-  }
-
-  inline void CUDA_Lock::terminate () {
     cudaError_t error;
-    cublasStatus_t status;
-    if (!cuda_init) init();
-    for (int i = 0; i < NUM_STREAM; i++) {
+
+    // Delete previous streams
+    for(size_t i=0;i<stream.size();i++){
       error = cudaStreamDestroy(stream[i]);
     }
-    status = cublasDestroy(handle);
-    cuda_init = false;
+
+    // Create new streams
+    stream.resize(num_stream);
+    for (int i = 0; i < num_stream; i++) {
+      error = cudaStreamCreate(&(stream[i]));
+    }
+
+    // Create cuBLAS context
+    static bool cuda_init=false;
+    if (!cuda_init) {
+      cuda_init = true;
+      status = cublasCreate(&handle);
+    }
+
+    // Set cuBLAS to use stream[0]
+    status = cublasSetStream(handle, stream[0]);
+  }
+
+  inline void CUDA_Lock::finalize () {
+    if(stream.size()==0) return;
+    for (int i = 0; i < stream.size(); i++) {
+      cudaError_t error = cudaStreamDestroy(stream[i]);
+    }
+    cublasStatus_t status = cublasDestroy(handle);
   }
 
   inline cudaStream_t *CUDA_Lock::acquire_stream (int idx) {
-    if (!cuda_init) init();
-    if (idx < NUM_STREAM) return &(stream[idx]);
-    else return NULL;
+    if (stream.size()<=idx) init(idx+1);
+    return &(stream[idx]);
   }
 
   inline cublasHandle_t *CUDA_Lock::acquire_handle () {
-    if (!cuda_init) init();
+    if (stream.size()==0) init();
     return &handle;
   }
 
   inline void CUDA_Lock::wait (int idx) {
-    cudaError_t error;
-    if (!cuda_init) init();
-    if (idx < NUM_STREAM) error = cudaStreamSynchronize(stream[idx]);
+    if (stream.size()<=idx) init(idx+1);
+    cudaError_t error = cudaStreamSynchronize(stream[idx]);
   }
-
-  cudaStream_t CUDA_Lock::stream[NUM_STREAM];
-  cublasHandle_t CUDA_Lock::handle;
-  bool CUDA_Lock::cuda_init;
-
-  #endif
+#endif
 
 }//end namespace

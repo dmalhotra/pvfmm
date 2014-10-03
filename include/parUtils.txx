@@ -8,13 +8,15 @@
   @author Santi Swaroop Adavani, santis@gmail.com
   */
 
-#include "dtypes.h"
+#include <cmath>
 #include <cassert>
+#include <cstring>
+#include <cstdlib>
 #include <iostream>
 #include <algorithm>
-#include <cstring>
-#include "ompUtils.h"
-#include <mpi.h>
+
+#include <dtypes.h>
+#include <ompUtils.h>
 
 namespace pvfmm{
 namespace par{
@@ -254,37 +256,33 @@ namespace par{
 
 
   template<typename T>
-    unsigned int defaultWeight(const T *a){
-      return 1;
-    }
-
-
-  template<typename T>
-    int partitionW(Vector<T>& nodeList, unsigned int (*getWeight)(const T *), const MPI_Comm& comm){
+    int partitionW(Vector<T>& nodeList, long long* wts, const MPI_Comm& comm){
 
       int npes, rank;
       MPI_Comm_size(comm, &npes);
       MPI_Comm_rank(comm, &rank);
       long long npesLong = npes;
 
-      if(getWeight == NULL) {
-        getWeight = par::defaultWeight<T>;
-      }
-
       long long nlSize = nodeList.Dim();
       long long off1= 0, off2= 0, localWt= 0, totalWt = 0;
 
       // First construct arrays of wts.
-      Vector<long long> wts(nlSize);
+      Vector<long long> wts_(nlSize);
+      if(wts == NULL) {
+        wts=&wts_[0];
+        #pragma omp parallel for
+        for (long long i = 0; i < nlSize; i++){
+          wts[i] = 1;
+        }
+      }
       #pragma omp parallel for reduction(+:localWt)
       for (long long i = 0; i < nlSize; i++){
-        wts[i] = (*getWeight)( &(nodeList[i]) );
         localWt+=wts[i];
       }
 
       // compute the total weight of the problem ...
-      MPI_Allreduce(&localWt, &totalWt, 1, par::Mpi_datatype<long long>::value(), MPI_SUM, comm);
-      MPI_Scan(&localWt, &off2, 1, par::Mpi_datatype<long long>::value(), MPI_SUM, comm );
+      MPI_Allreduce(&localWt, &totalWt, 1, par::Mpi_datatype<long long>::value(), par::Mpi_datatype<long long>::sum(), comm);
+      MPI_Scan(&localWt, &off2, 1, par::Mpi_datatype<long long>::value(), par::Mpi_datatype<long long>::sum(), comm );
       off1=off2-localWt;
 
       // perform a local scan on the weights first ...
@@ -360,9 +358,9 @@ namespace par{
     }//end function
 
   template<typename T>
-    int partitionW(std::vector<T>& nodeList, unsigned int (*getWeight)(const T *), const MPI_Comm& comm){
+    int partitionW(std::vector<T>& nodeList, long long* wts, const MPI_Comm& comm){
       Vector<T> nodeList_=nodeList;
-      int ret = par::partitionW<T>(nodeList_, getWeight, comm);
+      int ret = par::partitionW<T>(nodeList_, wts, comm);
 
       nodeList.assign(&nodeList_[0],&nodeList_[0]+nodeList_.Dim());
       return ret;
@@ -385,7 +383,7 @@ namespace par{
       // Local and global sizes. O(log p)
       long long totSize, nelem = arr_.Dim();
       //assert(nelem); // TODO: Check if this is needed.
-      MPI_Allreduce(&nelem, &totSize, 1, par::Mpi_datatype<long long>::value(), MPI_SUM, comm);
+      MPI_Allreduce(&nelem, &totSize, 1, par::Mpi_datatype<long long>::value(), par::Mpi_datatype<long long>::sum(), comm);
 
       // Local sort.
       Vector<T> arr=arr_;
@@ -436,7 +434,7 @@ namespace par{
             }
           }
           std::vector<long long> glb_disp(glb_splt_count,0);
-          MPI_Allreduce(&disp[0], &glb_disp[0], glb_splt_count, par::Mpi_datatype<long long>::value(), MPI_SUM, comm);
+          MPI_Allreduce(&disp[0], &glb_disp[0], glb_splt_count, par::Mpi_datatype<long long>::value(), par::Mpi_datatype<long long>::sum(), comm);
 
           long long* split_disp=&glb_disp[0];
           for(int i=0;i<glb_splt_count;i++)
@@ -525,14 +523,6 @@ namespace par{
     }
 
 
-  template<typename A, typename B>
-    struct SortPair{
-      int operator<(const SortPair<A,B>& p1) const{ return key<p1.key;}
-
-      A key;
-      B data;
-    };
-
   template<typename T>
     int SortScatterIndex(const Vector<T>& key, Vector<size_t>& scatter_index, const MPI_Comm& comm, const T* split_key_){
       typedef SortPair<T,size_t> Pair_t;
@@ -559,7 +549,7 @@ namespace par{
       { // Build global index.
         long long glb_dsp=0;
         long long loc_size=key.Dim();
-        MPI_Scan(&loc_size, &glb_dsp, 1, par::Mpi_datatype<long long>::value(), MPI_SUM, comm);
+        MPI_Scan(&loc_size, &glb_dsp, 1, par::Mpi_datatype<long long>::value(), par::Mpi_datatype<long long>::sum(), comm);
         glb_dsp-=loc_size;
         #pragma omp parallel for
         for(size_t i=0;i<loc_size;i++){
@@ -669,8 +659,8 @@ namespace par{
         recv_size=scatter_index.Dim();
 
         long long glb_size[2]={0,0};
-        long long loc_size[2]={data_.Dim()*sizeof(T), recv_size};
-        MPI_Allreduce(&loc_size, &glb_size, 2, par::Mpi_datatype<long long>::value(), MPI_SUM, comm);
+        long long loc_size[2]={(long long)(data_.Dim()*sizeof(T)), recv_size};
+        MPI_Allreduce(&loc_size, &glb_size, 2, par::Mpi_datatype<long long>::value(), par::Mpi_datatype<long long>::sum(), comm);
         if(glb_size[0]==0 || glb_size[1]==0) return 0; //Nothing to be done.
         data_dim=glb_size[0]/glb_size[1];
         assert(glb_size[0]==data_dim*glb_size[1]);
@@ -685,7 +675,7 @@ namespace par{
       Vector<long long> glb_scan(npesLong);
       {
         long long glb_rank=0;
-        MPI_Scan(&send_size, &glb_rank, 1, par::Mpi_datatype<long long>::value(), MPI_SUM, comm);
+        MPI_Scan(&send_size, &glb_rank, 1, par::Mpi_datatype<long long>::value(), par::Mpi_datatype<long long>::sum(), comm);
         glb_rank-=send_size;
 
         MPI_Allgather(&glb_rank   , 1, par::Mpi_datatype<long long>::value(),
@@ -797,8 +787,8 @@ namespace par{
         recv_size=loc_size;
 
         long long glb_size[3]={0,0};
-        long long loc_size[3]={data_.Dim()*sizeof(T), send_size, recv_size};
-        MPI_Allreduce(&loc_size, &glb_size, 3, par::Mpi_datatype<long long>::value(), MPI_SUM, comm);
+        long long loc_size[3]={(long long)(data_.Dim()*sizeof(T)), send_size, recv_size};
+        MPI_Allreduce(&loc_size, &glb_size, 3, par::Mpi_datatype<long long>::value(), par::Mpi_datatype<long long>::sum(), comm);
         if(glb_size[0]==0 || glb_size[1]==0) return 0; //Nothing to be done.
         data_dim=glb_size[0]/glb_size[1];
         assert(glb_size[0]==data_dim*glb_size[1]);
@@ -816,7 +806,7 @@ namespace par{
       Vector<long long> glb_scan(npesLong);
       {
         long long glb_rank=0;
-        MPI_Scan(&recv_size, &glb_rank, 1, par::Mpi_datatype<long long>::value(), MPI_SUM, comm);
+        MPI_Scan(&recv_size, &glb_rank, 1, par::Mpi_datatype<long long>::value(), par::Mpi_datatype<long long>::sum(), comm);
         glb_rank-=recv_size;
 
         MPI_Allgather(&glb_rank   , 1, par::Mpi_datatype<long long>::value(),

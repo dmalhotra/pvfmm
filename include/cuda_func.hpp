@@ -14,53 +14,20 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-  void in_perm_d (char*, size_t*, char*, char*, size_t, size_t, size_t, cudaStream_t*);
-  void out_perm_d (double*, char*, size_t*, char*, char*, size_t, size_t, size_t, cudaStream_t*);
+  void  in_perm_d(char* precomp_data, double*  input_data, char* buff_in , size_t*  input_perm, size_t vec_cnt, size_t M_dim0, cudaStream_t* stream);
+  void out_perm_d(char* precomp_data, double* output_data, char* buff_out, size_t* output_perm, size_t vec_cnt, size_t M_dim1, cudaStream_t* stream);
 #ifdef __cplusplus
 }
 #endif
 
 template <class Real_t>
-class cuda_func {
-  public:
-    static void in_perm_h (char *precomp_data, char *input_perm, char *input_data, char *buff_in,
-        size_t interac_indx, size_t M_dim0, size_t vec_cnt);
-    static void out_perm_h (char *scaling, char *precomp_data, char *output_perm, char *output_data, char *buff_out,
-        size_t interac_indx, size_t M_dim0, size_t vec_cnt);
+void  in_perm_gpu(char* precomp_data, Real_t*  input_data, char* buff_in , size_t*  input_perm, size_t vec_cnt, size_t M_dim0, cudaStream_t* stream){
+  in_perm_d (precomp_data,  input_data, buff_in ,  input_perm, vec_cnt, M_dim0, stream);
 };
 
-  template <class Real_t>
-void cuda_func<Real_t>::in_perm_h (
-    char *precomp_data,
-    char *input_perm,
-    char *input_data,
-    char *buff_in,
-    size_t interac_indx,
-    size_t M_dim0,
-    size_t vec_cnt )
-{
-  cudaStream_t *stream;
-  stream = pvfmm::CUDA_Lock::acquire_stream(0);
-  in_perm_d(precomp_data, (size_t *) input_perm, input_data, buff_in,
-      interac_indx, M_dim0, vec_cnt, stream);
-};
-
-  template <class Real_t>
-void cuda_func<Real_t>::out_perm_h (
-    char *scaling,
-    char *precomp_data,
-    char *output_perm,
-    char *output_data,
-    char *buff_out,
-    size_t interac_indx,
-    size_t M_dim1,
-    size_t vec_cnt )
-{
-  cudaStream_t *stream;
-  stream = pvfmm::CUDA_Lock::acquire_stream(0);
-  size_t *a_d, *b_d;
-  out_perm_d((double *) scaling, precomp_data, (size_t *) output_perm, output_data, buff_out,
-      interac_indx, M_dim1, vec_cnt, stream );
+template <class Real_t>
+void out_perm_gpu(char* precomp_data, Real_t* output_data, char* buff_out, size_t* output_perm, size_t vec_cnt, size_t M_dim1, cudaStream_t* stream){
+  out_perm_d(precomp_data, output_data, buff_out, output_perm, vec_cnt, M_dim1, stream);
 };
 
 #endif //_CUDA_FUNC_HPP_
