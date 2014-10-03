@@ -1488,7 +1488,7 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
 }
 
 #if defined(PVFMM_HAVE_CUDA)
-#include <cuda_func.hpp>
+#include <fmm_pts_gpu.hpp>
 
 template <class Real_t, int SYNC>
 void EvalListGPU(SetupData<Real_t>& setup_data, Vector<char>& dev_buffer, MPI_Comm& comm) {
@@ -1556,6 +1556,11 @@ void EvalListGPU(SetupData<Real_t>& setup_data, Vector<char>& dev_buffer, MPI_Co
       for (size_t k = 0; k < interac_blk.Dim(); k++) {
         size_t vec_cnt=0;
         for(size_t j=interac_blk_dsp;j<interac_blk_dsp+interac_blk[k];j++) vec_cnt+=interac_cnt[j];
+        if(vec_cnt==0){
+          //interac_indx += vec_cnt;
+          interac_blk_dsp += interac_blk[k];
+          continue;
+        }
 
         char *buff_in_d  =&buff[0];
         char *buff_out_d =&buff[vec_cnt*dof*M_dim0*sizeof(Real_t)];
@@ -1577,7 +1582,7 @@ void EvalListGPU(SetupData<Real_t>& setup_data, Vector<char>& dev_buffer, MPI_Co
           vec_cnt0 += vec_cnt1;
         }
 
-        { // Input permutation.
+        { // Output permutation.
           out_perm_gpu<Real_t>(&precomp_data_d[0][0], &output_data_d[0][0], buff_out_d,
                                &output_perm_d[interac_indx*4], vec_cnt, M_dim1, stream);
         }
@@ -1683,6 +1688,11 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
       for(size_t k=0;k<interac_blk.Dim();k++){
         size_t vec_cnt=0;
         for(size_t j=interac_blk_dsp;j<interac_blk_dsp+interac_blk[k];j++) vec_cnt+=interac_cnt[j];
+        if(vec_cnt==0){
+          //interac_indx += vec_cnt;
+          interac_blk_dsp += interac_blk[k];
+          continue;
+        }
 
         char* buff_in =&buff[0];
         char* buff_out=&buff[vec_cnt*dof*M_dim0*sizeof(Real_t)];

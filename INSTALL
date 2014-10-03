@@ -101,7 +101,7 @@ are given below:
      ./configure CXXFLAGS="-msse4" --with-fftw="$FFTW_DIR"
 
 'Cafu (ICES)'
-     ./configure CXXFLAGS="-mavx" --with-fftw="$FFTW_DIR"
+     ./configure CXXFLAGS="-mavx" --with-fftw="$FFTW_DIR" LDFLAGS="-L/usr/lib64/nvidia/" --with-cuda="$CUDA_DIR" NVCCFLAGS="-arch=compute_35 -code=sm_35"
 
 
 `configure' Invocation

@@ -46,7 +46,6 @@ lib_libfmm_a_HEADERS = \
 									include/blas.h \
 									include/cheb_node.hpp \
 									include/cheb_utils.hpp \
-									include/cuda_func.hpp \
 									include/device_wrapper.hpp \
 									include/dtypes.h \
 									include/fft_wrapper.hpp \
@@ -54,6 +53,7 @@ lib_libfmm_a_HEADERS = \
 									include/fmm_gll.hpp \
 									include/fmm_node.hpp \
 									include/fmm_pts.hpp \
+									include/fmm_pts_gpu.hpp \
 									include/fmm_tree.hpp \
 									include/interac_list.hpp \
 									include/kernel.hpp \
@@ -110,7 +110,7 @@ lib_libpvfmm_a_SOURCES = \
 									src/tree_node.cpp
 
 if NVCC_OK
-lib_libpvfmm_a_SOURCES += src/cuda_func.cu
+lib_libpvfmm_a_SOURCES += src/fmm_pts_gpu.cu
 endif
 
 dist_noinst_SCRIPTS = autogen.sh

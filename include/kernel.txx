@@ -1285,8 +1285,7 @@ namespace
   void laplaceSSEShuffle(const int ns, const int nt, double const src[], double const trg[], double const den[], double pot[], mem::MemoryManager* mem_mgr=NULL)
   {
     double* buff=NULL;
-    if(mem_mgr) buff=(double*)mem_mgr->malloc(sizeof(double)*(ns+1+nt)*3);
-    else        buff=     mem::aligned_malloc       <double>((ns+1+nt)*3);
+    buff=mem::aligned_new<double>((ns+1+nt)*3,mem_mgr);
 
     double* buff_=buff;
     pvfmm::Vector<double> xs(ns+1,buff_,false); buff_+=ns+1;
@@ -1324,8 +1323,7 @@ namespace
     //2. perform caclulation
     laplaceSSE(ns,nt,&xs[x_shift],&ys[y_shift],&zs[z_shift],&xt[0],&yt[0],&zt[0],den,pot);
 
-    if(mem_mgr) mem_mgr->free(buff);
-    else    mem::aligned_free(buff);
+    mem::aligned_delete<double>(buff,mem_mgr);
     return;
   }
 
@@ -1409,7 +1407,7 @@ namespace
 }
 
 template <>
-void laplace_poten<double>(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
+void laplace_poten<double>(double* r_src, int src_cnt, double* v_src, int dof, double* r_trg, int trg_cnt, double* k_out, mem::MemoryManager* mem_mgr){
   Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(12*dof));
 
   if(dof==1){
@@ -1419,7 +1417,7 @@ void laplace_poten<double>(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, i
 }
 
 template <>
-void laplace_dbl_poten<double>(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
+void laplace_dbl_poten<double>(double* r_src, int src_cnt, double* v_src, int dof, double* r_trg, int trg_cnt, double* k_out, mem::MemoryManager* mem_mgr){
   Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(19*dof));
 
   if(dof==1){
@@ -1429,7 +1427,7 @@ void laplace_dbl_poten<double>(T* r_src, int src_cnt, T* v_src, int dof, T* r_tr
 }
 
 template <>
-void laplace_grad<double>(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
+void laplace_grad<double>(double* r_src, int src_cnt, double* v_src, int dof, double* r_trg, int trg_cnt, double* k_out, mem::MemoryManager* mem_mgr){
   Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(10+12*dof));
 
   if(dof==1){
@@ -2451,15 +2449,15 @@ namespace
 }
 
 template <>
-void stokes_vel<double>(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
+void stokes_vel<double>(double* r_src, int src_cnt, double* v_src_, int dof, double* r_trg, int trg_cnt, double* k_out, mem::MemoryManager* mem_mgr){
   Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(28*dof));
 
-  const T mu=1.0;
+  const double mu=1.0;
   stokesDirectSSEShuffle(src_cnt, trg_cnt, r_src, r_trg, v_src_, k_out, mu, mem_mgr);
 }
 
 template <>
-void stokes_press<double>(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
+void stokes_press<double>(double* r_src, int src_cnt, double* v_src_, int dof, double* r_trg, int trg_cnt, double* k_out, mem::MemoryManager* mem_mgr){
   Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(17*dof));
 
   stokesPressureSSEShuffle(src_cnt, trg_cnt, r_src, r_trg, v_src_, k_out, mem_mgr);
@@ -2467,17 +2465,17 @@ void stokes_press<double>(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, i
 }
 
 template <>
-void stokes_stress<double>(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
+void stokes_stress<double>(double* r_src, int src_cnt, double* v_src_, int dof, double* r_trg, int trg_cnt, double* k_out, mem::MemoryManager* mem_mgr){
   Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(45*dof));
 
   stokesStressSSEShuffle(src_cnt, trg_cnt, r_src, r_trg, v_src_, k_out, mem_mgr);
 }
 
 template <>
-void stokes_grad<double>(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
+void stokes_grad<double>(double* r_src, int src_cnt, double* v_src_, int dof, double* r_trg, int trg_cnt, double* k_out, mem::MemoryManager* mem_mgr){
   Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(89*dof));
 
-  const T mu=1.0;
+  const double mu=1.0;
   stokesGradSSEShuffle(src_cnt, trg_cnt, r_src, r_trg, v_src_, k_out, mu, mem_mgr);
 }
 #endif

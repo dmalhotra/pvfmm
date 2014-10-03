@@ -138,6 +138,18 @@ void laplace_dbl_poten(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int t
 template <class T>
 void laplace_grad(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr);
 
+#ifndef __MIC__
+#ifdef USE_SSE
+template <>
+void laplace_poten<double>(double* r_src, int src_cnt, double* v_src, int dof, double* r_trg, int trg_cnt, double* k_out, mem::MemoryManager* mem_mgr);
+
+template <>
+void laplace_dbl_poten<double>(double* r_src, int src_cnt, double* v_src, int dof, double* r_trg, int trg_cnt, double* k_out, mem::MemoryManager* mem_mgr);
+
+template <>
+void laplace_grad<double>(double* r_src, int src_cnt, double* v_src, int dof, double* r_trg, int trg_cnt, double* k_out, mem::MemoryManager* mem_mgr);
+#endif
+#endif
 
 
 //#ifdef PVFMM_QUAD_T
@@ -192,6 +204,21 @@ template <class T>
 void stokes_grad(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr);
 
 
+#ifndef __MIC__
+#ifdef USE_SSE
+template <>
+void stokes_vel<double>(double* r_src, int src_cnt, double* v_src_, int dof, double* r_trg, int trg_cnt, double* k_out, mem::MemoryManager* mem_mgr);
+
+template <>
+void stokes_press<double>(double* r_src, int src_cnt, double* v_src_, int dof, double* r_trg, int trg_cnt, double* k_out, mem::MemoryManager* mem_mgr);
+
+template <>
+void stokes_stress<double>(double* r_src, int src_cnt, double* v_src_, int dof, double* r_trg, int trg_cnt, double* k_out, mem::MemoryManager* mem_mgr);
+
+template <>
+void stokes_grad<double>(double* r_src, int src_cnt, double* v_src_, int dof, double* r_trg, int trg_cnt, double* k_out, mem::MemoryManager* mem_mgr);
+#endif
+#endif
 
 const Kernel<double> ker_stokes_vel   =BuildKernel<double, stokes_vel, stokes_sym_dip>("stokes_vel"   , 3, std::pair<int,int>(3,3));
 
