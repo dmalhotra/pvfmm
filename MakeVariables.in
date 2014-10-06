@@ -1,38 +1,40 @@
 # Load this file inside your Makefile and use the variables CXXFLAGS_PVFMM and
-# LDFLAGS_PVFMM for compiling your code. You can use examples/Makefile as a
+# LDLIBS_PVFMM for compiling your code. You can use examples/Makefile as a
 # template makefile for your projects linking to this library.
 
 INSTALL_DIR_PVFMM = @prefix@
 TOP_SRCDIR_PVFMM = @abs_top_srcdir@
-PKG_SUBDIR_PVFMM = 
+PKG_SUBDIR_PVFMM =
 
 # Compiler and flags.
 CXX_PVFMM = @MPICXX@
 INTEL_OFFLOAD_OK=@intel_offload_ok@
 
-# nvcc compiler and flags.
-NVCC_PVFMM = @NVCC@
-NVCCFLAGS_PVFMM = @NVCCFLAGS@ @CUDA_CFLAGS@
-
-CXXFLAGS_PVFMM = @CXXFLAGS@ -DALLTOALLV_FIX
-LDFLAGS_PVFMM = @LIBS@
-
-# The PVFMM library and headers..
-CXXFLAGS_PVFMM += -I$(TOP_SRCDIR_PVFMM)/include$(PKG_SUBDIR_PVFMM)
-LDFLAGS_PVFMM += -L$(TOP_SRCDIR_PVFMM)/lib$(PKG_SUBDIR_PVFMM) -lpvfmm
-
-# Add CUDA include and libs.
-CXXFLAGS_PVFMM += @CUDA_CFLAGS@
-LDFLAGS_PVFMM += @CUDA_LDFLAGS@
+# The PVFMM library and headers.
+PVFMM_INCLUDES = -I$(TOP_SRCDIR_PVFMM)/include$(PKG_SUBDIR_PVFMM)
+PVFMM_LIBS = -L$(TOP_SRCDIR_PVFMM)/lib$(PKG_SUBDIR_PVFMM) -lpvfmm
 
 # Add FFTW include and lib paths.
-CXXFLAGS_PVFMM += @FFTW_INCLUDE@ 
-LDFLAGS_PVFMM += @FFTW_LIB@  @FFTWF_LIB@ 
+FFTW_INCLUDES_PVFMM = @FFTW_INCLUDE@
+FFTW_LIBS_PVFMM = @FFTW_LIB@ @FFTWF_LIB@
 
-# Add BLAS, LAPACK libs.
-LDFLAGS_PVFMM += @LAPACK_LIBS@ @BLAS_LIBS@ @FLIBS@ 
+# BLAS, LAPACK libs.
+BLAS_LAPACK_LIB_PVFMM = @LAPACK_LIBS@ @BLAS_LIBS@ @FLIBS@
 
-# Add X include and lib paths.
-CXXFLAGS_PVFMM += @X_INCLUDES@
-LDFLAGS_PVFMM += @X_LIBS@ 
-LDFLAGS_PVFMM +=-ldl -lstdc++
+# X include and lib paths.
+X_INCLUDES_PVFMM = @X_INCLUDES@
+X_LIBS_PVFMM = @X_LIBS@
+
+# nvcc compiler and flags.
+NVCC_PVFMM = @NVCC@
+NVCCFLAGS_PVFMM = @NVCCFLAGS@ @CUDA_CFLAGS@ $(PVFMM_INCLUDES)
+
+# CUDA include and libs.
+CUDA_CFLAGS_PVFMM = @CUDA_CFLAGS@
+CUDA_LDLIBS_PVFMM = @CUDA_LDLIBS@
+
+# Add all CXXFLAGS_PVFMM and LDLIBS_PVFMM
+CXXFLAGS_PVFMM = @CXXFLAGS@ -DALLTOALLV_FIX $(PVFMM_INCLUDES) $(FFTW_INCLUDES_PVFMM) $(X_INCLUDES_PVFMM) $(CUDA_CFLAGS_PVFMM)
+LDLIBS_PVFMM = @LDFLAGS@ $(PVFMM_LIBS) $(FFTW_LIBS_PVFMM) $(BLAS_LAPACK_LIB_PVFMM) $(X_LIBS_PVFMM) $(CUDA_LDLIBS_PVFMM) @LIBS@
+
+LDFLAGS_PVFMM = $(LDLIBS_PVFMM) # Deprecated, use LDLIBS_PVFMM instead

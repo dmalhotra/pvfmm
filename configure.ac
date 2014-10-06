@@ -90,6 +90,10 @@ else
   AC_SUBST(X_LIBS)
 fi
 
+# Check for libstdc++, libdl
+AC_CHECK_LIB(stdc++,main)
+AC_CHECK_LIB(dl,dlopen)
+
 # Check for OpenMP
 AC_LANG_WERROR([on])
 if $USE_OPENMP; then

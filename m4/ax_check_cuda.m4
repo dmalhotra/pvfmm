@@ -17,7 +17,7 @@
 # NVCC        : the nvcc compiler command.
 # NVCCFLAGS   : nvcc specific flags
 # CUDA_CFLAGS : CUDA includes
-# CUDA_LDFLAGS: CUDA libraries
+# CUDA_LDLIBS : CUDA libraries
 # NVCC_OK     : Automake conditional (defined if CUDA is enabled)
 #
 # Defines HAVE_CUDA in config.h
@@ -37,7 +37,7 @@ AC_ARG_WITH([cuda],
 
 NVCC=no
 CUDA_CFLAGS=
-CUDA_LDFLAGS=
+CUDA_LDLIBS=
 
 if test "x$with_cuda" != "xno"
 then
@@ -50,13 +50,13 @@ then
       AX_NORMALIZE_PATH([with_cuda], ["/"])
       CUDAPATH="$with_cuda"
       CUDA_CFLAGS+=" -I$with_cuda/include"
-      CUDA_LDFLAGS+=" -L$with_cuda/lib64"
+      CUDA_LDLIBS+=" -L$with_cuda/lib64"
    else
       AC_CHECK_FILE(/usr/local/cuda/,[CUDAPATH="/usr/local/cuda"],[])
       AC_CHECK_FILE(/usr/local/cuda/include,[CUDA_CFLAGS+=" -I/usr/local/cuda/include"],[CUDA_CFLAGS=""])
-      AC_CHECK_FILE(/usr/local/cuda/lib64,[CUDA_LDFLAGS+=" -L/usr/local/cuda/lib64"],[])
+      AC_CHECK_FILE(/usr/local/cuda/lib64,[CUDA_LDLIBS+=" -L/usr/local/cuda/lib64"],[])
    fi
-   CUDA_LDFLAGS+=" -lcuda -lcudart -lcublas"
+   CUDA_LDLIBS+=" -lcuda -lcudart -lcublas"
 
 
    # -----------------------------------------
@@ -128,7 +128,7 @@ EOF
    ax_save_LIBS="${LIBS}"
 
    CXXFLAGS="$CUDA_CFLAGS $CXXFLAGS"
-   LIBS="$CUDA_LDFLAGS $LIBS"
+   LIBS="$CUDA_LDLIBS $LIBS"
 
    # And the header and the lib
    AC_CHECK_HEADER([cuda.h], [], AC_MSG_FAILURE([Couldn't find cuda.h]), [#include <cuda.h>])
@@ -150,7 +150,7 @@ fi
 AC_SUBST([NVCC])
 AC_SUBST([NVCCFLAGS])
 AC_SUBST([CUDA_CFLAGS])
-AC_SUBST([CUDA_LDFLAGS])
+AC_SUBST([CUDA_LDLIBS])
 AM_CONDITIONAL([NVCC_OK], [test "x$ac_compile_nvcc" = "xyes"])
 
 ])

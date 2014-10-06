@@ -1,8 +1,10 @@
-ACLOCAL_AMFLAGS = -I m4 ${ACLOCAL_FLAGS}
+ACLOCAL_AMFLAGS = -I m4 $(ACLOCAL_FLAGS)
 AUTOMAKE_OPTIONS = subdir-objects
 @SET_MAKE@
 
 include MakeVariables.in
+CXXFLAGS = $(CXXFLAGS_PVFMM)
+LDLIBS = $(LDLIBS_PVFMM)
 
 # DOXYGEN SUPPORT
 include aminclude.am
@@ -25,8 +27,8 @@ EXTRA_DIST = \
 									scripts
 
 # additional include pathes necessary to compile the C++ library
-AM_CXXFLAGS = $(CXXFLAGS_PVFMM)
-AM_LDFLAGS = -static $(LDFLAGS_PVFMM)
+AM_CXXFLAGS =
+AM_LDFLAGS = -static
 
 ###############################################################################
 # THE LIBRARIES TO BUILD
@@ -127,7 +129,7 @@ all: #all-docs all-examples
 if NVCC_OK
 
 .cu.o :
-	$(NVCC) $(NVCCFLAGS) ${INCLUDE_PVFMM} -c $< -o $@
+	$(NVCC_PVFMM) $(NVCCFLAGS_PVFMM) -c $< -o $@
 
 endif
 
@@ -203,7 +205,7 @@ install: install-am
 	@echo '    export PVFMM_DIR=$(INSTALL_DIR)'
 	@echo
 	@echo 'You will need to load $$(PVFMM_DIR)/MakeVariables in your Makefile and'
-	@echo 'use the variables CXXFLAGS_PVFMM and LDFLAGS_PVFMM for compiling your code.'
+	@echo 'use the variables CXXFLAGS_PVFMM and LDLIBS_PVFMM for compiling your code.'
 	@echo '======================================================================='
 
 install-data-local: install-make-variables install-doxygen-doc
