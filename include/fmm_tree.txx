@@ -50,18 +50,18 @@ void FMM_Tree<FMM_Mat_t>::InitFMM_Tree(bool refine, BoundaryType bndry_) {
 
   if(refine){
     //RefineTree
-    Profile::Tic("RefineTree",this->Comm(),true,2);
+    Profile::Tic("RefineTree",this->Comm(),true,5);
     this->RefineTree();
     Profile::Toc();
   }
 
   //2:1 Balancing
-  Profile::Tic("2:1Balance",this->Comm(),true,2);
+  Profile::Tic("2:1Balance",this->Comm(),true,5);
   this->Balance21(bndry);
   Profile::Toc();
 
   //Redistribute nodes.
-  Profile::Tic("Redistribute",this->Comm(),true,3);
+  Profile::Tic("Redistribute",this->Comm(),true,5);
   this->RedistNodes();
   Profile::Toc();
 
@@ -111,7 +111,7 @@ void FMM_Tree<FMM_Mat_t>::SetupFMM(FMM_Mat_t* fmm_mat_) {
   Profile::Toc();
 
   setup_data.clear();
-  precomp_lst.clear();
+  //precomp_lst.clear();
   setup_data.resize(8*MAX_DEPTH);
   precomp_lst.resize(8);
 
@@ -238,9 +238,20 @@ template <class FMM_Mat_t>
 void FMM_Tree<FMM_Mat_t>::UpwardPass() {
   bool device=true;
 
+  int max_depth=0;
+  { // Get max_depth
+    int max_depth_loc=0;
+    std::vector<Node_t*>& nodes=this->GetNodeList();
+    for(size_t i=0;i<nodes.size();i++){
+      Node_t* n=nodes[i];
+      if(n->Depth()>max_depth_loc) max_depth_loc=n->Depth();
+    }
+    MPI_Allreduce(&max_depth_loc, &max_depth, 1, MPI_INT, MPI_MAX, *this->Comm());
+  }
+
   //Upward Pass (initialize all leaf nodes)
   Profile::Tic("S2U",this->Comm(),false,5);
-  for(int i=0; i<(fmm_mat->Homogen()?1:MAX_DEPTH); i++){ // Source2Up
+  for(int i=0; i<=(fmm_mat->Homogen()?0:max_depth); i++){ // Source2Up
     if(!fmm_mat->Homogen()) fmm_mat->SetupPrecomp(setup_data[i+MAX_DEPTH*6],/*device*/ false);
     fmm_mat->Source2Up(setup_data[i+MAX_DEPTH*6]);
   }
@@ -248,7 +259,7 @@ void FMM_Tree<FMM_Mat_t>::UpwardPass() {
 
   //Upward Pass (level by level)
   Profile::Tic("U2U",this->Comm(),false,5);
-  for(int i=MAX_DEPTH-1; i>=0; i--){ // Up2Up
+  for(int i=max_depth-1; i>=0; i--){ // Up2Up
     if(!fmm_mat->Homogen()) fmm_mat->SetupPrecomp(setup_data[i+MAX_DEPTH*7],/*device*/ false);
     fmm_mat->Up2Up(setup_data[i+MAX_DEPTH*7]);
   }

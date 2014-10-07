@@ -697,78 +697,33 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
 
 
 template <class FMMNode>
-void FMM_Cheb<FMMNode>::CollectNodeData(std::vector<FMMNode*>& node, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, std::vector<size_t> extra_size){
-  if(      buff.size()<6)       buff.resize(6);
-  if(    n_list.size()<6)     n_list.resize(6);
-  if(extra_size.size()<6) extra_size.resize(6,0);
-
+void FMM_Cheb<FMMNode>::CollectNodeData(std::vector<FMMNode*>& node, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, std::vector<std::vector<Vector<Real_t>* > > vec_list){
+  if(vec_list.size()<6) vec_list.resize(6);
   size_t n_coeff=(cheb_deg+1)*(cheb_deg+2)*(cheb_deg+3)/6;
   if(node.size()==0) return;
   {// 4. cheb_in
     int indx=4;
-    int dof=this->kernel->ker_dim[0];
-    size_t vec_sz=dof*n_coeff;
-    std::vector< FMMNode* > node_lst;
-    for(size_t i=0;i<node.size();i++)
-      if(node[i]->IsLeaf())
-        node_lst.push_back(node[i]);
-    n_list[indx]=node_lst;
-    extra_size[indx]+=node_lst.size()*vec_sz;
-
-    #pragma omp parallel for
-    for(size_t i=0;i<node.size();i++){ // Move data before resizing buff[indx]
-      Vector<Real_t>& cheb_in =node[i]->ChebData();
-      Vector<Real_t> new_buff=cheb_in;
-      cheb_in.Swap(new_buff);
+    size_t vec_sz=this->kernel->ker_dim[0]*n_coeff;
+    for(size_t i=0;i<node.size();i++){
+      if(node[i]->IsLeaf()){
+        Vector<Real_t>& data_vec=node[i]->ChebData();
+        vec_list[indx].push_back(&data_vec);
+        data_vec.Resize(vec_sz);
+      }
     }
   }
   {// 5. cheb_out
     int indx=5;
-    int dof=this->kernel->ker_dim[1];
-    size_t vec_sz=dof*n_coeff;
-    std::vector< FMMNode* > node_lst;
-    for(size_t i=0;i<node.size();i++)
-      if(node[i]->IsLeaf() && !node[i]->IsGhost())
-        node_lst.push_back(node[i]);
-    n_list[indx]=node_lst;
-    extra_size[indx]+=node_lst.size()*vec_sz;
-
-    #pragma omp parallel for
-    for(size_t i=0;i<node.size();i++){ // Move data before resizing buff[indx]
-      Vector<Real_t>& cheb_out=((FMMData*)node[i]->FMMData())->cheb_out;
-      cheb_out.ReInit(0);
+    size_t vec_sz=this->kernel->ker_dim[1]*n_coeff;
+    for(size_t i=0;i<node.size();i++){
+      if(node[i]->IsLeaf() && !node[i]->IsGhost()){
+        Vector<Real_t>& data_vec=((FMMData*)node[i]->FMMData())->cheb_out;
+        vec_list[indx].push_back(&data_vec);
+        data_vec.Resize(vec_sz);
+      }
     }
   }
-  FMM_Pts<FMMNode>::CollectNodeData(node, buff, n_list, extra_size);
-  {// 4. cheb_in
-    int indx=4;
-    int dof=this->kernel->ker_dim[0];
-    size_t vec_sz=dof*n_coeff;
-    Vector< FMMNode* >& node_lst=n_list[indx];
-    Real_t* buff_ptr=buff[indx][0]+buff[indx].Dim(0)*buff[indx].Dim(1)-extra_size[indx];
-    #pragma omp parallel for
-    for(size_t i=0;i<node_lst.Dim();i++){
-      Vector<Real_t>& cheb_in =node_lst[i]->ChebData();
-      mem::memcopy(buff_ptr+i*vec_sz, &cheb_in [0], cheb_in .Dim()*sizeof(Real_t));
-      cheb_in .ReInit(vec_sz, buff_ptr+i*vec_sz, false);
-      //if(node_lst[i]->IsGhost()) cheb_in .SetZero();
-    }
-    buff[indx].AllocDevice(true);
-  }
-  {// 5. cheb_out
-    int indx=5;
-    int dof=this->kernel->ker_dim[1];
-    size_t vec_sz=dof*n_coeff;
-    Vector< FMMNode* >& node_lst=n_list[indx];
-    Real_t* buff_ptr=buff[indx][0]+buff[indx].Dim(0)*buff[indx].Dim(1)-extra_size[indx];
-    #pragma omp parallel for
-    for(size_t i=0;i<node_lst.Dim();i++){
-      Vector<Real_t>& cheb_out=((FMMData*)node_lst[i]->FMMData())->cheb_out;
-      cheb_out.ReInit(vec_sz, buff_ptr+i*vec_sz, false);
-      cheb_out.SetZero();
-    }
-    buff[indx].AllocDevice(true);
-  }
+  FMM_Pts<FMMNode_t>::CollectNodeData(node, buff, n_list, vec_list);
 }
 
 

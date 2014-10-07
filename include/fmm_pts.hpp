@@ -133,7 +133,7 @@ class FMM_Pts{
    */
   bool Homogen(){return kernel->homogen;}
 
-  virtual void CollectNodeData(std::vector<FMMNode*>& nodes, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, std::vector<size_t> extra_size = std::vector<size_t>(0));
+  virtual void CollectNodeData(std::vector<FMMNode*>& nodes, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, std::vector<std::vector<Vector<Real_t>* > > vec_list = std::vector<std::vector<Vector<Real_t>* > >(0));
 
   void SetupPrecomp(SetupData<Real_t>& setup_data, bool device=false);
   void SetupInterac(SetupData<Real_t>& setup_data, bool device=false);

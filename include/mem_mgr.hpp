@@ -121,7 +121,7 @@ class MemoryManager{
 
 /** A global MemoryManager object. This is the default for aligned_new and
  * aligned_free */
-const MemoryManager glbMemMgr(GLOBAL_MEM_BUFF*1024LL*1024LL);
+extern MemoryManager glbMemMgr;
 
 /**
  * \brief Aligned allocation as an alternative to new. Uses placement new to

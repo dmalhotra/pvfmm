@@ -95,8 +95,8 @@ std::vector<Perm_Type>& InteracList<Node_t>::PermutList(Mat_Type t, size_t i){
 template <class Node_t>
 std::vector<Node_t*> InteracList<Node_t>::BuildList(Node_t* n, Mat_Type t){
   std::vector<Node_t*> interac_list(ListCount(t),NULL);
-  int n_collg=(int)pow(3.0,(int)dim);
-  int n_child=(int)pow(2.0,(int)dim);
+  static const int n_collg=(int)pow(3.0,(int)dim);
+  static const int n_child=(int)pow(2.0,(int)dim);
   int rel_coord[3];
 
   switch (t){

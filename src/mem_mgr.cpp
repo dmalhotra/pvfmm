@@ -141,6 +141,8 @@ void MemoryManager::test(){
   }
 }
 
+MemoryManager glbMemMgr(GLOBAL_MEM_BUFF*1024LL*1024LL);
+
 }//end namespace
 }//end namespace
 

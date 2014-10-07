@@ -1209,8 +1209,8 @@ void cheb_grad(const Vector<T>& A, int deg, Vector<T>& B, mem::MemoryManager* me
 
   // Create work buffers
   T* buff=mem::aligned_new<T>(2*n_coeff_*dof,mem_mgr);
-  Vector<T> A_(n_coeff_*dof,buff+n_coeff_*0); A_.SetZero();
-  Vector<T> B_(n_coeff_*dof,buff+n_coeff_*1); B_.SetZero();
+  Vector<T> A_(n_coeff_*dof,buff+n_coeff_*0,false); A_.SetZero();
+  Vector<T> B_(n_coeff_*dof,buff+n_coeff_*1,false); B_.SetZero();
 
   {// Rearrange data
     size_t indx=0;
@@ -1274,7 +1274,7 @@ void cheb_div(T* A_, int deg, T* B_){
     {
       Vector<T> A_vec(n1,&A[n1*i],false);
       Vector<T> B_vec(n1,MC[0],false);
-      cheb_diff(A_vec,3,i,B_vec);
+      cheb_diff(A_vec,deg,i,B_vec);
     }
     MB+=MC;
   }

@@ -981,17 +981,25 @@ void FMM_Pts<FMMNode>::PrecompAll(Mat_Type type, int level){
 }
 
 template <class FMMNode>
-void FMM_Pts<FMMNode>::CollectNodeData(std::vector<FMMNode*>& node, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, std::vector<size_t> extra_size){
-  if(      buff.size()<7)       buff.resize(7);
-  if(    n_list.size()<7)     n_list.resize(7);
+void FMM_Pts<FMMNode>::CollectNodeData(std::vector<FMMNode*>& node, std::vector<Matrix<Real_t> >& buff_list, std::vector<Vector<FMMNode_t*> >& n_list, std::vector<std::vector<Vector<Real_t>* > > vec_list){
+  if(buff_list.size()<7) buff_list.resize(7);
+  if(   n_list.size()<7)    n_list.resize(7);
+  if( vec_list.size()<7)  vec_list.resize(7);
+  int omp_p=omp_get_max_threads();
 
   if(node.size()==0) return;
   {// 0. upward_equiv
     int indx=0;
-    Matrix<Real_t>& M_uc2ue = this->interac_list.ClassMat(0, UC2UE_Type, 0);
-    size_t vec_sz=M_uc2ue.Dim(1);
+
+    size_t vec_sz;
+    { // Set vec_sz
+      Matrix<Real_t>& M_uc2ue = this->interac_list.ClassMat(0, UC2UE_Type, 0);
+      vec_sz=M_uc2ue.Dim(1);
+    }
+
     std::vector< FMMNode* > node_lst;
-    {
+    {// Construct node_lst
+      node_lst.clear();
       std::vector<std::vector< FMMNode* > > node_lst_(MAX_DEPTH+1);
       FMMNode_t* r_node=NULL;
       for(size_t i=0;i<node.size();i++){
@@ -1000,65 +1008,65 @@ void FMM_Pts<FMMNode>::CollectNodeData(std::vector<FMMNode*>& node, std::vector<
         if(node[i]->Depth()==0) r_node=node[i];
       }
       size_t chld_cnt=1UL<<COORD_DIM;
-      for(int i=0;i<=MAX_DEPTH;i++)
-        for(size_t j=0;j<node_lst_[i].size();j++)
-          for(size_t k=0;k<chld_cnt;k++)
-            node_lst.push_back((FMMNode_t*)node_lst_[i][j]->Child(k));
+      for(int i=0;i<=MAX_DEPTH;i++){
+        for(size_t j=0;j<node_lst_[i].size();j++){
+          for(size_t k=0;k<chld_cnt;k++){
+            FMMNode_t* node=(FMMNode_t*)node_lst_[i][j]->Child(k);
+            node_lst.push_back(node);
+          }
+        }
+      }
       if(r_node!=NULL) node_lst.push_back(r_node);
+      n_list[indx]=node_lst;
     }
-    n_list[indx]=node_lst;
-    size_t buff_size=node_lst.size()*vec_sz;
-    buff_size+=(extra_size.size()>indx?extra_size[indx]:0);
-    #pragma omp parallel for
-    for(size_t i=0;i<node.size();i++){ // Clear data
-      Vector<Real_t>& upward_equiv=node[i]->FMMData()->upward_equiv;
-      upward_equiv.ReInit(0);
+
+    std::vector<Vector<Real_t>*>& vec_lst=vec_list[indx];
+    for(size_t i=0;i<node_lst.size();i++){ // Construct vec_lst
+      FMMNode_t* node=node_lst[i];
+      Vector<Real_t>& data_vec=node->FMMData()->upward_equiv;
+      vec_lst.push_back(&data_vec);
+      data_vec.Resize(vec_sz);
     }
-    buff[indx].Resize(1,buff_size);
-    #pragma omp parallel for
-    for(size_t i=0;i<node_lst.size();i++){
-      Vector<Real_t>& upward_equiv=node_lst[i]->FMMData()->upward_equiv;
-      upward_equiv.ReInit(vec_sz, buff[indx][0]+i*vec_sz, false);
-      upward_equiv.SetZero();
-    }
-    buff[indx].AllocDevice(true);
   }
   {// 1. dnward_equiv
     int indx=1;
-    Matrix<Real_t>& M_dc2de = this->interac_list.ClassMat(0, DC2DE_Type, 0);
-    size_t vec_sz=M_dc2de.Dim(1);
+
+    size_t vec_sz;
+    { // Set vec_sz
+      Matrix<Real_t>& M_dc2de = this->interac_list.ClassMat(0, DC2DE_Type, 0);
+      vec_sz=M_dc2de.Dim(1);
+    }
+
     std::vector< FMMNode* > node_lst;
-    {
+    {// Construct node_lst
+      node_lst.clear();
       std::vector<std::vector< FMMNode* > > node_lst_(MAX_DEPTH+1);
       FMMNode_t* r_node=NULL;
       for(size_t i=0;i<node.size();i++){
-        if(!node[i]->IsLeaf() && !node[i]->IsGhost())
+        if(!node[i]->IsLeaf())
           node_lst_[node[i]->Depth()].push_back(node[i]);
         if(node[i]->Depth()==0) r_node=node[i];
       }
       size_t chld_cnt=1UL<<COORD_DIM;
-      for(int i=0;i<=MAX_DEPTH;i++)
-        for(size_t j=0;j<node_lst_[i].size();j++)
-          for(size_t k=0;k<chld_cnt;k++)
-            node_lst.push_back((FMMNode_t*)node_lst_[i][j]->Child(k));
+      for(int i=0;i<=MAX_DEPTH;i++){
+        for(size_t j=0;j<node_lst_[i].size();j++){
+          for(size_t k=0;k<chld_cnt;k++){
+            FMMNode_t* node=(FMMNode_t*)node_lst_[i][j]->Child(k);
+            node_lst.push_back(node);
+          }
+        }
+      }
       if(r_node!=NULL) node_lst.push_back(r_node);
+      n_list[indx]=node_lst;
     }
-    n_list[indx]=node_lst;
-    size_t buff_size=node_lst.size()*vec_sz;
-    buff_size+=(extra_size.size()>indx?extra_size[indx]:0);
-    #pragma omp parallel for
-    for(size_t i=0;i<node.size();i++){ // Clear data
-      Vector<Real_t>& dnward_equiv=node[i]->FMMData()->dnward_equiv;
-      dnward_equiv.ReInit(0);
+
+    std::vector<Vector<Real_t>*>& vec_lst=vec_list[indx];
+    for(size_t i=0;i<node_lst.size();i++){ // Construct vec_lst
+      FMMNode_t* node=node_lst[i];
+      Vector<Real_t>& data_vec=node->FMMData()->dnward_equiv;
+      vec_lst.push_back(&data_vec);
+      data_vec.Resize(vec_sz);
     }
-    buff[indx].Resize(1,buff_size);
-    #pragma omp parallel for
-    for(size_t i=0;i<node_lst.size();i++){
-      Vector<Real_t>& dnward_equiv=node_lst[i]->FMMData()->dnward_equiv;
-      dnward_equiv.ReInit(vec_sz, buff[indx][0]+i*vec_sz, false);
-      dnward_equiv.SetZero();
-    }
-    buff[indx].AllocDevice(true);
   }
   {// 2. upward_equiv_fft
     int indx=2;
@@ -1073,7 +1081,6 @@ void FMM_Pts<FMMNode>::CollectNodeData(std::vector<FMMNode*>& node, std::vector<
           node_lst.push_back(node_lst_[i][j]);
     }
     n_list[indx]=node_lst;
-    buff[indx].AllocDevice(true);
   }
   {// 3. dnward_check_fft
     int indx=3;
@@ -1088,167 +1095,179 @@ void FMM_Pts<FMMNode>::CollectNodeData(std::vector<FMMNode*>& node, std::vector<
           node_lst.push_back(node_lst_[i][j]);
     }
     n_list[indx]=node_lst;
-    buff[indx].AllocDevice(true);
   }
   {// 4. src_val
     int indx=4;
     int src_dof=kernel->ker_dim[0];
     int surf_dof=COORD_DIM+src_dof;
+
     std::vector< FMMNode* > node_lst;
-    size_t buff_size=0;
-    for(size_t i=0;i<node.size();i++)
+    for(size_t i=0;i<node.size();i++){// Construct node_lst
       if(node[i]->IsLeaf()){
         node_lst.push_back(node[i]);
-        buff_size+=(node[i]->src_coord.Dim()/COORD_DIM)*src_dof;
-        buff_size+=(node[i]->surf_coord.Dim()/COORD_DIM)*surf_dof;
       }
+    }
     n_list[indx]=node_lst;
 
-    #pragma omp parallel for
-    for(size_t i=0;i<node.size();i++){ // Move data before resizing buff[indx]
+    std::vector<Vector<Real_t>*>& vec_lst=vec_list[indx];
+    for(size_t i=0;i<node_lst.size();i++){ // Construct vec_lst
+      FMMNode_t* node=node_lst[i];
       { // src_value
-        Vector<Real_t>& src_value=node[i]->src_value;
-        Vector<Real_t> new_buff=src_value;
-        src_value.Swap(new_buff);
+        Vector<Real_t>& data_vec=node->src_value;
+        data_vec.Resize((node->src_coord.Dim()/COORD_DIM)*src_dof);
+        vec_lst.push_back(&data_vec);
       }
       { // surf_value
-        Vector<Real_t>& surf_value=node[i]->surf_value;
-        Vector<Real_t> new_buff=surf_value;
-        surf_value.Swap(new_buff);
+        Vector<Real_t>& data_vec=node->surf_value;
+        data_vec.Resize((node->surf_coord.Dim()/COORD_DIM)*surf_dof);
+        vec_lst.push_back(&data_vec);
       }
     }
-
-    buff[indx].Resize(1,buff_size+(extra_size.size()>indx?extra_size[indx]:0));
-    Real_t* buff_ptr=&buff[indx][0][0];
-    for(size_t i=0;i<node_lst.size();i++){
-      { // src_value
-        Vector<Real_t>& src_value=node_lst[i]->src_value;
-        mem::memcopy(buff_ptr,&src_value[0],src_value.Dim()*sizeof(Real_t));
-        src_value.ReInit((node_lst[i]->src_coord.Dim()/COORD_DIM)*src_dof, buff_ptr, false);
-        buff_ptr+=(node_lst[i]->src_coord.Dim()/COORD_DIM)*src_dof;
-      }
-      { // surf_value
-        Vector<Real_t>& surf_value=node_lst[i]->surf_value;
-        mem::memcopy(buff_ptr,&surf_value[0],surf_value.Dim()*sizeof(Real_t));
-        surf_value.ReInit((node_lst[i]->surf_coord.Dim()/COORD_DIM)*surf_dof, buff_ptr, false);
-        buff_ptr+=(node_lst[i]->surf_coord.Dim()/COORD_DIM)*surf_dof;
-      }
-    }
-    buff[indx].AllocDevice(true);
   }
   {// 5. trg_val
     int indx=5;
     int trg_dof=kernel->ker_dim[1];
+
     std::vector< FMMNode* > node_lst;
-    size_t buff_size=0;
-    for(size_t i=0;i<node.size();i++)
+    for(size_t i=0;i<node.size();i++){// Construct node_lst
       if(node[i]->IsLeaf() && !node[i]->IsGhost()){
         node_lst.push_back(node[i]);
-        buff_size+=(node[i]->trg_coord.Dim()/COORD_DIM)*trg_dof;
       }
+    }
     n_list[indx]=node_lst;
 
-    #pragma omp parallel for
-    for(size_t i=0;i<node.size();i++){ // Clear data
+    std::vector<Vector<Real_t>*>& vec_lst=vec_list[indx];
+    for(size_t i=0;i<node_lst.size();i++){ // Construct vec_lst
+      FMMNode_t* node=node_lst[i];
       { // trg_value
-        Vector<Real_t>& trg_value=node[i]->trg_value;
-        trg_value.ReInit(0);
+        Vector<Real_t>& data_vec=node->trg_value;
+        data_vec.Resize((node->trg_coord.Dim()/COORD_DIM)*trg_dof);
+        vec_lst.push_back(&data_vec);
       }
     }
-    buff[indx].Resize(1,buff_size+(extra_size.size()>indx?extra_size[indx]:0));
-    Real_t* buff_ptr=&buff[indx][0][0];
-    for(size_t i=0;i<node_lst.size();i++){
-      { // trg_value
-        Vector<Real_t>& trg_value=node_lst[i]->trg_value;
-        trg_value.ReInit((node_lst[i]->trg_coord.Dim()/COORD_DIM)*trg_dof, buff_ptr, false);
-        buff_ptr+=(node_lst[i]->trg_coord.Dim()/COORD_DIM)*trg_dof;
-      }
-    }
-    #pragma omp parallel for
-    for(size_t i=0;i<node_lst.size();i++){
-      Vector<Real_t>& trg_value=node_lst[i]->trg_value;
-      trg_value.SetZero();
-    }
-    buff[indx].AllocDevice(true);
   }
   {// 6. pts_coord
     int indx=6;
-    size_t m=MultipoleOrder();
+
     std::vector< FMMNode* > node_lst;
-    size_t buff_size=0;
-    for(size_t i=0;i<node.size();i++)
+    for(size_t i=0;i<node.size();i++){// Construct node_lst
       if(node[i]->IsLeaf()){
         node_lst.push_back(node[i]);
-        buff_size+=node[i]->src_coord.Dim();
-        buff_size+=node[i]->surf_coord.Dim();
-        buff_size+=node[i]->trg_coord.Dim();
       }
+    }
     n_list[indx]=node_lst;
 
-    #pragma omp parallel for
-    for(size_t i=0;i<node.size();i++){ // Move data before resizing buff[indx]
+    std::vector<Vector<Real_t>*>& vec_lst=vec_list[indx];
+    for(size_t i=0;i<node_lst.size();i++){ // Construct vec_lst
+      FMMNode_t* node=node_lst[i];
       { // src_coord
-        Vector<Real_t>& src_coord=node[i]->src_coord;
-        Vector<Real_t> new_buff=src_coord;
-        src_coord.Swap(new_buff);
+        Vector<Real_t>& data_vec=node->src_coord;
+        vec_lst.push_back(&data_vec);
       }
       { // surf_coord
-        Vector<Real_t>& surf_coord=node[i]->surf_coord;
-        Vector<Real_t> new_buff=surf_coord;
-        surf_coord.Swap(new_buff);
+        Vector<Real_t>& data_vec=node->surf_coord;
+        vec_lst.push_back(&data_vec);
       }
       { // trg_coord
-        Vector<Real_t>& trg_coord=node[i]->trg_coord;
-        Vector<Real_t> new_buff=trg_coord;
-        trg_coord.Swap(new_buff);
+        Vector<Real_t>& data_vec=node->trg_coord;
+        vec_lst.push_back(&data_vec);
       }
     }
-
-    buff_size+=(extra_size.size()>indx?extra_size[indx]:0);
-    buff_size+=4*MAX_DEPTH*(6*(m-1)*(m-1)+2)*COORD_DIM;
-    buff[indx].Resize(1,buff_size);
-
-    Real_t* buff_ptr=&buff[indx][0][0];
-    for(size_t i=0;i<node_lst.size();i++){
-      { // src_coord
-        Vector<Real_t>& src_coord=node_lst[i]->src_coord;
-        mem::memcopy(buff_ptr,&src_coord[0],src_coord.Dim()*sizeof(Real_t));
-        src_coord.ReInit(node_lst[i]->src_coord.Dim(), buff_ptr, false);
-        buff_ptr+=node_lst[i]->src_coord.Dim();
-      }
-      { // surf_coord
-        Vector<Real_t>& surf_coord=node_lst[i]->surf_coord;
-        mem::memcopy(buff_ptr,&surf_coord[0],surf_coord.Dim()*sizeof(Real_t));
-        surf_coord.ReInit(node_lst[i]->surf_coord.Dim(), buff_ptr, false);
-        buff_ptr+=node_lst[i]->surf_coord.Dim();
-      }
-      { // trg_coord
-        Vector<Real_t>& trg_coord=node_lst[i]->trg_coord;
-        mem::memcopy(buff_ptr,&trg_coord[0],trg_coord.Dim()*sizeof(Real_t));
-        trg_coord.ReInit(node_lst[i]->trg_coord.Dim(), buff_ptr, false);
-        buff_ptr+=node_lst[i]->trg_coord.Dim();
-      }
-    }
-
     { // check and equiv surfaces.
-      upwd_check_surf.resize(MAX_DEPTH);
-      upwd_equiv_surf.resize(MAX_DEPTH);
-      dnwd_check_surf.resize(MAX_DEPTH);
-      dnwd_equiv_surf.resize(MAX_DEPTH);
+      if(upwd_check_surf.size()==0){
+        size_t m=MultipoleOrder();
+        upwd_check_surf.resize(MAX_DEPTH);
+        upwd_equiv_surf.resize(MAX_DEPTH);
+        dnwd_check_surf.resize(MAX_DEPTH);
+        dnwd_equiv_surf.resize(MAX_DEPTH);
+        for(size_t depth=0;depth<MAX_DEPTH;depth++){
+          Real_t c[3]={0.0,0.0,0.0};
+          upwd_check_surf[depth].ReInit((6*(m-1)*(m-1)+2)*COORD_DIM);
+          upwd_equiv_surf[depth].ReInit((6*(m-1)*(m-1)+2)*COORD_DIM);
+          dnwd_check_surf[depth].ReInit((6*(m-1)*(m-1)+2)*COORD_DIM);
+          dnwd_equiv_surf[depth].ReInit((6*(m-1)*(m-1)+2)*COORD_DIM);
+          upwd_check_surf[depth]=u_check_surf(m,c,depth);
+          upwd_equiv_surf[depth]=u_equiv_surf(m,c,depth);
+          dnwd_check_surf[depth]=d_check_surf(m,c,depth);
+          dnwd_equiv_surf[depth]=d_equiv_surf(m,c,depth);
+        }
+      }
       for(size_t depth=0;depth<MAX_DEPTH;depth++){
-        Real_t c[3]={0.0,0.0,0.0};
-        upwd_check_surf[depth].ReInit((6*(m-1)*(m-1)+2)*COORD_DIM, buff_ptr, false); buff_ptr+=(6*(m-1)*(m-1)+2)*COORD_DIM;
-        upwd_equiv_surf[depth].ReInit((6*(m-1)*(m-1)+2)*COORD_DIM, buff_ptr, false); buff_ptr+=(6*(m-1)*(m-1)+2)*COORD_DIM;
-        dnwd_check_surf[depth].ReInit((6*(m-1)*(m-1)+2)*COORD_DIM, buff_ptr, false); buff_ptr+=(6*(m-1)*(m-1)+2)*COORD_DIM;
-        dnwd_equiv_surf[depth].ReInit((6*(m-1)*(m-1)+2)*COORD_DIM, buff_ptr, false); buff_ptr+=(6*(m-1)*(m-1)+2)*COORD_DIM;
-        upwd_check_surf[depth]=u_check_surf(m,c,depth);
-        upwd_equiv_surf[depth]=u_equiv_surf(m,c,depth);
-        dnwd_check_surf[depth]=d_check_surf(m,c,depth);
-        dnwd_equiv_surf[depth]=d_equiv_surf(m,c,depth);
+        vec_lst.push_back(&upwd_check_surf[depth]);
+        vec_lst.push_back(&upwd_equiv_surf[depth]);
+        vec_lst.push_back(&dnwd_check_surf[depth]);
+        vec_lst.push_back(&dnwd_equiv_surf[depth]);
       }
     }
 
-    buff[indx].AllocDevice(true);
+  }
+
+  // Create extra auxiliary buffer.
+  if(buff_list.size()<=vec_list.size()) buff_list.resize(vec_list.size()+1);
+  for(size_t indx=0;indx<vec_list.size();indx++){ // Resize buffer
+    Matrix<Real_t>&              aux_buff=buff_list[vec_list.size()];
+    Matrix<Real_t>&                  buff=buff_list[indx];
+    std::vector<Vector<Real_t>*>& vec_lst= vec_list[indx];
+    bool keep_data=(indx==4 || indx==6);
+    size_t n_vec=vec_lst.size();
+
+    { // Continue if nothing to be done.
+      if(!n_vec) continue;
+      if(buff.Dim(0)*buff.Dim(1)>0){
+        bool init_buff=false;
+        Real_t* buff_start=&buff[0][0];
+        Real_t* buff_end=&buff[0][0]+buff.Dim(0)*buff.Dim(1);
+        #pragma omp parallel for reduction(||:init_buff)
+        for(size_t i=0;i<n_vec;i++){
+          if(&(*vec_lst[i])[0]<buff_start || &(*vec_lst[i])[0]>=buff_end){
+            init_buff=true;
+          }
+        }
+        if(!init_buff) continue;
+      }
+    }
+
+    std::vector<size_t> vec_size(n_vec);
+    std::vector<size_t> vec_disp(n_vec);
+    if(n_vec){ // Set vec_size and vec_disp
+      #pragma omp parallel for
+      for(size_t i=0;i<n_vec;i++){ // Set vec_size
+        vec_size[i]=vec_lst[i]->Dim();
+      }
+
+      vec_disp[0]=0;
+      omp_par::scan(&vec_size[0],&vec_disp[0],n_vec);
+    }
+    size_t buff_size=vec_size[n_vec-1]+vec_disp[n_vec-1];
+
+    if(keep_data){ // Copy to aux_buff
+      if(aux_buff.Dim(0)*aux_buff.Dim(1)<buff_size){ // Resize aux_buff
+        aux_buff.Resize(1,buff_size*1.05);
+      }
+
+      #pragma omp parallel for schedule(dynamic)
+      for(size_t i=0;i<n_vec;i++){
+        mem::memcopy(&aux_buff[0][0]+vec_disp[i],&(*vec_lst[i])[0],vec_size[i]*sizeof(Real_t));
+      }
+    }
+
+    if(buff.Dim(0)*buff.Dim(1)<buff_size){ // Resize buff
+      buff.Resize(1,buff_size*1.05);
+    }
+
+    if(keep_data){ // Copy to buff (from aux_buff)
+      #pragma omp parallel for
+      for(size_t tid=0;tid<omp_p;tid++){
+        size_t a=(buff_size*(tid+0))/omp_p;
+        size_t b=(buff_size*(tid+1))/omp_p;
+        mem::memcopy(&buff[0][0]+a,&aux_buff[0][0]+a,(b-a)*sizeof(Real_t));
+      }
+    }
+
+    #pragma omp parallel for
+    for(size_t i=0;i<n_vec;i++){ // ReInit vectors
+      vec_lst[i]->ReInit(vec_size[i],&buff[0][0]+vec_disp[i],false);
+    }
   }
 }
 
@@ -1295,7 +1314,7 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
   size_t n_out=nodes_out.size();
 
   // Setup precomputed data.
-  SetupPrecomp(setup_data,device);
+  if(setup_data.precomp_data->Dim(0)*setup_data.precomp_data->Dim(1)==0) SetupPrecomp(setup_data,device);
 
   // Build interac_data
   Profile::Tic("Interac-Data",&this->comm,true,25);
@@ -1316,18 +1335,23 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
       size_t mat_cnt=this->interac_list.ListCount(interac_type);
       Matrix<size_t> precomp_data_offset;
       { // Load precomp_data for interac_type.
+        struct HeaderData{
+          size_t total_size;
+          size_t      level;
+          size_t   mat_cnt ;
+          size_t  max_depth;
+        };
         Matrix<char>& precomp_data=*setup_data.precomp_data;
         char* indx_ptr=precomp_data[0]+precomp_offset;
-        size_t total_size=((size_t*)indx_ptr)[0]; indx_ptr+=sizeof(size_t);
-        size_t mat_cnt_  =((size_t*)indx_ptr)[0]; indx_ptr+=sizeof(size_t);
-        size_t max_depth =((size_t*)indx_ptr)[0]; indx_ptr+=sizeof(size_t);
-        precomp_data_offset.ReInit(mat_cnt_,(1+(2+2)*max_depth), (size_t*)indx_ptr, false);
-        precomp_offset+=total_size;
+        HeaderData& header=*(HeaderData*)indx_ptr;indx_ptr+=sizeof(HeaderData);
+        precomp_data_offset.ReInit(header.mat_cnt,(1+(2+2)*header.max_depth), (size_t*)indx_ptr, false);
+        precomp_offset+=header.total_size;
       }
 
       Matrix<FMMNode*> src_interac_list(n_in ,mat_cnt); src_interac_list.SetZero();
       Matrix<FMMNode*> trg_interac_list(n_out,mat_cnt); trg_interac_list.SetZero();
       { // Build trg_interac_list
+        #pragma omp parallel for
         for(size_t i=0;i<n_out;i++){
           if(!((FMMNode*)nodes_out[i])->IsGhost() && (level==-1 || ((FMMNode*)nodes_out[i])->Depth()==level)){
             std::vector<FMMNode*>& lst=((FMMNode*)nodes_out[i])->interac_list[interac_type];
@@ -1337,7 +1361,9 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
         }
       }
       { // Build src_interac_list
+        #pragma omp parallel for
         for(size_t i=0;i<n_in ;i++) ((FMMNode*)nodes_in [i])->node_id=i;
+        #pragma omp parallel for
         for(size_t i=0;i<n_out;i++){
           for(size_t j=0;j<mat_cnt;j++)
           if(trg_interac_list[i][j]!=NULL){
@@ -1396,7 +1422,7 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
             for(size_t j=interac_blk_dsp[k-1];j<interac_blk_dsp[k];j++){
               FMMNode_t* trg_node=src_interac_list[i][j];
               if(trg_node!=NULL){
-                size_t depth=trg_node->Depth();
+                size_t depth=(this->Homogen()?trg_node->Depth():0);
                 input_perm .push_back(precomp_data_offset[j][1+4*depth+0]); // prem
                 input_perm .push_back(precomp_data_offset[j][1+4*depth+1]); // scal
                 input_perm .push_back(interac_dsp[trg_node->node_id][j]*vec_size*sizeof(Real_t)); // trg_ptr
@@ -1413,7 +1439,7 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
           for(size_t i=0;i<n_out;i++){
             for(size_t j=interac_blk_dsp[k-1];j<interac_blk_dsp[k];j++){
               if(trg_interac_list[i][j]!=NULL){
-                size_t depth=((FMMNode*)nodes_out[i])->Depth();
+                size_t depth=(this->Homogen()?((FMMNode*)nodes_out[i])->Depth():0);
                 output_perm.push_back(precomp_data_offset[j][1+4*depth+2]); // prem
                 output_perm.push_back(precomp_data_offset[j][1+4*depth+3]); // scal
                 output_perm.push_back(interac_dsp[               i ][j]*vec_size*sizeof(Real_t)); // src_ptr
@@ -1510,7 +1536,8 @@ void EvalListGPU(SetupData<Real_t>& setup_data, Vector<char>& dev_buffer, MPI_Co
   output_data_d = setup_data. output_data->AllocDevice(false);
   Profile::Toc();
 
-  { // Set interac_data.
+  Profile::Tic("DeviceComp",&comm,false,20);
+  { // Offloaded computation.
     size_t data_size, M_dim0, M_dim1, dof;
     Vector<size_t> interac_blk;
     Vector<size_t> interac_cnt;
@@ -1592,6 +1619,7 @@ void EvalListGPU(SetupData<Real_t>& setup_data, Vector<char>& dev_buffer, MPI_Co
       }
     }
   }
+  Profile::Toc();
 
 	if(SYNC) CUDA_Lock::wait();
 }
@@ -2662,7 +2690,7 @@ void FMM_Pts<FMMNode>::V_ListSetup(SetupData<Real_t>&  setup_data, std::vector<M
   size_t n_out=nodes_out.size();
 
   // Setup precomputed data.
-  SetupPrecomp(setup_data,device);
+  if(setup_data.precomp_data->Dim(0)*setup_data.precomp_data->Dim(1)==0) SetupPrecomp(setup_data,device);
 
   // Build interac_data
   Profile::Tic("Interac-Data",&this->comm,true,25);
@@ -2675,13 +2703,17 @@ void FMM_Pts<FMMNode>::V_ListSetup(SetupData<Real_t>&  setup_data, std::vector<M
     Matrix<size_t> precomp_data_offset;
     std::vector<size_t> interac_mat;
     { // Load precomp_data for interac_type.
+      struct HeaderData{
+        size_t total_size;
+        size_t      level;
+        size_t   mat_cnt ;
+        size_t  max_depth;
+      };
       Matrix<char>& precomp_data=*setup_data.precomp_data;
       char* indx_ptr=precomp_data[0]+precomp_offset;
-      size_t total_size=((size_t*)indx_ptr)[0]; indx_ptr+=sizeof(size_t);
-      size_t mat_cnt_  =((size_t*)indx_ptr)[0]; indx_ptr+=sizeof(size_t);
-      size_t max_depth =((size_t*)indx_ptr)[0]; indx_ptr+=sizeof(size_t);
-      precomp_data_offset.ReInit(mat_cnt_,1+(2+2)*max_depth, (size_t*)indx_ptr, false);
-      precomp_offset+=total_size;
+      HeaderData& header=*(HeaderData*)indx_ptr;indx_ptr+=sizeof(HeaderData);
+      precomp_data_offset.ReInit(header.mat_cnt,1+(2+2)*header.max_depth, (size_t*)indx_ptr, false);
+      precomp_offset+=header.total_size;
       for(size_t mat_id=0;mat_id<mat_cnt;mat_id++){
         Matrix<Real_t>& M0 = this->mat->Mat(level, interac_type, mat_id);
         assert(M0.Dim(0)>0 && M0.Dim(1)>0); UNUSED(M0);
@@ -2822,11 +2854,11 @@ void FMM_Pts<FMMNode>::V_ListSetup(SetupData<Real_t>&  setup_data, std::vector<M
   }
   Profile::Toc();
 
-  Profile::Tic("Host2Device",&this->comm,false,25);
   if(device){ // Host2Device
+    Profile::Tic("Host2Device",&this->comm,false,25);
     setup_data.interac_data. AllocDevice(true);
+    Profile::Toc();
   }
-  Profile::Toc();
 }
 
 template <class FMMNode>
@@ -3041,6 +3073,7 @@ void FMM_Pts<FMMNode>::SetupInteracPts(SetupData<Real_t>& setup_data, bool shift
     size_t ker_dim0=setup_data.kernel->ker_dim[0];
     size_t ker_dim1=setup_data.kernel->ker_dim[1];
     size_t dof=1;
+    #pragma omp parallel for
     for(size_t i=0;i<n_in ;i++) ((FMMNode*)nodes_in [i])->node_id=i;
 
     std::vector<size_t> trg_interac_cnt(n_out,0);
@@ -3050,6 +3083,7 @@ void FMM_Pts<FMMNode>::SetupInteracPts(SetupData<Real_t>& setup_data, bool shift
     std::vector<Real_t> scaling(n_out*(ker_dim0+ker_dim1),0);
     { // Set trg data
       Mat_Type& interac_type=interac_type_lst[0];
+      #pragma omp parallel for
       for(size_t i=0;i<n_out;i++){
         if(!((FMMNode*)nodes_out[i])->IsGhost() && (level==-1 || ((FMMNode*)nodes_out[i])->Depth()==level)){
           trg_cnt  [i]=output_vector[i*2+0]->Dim()/COORD_DIM;
@@ -3079,6 +3113,7 @@ void FMM_Pts<FMMNode>::SetupInteracPts(SetupData<Real_t>& setup_data, bool shift
       Mat_Type& interac_type=interac_type_lst[type_indx];
       size_t mat_cnt=this->interac_list.ListCount(interac_type);
 
+      #pragma omp parallel for
       for(size_t i=0;i<n_out;i++){ // For each target node.
         if(!((FMMNode*)nodes_out[i])->IsGhost() && (level==-1 || ((FMMNode*)nodes_out[i])->Depth()==level)){
           std::vector<FMMNode*>& lst=((FMMNode*)nodes_out[i])->interac_list[interac_type];
@@ -3205,11 +3240,11 @@ void FMM_Pts<FMMNode>::SetupInteracPts(SetupData<Real_t>& setup_data, bool shift
   }
   Profile::Toc();
 
-  Profile::Tic("Host2Device",&this->comm,false,25);
   if(device){ // Host2Device
+    Profile::Tic("Host2Device",&this->comm,false,25);
     setup_data.interac_data .AllocDevice(true);
+    Profile::Toc();
   }
-  Profile::Toc();
 }
 
 template <class FMMNode>
