@@ -110,7 +110,7 @@ void FMM_Tree<FMM_Mat_t>::SetupFMM(FMM_Mat_t* fmm_mat_) {
   fmm_mat->CollectNodeData(all_nodes, node_data_buff, node_lists);
   Profile::Toc();
 
-  setup_data.clear();
+  //setup_data.clear();
   //precomp_lst.clear();
   setup_data.resize(8*MAX_DEPTH);
   precomp_lst.resize(8);

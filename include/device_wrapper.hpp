@@ -27,6 +27,10 @@ namespace pvfmm{
 
 namespace DeviceWrapper{
 
+  void* host_malloc(size_t size);
+
+  void host_free(void*);
+
   uintptr_t alloc_device(char* dev_handle, size_t len);
 
   void free_device(char* dev_handle, uintptr_t dev_ptr);

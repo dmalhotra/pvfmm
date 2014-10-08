@@ -113,7 +113,9 @@ lib_libpvfmm_a_SOURCES = \
 									src/tree_node.cpp
 
 if NVCC_OK
-lib_libpvfmm_a_SOURCES += src/fmm_pts_gpu.cu
+lib_libpvfmm_a_SOURCES += \
+													src/device_wrapper_gpu.cu \
+													src/fmm_pts_gpu.cu
 endif
 
 dist_noinst_SCRIPTS = autogen.sh

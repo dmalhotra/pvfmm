@@ -23,6 +23,15 @@ namespace pvfmm{
 namespace DeviceWrapper{
 
   // CUDA functions
+#ifdef __cplusplus
+extern "C" {
+#endif
+  inline void* host_malloc_cuda(size_t size);
+  inline void host_free_cuda(void* p);
+#ifdef __cplusplus
+}
+#endif
+
   inline uintptr_t alloc_device_cuda(char* dev_handle, size_t len) {
     char *dev_ptr=NULL;
 #if defined(PVFMM_HAVE_CUDA)
@@ -64,6 +73,7 @@ namespace DeviceWrapper{
   }
 
   inline int device2host_cuda(char *dev_ptr, char *host_ptr, size_t len) {
+    if(!dev_ptr) return 0;
     #if defined(PVFMM_HAVE_CUDA)
     cudaError_t error;
     cudaStream_t *stream = CUDA_Lock::acquire_stream();
@@ -158,6 +168,22 @@ namespace DeviceWrapper{
 
 
   // Wrapper functions
+
+  inline void* host_malloc(size_t size){
+    #ifdef defined(PVFMM_HAVE_CUDA)
+    return host_malloc_cuda;
+    #else
+    return malloc(size);
+    #endif
+  }
+
+  inline void host_free(void* p){
+    #ifdef defined(PVFMM_HAVE_CUDA)
+    return host_free_cuda(p);
+    #else
+    return free(p);
+    #endif
+  }
 
   inline uintptr_t alloc_device(char* dev_handle, size_t len){
     #ifdef __INTEL_OFFLOAD

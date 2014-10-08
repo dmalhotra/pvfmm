@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <cstring>
 #include <cassert>
+#include <device_wrapper.hpp>
 
 namespace pvfmm{
 namespace mem{
@@ -88,7 +89,7 @@ void* MemoryManager::malloc(const size_t& n_elem, const size_t& type_size, const
   omp_unset_lock(&omp_lock);
   if(!base){ // Use system malloc
     size+=2+alignment;
-    char* p = (char*)::malloc(size);
+    char* p = (char*)DeviceWrapper::host_malloc(size);
     base = (char*)((uintptr_t)(p+2+alignment) & ~(uintptr_t)alignment);
     ((uint16_t*)base)[-1] = (uint16_t)(base-p);
   }
@@ -133,7 +134,7 @@ void MemoryManager::free(void* p, const size_t& type_size, const uintptr_t& type
 
   if(base<&buff[0] || base>=&buff[buff_size]){ // Use system free
     char* p=(char*)((uintptr_t)base-((uint16_t*)base)[-1]);
-    return ::free(p);
+    return DeviceWrapper::host_free(p);
   }
 
   size_t n_indx=mem_head->n_indx;
