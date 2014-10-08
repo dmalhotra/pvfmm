@@ -61,7 +61,7 @@ class FMM_Cheb: public FMM_Pts<FMMNode>{
    * \param[in] cheb_deg Degree of Chebyshev polynomials.
    * \param[in] kernel Kernel functions and related data.
    */
-  void Initialize(int mult_order, int cheb_deg, const MPI_Comm& comm, const Kernel<Real_t>* kernel, const Kernel<Real_t>* aux_kernel=NULL);
+  void Initialize(int mult_order, int cheb_deg, const MPI_Comm& comm, const Kernel<Real_t>* kernel);
 
   /**
    * \brief Number of source points per box (or the parameter describing the

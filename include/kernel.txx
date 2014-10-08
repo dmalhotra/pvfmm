@@ -50,6 +50,15 @@ Kernel<T>::Kernel(Ker_t poten, Ker_t dbl_poten, const char* name, int dim_, std:
   dev_ker_poten=dev_poten;
   dev_dbl_layer_poten=dev_dbl_poten;
 
+  k_s2m=NULL;
+  k_s2l=NULL;
+  k_s2t=NULL;
+  k_m2m=NULL;
+  k_m2l=NULL;
+  k_m2t=NULL;
+  k_l2l=NULL;
+  k_l2t=NULL;
+
   homogen=false;
   init=false;
 }
@@ -627,6 +636,40 @@ void Kernel<T>::Initialize(bool verbose) const{
     }
     std::cout<<"\n";
     std::cout<<"\n";
+  }
+
+  { // Initialize auxiliary FMM kernels
+    if(!k_s2m) k_s2m=this;
+    if(!k_s2l) k_s2l=this;
+    if(!k_s2t) k_s2t=this;
+    if(!k_m2m) k_m2m=this;
+    if(!k_m2l) k_m2l=this;
+    if(!k_m2t) k_m2t=this;
+    if(!k_l2l) k_l2l=this;
+    if(!k_l2t) k_l2t=this;
+
+    assert(k_s2t->ker_dim[0]==ker_dim[0]);
+    assert(k_s2m->ker_dim[0]==k_s2l->ker_dim[0]);
+    assert(k_s2m->ker_dim[0]==k_s2t->ker_dim[0]);
+    assert(k_m2m->ker_dim[0]==k_m2l->ker_dim[0]);
+    assert(k_m2m->ker_dim[0]==k_m2t->ker_dim[0]);
+    assert(k_l2l->ker_dim[0]==k_l2t->ker_dim[0]);
+
+    assert(k_s2t->ker_dim[1]==ker_dim[1]);
+    assert(k_s2m->ker_dim[1]==k_m2m->ker_dim[1]);
+    assert(k_s2l->ker_dim[1]==k_l2l->ker_dim[1]);
+    assert(k_m2l->ker_dim[1]==k_l2l->ker_dim[1]);
+    assert(k_s2t->ker_dim[1]==k_m2t->ker_dim[1]);
+    assert(k_s2t->ker_dim[1]==k_l2t->ker_dim[1]);
+
+    k_s2m->Initialize(verbose);
+    k_s2l->Initialize(verbose);
+    k_s2t->Initialize(verbose);
+    k_m2m->Initialize(verbose);
+    k_m2l->Initialize(verbose);
+    k_m2t->Initialize(verbose);
+    k_l2l->Initialize(verbose);
+    k_l2t->Initialize(verbose);
   }
 }
 

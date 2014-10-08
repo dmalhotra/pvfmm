@@ -75,6 +75,15 @@ struct Kernel{
   mutable Vector<T> trg_scal;
   mutable Vector<Permutation<T> > perm_vec;
 
+  mutable const Kernel<T>* k_s2m;
+  mutable const Kernel<T>* k_s2l;
+  mutable const Kernel<T>* k_s2t;
+  mutable const Kernel<T>* k_m2m;
+  mutable const Kernel<T>* k_m2l;
+  mutable const Kernel<T>* k_m2t;
+  mutable const Kernel<T>* k_l2l;
+  mutable const Kernel<T>* k_l2t;
+
   private:
 
   Kernel();
@@ -83,7 +92,10 @@ struct Kernel{
 
 template<typename T, void (*A)(T*, int, T*, int, T*, int, T*, mem::MemoryManager* mem_mgr),
                      void (*B)(T*, int, T*, int, T*, int, T*, mem::MemoryManager* mem_mgr)>
-Kernel<T> BuildKernel(const char* name, int dim, std::pair<int,int> k_dim){
+Kernel<T> BuildKernel(const char* name, int dim, std::pair<int,int> k_dim,
+    const Kernel<T>* k_s2m=NULL, const Kernel<T>* k_s2l=NULL, const Kernel<T>* k_s2t=NULL,
+    const Kernel<T>* k_m2m=NULL, const Kernel<T>* k_m2l=NULL, const Kernel<T>* k_m2t=NULL,
+    const Kernel<T>* k_l2l=NULL, const Kernel<T>* k_l2t=NULL){
   size_t dev_ker_poten      ;
   size_t dev_dbl_layer_poten;
   #ifdef __INTEL_OFFLOAD
@@ -94,12 +106,26 @@ Kernel<T> BuildKernel(const char* name, int dim, std::pair<int,int> k_dim){
     dev_dbl_layer_poten=(size_t)((typename Kernel<T>::Ker_t)B);
   }
 
-  return Kernel<T>(A, B, name, dim, k_dim,
-                   dev_ker_poten, dev_dbl_layer_poten);
+  Kernel<T> K(A, B, name, dim, k_dim,
+              dev_ker_poten, dev_dbl_layer_poten);
+
+  K.k_s2m=k_s2m;
+  K.k_s2l=k_s2l;
+  K.k_s2t=k_s2t;
+  K.k_m2m=k_m2m;
+  K.k_m2l=k_m2l;
+  K.k_m2t=k_m2t;
+  K.k_l2l=k_l2l;
+  K.k_l2t=k_l2t;
+
+  return K;
 }
 
 template<typename T, void (*A)(T*, int, T*, int, T*, int, T*, mem::MemoryManager* mem_mgr)>
-Kernel<T> BuildKernel(const char* name, int dim, std::pair<int,int> k_dim){
+Kernel<T> BuildKernel(const char* name, int dim, std::pair<int,int> k_dim,
+    const Kernel<T>* k_s2m=NULL, const Kernel<T>* k_s2l=NULL, const Kernel<T>* k_s2t=NULL,
+    const Kernel<T>* k_m2m=NULL, const Kernel<T>* k_m2l=NULL, const Kernel<T>* k_m2t=NULL,
+    const Kernel<T>* k_l2l=NULL, const Kernel<T>* k_l2t=NULL){
   size_t dev_ker_poten      ;
   #ifdef __INTEL_OFFLOAD
   #pragma offload target(mic:0)
@@ -108,8 +134,19 @@ Kernel<T> BuildKernel(const char* name, int dim, std::pair<int,int> k_dim){
     dev_ker_poten      =(size_t)((typename Kernel<T>::Ker_t)A);
   }
 
-  return Kernel<T>(A, NULL, name, dim, k_dim,
-                   dev_ker_poten, (size_t)NULL);
+  Kernel<T> K(A, NULL, name, dim, k_dim,
+              dev_ker_poten, (size_t)NULL);
+
+  K.k_s2m=k_s2m;
+  K.k_s2l=k_s2l;
+  K.k_s2t=k_s2t;
+  K.k_m2m=k_m2m;
+  K.k_m2l=k_m2l;
+  K.k_m2t=k_m2t;
+  K.k_l2l=k_l2l;
+  K.k_l2t=k_l2t;
+
+  return K;
 }
 
 }//end namespace
@@ -158,10 +195,12 @@ void laplace_grad<double>(double* r_src, int src_cnt, double* v_src, int dof, do
 //#endif
 
 const Kernel<double    > laplace_potn_d=BuildKernel<double    , laplace_poten, laplace_dbl_poten>("laplace"     , 3, std::pair<int,int>(1,1));
-const Kernel<double    > laplace_grad_d=BuildKernel<double    , laplace_grad                    >("laplace_grad", 3, std::pair<int,int>(1,3));
+const Kernel<double    > laplace_grad_d=BuildKernel<double    , laplace_grad                    >("laplace_grad", 3, std::pair<int,int>(1,3),
+  &laplace_potn_d, &laplace_potn_d, NULL, &laplace_potn_d, &laplace_potn_d, NULL, &laplace_potn_d, NULL);
 
 const Kernel<float     > laplace_potn_f=BuildKernel<float     , laplace_poten, laplace_dbl_poten>("laplace"     , 3, std::pair<int,int>(1,1));
-const Kernel<float     > laplace_grad_f=BuildKernel<float     , laplace_grad                    >("laplace_grad", 3, std::pair<int,int>(1,3));
+const Kernel<float     > laplace_grad_f=BuildKernel<float     , laplace_grad                    >("laplace_grad", 3, std::pair<int,int>(1,3),
+  &laplace_potn_f, &laplace_potn_f, NULL, &laplace_potn_f, &laplace_potn_f, NULL, &laplace_potn_f, NULL);
 
 template<class T>
 struct LaplaceKernel{

@@ -109,7 +109,7 @@ class FMM_Pts{
    */
   FMM_Pts(mem::MemoryManager* mem_mgr_=NULL): mem_mgr(mem_mgr_),
              vprecomp_fft_flag(false), vlist_fft_flag(false),
-               vlist_ifft_flag(false), mat(NULL), kernel(NULL), aux_kernel(NULL){};
+               vlist_ifft_flag(false), mat(NULL), kernel(NULL){};
 
   /**
    * \brief Virtual destructor.
@@ -121,7 +121,7 @@ class FMM_Pts{
    * \param[in] mult_order Order of multipole expansion.
    * \param[in] kernel Kernel functions and related data.
    */
-  void Initialize(int mult_order, const MPI_Comm& comm, const Kernel<Real_t>* kernel, const Kernel<Real_t>* aux_kernel=NULL);
+  void Initialize(int mult_order, const MPI_Comm& comm, const Kernel<Real_t>* kernel);
 
   /**
    * \brief Order for the multipole expansion.
@@ -231,7 +231,6 @@ class FMM_Pts{
   mem::MemoryManager* mem_mgr;
   InteracList<FMMNode> interac_list;
   const Kernel<Real_t>* kernel;    //The kernel function.
-  const Kernel<Real_t>* aux_kernel;//Auxiliary kernel for source-to-source translations.
   PrecompMat<Real_t>* mat;   //Handles storage of matrices.
   std::string mat_fname;
   int multipole_order;       //Order of multipole expansion.
