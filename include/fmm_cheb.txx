@@ -213,13 +213,95 @@ void FMM_Cheb<FMMNode>::Initialize(int mult_order, int cheb_deg_, const MPI_Comm
 }
 
 
+template <class Real_t>
+Permutation<Real_t> cheb_perm(size_t q, size_t p_indx, const Permutation<Real_t>& ker_perm, const Vector<Real_t>* scal_exp=NULL){
+  int dim=3; //Only supporting 3D
+  int dof=ker_perm.Dim();
+
+  int coeff_cnt=((q+1)*(q+2)*(q+3))/6;
+  int n3=(int)pow((Real_t)(q+1),dim);
+
+  Permutation<Real_t> P0(n3*dof);
+  if(scal_exp && p_indx==Scaling){ // Set level-by-level scaling
+    assert(dof==scal_exp->Dim());
+    Vector<Real_t> scal(scal_exp->Dim());
+    for(size_t i=0;i<scal.Dim();i++){
+      scal[i]=pow(2.0,(*scal_exp)[i]);
+    }
+    for(int j=0;j<dof;j++){
+      for(int i=0;i<n3;i++){
+        P0.scal[j*n3+i]*=scal[j];
+      }
+    }
+  }
+  { // Set P0.scal
+    for(int j=0;j<dof;j++){
+      for(int i=0;i<n3;i++){
+        P0.scal[j*n3+i]*=ker_perm.scal[j];
+      }
+    }
+  }
+  if(p_indx==ReflecX || p_indx==ReflecY || p_indx==ReflecZ){
+    for(int j=0;j<dof;j++)
+    for(int i=0;i<n3;i++){
+      int x[3]={i%(q+1), (i/(q+1))%(q+1), i/(q+1)/(q+1)};
+      P0.scal[i+n3*j]*=(x[p_indx-ReflecX]%2?-1.0:1.0);
+    }
+  }
+
+  { // Set P0.perm
+    int indx[3]={0,1,2};
+    if(p_indx==SwapXY) {indx[0]=1; indx[1]=0; indx[2]=2;}
+    if(p_indx==SwapXZ) {indx[0]=2; indx[1]=1; indx[2]=0;}
+    for(int j=0;j<dof;j++)
+    for(int i=0;i<n3;i++){
+      int x[3]={i%(q+1), (i/(q+1))%(q+1), i/(q+1)/(q+1)};
+      P0.perm[i+n3*j]=x[indx[0]]+(x[indx[1]]+x[indx[2]]*(q+1))*(q+1)
+                      +n3*ker_perm.perm[j];
+    }
+  }
+
+  std::vector<size_t> coeff_map(n3*dof,0);
+  {
+    int indx=0;
+    for(int j=0;j<dof;j++)
+    for(int i=0;i<n3;i++){
+      int x[3]={i%(q+1), (i/(q+1))%(q+1), i/(q+1)/(q+1)};
+      if(x[0]+x[1]+x[2]<=q){
+        coeff_map[i+n3*j]=indx;
+        indx++;
+      }
+    }
+  }
+  Permutation<Real_t> P=Permutation<Real_t>(coeff_cnt*dof);
+  {
+    int indx=0;
+    for(int j=0;j<dof;j++)
+    for(int i=0;i<n3;i++){
+      int x[3]={i%(q+1), (i/(q+1))%(q+1), i/(q+1)/(q+1)};
+      if(x[0]+x[1]+x[2]<=q){
+        P.perm[indx]=coeff_map[P0.perm[i+n3*j]];
+        P.scal[indx]=          P0.scal[i+n3*j] ;
+        indx++;
+      }
+    }
+  }
+
+  return P;
+}
+
 template <class FMMNode>
 Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_Type type, Perm_Type perm_indx){
   int dim=3; //Only supporting 3D
+  Real_t eps=1e-10;
 
   //Check if the matrix already exists.
   Permutation<Real_t>& P_ = FMM_Pts<FMMNode>::PrecompPerm(type, perm_indx);
   if(P_.Dim()!=0) return P_;
+
+  size_t q=cheb_deg;
+  size_t m=this->MultipoleOrder();
+  size_t p_indx=perm_indx % C_Perm;
 
   //Compute the matrix.
   Permutation<Real_t> P;
@@ -235,8 +317,50 @@ Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_Type t
     }
     case S2U_Type:
     {
-      if(perm_indx<C_Perm) P=PrecompPerm(U0_Type, perm_indx);
-      else P=PrecompPerm(U2U_Type, perm_indx);
+      Vector<Real_t> scal_exp;
+      Permutation<Real_t> ker_perm;
+      if(perm_indx<C_Perm){
+        ker_perm=this->kernel->k_s2m->perm_vec[0     +p_indx];
+        scal_exp=this->kernel->k_s2m->src_scal;
+        for(size_t i=0;i<scal_exp.Dim();i++) scal_exp[i]-=COORD_DIM;
+        P=cheb_perm(q, p_indx, ker_perm, (this->Homogen()?&scal_exp:NULL));
+      }else{
+        ker_perm=this->kernel->k_m2m->perm_vec[0     +p_indx];
+        scal_exp=this->kernel->k_m2m->src_scal;
+        for(size_t i=0;i<scal_exp.Dim();i++) scal_exp[i]=-scal_exp[i];
+
+        // Check that target perm for the two kernels agree.
+        Permutation<Real_t> ker_perm0=this->kernel->k_s2m->perm_vec[C_Perm+p_indx];
+        Permutation<Real_t> ker_perm1=this->kernel->k_m2m->perm_vec[C_Perm+p_indx];
+        assert(ker_perm0.Dim()>0 && ker_perm0.Dim()==ker_perm1.Dim());
+        if(fabs(ker_perm0.scal[0]-ker_perm1.scal[0])>eps){
+          for(size_t i=0;i<ker_perm0.Dim();i++){
+            ker_perm0.scal[i]*=-1.0;
+          }
+          for(size_t i=0;i<ker_perm.Dim();i++){
+            ker_perm.scal[i]*=-1.0;
+          }
+        }
+        for(size_t i=0;i<ker_perm0.Dim();i++){
+          assert(    (ker_perm0.perm[i]-ker_perm1.perm[i])== 0);
+          assert(fabs(ker_perm0.scal[i]-ker_perm1.scal[i])<eps);
+        }
+
+        // Check that target scaling for the two kernels agree.
+        const Vector<Real_t>& scal_exp0=this->kernel->k_s2m->trg_scal;
+        const Vector<Real_t>& scal_exp1=this->kernel->k_m2m->trg_scal;
+        assert(scal_exp0.Dim()>0 && scal_exp0.Dim()==scal_exp1.Dim());
+        Real_t s=(scal_exp0[0]-scal_exp1[0]);
+        for(size_t i=1;i<scal_exp0.Dim();i++){
+          assert(fabs(s-(scal_exp0[i]-scal_exp1[i]))<eps);
+          // In general this is not necessary, but to allow this, we must
+          // also change src_scal accordingly.
+        }
+
+        // Apply the difference in scaling of the two kernels.
+        for(size_t i=0;i<scal_exp.Dim();i++) scal_exp[i]+=s;
+        P=equiv_surf_perm(m, p_indx, ker_perm, (this->Homogen()?&scal_exp:NULL));
+      }
       break;
     }
     case U2U_Type:
@@ -249,87 +373,32 @@ Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_Type t
     }
     case D2T_Type:
     {
-      if(perm_indx>=C_Perm) P=PrecompPerm(U0_Type, perm_indx);
-      else P=PrecompPerm(D2D_Type, perm_indx);
+      Vector<Real_t> scal_exp;
+      Permutation<Real_t> ker_perm;
+      if(perm_indx<C_Perm){ // Source permutation
+        ker_perm=this->kernel->k_l2t->perm_vec[0     +p_indx];
+        scal_exp=this->kernel->k_l2t->src_scal;
+        P=equiv_surf_perm(m, p_indx, ker_perm, (this->Homogen()?&scal_exp:NULL));
+      }else{ // Target permutation
+        ker_perm=this->kernel->k_l2t->perm_vec[C_Perm+p_indx];
+        scal_exp=this->kernel->k_l2t->trg_scal;
+        P=cheb_perm(q, p_indx, ker_perm, (this->Homogen()?&scal_exp:NULL));
+      }
       break;
     }
     case U0_Type:
     {
-      int coeff_cnt=((cheb_deg+1)*(cheb_deg+2)*(cheb_deg+3))/6;
-      int n3=(int)pow((Real_t)(cheb_deg+1),dim);
-      int dof=(perm_indx<C_Perm?this->kernel->k_s2t->ker_dim[0]:this->kernel->k_s2t->ker_dim[1]);
-      size_t p_indx=perm_indx % C_Perm;
-
-      Permutation<Real_t> P0(n3*dof);
-      Permutation<Real_t>& ker_perm=this->kernel->k_s2t->perm_vec[perm_indx];
-      assert(dof=ker_perm.Dim());
-
-      if(p_indx==Scaling && this->Homogen()){ // Set level-by-level scaling
-        const Vector<Real_t>& scal_exp=(perm_indx<C_Perm?this->kernel->k_s2t->src_scal:this->kernel->k_s2t->trg_scal);
-        assert(dof==scal_exp.Dim());
-
-        Vector<Real_t> scal(scal_exp.Dim());
-        for(size_t i=0;i<scal_exp.Dim();i++){
-          scal[i]=pow(2.0,(perm_indx<C_Perm?-1.0:0.0)*COORD_DIM+scal_exp[i]);
-        }
-        for(int j=0;j<dof;j++){
-          for(int i=0;i<n3;i++){
-            P0.scal[j*n3+i]*=scal[j];
-          }
-        }
+      Vector<Real_t> scal_exp;
+      Permutation<Real_t> ker_perm;
+      if(perm_indx<C_Perm){
+        ker_perm=this->kernel->k_s2t->perm_vec[0     +p_indx];
+        scal_exp=this->kernel->k_s2t->src_scal;
+        for(size_t i=0;i<scal_exp.Dim();i++) scal_exp[i]-=COORD_DIM;
+      }else{
+        ker_perm=this->kernel->k_s2t->perm_vec[C_Perm+p_indx];
+        scal_exp=this->kernel->k_s2t->trg_scal;
       }
-      { // Set P0.scal
-        for(int j=0;j<dof;j++){
-          for(int i=0;i<n3;i++){
-            P0.scal[j*n3+i]*=ker_perm.scal[j];
-          }
-        }
-      }
-      if(p_indx==ReflecX || p_indx==ReflecY || p_indx==ReflecZ){
-        for(int j=0;j<dof;j++)
-        for(int i=0;i<n3;i++){
-          int x[3]={i%(cheb_deg+1), (i/(cheb_deg+1))%(cheb_deg+1), i/(cheb_deg+1)/(cheb_deg+1)};
-          P0.scal[i+n3*j]*=(x[p_indx-ReflecX]%2?-1.0:1.0);
-        }
-      }
-
-      { // Set P0.perm
-        int indx[3]={0,1,2};
-        if(p_indx==SwapXY) {indx[0]=1; indx[1]=0; indx[2]=2;}
-        if(p_indx==SwapXZ) {indx[0]=2; indx[1]=1; indx[2]=0;}
-        for(int j=0;j<dof;j++)
-        for(int i=0;i<n3;i++){
-          int x[3]={i%(cheb_deg+1), (i/(cheb_deg+1))%(cheb_deg+1), i/(cheb_deg+1)/(cheb_deg+1)};
-          P0.perm[i+n3*j]=x[indx[0]]+(x[indx[1]]+x[indx[2]]*(cheb_deg+1))*(cheb_deg+1)
-                          +n3*ker_perm.perm[j];
-        }
-      }
-
-      std::vector<size_t> coeff_map(n3*dof,0);
-      {
-        int indx=0;
-        for(int j=0;j<dof;j++)
-        for(int i=0;i<n3;i++){
-          int x[3]={i%(cheb_deg+1), (i/(cheb_deg+1))%(cheb_deg+1), i/(cheb_deg+1)/(cheb_deg+1)};
-          if(x[0]+x[1]+x[2]<=cheb_deg){
-            coeff_map[i+n3*j]=indx;
-            indx++;
-          }
-        }
-      }
-      P=Permutation<Real_t>(coeff_cnt*dof);
-      {
-        int indx=0;
-        for(int j=0;j<dof;j++)
-        for(int i=0;i<n3;i++){
-          int x[3]={i%(cheb_deg+1), (i/(cheb_deg+1))%(cheb_deg+1), i/(cheb_deg+1)/(cheb_deg+1)};
-          if(x[0]+x[1]+x[2]<=cheb_deg){
-            P.perm[indx]=coeff_map[P0.perm[i+n3*j]];
-            P.scal[indx]=          P0.scal[i+n3*j] ;
-            indx++;
-          }
-        }
-      }
+      P=cheb_perm(q, p_indx, ker_perm, (this->Homogen()?&scal_exp:NULL));
       break;
     }
     case U1_Type:
@@ -352,14 +421,65 @@ Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_Type t
     }
     case W_Type:
     {
-      if(perm_indx>=C_Perm) P=PrecompPerm(U0_Type, perm_indx);
-      else P=PrecompPerm(U2U_Type, perm_indx);
+      Vector<Real_t> scal_exp;
+      Permutation<Real_t> ker_perm;
+      if(perm_indx<C_Perm){ // Source permutation
+        ker_perm=this->kernel->k_m2t->perm_vec[0     +p_indx];
+        scal_exp=this->kernel->k_m2t->src_scal;
+        P=equiv_surf_perm(m, p_indx, ker_perm, (this->Homogen()?&scal_exp:NULL));
+      }else{ // Target permutation
+        ker_perm=this->kernel->k_m2t->perm_vec[C_Perm+p_indx];
+        scal_exp=this->kernel->k_m2t->trg_scal;
+        P=cheb_perm(q, p_indx, ker_perm, (this->Homogen()?&scal_exp:NULL));
+      }
       break;
     }
     case X_Type:
     {
-      if(perm_indx<C_Perm) P=PrecompPerm(U0_Type, perm_indx);
-      else P=PrecompPerm(D2D_Type, perm_indx);
+      Vector<Real_t> scal_exp;
+      Permutation<Real_t> ker_perm;
+      if(perm_indx<C_Perm){
+        ker_perm=this->kernel->k_s2l->perm_vec[0     +p_indx];
+        scal_exp=this->kernel->k_s2l->src_scal;
+        for(size_t i=0;i<scal_exp.Dim();i++) scal_exp[i]-=COORD_DIM;
+        P=cheb_perm(q, p_indx, ker_perm, (this->Homogen()?&scal_exp:NULL));
+      }else{
+        ker_perm=this->kernel->k_l2l->perm_vec[0     +p_indx];
+        scal_exp=this->kernel->k_l2l->src_scal;
+        for(size_t i=0;i<scal_exp.Dim();i++) scal_exp[i]=-scal_exp[i];
+
+        // Check that target perm for the two kernels agree.
+        Permutation<Real_t> ker_perm0=this->kernel->k_s2l->perm_vec[C_Perm+p_indx];
+        Permutation<Real_t> ker_perm1=this->kernel->k_l2l->perm_vec[C_Perm+p_indx];
+        assert(ker_perm0.Dim()>0 && ker_perm0.Dim()==ker_perm1.Dim());
+        if(fabs(ker_perm0.scal[0]-ker_perm1.scal[0])>eps){
+          for(size_t i=0;i<ker_perm0.Dim();i++){
+            ker_perm0.scal[i]*=-1.0;
+          }
+          for(size_t i=0;i<ker_perm.Dim();i++){
+            ker_perm.scal[i]*=-1.0;
+          }
+        }
+        for(size_t i=0;i<ker_perm0.Dim();i++){
+          assert(    (ker_perm0.perm[i]-ker_perm1.perm[i])== 0);
+          assert(fabs(ker_perm0.scal[i]-ker_perm1.scal[i])<eps);
+        }
+
+        // Check that target scaling for the two kernels agree.
+        const Vector<Real_t>& scal_exp0=this->kernel->k_s2l->trg_scal;
+        const Vector<Real_t>& scal_exp1=this->kernel->k_l2l->trg_scal;
+        assert(scal_exp0.Dim()>0 && scal_exp0.Dim()==scal_exp1.Dim());
+        Real_t s=(scal_exp0[0]-scal_exp1[0]);
+        for(size_t i=1;i<scal_exp0.Dim();i++){
+          assert(fabs(s-(scal_exp0[i]-scal_exp1[i]))<eps);
+          // In general this is not necessary, but to allow this, we must
+          // also change src_scal accordingly.
+        }
+
+        // Apply the difference in scaling of the two kernels.
+        for(size_t i=0;i<scal_exp.Dim();i++) scal_exp[i]+=s;
+        P=equiv_surf_perm(m, p_indx, ker_perm, (this->Homogen()?&scal_exp:NULL));
+      }
       break;
     }
     default:

@@ -303,12 +303,79 @@ void FMM_Pts<FMMNode>::Initialize(int mult_order, const MPI_Comm& comm_, const K
   }Profile::Toc();
 }
 
+template <class Real_t>
+Permutation<Real_t> equiv_surf_perm(size_t m, size_t p_indx, const Permutation<Real_t>& ker_perm, const Vector<Real_t>* scal_exp=NULL){
+  Real_t eps=1e-10;
+  int dof=ker_perm.Dim();
+
+  Real_t c[3]={-0.5,-0.5,-0.5};
+  std::vector<Real_t> trg_coord=d_check_surf(m,c,0);
+  int n_trg=trg_coord.size()/3;
+
+  Permutation<Real_t> P=Permutation<Real_t>(n_trg*dof);
+  if(p_indx==ReflecX || p_indx==ReflecY || p_indx==ReflecZ){ // Set P.perm
+    for(int i=0;i<n_trg;i++)
+    for(int j=0;j<n_trg;j++){
+      if(fabs(trg_coord[i*3+0]-trg_coord[j*3+0]*(p_indx==ReflecX?-1.0:1.0))<eps)
+      if(fabs(trg_coord[i*3+1]-trg_coord[j*3+1]*(p_indx==ReflecY?-1.0:1.0))<eps)
+      if(fabs(trg_coord[i*3+2]-trg_coord[j*3+2]*(p_indx==ReflecZ?-1.0:1.0))<eps){
+        for(int k=0;k<dof;k++){
+          P.perm[j*dof+k]=i*dof+ker_perm.perm[k];
+        }
+      }
+    }
+  }else if(p_indx==SwapXY || p_indx==SwapXZ){
+    for(int i=0;i<n_trg;i++)
+    for(int j=0;j<n_trg;j++){
+      if(fabs(trg_coord[i*3+0]-trg_coord[j*3+(p_indx==SwapXY?1:2)])<eps)
+      if(fabs(trg_coord[i*3+1]-trg_coord[j*3+(p_indx==SwapXY?0:1)])<eps)
+      if(fabs(trg_coord[i*3+2]-trg_coord[j*3+(p_indx==SwapXY?2:0)])<eps){
+        for(int k=0;k<dof;k++){
+          P.perm[j*dof+k]=i*dof+ker_perm.perm[k];
+        }
+      }
+    }
+  }else{
+    for(int j=0;j<n_trg;j++){
+      for(int k=0;k<dof;k++){
+        P.perm[j*dof+k]=j*dof+ker_perm.perm[k];
+      }
+    }
+  }
+
+  if(scal_exp && p_indx==Scaling){ // Set level-by-level scaling
+    assert(dof==scal_exp->Dim());
+    Vector<Real_t> scal(scal_exp->Dim());
+    for(size_t i=0;i<scal.Dim();i++){
+      scal[i]=pow(2.0,(*scal_exp)[i]);
+    }
+    for(int j=0;j<n_trg;j++){
+      for(int i=0;i<dof;i++){
+        P.scal[j*dof+i]*=scal[i];
+      }
+    }
+  }
+  { // Set P.scal
+    for(int j=0;j<n_trg;j++){
+      for(int i=0;i<dof;i++){
+        P.scal[j*dof+i]*=ker_perm.scal[i];
+      }
+    }
+  }
+
+  return P;
+}
+
 template <class FMMNode>
 Permutation<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::PrecompPerm(Mat_Type type, Perm_Type perm_indx){
 
   //Check if the matrix already exists.
   Permutation<Real_t>& P_ = mat->Perm((Mat_Type)type, perm_indx);
   if(P_.Dim()!=0) return P_;
+
+
+  size_t m=this->MultipoleOrder();
+  size_t p_indx=perm_indx % C_Perm;
 
   //Compute the matrix.
   Permutation<Real_t> P;
@@ -328,134 +395,32 @@ Permutation<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::PrecompPerm(Mat_Type ty
     }
     case U2U_Type:
     {
-      Real_t eps=1e-10;
-      int dof=kernel->k_m2m->ker_dim[0];
-      size_t p_indx=perm_indx % C_Perm;
-      Permutation<Real_t>& ker_perm=kernel->k_m2m->perm_vec[p_indx];
-      assert(dof==ker_perm.Dim());
-
-      Real_t c[3]={-0.5,-0.5,-0.5};
-      std::vector<Real_t> trg_coord=d_check_surf(this->MultipoleOrder(),c,0);
-      int n_trg=trg_coord.size()/3;
-
-      P=Permutation<Real_t>(n_trg*dof);
-      if(p_indx==ReflecX || p_indx==ReflecY || p_indx==ReflecZ){ // Set P.perm
-        for(int i=0;i<n_trg;i++)
-        for(int j=0;j<n_trg;j++){
-          if(fabs(trg_coord[i*3+0]-trg_coord[j*3+0]*(p_indx==ReflecX?-1.0:1.0))<eps)
-          if(fabs(trg_coord[i*3+1]-trg_coord[j*3+1]*(p_indx==ReflecY?-1.0:1.0))<eps)
-          if(fabs(trg_coord[i*3+2]-trg_coord[j*3+2]*(p_indx==ReflecZ?-1.0:1.0))<eps){
-            for(int k=0;k<dof;k++){
-              P.perm[j*dof+k]=i*dof+ker_perm.perm[k];
-            }
-          }
-        }
-      }else if(p_indx==SwapXY || p_indx==SwapXZ){
-        for(int i=0;i<n_trg;i++)
-        for(int j=0;j<n_trg;j++){
-          if(fabs(trg_coord[i*3+0]-trg_coord[j*3+(p_indx==SwapXY?1:2)])<eps)
-          if(fabs(trg_coord[i*3+1]-trg_coord[j*3+(p_indx==SwapXY?0:1)])<eps)
-          if(fabs(trg_coord[i*3+2]-trg_coord[j*3+(p_indx==SwapXY?2:0)])<eps){
-            for(int k=0;k<dof;k++){
-              P.perm[j*dof+k]=i*dof+ker_perm.perm[k];
-            }
-          }
-        }
-      }else{
-        for(int j=0;j<n_trg;j++){
-          for(int k=0;k<dof;k++){
-            P.perm[j*dof+k]=j*dof+ker_perm.perm[k];
-          }
-        }
+      Vector<Real_t> scal_exp;
+      Permutation<Real_t> ker_perm;
+      if(perm_indx<C_Perm){ // Source permutation
+        ker_perm=kernel->k_m2m->perm_vec[0     +p_indx];
+        scal_exp=kernel->k_m2m->src_scal;
+      }else{ // Target permutation
+        ker_perm=kernel->k_m2m->perm_vec[0     +p_indx];
+        scal_exp=kernel->k_m2m->src_scal;
+        for(size_t i=0;i<scal_exp.Dim();i++) scal_exp[i]=-scal_exp[i];
       }
-
-      if(p_indx==Scaling && this->Homogen()){ // Set level-by-level scaling
-        const Vector<Real_t>& scal_exp=kernel->k_m2m->src_scal;
-        assert(dof==scal_exp.Dim());
-
-        Vector<Real_t> scal(scal_exp.Dim());
-        for(size_t i=0;i<scal_exp.Dim();i++){
-          scal[i]=pow(2.0,(perm_indx<C_Perm?1.0:-1.0)*scal_exp[i]);
-        }
-        for(int j=0;j<n_trg;j++){
-          for(int i=0;i<dof;i++){
-            P.scal[j*dof+i]*=scal[i];
-          }
-        }
-      }
-      { // Set P.scal
-        for(int j=0;j<n_trg;j++){
-          for(int i=0;i<dof;i++){
-            P.scal[j*dof+i]*=ker_perm.scal[i];
-          }
-        }
-      }
+      P=equiv_surf_perm(m, p_indx, ker_perm, (this->Homogen()?&scal_exp:NULL));
       break;
     }
     case D2D_Type:
     {
-      Real_t eps=1e-10;
-      int dof=kernel->k_l2l->ker_dim[0];
-      size_t p_indx=perm_indx % C_Perm;
-      Permutation<Real_t>& ker_perm=kernel->k_l2l->perm_vec[p_indx];
-      assert(dof==ker_perm.Dim());
-
-      Real_t c[3]={-0.5,-0.5,-0.5};
-      std::vector<Real_t> trg_coord=d_check_surf(this->MultipoleOrder(),c,0);
-      int n_trg=trg_coord.size()/3;
-
-      P=Permutation<Real_t>(n_trg*dof);
-      if(p_indx==ReflecX || p_indx==ReflecY || p_indx==ReflecZ){ // Set P.perm
-        for(int i=0;i<n_trg;i++)
-        for(int j=0;j<n_trg;j++){
-          if(fabs(trg_coord[i*3+0]-trg_coord[j*3+0]*(p_indx==ReflecX?-1.0:1.0))<eps)
-          if(fabs(trg_coord[i*3+1]-trg_coord[j*3+1]*(p_indx==ReflecY?-1.0:1.0))<eps)
-          if(fabs(trg_coord[i*3+2]-trg_coord[j*3+2]*(p_indx==ReflecZ?-1.0:1.0))<eps){
-            for(int k=0;k<dof;k++){
-              P.perm[j*dof+k]=i*dof+ker_perm.perm[k];
-            }
-          }
-        }
-      }else if(p_indx==SwapXY || p_indx==SwapXZ){
-        for(int i=0;i<n_trg;i++)
-        for(int j=0;j<n_trg;j++){
-          if(fabs(trg_coord[i*3+0]-trg_coord[j*3+(p_indx==SwapXY?1:2)])<eps)
-          if(fabs(trg_coord[i*3+1]-trg_coord[j*3+(p_indx==SwapXY?0:1)])<eps)
-          if(fabs(trg_coord[i*3+2]-trg_coord[j*3+(p_indx==SwapXY?2:0)])<eps){
-            for(int k=0;k<dof;k++){
-              P.perm[j*dof+k]=i*dof+ker_perm.perm[k];
-            }
-          }
-        }
-      }else{
-        for(int j=0;j<n_trg;j++){
-          for(int k=0;k<dof;k++){
-            P.perm[j*dof+k]=j*dof+ker_perm.perm[k];
-          }
-        }
+      Vector<Real_t> scal_exp;
+      Permutation<Real_t> ker_perm;
+      if(perm_indx<C_Perm){ // Source permutation
+        ker_perm=kernel->k_l2l->perm_vec[0     +p_indx];
+        scal_exp=kernel->k_l2l->src_scal;
+      }else{ // Target permutation
+        ker_perm=kernel->k_l2l->perm_vec[0     +p_indx];
+        scal_exp=kernel->k_l2l->src_scal;
+        for(size_t i=0;i<scal_exp.Dim();i++) scal_exp[i]=-scal_exp[i];
       }
-
-      if(p_indx==Scaling && this->Homogen()){ // Set level-by-level scaling
-        const Vector<Real_t>& scal_exp=kernel->k_l2l->src_scal;
-        assert(dof==scal_exp.Dim());
-
-        Vector<Real_t> scal(scal_exp.Dim());
-        for(size_t i=0;i<scal_exp.Dim();i++){
-          scal[i]=pow(2.0,(perm_indx<C_Perm?1.0:-1.0)*scal_exp[i]);
-        }
-        for(int j=0;j<n_trg;j++){
-          for(int i=0;i<dof;i++){
-            P.scal[j*dof+i]*=scal[i];
-          }
-        }
-      }
-      { // Set P.scal
-        for(int j=0;j<n_trg;j++){
-          for(int i=0;i<dof;i++){
-            P.scal[j*dof+i]*=ker_perm.scal[i];
-          }
-        }
-      }
+      P=equiv_surf_perm(m, p_indx, ker_perm, (this->Homogen()?&scal_exp:NULL));
       break;
     }
     case D2T_Type:
