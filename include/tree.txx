@@ -20,6 +20,7 @@ void Tree<TreeNode>::Initialize(typename Node_t::NodeData* init_data_){
   max_depth=init_data_->max_depth;
   if(max_depth>MAX_DEPTH) max_depth=MAX_DEPTH;
 
+  if(root_node) delete root_node;
   root_node=new Node_t();
   root_node->Initialize(NULL,0,init_data_);
 }

@@ -59,8 +59,7 @@ void nbody(vec&  src_coord, vec&  src_value,
 void fmm_test(size_t N, int mult_order, MPI_Comm comm){
 
   // Set kernel.
-  const pvfmm::Kernel<double>& kernel_fn    =pvfmm::laplace_grad_d;
-  const pvfmm::Kernel<double>& kernel_fn_aux=pvfmm::laplace_potn_d;
+  const pvfmm::Kernel<double>& kernel_fn=pvfmm::laplace_grad_d;
 
   // Create target and source vectors.
   vec  trg_coord=point_distrib<double>(RandUnif,N,comm);
@@ -85,7 +84,7 @@ void fmm_test(size_t N, int mult_order, MPI_Comm comm){
 
   // Load matrices.
   pvfmm::PtFMM matrices(&mem_mgr);
-  matrices.Initialize(mult_order, comm, &kernel_fn, &kernel_fn_aux);
+  matrices.Initialize(mult_order, comm, &kernel_fn);
 
   // FMM Setup
   tree->SetupFMM(&matrices);

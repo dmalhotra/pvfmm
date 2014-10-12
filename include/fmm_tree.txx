@@ -81,7 +81,11 @@ void FMM_Tree<FMM_Mat_t>::SetupFMM(FMM_Mat_t* fmm_mat_) {
   #endif
 
   int omp_p=omp_get_max_threads();
-  fmm_mat=fmm_mat_;
+  if(fmm_mat!=fmm_mat_){ // Clear previous setup
+    setup_data.clear();
+    precomp_lst.clear();
+    fmm_mat=fmm_mat_;
+  }
 
   //Construct LET
   Profile::Tic("ConstructLET",this->Comm(),false,2);
@@ -110,8 +114,6 @@ void FMM_Tree<FMM_Mat_t>::SetupFMM(FMM_Mat_t* fmm_mat_) {
   fmm_mat->CollectNodeData(all_nodes, node_data_buff, node_lists);
   Profile::Toc();
 
-  //setup_data.clear();
-  //precomp_lst.clear();
   setup_data.resize(8*MAX_DEPTH);
   precomp_lst.resize(8);
 
@@ -171,6 +173,8 @@ void FMM_Tree<FMM_Mat_t>::SetupFMM(FMM_Mat_t* fmm_mat_) {
   #pragma offload target(mic:0)
   {MIC_Lock::wait_lock(wait_lock_idx);}
   #endif
+
+  ClearFMMData();
 
   }Profile::Toc();
 }

@@ -20,7 +20,7 @@ MemoryManager::MemoryManager(size_t N){
   { // Allocate buff
     assert(MEM_ALIGN <= 0x8000);
     size_t alignment=MEM_ALIGN-1;
-    char* base_ptr=(char*)::malloc(N+2+alignment); assert(base_ptr);
+    char* base_ptr=(char*)DeviceWrapper::host_malloc(N+2+alignment); assert(base_ptr);
     buff=(char*)((uintptr_t)(base_ptr+2+alignment) & ~(uintptr_t)alignment);
     ((uint16_t*)buff)[-1] = (uint16_t)(buff-base_ptr);
   }
@@ -73,7 +73,7 @@ MemoryManager::~MemoryManager(){
   }
   { // free buff
     assert(buff);
-    ::free(buff-((uint16_t*)buff)[-1]);
+    DeviceWrapper::host_free(buff-((uint16_t*)buff)[-1]);
   }
 }
 
@@ -129,13 +129,13 @@ void MemoryManager::test(){
 
     std::cout<<"Without memory manager: ";
     for(size_t j=0;j<3;j++){
-      tmp=(double*)::malloc(M*sizeof(double)); assert(tmp);
+      tmp=(double*)DeviceWrapper::host_malloc(M*sizeof(double)); assert(tmp);
       tt=omp_get_wtime();
       #pragma omp parallel for
       for(size_t i=0;i<M;i+=64) tmp[i]=i;
       tt=omp_get_wtime()-tt;
       std::cout<<tt<<' ';
-      ::free(tmp);
+      DeviceWrapper::host_free(tmp);
     }
     std::cout<<'\n';
   }

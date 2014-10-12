@@ -707,8 +707,8 @@ void FMM_Cheb<FMMNode>::CollectNodeData(std::vector<FMMNode*>& node, std::vector
     for(size_t i=0;i<node.size();i++){
       if(node[i]->IsLeaf()){
         Vector<Real_t>& data_vec=node[i]->ChebData();
+        if(data_vec.Dim()!=vec_sz) data_vec.ReInit(vec_sz);
         vec_list[indx].push_back(&data_vec);
-        data_vec.Resize(vec_sz);
       }
     }
   }
@@ -718,8 +718,8 @@ void FMM_Cheb<FMMNode>::CollectNodeData(std::vector<FMMNode*>& node, std::vector
     for(size_t i=0;i<node.size();i++){
       if(node[i]->IsLeaf() && !node[i]->IsGhost()){
         Vector<Real_t>& data_vec=((FMMData*)node[i]->FMMData())->cheb_out;
+        if(data_vec.Dim()!=vec_sz) data_vec.ReInit(vec_sz);
         vec_list[indx].push_back(&data_vec);
-        data_vec.Resize(vec_sz);
       }
     }
   }
@@ -798,7 +798,7 @@ void FMM_Cheb<FMMNode>::X_ListSetup(SetupData<Real_t>& setup_data, std::vector<M
   this->SetupInterac(setup_data,device);
   { // Resize device buffer
     size_t n=setup_data.output_data->Dim(0)*setup_data.output_data->Dim(1)*sizeof(Real_t);
-    if(this->dev_buffer.Dim()<n) this->dev_buffer.Resize(n);
+    if(this->dev_buffer.Dim()<n) this->dev_buffer.ReInit(n);
   }
 }
 
@@ -841,7 +841,7 @@ void FMM_Cheb<FMMNode>::W_ListSetup(SetupData<Real_t>& setup_data, std::vector<M
   this->SetupInterac(setup_data,device);
   { // Resize device buffer
     size_t n=setup_data.output_data->Dim(0)*setup_data.output_data->Dim(1)*sizeof(Real_t);
-    if(this->dev_buffer.Dim()<n) this->dev_buffer.Resize(n);
+    if(this->dev_buffer.Dim()<n) this->dev_buffer.ReInit(n);
   }
 }
 
@@ -886,7 +886,7 @@ void FMM_Cheb<FMMNode>::U_ListSetup(SetupData<Real_t>& setup_data, std::vector<M
   this->SetupInterac(setup_data,device);
   { // Resize device buffer
     size_t n=setup_data.output_data->Dim(0)*setup_data.output_data->Dim(1)*sizeof(Real_t);
-    if(this->dev_buffer.Dim()<n) this->dev_buffer.Resize(n);
+    if(this->dev_buffer.Dim()<n) this->dev_buffer.ReInit(n);
   }
 }
 

@@ -321,7 +321,7 @@ void fmm_test(int test_case, size_t N, size_t M, bool unif, int mult_order, int 
   }
   if(mykernel_grad!=NULL){
     fmm_mat_grad=new FMM_Mat_t;
-    fmm_mat_grad->Initialize(mult_order,tree_data.cheb_deg,comm,mykernel_grad,mykernel);
+    fmm_mat_grad->Initialize(mult_order,tree_data.cheb_deg,comm,mykernel_grad);
   }
 
   pvfmm::Profile::Tic("TreeSetup",&comm,true,1);
