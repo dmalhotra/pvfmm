@@ -508,6 +508,7 @@ void cheb_eval(const Vector<T>& coeff_, int cheb_deg, const std::vector<T>& in_x
  */
 template <class T>
 inline void cheb_eval(Vector<T>& coeff_, int cheb_deg, std::vector<T>& coord, Vector<T>& out){
+  if(!coord.size()) return;
   int dim=3;
   int d=cheb_deg+1;
   int n=coord.size()/dim;
