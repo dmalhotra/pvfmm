@@ -16,7 +16,9 @@
 #endif
 
 //Disable assert checks.
+//#ifndef NDEBUG
 //#define NDEBUG
+//#endif
 
 //Enable profiling
 #define __PROFILE__ 5

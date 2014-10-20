@@ -453,6 +453,7 @@ namespace mat{
    */
   template <class T>
   void pinv(T* M, int n1, int n2, T eps, T* M_){
+    if(n1*n2==0) return;
     int m = n2;
     int n = n1;
     int k = (m<n?m:n);

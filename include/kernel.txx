@@ -59,7 +59,14 @@ Kernel<T>::Kernel(Ker_t poten, Ker_t dbl_poten, const char* name, int dim_, std:
   k_l2l=NULL;
   k_l2t=NULL;
 
-  homogen=false;
+  homogen=true;
+  src_scal.Resize(ker_dim[0]); src_scal.SetZero();
+  trg_scal.Resize(ker_dim[1]); trg_scal.SetZero();
+  perm_vec.Resize(Perm_Count);
+  for(size_t p_type=0;p_type<C_Perm;p_type++){
+    perm_vec[p_type       ]=Permutation<T>(ker_dim[0]);
+    perm_vec[p_type+C_Perm]=Permutation<T>(ker_dim[1]);
+  }
   init=false;
 }
 
@@ -74,8 +81,7 @@ void Kernel<T>::Initialize(bool verbose) const{
   T eps=1.0;
   while(eps+(T)1.0>1.0) eps*=0.5;
 
-  { // Determine scal
-    homogen=true;
+  if(ker_dim[0]*ker_dim[1]>0){ // Determine scal
     Matrix<T> M_scal(ker_dim[0],ker_dim[1]);
     size_t N=1024;
     T eps_=N*eps;
@@ -173,9 +179,7 @@ void Kernel<T>::Initialize(bool verbose) const{
       //std::cout<<ker_name<<" not-scale-invariant\n";
     }
   }
-  { // Determine symmetry
-    perm_vec.Resize(Perm_Count);
-
+  if(ker_dim[0]*ker_dim[1]>0){ // Determine symmetry
     size_t N=1024;
     T eps_=N*eps;
     T src_coord[3]={0,0,0};
@@ -546,7 +550,7 @@ void Kernel<T>::Initialize(bool verbose) const{
     std::cout<<"Precision      : "<<(double)eps<<'\n';
     std::cout<<"Symmetry       : "<<(perm_vec.Dim()>0?"yes":"no")<<'\n';
     std::cout<<"Scale Invariant: "<<(homogen?"yes":"no")<<'\n';
-    if(homogen){
+    if(homogen && ker_dim[0]*ker_dim[1]>0){
       std::cout<<"Scaling Matrix :\n";
       Matrix<T> Src(ker_dim[0],1);
       Matrix<T> Trg(1,ker_dim[1]);
@@ -554,87 +558,88 @@ void Kernel<T>::Initialize(bool verbose) const{
       for(size_t i=0;i<ker_dim[1];i++) Trg[0][i]=pow(2.0,trg_scal[i]);
       std::cout<<Src*Trg;
     }
+    if(ker_dim[0]*ker_dim[1]>0){ // Accuracy of multipole expansion
+      std::cout<<"Error          : ";
+      for(T rad=1.0; rad>1.0e-2; rad*=0.5){
+        int m=8; // multipole order
 
-    std::cout<<"Error          : ";
-    for(T rad=1.0; rad>1.0e-2; rad*=0.5){ // Accuracy of multipole expansion
-      int m=8; // multipole order
+        std::vector<T> equiv_surf;
+        std::vector<T> check_surf;
+        for(int i0=0;i0<m;i0++){
+          for(int i1=0;i1<m;i1++){
+            for(int i2=0;i2<m;i2++){
+              if(i0==  0 || i1==  0 || i2==  0 ||
+                 i0==m-1 || i1==m-1 || i2==m-1){
 
-      std::vector<T> equiv_surf;
-      std::vector<T> check_surf;
-      for(int i0=0;i0<m;i0++){
-        for(int i1=0;i1<m;i1++){
-          for(int i2=0;i2<m;i2++){
-            if(i0==  0 || i1==  0 || i2==  0 ||
-               i0==m-1 || i1==m-1 || i2==m-1){
+                // Range: [-1/3,1/3]^3
+                T x=((T)2*i0-(m-1))/(m-1)/3;
+                T y=((T)2*i1-(m-1))/(m-1)/3;
+                T z=((T)2*i2-(m-1))/(m-1)/3;
 
-              // Range: [-1/3,1/3]^3
-              T x=((T)2*i0-(m-1))/(m-1)/3;
-              T y=((T)2*i1-(m-1))/(m-1)/3;
-              T z=((T)2*i2-(m-1))/(m-1)/3;
+                equiv_surf.push_back(x*RAD0*rad);
+                equiv_surf.push_back(y*RAD0*rad);
+                equiv_surf.push_back(z*RAD0*rad);
 
-              equiv_surf.push_back(x*RAD0*rad);
-              equiv_surf.push_back(y*RAD0*rad);
-              equiv_surf.push_back(z*RAD0*rad);
-
-              check_surf.push_back(x*RAD1*rad);
-              check_surf.push_back(y*RAD1*rad);
-              check_surf.push_back(z*RAD1*rad);
+                check_surf.push_back(x*RAD1*rad);
+                check_surf.push_back(y*RAD1*rad);
+                check_surf.push_back(z*RAD1*rad);
+              }
             }
           }
         }
+        size_t n_equiv=equiv_surf.size()/COORD_DIM;
+        size_t n_check=equiv_surf.size()/COORD_DIM;
+
+        size_t n_src=m;
+        size_t n_trg=m;
+        std::vector<T> src_coord;
+        std::vector<T> trg_coord;
+        for(size_t i=0;i<n_src*COORD_DIM;i++){
+          src_coord.push_back((2*drand48()-1)/3*rad);
+        }
+        for(size_t i=0;i<n_trg;i++){
+          T x,y,z,r;
+          do{
+            x=(drand48()-0.5);
+            y=(drand48()-0.5);
+            z=(drand48()-0.5);
+            r=sqrt(x*x+y*y+z*z);
+          }while(r==0.0);
+          trg_coord.push_back(x/r*sqrt((T)COORD_DIM)*rad);
+          trg_coord.push_back(y/r*sqrt((T)COORD_DIM)*rad);
+          trg_coord.push_back(z/r*sqrt((T)COORD_DIM)*rad);
+        }
+
+        Matrix<T> M_s2c(n_src*ker_dim[0],n_check*ker_dim[1]);
+        BuildMatrix( &src_coord[0], n_src,
+                    &check_surf[0], n_check, &(M_s2c[0][0]));
+
+        Matrix<T> M_e2c(n_equiv*ker_dim[0],n_check*ker_dim[1]);
+        BuildMatrix(&equiv_surf[0], n_equiv,
+                    &check_surf[0], n_check, &(M_e2c[0][0]));
+        Matrix<T> M_c2e=M_e2c.pinv();
+
+        Matrix<T> M_e2t(n_equiv*ker_dim[0],n_trg*ker_dim[1]);
+        BuildMatrix(&equiv_surf[0], n_equiv,
+                     &trg_coord[0], n_trg  , &(M_e2t[0][0]));
+
+        Matrix<T> M_s2t(n_src*ker_dim[0],n_trg*ker_dim[1]);
+        BuildMatrix( &src_coord[0], n_src,
+                     &trg_coord[0], n_trg  , &(M_s2t[0][0]));
+
+        Matrix<T> M=M_s2c*M_c2e*M_e2t-M_s2t;
+        T max_error=0, max_value=0;
+        for(size_t i=0;i<M.Dim(0);i++)
+        for(size_t j=0;j<M.Dim(1);j++){
+          max_error=std::max<T>(max_error,fabs(M    [i][j]));
+          max_value=std::max<T>(max_value,fabs(M_s2t[i][j]));
+        }
+
+        std::cout<<(double)(max_error/max_value)<<' ';
+        if(homogen) break;
       }
-      size_t n_equiv=equiv_surf.size()/COORD_DIM;
-      size_t n_check=equiv_surf.size()/COORD_DIM;
-
-      size_t n_src=m;
-      size_t n_trg=m;
-      std::vector<T> src_coord;
-      std::vector<T> trg_coord;
-      for(size_t i=0;i<n_src*COORD_DIM;i++){
-        src_coord.push_back((2*drand48()-1)/3*rad);
-      }
-      for(size_t i=0;i<n_trg;i++){
-        T x,y,z,r;
-        do{
-          x=(drand48()-0.5);
-          y=(drand48()-0.5);
-          z=(drand48()-0.5);
-          r=sqrt(x*x+y*y+z*z);
-        }while(r==0.0);
-        trg_coord.push_back(x/r*sqrt((T)COORD_DIM)*rad);
-        trg_coord.push_back(y/r*sqrt((T)COORD_DIM)*rad);
-        trg_coord.push_back(z/r*sqrt((T)COORD_DIM)*rad);
-      }
-
-      Matrix<T> M_s2c(n_src*ker_dim[0],n_check*ker_dim[1]);
-      BuildMatrix( &src_coord[0], n_src,
-                  &check_surf[0], n_check, &(M_s2c[0][0]));
-
-      Matrix<T> M_e2c(n_equiv*ker_dim[0],n_check*ker_dim[1]);
-      BuildMatrix(&equiv_surf[0], n_equiv,
-                  &check_surf[0], n_check, &(M_e2c[0][0]));
-      Matrix<T> M_c2e=M_e2c.pinv();
-
-      Matrix<T> M_e2t(n_equiv*ker_dim[0],n_trg*ker_dim[1]);
-      BuildMatrix(&equiv_surf[0], n_equiv,
-                   &trg_coord[0], n_trg  , &(M_e2t[0][0]));
-
-      Matrix<T> M_s2t(n_src*ker_dim[0],n_trg*ker_dim[1]);
-      BuildMatrix( &src_coord[0], n_src,
-                   &trg_coord[0], n_trg  , &(M_s2t[0][0]));
-
-      Matrix<T> M=M_s2c*M_c2e*M_e2t-M_s2t;
-      T max_error=0, max_value=0;
-      for(size_t i=0;i<M.Dim(0);i++)
-      for(size_t j=0;j<M.Dim(1);j++){
-        max_error=std::max<T>(max_error,fabs(M    [i][j]));
-        max_value=std::max<T>(max_value,fabs(M_s2t[i][j]));
-      }
-
-      std::cout<<(double)(max_error/max_value)<<' ';
-      if(homogen) break;
+      std::cout<<"\n";
     }
-    std::cout<<"\n";
     std::cout<<"\n";
   }
 

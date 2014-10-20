@@ -302,6 +302,7 @@ Matrix<T> Matrix<T>::operator*(const Matrix<T>& M){
   Profile::Add_FLOP(2*(((long long)dim[0])*dim[1])*M.dim[1]);
 
   Matrix<T> M_r(dim[0],M.dim[1],NULL);
+  if(M.Dim(0)*M.Dim(1)==0 || this->Dim(0)*this->Dim(1)==0) return M_r;
   mat::gemm<T>('N','N',M.dim[1],dim[0],dim[1],
       1.0,M.data_ptr,M.dim[1],data_ptr,dim[1],0.0,M_r.data_ptr,M_r.dim[1]);
   return M_r;
@@ -309,6 +310,7 @@ Matrix<T> Matrix<T>::operator*(const Matrix<T>& M){
 
 template <class T>
 void Matrix<T>::GEMM(Matrix<T>& M_r, const Matrix<T>& A, const Matrix<T>& B, T beta){
+  if(A.Dim(0)*A.Dim(1)==0 || B.Dim(0)*B.Dim(1)==0) return;
   assert(A.dim[1]==B.dim[0]);
   assert(M_r.dim[0]==A.dim[0]);
   assert(M_r.dim[1]==B.dim[1]);
@@ -323,6 +325,7 @@ void Matrix<T>::GEMM(Matrix<T>& M_r, const Matrix<T>& A, const Matrix<T>& B, T b
 #if defined(PVFMM_HAVE_CUDA)
 template <class T>
 void Matrix<T>::CUBLASGEMM(Matrix<T>& M_r, const Matrix<T>& A, const Matrix<T>& B, T beta){
+  if(A.Dim(0)*A.Dim(1)==0 || B.Dim(0)*B.Dim(1)==0) return;
   assert(A.dim[1]==B.dim[0]);
   assert(M_r.dim[0]==A.dim[0]);
   assert(M_r.dim[1]==B.dim[1]);

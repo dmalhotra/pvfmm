@@ -215,11 +215,11 @@ class FMM_Pts{
   virtual Matrix<Real_t>& Precomp(int level, Mat_Type type, size_t mat_indx);
   typename FFTW_t<Real_t>::plan vprecomp_fftplan; bool vprecomp_fft_flag;
 
-  void FFT_UpEquiv(size_t dof, size_t m, size_t ker_dim0, Vector<size_t>& fft_vec,
+  void FFT_UpEquiv(size_t dof, size_t m, size_t ker_dim0, Vector<size_t>& fft_vec, Vector<Real_t>& fft_scl,
       Vector<Real_t>& input_data, Vector<Real_t>& output_data, Vector<Real_t>& buffer_);
   typename FFTW_t<Real_t>::plan vlist_fftplan; bool vlist_fft_flag;
 
-  void FFT_Check2Equiv(size_t dof, size_t m, size_t ker_dim0, Vector<size_t>& ifft_vec,
+  void FFT_Check2Equiv(size_t dof, size_t m, size_t ker_dim0, Vector<size_t>& ifft_vec, Vector<Real_t>& ifft_scl,
       Vector<Real_t>& input_data, Vector<Real_t>& output_data, Vector<Real_t>& buffer_, Matrix<Real_t>& M);
   typename FFTW_t<Real_t>::plan vlist_ifftplan; bool vlist_ifft_flag;
 
