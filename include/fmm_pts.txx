@@ -757,6 +757,8 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
     case BC_Type:
     {
       if(!this->Homogen() || MultipoleOrder()==0) break;
+      if(kernel->k_m2l->ker_dim[1]!=kernel->k_m2m->ker_dim[1]) break;
+      if(kernel->k_m2l->ker_dim[0]!=kernel->k_l2l->ker_dim[0]) break;
       const int* ker_dim=kernel->k_m2l->ker_dim;
       size_t mat_cnt_m2m=interac_list.ListCount(U2U_Type);
       size_t n_surf=(6*(MultipoleOrder()-1)*(MultipoleOrder()-1)+2);  //Total number of points.
