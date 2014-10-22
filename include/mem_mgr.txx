@@ -25,7 +25,7 @@ bool TypeTraits<T>::IsPOD(){
   return false;
 }
 
-#define PVFMMDefinePOD(type) template<> bool TypeTraits<type>::IsPOD(){return true;};
+#define PVFMMDefinePOD(type) template<> bool inline TypeTraits<type>::IsPOD(){return true;};
 PVFMMDefinePOD(char);
 PVFMMDefinePOD(float);
 PVFMMDefinePOD(double);

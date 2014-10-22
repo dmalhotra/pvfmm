@@ -244,7 +244,7 @@ Permutation<Real_t> cheb_perm(size_t q, size_t p_indx, const Permutation<Real_t>
   if(p_indx==ReflecX || p_indx==ReflecY || p_indx==ReflecZ){
     for(int j=0;j<dof;j++)
     for(int i=0;i<n3;i++){
-      int x[3]={i%(q+1), (i/(q+1))%(q+1), i/(q+1)/(q+1)};
+      size_t x[3]={i%(q+1), (i/(q+1))%(q+1), i/(q+1)/(q+1)};
       P0.scal[i+n3*j]*=(x[p_indx-ReflecX]%2?-1.0:1.0);
     }
   }
@@ -255,7 +255,7 @@ Permutation<Real_t> cheb_perm(size_t q, size_t p_indx, const Permutation<Real_t>
     if(p_indx==SwapXZ) {indx[0]=2; indx[1]=1; indx[2]=0;}
     for(int j=0;j<dof;j++)
     for(int i=0;i<n3;i++){
-      int x[3]={i%(q+1), (i/(q+1))%(q+1), i/(q+1)/(q+1)};
+      size_t x[3]={i%(q+1), (i/(q+1))%(q+1), i/(q+1)/(q+1)};
       P0.perm[i+n3*j]=x[indx[0]]+(x[indx[1]]+x[indx[2]]*(q+1))*(q+1)
                       +n3*ker_perm.perm[j];
     }
@@ -266,7 +266,7 @@ Permutation<Real_t> cheb_perm(size_t q, size_t p_indx, const Permutation<Real_t>
     int indx=0;
     for(int j=0;j<dof;j++)
     for(int i=0;i<n3;i++){
-      int x[3]={i%(q+1), (i/(q+1))%(q+1), i/(q+1)/(q+1)};
+      size_t x[3]={i%(q+1), (i/(q+1))%(q+1), i/(q+1)/(q+1)};
       if(x[0]+x[1]+x[2]<=q){
         coeff_map[i+n3*j]=indx;
         indx++;
@@ -278,7 +278,7 @@ Permutation<Real_t> cheb_perm(size_t q, size_t p_indx, const Permutation<Real_t>
     int indx=0;
     for(int j=0;j<dof;j++)
     for(int i=0;i<n3;i++){
-      int x[3]={i%(q+1), (i/(q+1))%(q+1), i/(q+1)/(q+1)};
+      size_t x[3]={i%(q+1), (i/(q+1))%(q+1), i/(q+1)/(q+1)};
       if(x[0]+x[1]+x[2]<=q){
         P.perm[indx]=coeff_map[P0.perm[i+n3*j]];
         P.scal[indx]=          P0.scal[i+n3*j] ;

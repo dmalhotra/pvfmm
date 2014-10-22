@@ -170,7 +170,7 @@ extern "C" {
   // Wrapper functions
 
   inline void* host_malloc(size_t size){
-    #ifdef defined(PVFMM_HAVE_CUDA)
+    #if defined(PVFMM_HAVE_CUDA)
     return host_malloc_cuda;
     #else
     return malloc(size);
@@ -178,7 +178,7 @@ extern "C" {
   }
 
   inline void host_free(void* p){
-    #ifdef defined(PVFMM_HAVE_CUDA)
+    #if defined(PVFMM_HAVE_CUDA)
     return host_free_cuda(p);
     #else
     return free(p);
@@ -207,7 +207,7 @@ extern "C" {
     #endif
   }
 
-  template <int SYNC=__DEVICE_SYNC__>
+  template <int SYNC>
   inline int host2device(char* host_ptr, char* dev_handle, uintptr_t dev_ptr, size_t len){
     int lock_idx=-1;
     #ifdef __INTEL_OFFLOAD
@@ -224,7 +224,7 @@ extern "C" {
     return lock_idx;
   }
 
-  template <int SYNC=__DEVICE_SYNC__>
+  template <int SYNC>
   inline int device2host(char* dev_handle, uintptr_t dev_ptr, char* host_ptr, size_t len){
     int lock_idx=-1;
     #ifdef __INTEL_OFFLOAD
