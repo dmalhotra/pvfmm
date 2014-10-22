@@ -26,8 +26,8 @@ namespace DeviceWrapper{
 #ifdef __cplusplus
 extern "C" {
 #endif
-  inline void* host_malloc_cuda(size_t size);
-  inline void host_free_cuda(void* p);
+  void* host_malloc_cuda(size_t size);
+  void host_free_cuda(void* p);
 #ifdef __cplusplus
 }
 #endif
@@ -171,7 +171,7 @@ extern "C" {
 
   inline void* host_malloc(size_t size){
     #if defined(PVFMM_HAVE_CUDA)
-    return host_malloc_cuda;
+    return host_malloc_cuda(size);
     #else
     return malloc(size);
     #endif
