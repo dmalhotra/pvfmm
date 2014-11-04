@@ -23,14 +23,21 @@ namespace pvfmm{
 namespace DeviceWrapper{
 
   // CUDA functions
-#ifdef __cplusplus
-extern "C" {
-#endif
-  void* host_malloc_cuda(size_t size);
-  void host_free_cuda(void* p);
-#ifdef __cplusplus
-}
-#endif
+  inline void* host_malloc_cuda(size_t size){
+    return malloc(size);
+    //void* p;
+    //cudaError_t error = cudaHostAlloc(&p, size, cudaHostAllocPortable);
+    //if (error != cudaSuccess) fprintf(stderr,"CUDA Error: %s \n", cudaGetErrorString(error));
+    //assert(error == cudaSuccess);
+    //return p;
+  }
+
+  inline void host_free_cuda(void* p){
+    free(p);
+    //cudaError_t error = cudaFreeHost(p);
+    //if (error != cudaSuccess) fprintf(stderr,"CUDA Error: %s \n", cudaGetErrorString(error));
+    //assert(error == cudaSuccess);
+  }
 
   inline uintptr_t alloc_device_cuda(char* dev_handle, size_t len) {
     char *dev_ptr=NULL;

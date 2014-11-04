@@ -114,7 +114,6 @@ lib_libpvfmm_a_SOURCES = \
 
 if NVCC_OK
 lib_libpvfmm_a_SOURCES += \
-													src/device_wrapper_gpu.cu \
 													src/fmm_pts_gpu.cu
 endif
 
