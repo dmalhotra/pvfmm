@@ -72,6 +72,7 @@ void FMM_Tree<FMM_Mat_t>::InitFMM_Tree(bool refine, BoundaryType bndry_) {
 template <class FMM_Mat_t>
 void FMM_Tree<FMM_Mat_t>::SetupFMM(FMM_Mat_t* fmm_mat_) {
   Profile::Tic("SetupFMM",this->Comm(),true);{
+  typedef typename FMM_Mat_t::FMMTree_t MatTree_t;
   bool device=true;
 
   #ifdef __INTEL_OFFLOAD
@@ -111,7 +112,7 @@ void FMM_Tree<FMM_Mat_t>::SetupFMM(FMM_Mat_t* fmm_mat_) {
   }
   //Collect node data into continuous array.
   std::vector<Vector<Node_t*> > node_lists; // TODO: Remove this parameter, not really needed
-  fmm_mat->CollectNodeData(all_nodes, node_data_buff, node_lists);
+  fmm_mat->CollectNodeData((MatTree_t*)this,all_nodes, node_data_buff, node_lists);
   Profile::Toc();
 
   setup_data.resize(8*MAX_DEPTH);
@@ -120,50 +121,50 @@ void FMM_Tree<FMM_Mat_t>::SetupFMM(FMM_Mat_t* fmm_mat_) {
   Profile::Tic("UListSetup",this->Comm(),false,3);
   for(size_t i=0;i<MAX_DEPTH;i++){
     setup_data[i+MAX_DEPTH*0].precomp_data=&precomp_lst[0];
-    fmm_mat->U_ListSetup(setup_data[i+MAX_DEPTH*0],node_data_buff,node_lists,fmm_mat->Homogen()?(i==0?-1:MAX_DEPTH+1):i, device);
+    fmm_mat->U_ListSetup(setup_data[i+MAX_DEPTH*0],(MatTree_t*)this,node_data_buff,node_lists,fmm_mat->Homogen()?(i==0?-1:MAX_DEPTH+1):i, device);
   }
   Profile::Toc();
   Profile::Tic("WListSetup",this->Comm(),false,3);
   for(size_t i=0;i<MAX_DEPTH;i++){
     setup_data[i+MAX_DEPTH*1].precomp_data=&precomp_lst[1];
-    fmm_mat->W_ListSetup(setup_data[i+MAX_DEPTH*1],node_data_buff,node_lists,fmm_mat->Homogen()?(i==0?-1:MAX_DEPTH+1):i, device);
+    fmm_mat->W_ListSetup(setup_data[i+MAX_DEPTH*1],(MatTree_t*)this,node_data_buff,node_lists,fmm_mat->Homogen()?(i==0?-1:MAX_DEPTH+1):i, device);
   }
   Profile::Toc();
   Profile::Tic("XListSetup",this->Comm(),false,3);
   for(size_t i=0;i<MAX_DEPTH;i++){
     setup_data[i+MAX_DEPTH*2].precomp_data=&precomp_lst[2];
-    fmm_mat->X_ListSetup(setup_data[i+MAX_DEPTH*2],node_data_buff,node_lists,fmm_mat->Homogen()?(i==0?-1:MAX_DEPTH+1):i, device);
+    fmm_mat->X_ListSetup(setup_data[i+MAX_DEPTH*2],(MatTree_t*)this,node_data_buff,node_lists,fmm_mat->Homogen()?(i==0?-1:MAX_DEPTH+1):i, device);
   }
   Profile::Toc();
   Profile::Tic("VListSetup",this->Comm(),false,3);
   for(size_t i=0;i<MAX_DEPTH;i++){
     setup_data[i+MAX_DEPTH*3].precomp_data=&precomp_lst[3];
-    fmm_mat->V_ListSetup(setup_data[i+MAX_DEPTH*3],node_data_buff,node_lists,fmm_mat->Homogen()?(i==0?-1:MAX_DEPTH+1):i, /*device*/ false);
+    fmm_mat->V_ListSetup(setup_data[i+MAX_DEPTH*3],(MatTree_t*)this,node_data_buff,node_lists,fmm_mat->Homogen()?(i==0?-1:MAX_DEPTH+1):i, /*device*/ false);
   }
   Profile::Toc();
   Profile::Tic("D2DSetup",this->Comm(),false,3);
   for(size_t i=0;i<MAX_DEPTH;i++){
     setup_data[i+MAX_DEPTH*4].precomp_data=&precomp_lst[4];
-    fmm_mat->Down2DownSetup(setup_data[i+MAX_DEPTH*4],node_data_buff,node_lists,i, /*device*/ false);
+    fmm_mat->Down2DownSetup(setup_data[i+MAX_DEPTH*4],(MatTree_t*)this,node_data_buff,node_lists,i, /*device*/ false);
   }
   Profile::Toc();
   Profile::Tic("D2TSetup",this->Comm(),false,3);
   for(size_t i=0;i<MAX_DEPTH;i++){
     setup_data[i+MAX_DEPTH*5].precomp_data=&precomp_lst[5];
-    fmm_mat->Down2TargetSetup(setup_data[i+MAX_DEPTH*5],node_data_buff,node_lists,fmm_mat->Homogen()?(i==0?-1:MAX_DEPTH+1):i, /*device*/ false);
+    fmm_mat->Down2TargetSetup(setup_data[i+MAX_DEPTH*5],(MatTree_t*)this,node_data_buff,node_lists,fmm_mat->Homogen()?(i==0?-1:MAX_DEPTH+1):i, /*device*/ false);
   }
   Profile::Toc();
 
   Profile::Tic("S2USetup",this->Comm(),false,3);
   for(size_t i=0;i<MAX_DEPTH;i++){
     setup_data[i+MAX_DEPTH*6].precomp_data=&precomp_lst[6];
-    fmm_mat->Source2UpSetup(setup_data[i+MAX_DEPTH*6],node_data_buff,node_lists,fmm_mat->Homogen()?(i==0?-1:MAX_DEPTH+1):i, /*device*/ false);
+    fmm_mat->Source2UpSetup(setup_data[i+MAX_DEPTH*6],(MatTree_t*)this,node_data_buff,node_lists,fmm_mat->Homogen()?(i==0?-1:MAX_DEPTH+1):i, /*device*/ false);
   }
   Profile::Toc();
   Profile::Tic("U2USetup",this->Comm(),false,3);
   for(size_t i=0;i<MAX_DEPTH;i++){
     setup_data[i+MAX_DEPTH*7].precomp_data=&precomp_lst[7];
-    fmm_mat->Up2UpSetup(setup_data[i+MAX_DEPTH*7],node_data_buff,node_lists,i, /*device*/ false);
+    fmm_mat->Up2UpSetup(setup_data[i+MAX_DEPTH*7],(MatTree_t*)this,node_data_buff,node_lists,i, /*device*/ false);
   }
   Profile::Toc();
 

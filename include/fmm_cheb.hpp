@@ -28,6 +28,7 @@ class FMM_Cheb: public FMM_Pts<FMMNode>{
 
  public:
 
+  typedef typename FMM_Pts<FMMNode>::FMMTree_t FMMTree_t;
   typedef typename FMMNode::Real_t Real_t;
   typedef FMMNode FMMNode_t;
 
@@ -69,37 +70,37 @@ class FMM_Cheb: public FMM_Pts<FMMNode>{
    */
   int& ChebDeg(){return cheb_deg;}
 
-  virtual void CollectNodeData(std::vector<FMMNode*>& nodes, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, std::vector<std::vector<Vector<Real_t>* > > vec_list = std::vector<std::vector<Vector<Real_t>* > >(0));
+  virtual void CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& nodes, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, std::vector<std::vector<Vector<Real_t>* > > vec_list = std::vector<std::vector<Vector<Real_t>* > >(0));
 
   /**
    * \brief Initialize multipole expansions for the given array of leaf nodes
    * at a given level.
    */
-  virtual void Source2UpSetup(SetupData<Real_t>& setup_data, std::vector<Matrix<Real_t> >& node_data, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device);
+  virtual void Source2UpSetup(SetupData<Real_t>& setup_data, FMMTree_t* tree, std::vector<Matrix<Real_t> >& node_data, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device);
   virtual void Source2Up     (SetupData<Real_t>& setup_data, bool device=false);
 
   /**
    * \brief Compute X-List intractions.
    */
-  virtual void X_ListSetup(SetupData<Real_t>& setup_data, std::vector<Matrix<Real_t> >& node_data, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device);
+  virtual void X_ListSetup(SetupData<Real_t>& setup_data, FMMTree_t* tree, std::vector<Matrix<Real_t> >& node_data, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device);
   virtual void X_List     (SetupData<Real_t>& setup_data, bool device=false);
 
   /**
    * \brief Compute target potential from the local expansion.
    */
-  virtual void Down2TargetSetup(SetupData<Real_t>& setup_data, std::vector<Matrix<Real_t> >& node_data, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device);
+  virtual void Down2TargetSetup(SetupData<Real_t>& setup_data, FMMTree_t* tree, std::vector<Matrix<Real_t> >& node_data, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device);
   virtual void Down2Target     (SetupData<Real_t>& setup_data, bool device=false);
 
   /**
    * \brief Compute W-List intractions.
    */
-  virtual void W_ListSetup(SetupData<Real_t>& setup_data, std::vector<Matrix<Real_t> >& node_data, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device);
+  virtual void W_ListSetup(SetupData<Real_t>& setup_data, FMMTree_t* tree, std::vector<Matrix<Real_t> >& node_data, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device);
   virtual void W_List     (SetupData<Real_t>& setup_data, bool device=false);
 
   /**
    * \brief Compute U-List intractions.
    */
-  virtual void U_ListSetup(SetupData<Real_t>& setup_data, std::vector<Matrix<Real_t> >& node_data, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device);
+  virtual void U_ListSetup(SetupData<Real_t>& setup_data, FMMTree_t* tree, std::vector<Matrix<Real_t> >& node_data, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device);
   virtual void U_List     (SetupData<Real_t>& setup_data, bool device=false);
 
   virtual void PostProcessing(std::vector<FMMNode_t*>& nodes);

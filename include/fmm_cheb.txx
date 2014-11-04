@@ -817,7 +817,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
 
 
 template <class FMMNode>
-void FMM_Cheb<FMMNode>::CollectNodeData(std::vector<FMMNode*>& node, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, std::vector<std::vector<Vector<Real_t>* > > vec_list){
+void FMM_Cheb<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& node, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, std::vector<std::vector<Vector<Real_t>* > > vec_list){
   if(vec_list.size()<6) vec_list.resize(6);
   size_t n_coeff=(cheb_deg+1)*(cheb_deg+2)*(cheb_deg+3)/6;
   if(node.size()==0) return;
@@ -843,14 +843,14 @@ void FMM_Cheb<FMMNode>::CollectNodeData(std::vector<FMMNode*>& node, std::vector
       }
     }
   }
-  FMM_Pts<FMMNode_t>::CollectNodeData(node, buff, n_list, vec_list);
+  FMM_Pts<FMMNode_t>::CollectNodeData(tree, node, buff, n_list, vec_list);
 }
 
 
 template <class FMMNode>
-void FMM_Cheb<FMMNode>::Source2UpSetup(SetupData<Real_t>& setup_data, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device){
+void FMM_Cheb<FMMNode>::Source2UpSetup(SetupData<Real_t>& setup_data, FMMTree_t* tree, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device){
   if(this->MultipoleOrder()==0) return;
-  FMM_Pts<FMMNode>::Source2UpSetup(setup_data, buff, n_list, level, device);
+  FMM_Pts<FMMNode>::Source2UpSetup(setup_data, tree, buff, n_list, level, device);
 
   { // Set setup_data
     setup_data.level=level;
@@ -887,9 +887,9 @@ void FMM_Cheb<FMMNode>::Source2Up     (SetupData<Real_t>& setup_data, bool devic
 
 
 template <class FMMNode>
-void FMM_Cheb<FMMNode>::X_ListSetup(SetupData<Real_t>& setup_data, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device){
+void FMM_Cheb<FMMNode>::X_ListSetup(SetupData<Real_t>& setup_data, FMMTree_t* tree, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device){
   if(this->MultipoleOrder()==0) return;
-  FMM_Pts<FMMNode>::X_ListSetup(setup_data, buff, n_list, level, device);
+  FMM_Pts<FMMNode>::X_ListSetup(setup_data, tree, buff, n_list, level, device);
 
   { // Set setup_data
     setup_data.level=level;
@@ -932,7 +932,7 @@ void FMM_Cheb<FMMNode>::X_List     (SetupData<Real_t>& setup_data, bool device){
 
 
 template <class FMMNode>
-void FMM_Cheb<FMMNode>::W_ListSetup(SetupData<Real_t>& setup_data, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device){
+void FMM_Cheb<FMMNode>::W_ListSetup(SetupData<Real_t>& setup_data, FMMTree_t* tree, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device){
   if(this->MultipoleOrder()==0) return;
   { // Set setup_data
     setup_data.level=level;
@@ -974,8 +974,8 @@ void FMM_Cheb<FMMNode>::W_List     (SetupData<Real_t>& setup_data, bool device){
 
 
 template <class FMMNode>
-void FMM_Cheb<FMMNode>::U_ListSetup(SetupData<Real_t>& setup_data, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device){
-  FMM_Pts<FMMNode>::U_ListSetup(setup_data, buff, n_list, level, device);
+void FMM_Cheb<FMMNode>::U_ListSetup(SetupData<Real_t>& setup_data, FMMTree_t* tree, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device){
+  FMM_Pts<FMMNode>::U_ListSetup(setup_data, tree, buff, n_list, level, device);
 
   { // Set setup_data
     setup_data.level=level;
@@ -1020,7 +1020,7 @@ void FMM_Cheb<FMMNode>::U_List     (SetupData<Real_t>& setup_data, bool device){
 
 
 template <class FMMNode>
-void FMM_Cheb<FMMNode>::Down2TargetSetup(SetupData<Real_t>& setup_data, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device){
+void FMM_Cheb<FMMNode>::Down2TargetSetup(SetupData<Real_t>& setup_data, FMMTree_t* tree, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device){
   if(this->MultipoleOrder()==0) return;
   { // Set setup_data
     setup_data.level=level;

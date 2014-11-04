@@ -24,6 +24,7 @@ namespace pvfmm{
  */
 template <class FMM_Mat_t>
 class FMM_Tree: public MPI_Tree<typename FMM_Mat_t::FMMNode_t>{
+  friend FMM_Mat_t;
 
  public:
 
@@ -91,8 +92,7 @@ class FMM_Tree: public MPI_Tree<typename FMM_Mat_t::FMMNode_t>{
    */
   void Copy_FMMOutput();
 
- private:
-
+ protected:
 
   std::vector<Matrix<Real_t> > node_data_buff;
   InteracList<Node_t> interac_list;
@@ -101,6 +101,11 @@ class FMM_Tree: public MPI_Tree<typename FMM_Mat_t::FMMNode_t>{
 
   std::vector<Matrix<char> > precomp_lst; //Precomputed data for each interaction type.
   std::vector<SetupData<Real_t> > setup_data;
+
+  std::vector<Vector<Real_t> > upwd_check_surf;
+  std::vector<Vector<Real_t> > upwd_equiv_surf;
+  std::vector<Vector<Real_t> > dnwd_check_surf;
+  std::vector<Vector<Real_t> > dnwd_equiv_surf;
 };
 
 }//end namespace

@@ -1025,7 +1025,7 @@ void FMM_Pts<FMMNode>::PrecompAll(Mat_Type type, int level){
 }
 
 template <class FMMNode>
-void FMM_Pts<FMMNode>::CollectNodeData(std::vector<FMMNode*>& node, std::vector<Matrix<Real_t> >& buff_list, std::vector<Vector<FMMNode_t*> >& n_list, std::vector<std::vector<Vector<Real_t>* > > vec_list){
+void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& node, std::vector<Matrix<Real_t> >& buff_list, std::vector<Vector<FMMNode_t*> >& n_list, std::vector<std::vector<Vector<Real_t>* > > vec_list){
   if(buff_list.size()<7) buff_list.resize(7);
   if(   n_list.size()<7)    n_list.resize(7);
   if( vec_list.size()<7)  vec_list.resize(7);
@@ -1221,29 +1221,29 @@ void FMM_Pts<FMMNode>::CollectNodeData(std::vector<FMMNode*>& node, std::vector<
       }
     }
     { // check and equiv surfaces.
-      if(upwd_check_surf.size()==0){
+      if(tree->upwd_check_surf.size()==0){
         size_t m=MultipoleOrder();
-        upwd_check_surf.resize(MAX_DEPTH);
-        upwd_equiv_surf.resize(MAX_DEPTH);
-        dnwd_check_surf.resize(MAX_DEPTH);
-        dnwd_equiv_surf.resize(MAX_DEPTH);
+        tree->upwd_check_surf.resize(MAX_DEPTH);
+        tree->upwd_equiv_surf.resize(MAX_DEPTH);
+        tree->dnwd_check_surf.resize(MAX_DEPTH);
+        tree->dnwd_equiv_surf.resize(MAX_DEPTH);
         for(size_t depth=0;depth<MAX_DEPTH;depth++){
           Real_t c[3]={0.0,0.0,0.0};
-          upwd_check_surf[depth].ReInit((6*(m-1)*(m-1)+2)*COORD_DIM);
-          upwd_equiv_surf[depth].ReInit((6*(m-1)*(m-1)+2)*COORD_DIM);
-          dnwd_check_surf[depth].ReInit((6*(m-1)*(m-1)+2)*COORD_DIM);
-          dnwd_equiv_surf[depth].ReInit((6*(m-1)*(m-1)+2)*COORD_DIM);
-          upwd_check_surf[depth]=u_check_surf(m,c,depth);
-          upwd_equiv_surf[depth]=u_equiv_surf(m,c,depth);
-          dnwd_check_surf[depth]=d_check_surf(m,c,depth);
-          dnwd_equiv_surf[depth]=d_equiv_surf(m,c,depth);
+          tree->upwd_check_surf[depth].ReInit((6*(m-1)*(m-1)+2)*COORD_DIM);
+          tree->upwd_equiv_surf[depth].ReInit((6*(m-1)*(m-1)+2)*COORD_DIM);
+          tree->dnwd_check_surf[depth].ReInit((6*(m-1)*(m-1)+2)*COORD_DIM);
+          tree->dnwd_equiv_surf[depth].ReInit((6*(m-1)*(m-1)+2)*COORD_DIM);
+          tree->upwd_check_surf[depth]=u_check_surf(m,c,depth);
+          tree->upwd_equiv_surf[depth]=u_equiv_surf(m,c,depth);
+          tree->dnwd_check_surf[depth]=d_check_surf(m,c,depth);
+          tree->dnwd_equiv_surf[depth]=d_equiv_surf(m,c,depth);
         }
       }
       for(size_t depth=0;depth<MAX_DEPTH;depth++){
-        vec_lst.push_back(&upwd_check_surf[depth]);
-        vec_lst.push_back(&upwd_equiv_surf[depth]);
-        vec_lst.push_back(&dnwd_check_surf[depth]);
-        vec_lst.push_back(&dnwd_equiv_surf[depth]);
+        vec_lst.push_back(&tree->upwd_check_surf[depth]);
+        vec_lst.push_back(&tree->upwd_equiv_surf[depth]);
+        vec_lst.push_back(&tree->dnwd_check_surf[depth]);
+        vec_lst.push_back(&tree->dnwd_equiv_surf[depth]);
       }
     }
 
@@ -1931,7 +1931,7 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
 
 
 template <class FMMNode>
-void FMM_Pts<FMMNode>::Source2UpSetup(SetupData<Real_t>&  setup_data, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device){
+void FMM_Pts<FMMNode>::Source2UpSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tree, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device){
   if(this->MultipoleOrder()==0) return;
   { // Set setup_data
     setup_data.level=level;
@@ -1962,7 +1962,7 @@ void FMM_Pts<FMMNode>::Source2UpSetup(SetupData<Real_t>&  setup_data, std::vecto
     input_vector .push_back(&((FMMNode*)nodes_in [i])->surf_value);
   }
   for(size_t i=0;i<nodes_out.size();i++){
-    output_vector.push_back(&upwd_check_surf[((FMMNode*)nodes_out[i])->Depth()]);
+    output_vector.push_back(&tree->upwd_check_surf[((FMMNode*)nodes_out[i])->Depth()]);
     output_vector.push_back(&((FMMData*)((FMMNode*)nodes_out[i])->FMMData())->upward_equiv);
   }
 
@@ -1983,7 +1983,7 @@ void FMM_Pts<FMMNode>::Source2Up(SetupData<Real_t>&  setup_data, bool device){
 
 
 template <class FMMNode>
-void FMM_Pts<FMMNode>::Up2UpSetup(SetupData<Real_t>& setup_data, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device){
+void FMM_Pts<FMMNode>::Up2UpSetup(SetupData<Real_t>& setup_data, FMMTree_t* tree, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device){
   if(this->MultipoleOrder()==0) return;
   { // Set setup_data
     setup_data.level=level;
@@ -2716,7 +2716,7 @@ void VListHadamard(size_t dof, size_t M_dim, size_t ker_dim0, size_t ker_dim1, V
 }
 
 template <class FMMNode>
-void FMM_Pts<FMMNode>::V_ListSetup(SetupData<Real_t>&  setup_data, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device){
+void FMM_Pts<FMMNode>::V_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tree, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device){
   if(this->MultipoleOrder()==0) return;
   if(level==0) return;
   { // Set setup_data
@@ -3135,7 +3135,7 @@ void FMM_Pts<FMMNode>::V_List     (SetupData<Real_t>&  setup_data, bool device){
 
 
 template <class FMMNode>
-void FMM_Pts<FMMNode>::Down2DownSetup(SetupData<Real_t>& setup_data, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device){
+void FMM_Pts<FMMNode>::Down2DownSetup(SetupData<Real_t>& setup_data, FMMTree_t* tree, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device){
   if(this->MultipoleOrder()==0) return;
   { // Set setup_data
     setup_data.level=level;
@@ -3626,7 +3626,7 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
 
 
 template <class FMMNode>
-void FMM_Pts<FMMNode>::X_ListSetup(SetupData<Real_t>&  setup_data, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device){
+void FMM_Pts<FMMNode>::X_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tree, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device){
   if(this->MultipoleOrder()==0) return;
   { // Set setup_data
     setup_data.level=level;
@@ -3657,7 +3657,7 @@ void FMM_Pts<FMMNode>::X_ListSetup(SetupData<Real_t>&  setup_data, std::vector<M
     input_vector .push_back(&((FMMNode*)nodes_in [i])->surf_value);
   }
   for(size_t i=0;i<nodes_out.size();i++){
-    output_vector.push_back(&dnwd_check_surf[((FMMNode*)nodes_out[i])->Depth()]);
+    output_vector.push_back(&tree->dnwd_check_surf[((FMMNode*)nodes_out[i])->Depth()]);
     output_vector.push_back(&((FMMData*)((FMMNode*)nodes_out[i])->FMMData())->dnward_equiv);
   }
 
@@ -3679,7 +3679,7 @@ void FMM_Pts<FMMNode>::X_List     (SetupData<Real_t>&  setup_data, bool device){
 
 
 template <class FMMNode>
-void FMM_Pts<FMMNode>::W_ListSetup(SetupData<Real_t>&  setup_data, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device){
+void FMM_Pts<FMMNode>::W_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tree, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device){
   if(this->MultipoleOrder()==0) return;
   { // Set setup_data
     setup_data.level=level;
@@ -3704,7 +3704,7 @@ void FMM_Pts<FMMNode>::W_ListSetup(SetupData<Real_t>&  setup_data, std::vector<M
   std::vector<Vector<Real_t>*>&  input_vector=setup_data. input_vector;  input_vector.clear();
   std::vector<Vector<Real_t>*>& output_vector=setup_data.output_vector; output_vector.clear();
   for(size_t i=0;i<nodes_in .size();i++){
-    input_vector .push_back(&upwd_equiv_surf[((FMMNode*)nodes_in [i])->Depth()]);
+    input_vector .push_back(&tree->upwd_equiv_surf[((FMMNode*)nodes_in [i])->Depth()]);
     input_vector .push_back(&((FMMData*)((FMMNode*)nodes_in [i])->FMMData())->upward_equiv);
     input_vector .push_back(NULL);
     input_vector .push_back(NULL);
@@ -3730,7 +3730,7 @@ void FMM_Pts<FMMNode>::W_List     (SetupData<Real_t>&  setup_data, bool device){
 
 
 template <class FMMNode>
-void FMM_Pts<FMMNode>::U_ListSetup(SetupData<Real_t>& setup_data, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device){
+void FMM_Pts<FMMNode>::U_ListSetup(SetupData<Real_t>& setup_data, FMMTree_t* tree, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device){
   { // Set setup_data
     setup_data.level=level;
     setup_data.kernel=kernel->k_s2t;
@@ -3782,7 +3782,7 @@ void FMM_Pts<FMMNode>::U_List     (SetupData<Real_t>&  setup_data, bool device){
 
 
 template <class FMMNode>
-void FMM_Pts<FMMNode>::Down2TargetSetup(SetupData<Real_t>&  setup_data, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device){
+void FMM_Pts<FMMNode>::Down2TargetSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tree, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device){
   if(this->MultipoleOrder()==0) return;
   { // Set setup_data
     setup_data.level=level;
@@ -3807,7 +3807,7 @@ void FMM_Pts<FMMNode>::Down2TargetSetup(SetupData<Real_t>&  setup_data, std::vec
   std::vector<Vector<Real_t>*>&  input_vector=setup_data. input_vector;  input_vector.clear();
   std::vector<Vector<Real_t>*>& output_vector=setup_data.output_vector; output_vector.clear();
   for(size_t i=0;i<nodes_in .size();i++){
-    input_vector .push_back(&dnwd_equiv_surf[((FMMNode*)nodes_in [i])->Depth()]);
+    input_vector .push_back(&tree->dnwd_equiv_surf[((FMMNode*)nodes_in [i])->Depth()]);
     input_vector .push_back(&((FMMData*)((FMMNode*)nodes_in [i])->FMMData())->dnward_equiv);
     input_vector .push_back(NULL);
     input_vector .push_back(NULL);
