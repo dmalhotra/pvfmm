@@ -107,6 +107,7 @@ lib_libpvfmm_a_SOURCES = \
 									src/device_wrapper.cpp \
 									src/fmm_gll.cpp \
 									src/legendre_rule.cpp \
+									src/mat_utils.cpp \
 									src/mem_mgr.cpp \
 									src/mortonid.cpp \
 									src/profile.cpp \

@@ -13,10 +13,7 @@
 #include <iostream>
 #include <vector>
 
-#include <blas.h>
-#include <lapack.h>
 #include <matrix.hpp>
-
 #include <device_wrapper.hpp>
 #if defined(PVFMM_HAVE_CUDA)
 #include <cuda_runtime_api.h>
@@ -72,21 +69,12 @@ namespace mat{
   }
 
   template<>
-  inline void gemm<float>(char TransA, char TransB,  int M,  int N,  int K,  float alpha,  float *A,  int lda,  float *B,  int ldb,  float beta, float *C,  int ldc){
-      sgemm_(&TransA, &TransB, &M, &N, &K, &alpha, A, &lda, B, &ldb, &beta, C, &ldc);
-  }
+  void gemm<float>(char TransA, char TransB,  int M,  int N,  int K,  float alpha,  float *A,  int lda,  float *B,  int ldb,  float beta, float *C,  int ldc);
 
   template<>
-  inline void gemm<double>(char TransA, char TransB,  int M,  int N,  int K,  double alpha,  double *A,  int lda,  double *B,  int ldb,  double beta, double *C,  int ldc){
-      dgemm_(&TransA, &TransB, &M, &N, &K, &alpha, A, &lda, B, &ldb, &beta, C, &ldc);
-  }
+  void gemm<double>(char TransA, char TransB,  int M,  int N,  int K,  double alpha,  double *A,  int lda,  double *B,  int ldb,  double beta, double *C,  int ldc);
 
   #if defined(PVFMM_HAVE_CUDA)
-  //template <class T>
-  //inline void cublasgemm(char TransA, char TransB, int M, int N, int K, T alpha, T*A, int lda, T *B, int ldb, T beta, T *C, int ldc){
-  //  assert(false);
-  //}
-
   template<>
   inline void cublasgemm<float>(char TransA, char TransB, int M, int N, int K, float alpha, float *A, int lda, float *B, int ldb, float beta, float *C, int ldc) {
     cublasOperation_t cublasTransA, cublasTransB;
@@ -434,18 +422,14 @@ namespace mat{
   }
 
   template<>
-  inline void svd<float>(char *JOBU, char *JOBVT, int *M, int *N, float *A, int *LDA,
+  void svd<float>(char *JOBU, char *JOBVT, int *M, int *N, float *A, int *LDA,
       float *S, float *U, int *LDU, float *VT, int *LDVT, float *WORK, int *LWORK,
-      int *INFO){
-    sgesvd_(JOBU,JOBVT,M,N,A,LDA,S,U,LDU,VT,LDVT,WORK,LWORK,INFO);
-  }
+      int *INFO);
 
   template<>
-  inline void svd<double>(char *JOBU, char *JOBVT, int *M, int *N, double *A, int *LDA,
+  void svd<double>(char *JOBU, char *JOBVT, int *M, int *N, double *A, int *LDA,
       double *S, double *U, int *LDU, double *VT, int *LDVT, double *WORK, int *LWORK,
-      int *INFO){
-    dgesvd_(JOBU,JOBVT,M,N,A,LDA,S,U,LDU,VT,LDVT,WORK,LWORK,INFO);
-  }
+      int *INFO);
 
   /**
    * \brief Computes the pseudo inverse of matrix M(n1xn2) (in row major form)
