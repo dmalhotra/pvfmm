@@ -730,6 +730,9 @@ inline int lineariseList(std::vector<MortonId> & list, MPI_Comm comm) {
     }
   }//not empty procs only
 
+  // Free new_comm
+  MPI_Comm_free(&new_comm);
+
   return 1;
 }//end fn.
 
@@ -913,6 +916,9 @@ inline int balanceOctree (std::vector<MortonId > &in, std::vector<MortonId > &ou
     if(new_size<size){
       par::partitionW<MortonId>(out, NULL , comm);
     }
+
+    // Free new_comm
+    MPI_Comm_free(&new_comm);
   }
 
   //////////////////////////////////////////////////////////////////////////////////////////////////

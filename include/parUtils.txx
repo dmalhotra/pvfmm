@@ -395,6 +395,8 @@ namespace par{
       Vector<T> rbuff    ;
       Vector<T> rbuff_ext;
 
+      bool free_comm=false; // Flag to free comm.
+
       // Binary split and merge in each iteration.
       while(npes>1 && totSize>0){ // O(log p) iterations.
 
@@ -499,11 +501,14 @@ namespace par{
         {// Split comm.  O( log(p) ) ??
           MPI_Comm scomm;
           MPI_Comm_split(comm, myrank<=split_id, myrank, &scomm );
-          comm=scomm;
+          if(free_comm) MPI_Comm_free(&comm);
+          comm=scomm; free_comm=true;
+
           npes  =(myrank<=split_id? split_id+1: npes  -split_id-1);
           myrank=(myrank<=split_id? myrank    : myrank-split_id-1);
         }
       }
+      if(free_comm) MPI_Comm_free(&comm);
 
       SortedElem.Resize(nelem);
       memcpy(&SortedElem[0], &arr[0], nelem*sizeof(T));
