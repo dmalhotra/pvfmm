@@ -97,9 +97,9 @@ void TreeNode::Truncate() {
   int n=(1UL<<dim);
   for(int i=0;i<n;i++){
     if(child[i]!=NULL)
-      delete child[i];
+      mem::aligned_delete(child[i]);
   }
-  delete[] child;
+  mem::aligned_delete(child);
   child=NULL;
 }
 
@@ -117,7 +117,7 @@ void TreeNode::SetChild(TreeNode* c, int id) {
   assert(id<(1<<dim));
   //assert(child!=NULL);
   //if(child[id]!=NULL)
-  //  delete child[id];
+  //  mem::aligned_delete(child[id]);
   child[id]=c;
   if(c!=NULL) child[id]->SetParent(this,id);
 }
