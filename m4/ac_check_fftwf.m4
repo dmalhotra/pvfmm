@@ -12,6 +12,8 @@ AC_DEFUN([AC_CHECK_FFTWF],[\
                                 [set FFTW installation directory to DIR])],
                 [FFTW_DIR="$withval"; FFTW_INCLUDE="-I$FFTW_DIR/include"; FFTWF_LIB="-L$FFTW_DIR/lib"])
 
+  if test "x$FFTW_DIR" != xno; then
+
     AC_ARG_WITH(fftw_include,
                 [AS_HELP_STRING([--with-fftw-include=DIR],
                                 [set fftw3.h directory path to DIR])],
@@ -83,6 +85,13 @@ AC_DEFUN([AC_CHECK_FFTWF],[\
                     Please specify the location of the library using: --with-fftw-lib=LIB 
                     or specify the FFTW installation directory using --with-fftw=DIR])
     fi
+
+  else
+
+    FFTW_INCLUDE="";
+    FFTWF_LIB="";
+
+  fi
 
     LIBS="$save_LIBS"
     CXXFLAGS="$save_CXXFLAGS"

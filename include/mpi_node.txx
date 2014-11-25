@@ -71,7 +71,7 @@ void MPI_Node<T>::SetCoord(MortonId& mid){
 
 template <class T>
 TreeNode* MPI_Node<T>::NewNode(TreeNode* n_){
-  MPI_Node<Real_t>* n=(n_?static_cast<MPI_Node<Real_t>*>(n_):new MPI_Node<Real_t>());
+  MPI_Node<Real_t>* n=(n_?static_cast<MPI_Node<Real_t>*>(n_):mem::aligned_new<MPI_Node<Real_t> >());
   n->max_pts=max_pts;
   return TreeNode::NewNode(n);
 }

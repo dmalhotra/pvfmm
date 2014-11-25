@@ -9,9 +9,11 @@
 #include <cassert>
 #include <cstdlib>
 #include <vector>
+#if defined(PVFMM_HAVE_FFTW) || defined(PVFMM_HAVE_FFTWF)
 #include <fftw3.h>
 #ifdef FFTW3_MKL
 #include <fftw3_mkl.h>
+#endif
 #endif
 
 #include <pvfmm_common.hpp>
@@ -39,7 +41,7 @@ struct FFTW_t{
 
   static plan fft_plan_many_dft_r2c(int rank, const int *n, int howmany,
       T *in, const int *inembed, int istride, int idist,
-      cplx *out, const int *onembed, int ostride, int odist, unsigned flags){
+      cplx *out, const int *onembed, int ostride, int odist){
     assert(inembed==NULL);
     assert(onembed==NULL);
     assert(istride==1);
@@ -69,7 +71,7 @@ struct FFTW_t{
 
   static plan fft_plan_many_dft_c2r(int rank, const int *n, int howmany,
       cplx *in, const int *inembed, int istride, int idist,
-      T *out, const int *onembed, int ostride, int odist, unsigned flags){
+      T *out, const int *onembed, int ostride, int odist){
     assert(inembed==NULL);
     assert(onembed==NULL);
     assert(istride==1);
@@ -112,7 +114,7 @@ struct FFTW_t{
       assert(2*N2/M.Dim(1)==N1/M.Dim(0));
       Matrix<T> x(  N1/M.Dim(0),M.Dim(0),  in,false);
       Matrix<T> y(2*N2/M.Dim(1),M.Dim(1),buff,false);
-      Matrix<T>::DGEMM(y, x, M);
+      Matrix<T>::GEMM(y, x, M);
       transpose<cplx>(2*N2/M.Dim(1), M.Dim(1)/2, (cplx*)buff);
     }
     for(size_t i=1;i<p.dim.size();i++){ // c2c
@@ -120,7 +122,7 @@ struct FFTW_t{
       assert(M.Dim(0)==M.Dim(1));
       Matrix<T> x(2*N2/M.Dim(0),M.Dim(0),buff); // TODO: optimize this
       Matrix<T> y(2*N2/M.Dim(1),M.Dim(1),buff,false);
-      Matrix<T>::DGEMM(y, x, M);
+      Matrix<T>::GEMM(y, x, M);
       transpose<cplx>(2*N2/M.Dim(1), M.Dim(1)/2, (cplx*)buff);
     }
     { // howmany
@@ -148,7 +150,7 @@ struct FFTW_t{
       transpose<cplx>(M.Dim(0)/2, 2*N2/M.Dim(0), (cplx*)buff);
       Matrix<T> y(2*N2/M.Dim(0),M.Dim(0),buff); // TODO: optimize this
       Matrix<T> x(2*N2/M.Dim(1),M.Dim(1),buff,false);
-      Matrix<T>::DGEMM(x, y, M.Transpose());
+      Matrix<T>::GEMM(x, y, M.Transpose());
     }
     { // r2c
       size_t i=p.dim.size()-1;
@@ -157,7 +159,7 @@ struct FFTW_t{
       transpose<cplx>(M.Dim(0)/2, 2*N2/M.Dim(0), (cplx*)buff);
       Matrix<T> y(2*N2/M.Dim(0),M.Dim(0),buff,false);
       Matrix<T> x(  N1/M.Dim(1),M.Dim(1), out,false);
-      Matrix<T>::DGEMM(x, y, M);
+      Matrix<T>::GEMM(x, y, M);
     }
   }
 
@@ -238,26 +240,26 @@ struct FFTW_t<double>{
 
   static plan fft_plan_many_dft_r2c(int rank, const int *n, int howmany,
       double *in, const int *inembed, int istride, int idist,
-      fftw_complex *out, const int *onembed, int ostride, int odist, unsigned flags){
+      fftw_complex *out, const int *onembed, int ostride, int odist){
     #ifdef FFTW3_MKL
     int omp_p0=omp_get_num_threads();
     int omp_p1=omp_get_max_threads();
     fftw3_mkl.number_of_user_threads = (omp_p0>omp_p1?omp_p0:omp_p1);
     #endif
     return fftw_plan_many_dft_r2c(rank, n, howmany, in, inembed, istride,
-        idist, out, onembed, ostride, odist, flags);
+        idist, out, onembed, ostride, odist, FFTW_ESTIMATE);
   }
 
   static plan fft_plan_many_dft_c2r(int rank, const int *n, int howmany,
       cplx *in, const int *inembed, int istride, int idist,
-      double *out, const int *onembed, int ostride, int odist, unsigned flags){
+      double *out, const int *onembed, int ostride, int odist){
     #ifdef FFTW3_MKL
     int omp_p0=omp_get_num_threads();
     int omp_p1=omp_get_max_threads();
     fftw3_mkl.number_of_user_threads = (omp_p0>omp_p1?omp_p0:omp_p1);
     #endif
     return fftw_plan_many_dft_c2r(rank, n, howmany, in, inembed, istride, idist,
-        out, onembed, ostride, odist, flags);
+        out, onembed, ostride, odist, FFTW_ESTIMATE);
   }
 
   static void fft_execute_dft_r2c(const plan p, double *in, cplx *out){
@@ -287,16 +289,16 @@ struct FFTW_t<float>{
 
   static plan fft_plan_many_dft_r2c(int rank, const int *n, int howmany,
       float *in, const int *inembed, int istride, int idist,
-      cplx *out, const int *onembed, int ostride, int odist, unsigned flags){
+      cplx *out, const int *onembed, int ostride, int odist){
     return fftwf_plan_many_dft_r2c(rank, n, howmany, in, inembed, istride,
-        idist, out, onembed, ostride, odist, flags);
+        idist, out, onembed, ostride, odist, FFTW_ESTIMATE);
   }
 
   static plan fft_plan_many_dft_c2r(int rank, const int *n, int howmany,
       cplx *in, const int *inembed, int istride, int idist,
-      float *out, const int *onembed, int ostride, int odist, unsigned flags){
+      float *out, const int *onembed, int ostride, int odist){
     return fftwf_plan_many_dft_c2r(rank, n, howmany, in, inembed, istride, idist,
-        out, onembed, ostride, odist, flags);
+        out, onembed, ostride, odist, FFTW_ESTIMATE);
   }
 
   static void fft_execute_dft_r2c(const plan p, float *in, cplx *out){

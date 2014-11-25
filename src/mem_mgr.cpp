@@ -141,6 +141,25 @@ void MemoryManager::test(){
   }
 }
 
+void MemoryManager::Check() const{
+  #ifndef NDEBUG
+  //print();
+  omp_set_lock(&omp_lock);
+  MemNode* curr_node=&node_buff[n_dummy_indx-1];
+  while(curr_node->next){
+    if(curr_node->free){
+      char* base=curr_node->mem_ptr;
+      #pragma omp parallel for
+      for(size_t i=0;i<curr_node->size;i++){
+        assert(base[i]==init_mem_val);
+      }
+    }
+    curr_node=&node_buff[curr_node->next-1];
+  }
+  omp_unset_lock(&omp_lock);
+  #endif
+}
+
 MemoryManager glbMemMgr(GLOBAL_MEM_BUFF*1024LL*1024LL);
 
 }//end namespace

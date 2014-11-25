@@ -10,6 +10,7 @@
 
 #include <cstdlib>
 #include <stdint.h>
+#include <cassert>
 #include <vector>
 #include <stack>
 #include <map>
@@ -54,6 +55,7 @@ class MemoryManager{
       size_t n_indx;
       size_t n_elem;
       uintptr_t type_id;
+      uintptr_t type_size;
       unsigned char check_sum;
     };
 
@@ -69,9 +71,9 @@ class MemoryManager{
 
     static inline MemHead* GetMemHead(void* p);
 
-    inline void* malloc(const size_t& n_elem=1, const size_t& type_size=sizeof(char), const uintptr_t& type_id=TypeTraits<char>::ID()) const;
+    inline void* malloc(const size_t& n_elem=1, const size_t& type_size=sizeof(char)) const;
 
-    inline void free(void* p, const size_t& type_size=sizeof(char), const uintptr_t& type_id=TypeTraits<char>::ID()) const;
+    inline void free(void* p) const;
 
     void print() const;
 
@@ -84,6 +86,9 @@ class MemoryManager{
 
     // Private copy constructor
     MemoryManager(const MemoryManager& m);
+
+    // Check all free memory equals init_mem_val
+    void Check() const;
 
     /**
      * \brief Node structure for a doubly linked list, representing free and

@@ -14,7 +14,7 @@ namespace pvfmm{
 
 template <class Node>
 FMM_Node<Node>::~FMM_Node(){
-  if(fmm_data!=NULL) delete fmm_data;
+  if(fmm_data!=NULL) mem::aligned_delete(fmm_data);
   fmm_data=NULL;
 }
 
@@ -53,7 +53,7 @@ void FMM_Node<Node>::ClearFMMData(){
 
 template <class Node>
 TreeNode* FMM_Node<Node>::NewNode(TreeNode* n_){
-  FMM_Node<Node>* n=(n_==NULL?new FMM_Node<Node>():static_cast<FMM_Node<Node>*>(n_));
+  FMM_Node<Node>* n=(n_==NULL?mem::aligned_new<FMM_Node<Node> >():static_cast<FMM_Node<Node>*>(n_));
   if(fmm_data!=NULL) n->fmm_data=fmm_data->NewData();
   return Node_t::NewNode(n);
 }

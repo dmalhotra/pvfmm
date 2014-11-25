@@ -663,7 +663,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
       {
         if (!vprecomp_fft_flag){
           vprecomp_fftplan = FFTW_t<Real_t>::fft_plan_many_dft_r2c(COORD_DIM, nnn, ker_dim[0]*ker_dim[1],
-              (Real_t*)fftw_in, NULL, 1, n3, (typename FFTW_t<Real_t>::cplx*) fftw_out, NULL, 1, n3_, FFTW_ESTIMATE);
+              (Real_t*)fftw_in, NULL, 1, n3, (typename FFTW_t<Real_t>::cplx*) fftw_out, NULL, 1, n3_);
           vprecomp_fft_flag=true;
         }
       }
@@ -2071,7 +2071,7 @@ void FMM_Pts<FMMNode>::FFT_UpEquiv(size_t dof, size_t m, size_t ker_dim0, Vector
       fftw_in  = mem::aligned_new<Real_t>(  n3 *ker_dim0*chld_cnt);
       fftw_out = mem::aligned_new<Real_t>(2*n3_*ker_dim0*chld_cnt);
       vlist_fftplan = FFTW_t<Real_t>::fft_plan_many_dft_r2c(COORD_DIM,nnn,ker_dim0*chld_cnt,
-          (Real_t*)fftw_in, NULL, 1, n3, (typename FFTW_t<Real_t>::cplx*)(fftw_out),NULL, 1, n3_, FFTW_ESTIMATE);
+          (Real_t*)fftw_in, NULL, 1, n3, (typename FFTW_t<Real_t>::cplx*)(fftw_out),NULL, 1, n3_);
       mem::aligned_delete<Real_t>((Real_t*)fftw_in );
       mem::aligned_delete<Real_t>((Real_t*)fftw_out);
       vlist_fft_flag=true;
@@ -2160,7 +2160,7 @@ void FMM_Pts<FMMNode>::FFT_Check2Equiv(size_t dof, size_t m, size_t ker_dim1, Ve
       fftw_in  = mem::aligned_new<Real_t>(2*n3_*ker_dim1*chld_cnt);
       fftw_out = mem::aligned_new<Real_t>(  n3 *ker_dim1*chld_cnt);
       vlist_ifftplan = FFTW_t<Real_t>::fft_plan_many_dft_c2r(COORD_DIM,nnn,ker_dim1*chld_cnt,
-          (typename FFTW_t<Real_t>::cplx*)fftw_in, NULL, 1, n3_, (Real_t*)(fftw_out),NULL, 1, n3, FFTW_ESTIMATE);
+          (typename FFTW_t<Real_t>::cplx*)fftw_in, NULL, 1, n3_, (Real_t*)(fftw_out),NULL, 1, n3);
       mem::aligned_delete<Real_t>(fftw_in);
       mem::aligned_delete<Real_t>(fftw_out);
       vlist_ifft_flag=true;

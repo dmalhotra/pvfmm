@@ -32,7 +32,7 @@ void FMM_Tree<FMM_Mat_t>::Initialize(typename Node_t::NodeData* init_data) {
     std::vector<Node_t*>& nodes=this->GetNodeList();
     #pragma omp parallel for
     for(size_t i=0;i<nodes.size();i++){
-      if(nodes[i]->FMMData()==NULL) nodes[i]->FMMData()=new typename FMM_Mat_t::FMMData;
+      if(nodes[i]->FMMData()==NULL) nodes[i]->FMMData()=mem::aligned_new<typename FMM_Mat_t::FMMData>();
     }
   }
   Profile::Toc();
@@ -475,7 +475,7 @@ void FMM_Tree<FMM_Mat_t>::MultipoleReduceBcast() {
             new_branch=true;
             size_t n_=(i<(size_t)n[merge_indx]?n[merge_indx]:i);
             for(size_t j=n_;j<send_nodes[merge_indx].size();j++)
-              delete send_nodes[merge_indx][j];
+              mem::aligned_delete(send_nodes[merge_indx][j]);
             if(i<(size_t)n[merge_indx]) n[merge_indx]=i;
           }
         }
@@ -493,7 +493,7 @@ void FMM_Tree<FMM_Mat_t>::MultipoleReduceBcast() {
 
   for(int i=0;i<2;i++)
   for(size_t j=n[i];j<send_nodes[i].size();j++)
-    delete send_nodes[i][j];
+    mem::aligned_delete(send_nodes[i][j]);
   Profile::Toc();
 
   //Now Broadcast nodes to build LET.

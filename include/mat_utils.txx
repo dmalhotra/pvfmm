@@ -254,6 +254,7 @@ namespace mat{
 
       //while(k0<dim[1]-1 && fabs(S(k0,k0+1))<=eps*(fabs(S(k0,k0))+fabs(S(k0+1,k0+1)))) k0++;
       while(k0<dim[1]-1 && fabs(S(k0,k0+1))<=eps*S_max) k0++;
+      if(k0==dim[1]-1) continue;
       size_t k=k0;
 
       size_t n=k0+1;
@@ -261,7 +262,7 @@ namespace mat{
       while(n<dim[1] && fabs(S(n-1,n))>eps*S_max) n++;
 
       T mu=0;
-      { // Compute mu
+      if(n>2){ // Compute mu
         T C[3][2];
         C[0][0]=S(n-2,n-2)*S(n-2,n-2)+S(n-3,n-2)*S(n-3,n-2); C[0][1]=S(n-2,n-2)*S(n-2,n-1);
         C[1][0]=S(n-2,n-2)*S(n-2,n-1); C[1][1]=S(n-1,n-1)*S(n-1,n-1)+S(n-2,n-1)*S(n-2,n-1);

@@ -8,6 +8,7 @@
 #include <tree_node.hpp>
 #include <assert.h>
 #include <iostream>
+#include <mem_mgr.hpp>
 
 namespace pvfmm{
 
@@ -17,9 +18,9 @@ TreeNode::~TreeNode(){
   //Delete the children.
   for(int i=0;i<n;i++){
     if(child[i]!=NULL)
-      delete child[i];
+      mem::aligned_delete(child[i]);
   }
-  delete[] child;
+  mem::aligned_delete(child);
   child=NULL;
 }
 
@@ -56,7 +57,7 @@ int TreeNode::Path2Node(){
 }
 
 TreeNode* TreeNode::NewNode(TreeNode* n_){
-  TreeNode* n=(n_==NULL?new TreeNode():n_);
+  TreeNode* n=(n_==NULL?mem::aligned_new<TreeNode>():n_);
   n->dim=dim;
   n->max_depth=max_depth;
   return n_;
@@ -82,7 +83,7 @@ void TreeNode::Subdivide() {
   if(child) return;
   SetStatus(1);
   int n=(1UL<<dim);
-  child=new TreeNode*[n];
+  child=mem::aligned_new<TreeNode*>(n);
   for(int i=0;i<n;i++){
     child[i]=this->NewNode();
     child[i]->parent=this;

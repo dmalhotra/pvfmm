@@ -40,7 +40,7 @@ class FMM_Cheb: public FMM_Pts<FMMNode>{
 
    public:
 
-    virtual FMM_Data<Real_t>* NewData(){ return new FMMData;}
+    virtual FMM_Data<Real_t>* NewData(){ return mem::aligned_new<FMMData>();}
 
     //FMM specific node data.
     Vector<Real_t> cheb_out;

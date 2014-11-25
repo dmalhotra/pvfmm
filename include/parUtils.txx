@@ -17,6 +17,7 @@
 
 #include <dtypes.h>
 #include <ompUtils.h>
+#include <mem_mgr.hpp>
 
 namespace pvfmm{
 namespace par{
@@ -57,11 +58,11 @@ namespace par{
         }
       }
 
-      MPI_Request* requests = new MPI_Request[commCnt];
-      assert(requests);
+      MPI_Request* requests = mem::aligned_new<MPI_Request>(commCnt);
+      assert(requests || !commCnt);
 
-      MPI_Status* statuses = new MPI_Status[commCnt];
-      assert(statuses);
+      MPI_Status* statuses = mem::aligned_new<MPI_Status>(commCnt);
+      assert(statuses || !commCnt);
 
       commCnt = 0;
 
@@ -105,10 +106,10 @@ namespace par{
         recvbuf[rdispls[rank] + i] = sendbuf[sdispls[rank] + i];
       }
 
-      MPI_Waitall(commCnt, requests, statuses);
+      if(commCnt) MPI_Waitall(commCnt, requests, statuses);
 
-      delete [] requests;
-      delete [] statuses;
+      mem::aligned_delete(requests);
+      mem::aligned_delete(statuses);
       return 0;
 #endif
     }
@@ -137,7 +138,7 @@ namespace par{
       std::vector<int> sdisp(np); sdisp[0]=0;
       omp_par::scan(&s_cnt[0],&sdisp[0],np);
 
-      char* sbuff=new char[sdisp[np-1]+s_cnt[np-1]];
+      char* sbuff=mem::aligned_new<char>(sdisp[np-1]+s_cnt[np-1]);
       #pragma omp parallel for
       for(int i=0;i<np;i++){
         ((int*)&sbuff[sdisp[i]])[0]=s_cnt[i];
@@ -180,8 +181,8 @@ namespace par{
           omp_par::scan(&r_cnt_ext[0],&rdisp_ext[0],new_np);
           int rbuff_size    =rdisp    [new_np-1]+r_cnt    [new_np-1];
           int rbuff_size_ext=rdisp_ext[new_np-1]+r_cnt_ext[new_np-1];
-          char* rbuff   =                new char[rbuff_size    ];
-          char* rbuffext=(extra_partner? new char[rbuff_size_ext]: NULL);
+          char* rbuff   =                mem::aligned_new<char>(rbuff_size    );
+          char* rbuffext=(extra_partner? mem::aligned_new<char>(rbuff_size_ext): NULL);
 
           //Sendrecv data.
           {
@@ -208,7 +209,7 @@ namespace par{
             omp_par::scan(&s_cnt_new[0],&sdisp_new[0],new_np);
 
             //Copy data to sbuff_new.
-            char* sbuff_new=new char[sdisp_new[new_np-1]+s_cnt_new[new_np-1]];
+            char* sbuff_new=mem::aligned_new<char>(sdisp_new[new_np-1]+s_cnt_new[new_np-1]);
             #pragma omp parallel for
             for(int i=0;i<new_np;i++){
               memcpy(&sbuff_new[sdisp_new[i]                      ],&sbuff   [sdisp_old[i]],s_cnt_old[i]);
@@ -217,9 +218,9 @@ namespace par{
             }
 
             //Free memory.
-            if(sbuff   !=NULL) delete[] sbuff   ;
-            if(rbuff   !=NULL) delete[] rbuff   ;
-            if(rbuffext!=NULL) delete[] rbuffext;
+            if(sbuff   !=NULL) mem::aligned_delete(sbuff   );
+            if(rbuff   !=NULL) mem::aligned_delete(rbuff   );
+            if(rbuffext!=NULL) mem::aligned_delete(rbuffext);
 
             //Substitute data for next iteration.
             s_cnt=s_cnt_new;
@@ -249,7 +250,7 @@ namespace par{
       }
 
       //Free memory.
-      if(sbuff   !=NULL) delete[] sbuff;
+      if(sbuff   !=NULL) mem::aligned_delete(sbuff);
       return 0;
 #endif
     }

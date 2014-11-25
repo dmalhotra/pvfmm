@@ -44,7 +44,7 @@ MemoryManager::MemHead* MemoryManager::GetMemHead(void* p){
   return (MemHead*)(((char*)p)-header_size);
 }
 
-void* MemoryManager::malloc(const size_t& n_elem, const size_t& type_size, const uintptr_t& type_id) const{
+void* MemoryManager::malloc(const size_t& n_elem, const size_t& type_size) const{
   if(!n_elem) return NULL;
   static uintptr_t alignment=MEM_ALIGN-1;
   static uintptr_t header_size=(uintptr_t)(sizeof(MemHead)+alignment) & ~(uintptr_t)alignment;
@@ -107,7 +107,7 @@ void* MemoryManager::malloc(const size_t& n_elem, const size_t& type_size, const
   { // Set mem_head
     mem_head->n_indx=n_indx;
     mem_head->n_elem=n_elem;
-    mem_head->type_id=type_id;
+    mem_head->type_size=type_size;
   }
   { // Set header check_sum
     #ifndef NDEBUG
@@ -123,14 +123,13 @@ void* MemoryManager::malloc(const size_t& n_elem, const size_t& type_size, const
   return (void*)(base+header_size);
 }
 
-void MemoryManager::free(void* p, const size_t& type_size, const uintptr_t& type_id) const{
+void MemoryManager::free(void* p) const{
   if(!p) return;
   static uintptr_t alignment=MEM_ALIGN-1;
   static uintptr_t header_size=(uintptr_t)(sizeof(MemHead)+alignment) & ~(uintptr_t)alignment;
 
   char* base=(char*)((char*)p-header_size);
   MemHead* mem_head=(MemHead*)base;
-  assert(mem_head->type_id==type_id);
 
   if(base<&buff[0] || base>=&buff[buff_size]){ // Use system free
     char* p=(char*)((uintptr_t)base-((uint16_t*)base)[-1]);
@@ -150,7 +149,7 @@ void MemoryManager::free(void* p, const size_t& type_size, const uintptr_t& type
       check_sum=check_sum & ((1UL << sizeof(mem_head->check_sum))-1);
       assert(check_sum==mem_head->check_sum);
     }
-    size_t size=mem_head->n_elem*type_size;
+    size_t size=mem_head->n_elem*mem_head->type_size;
     #pragma omp parallel for
     for(size_t i=0;i<size;i++) ((char*)p)[i]=init_mem_val;
     for(size_t i=0;i<sizeof(MemHead);i++) base[i]=init_mem_val;
@@ -226,7 +225,7 @@ T* aligned_new(size_t n_elem, const MemoryManager* mem_mgr){
 
   static MemoryManager def_mem_mgr(0);
   if(!mem_mgr) mem_mgr=&def_mem_mgr;
-  T* A=(T*)mem_mgr->malloc(n_elem, sizeof(T), TypeTraits<T>::ID());
+  T* A=(T*)mem_mgr->malloc(n_elem, sizeof(T));
 
   if(!TypeTraits<T>::IsPOD()){ // Call constructors
     //printf("%s\n", __PRETTY_FUNCTION__);
@@ -255,16 +254,19 @@ void aligned_delete(T* A, const MemoryManager* mem_mgr){
   if(!TypeTraits<T>::IsPOD()){ // Call destructors
     //printf("%s\n", __PRETTY_FUNCTION__);
     MemoryManager::MemHead* mem_head=MemoryManager::GetMemHead(A);
+    size_t type_size=mem_head->type_size;
     size_t n_elem=mem_head->n_elem;
     for(size_t i=0;i<n_elem;i++){
-      (A+i)->~T();
+      ((T*)(((char*)A)+i*type_size))->~T();
     }
   }else{
     #ifndef NDEBUG
     MemoryManager::MemHead* mem_head=MemoryManager::GetMemHead(A);
+    size_t type_size=mem_head->type_size;
     size_t n_elem=mem_head->n_elem;
+    size_t size=n_elem*type_size;
     #pragma omp parallel for
-    for(size_t i=0;i<n_elem*sizeof(T);i++){
+    for(size_t i=0;i<size;i++){
       ((char*)A)[i]=0;
     }
     #endif
@@ -272,7 +274,7 @@ void aligned_delete(T* A, const MemoryManager* mem_mgr){
 
   static MemoryManager def_mem_mgr(0);
   if(!mem_mgr) mem_mgr=&def_mem_mgr;
-  mem_mgr->free(A, sizeof(T), TypeTraits<T>::ID());
+  mem_mgr->free(A);
 }
 
 void* memcopy( void * destination, const void * source, size_t num){

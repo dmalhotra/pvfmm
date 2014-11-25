@@ -73,7 +73,7 @@ void Cheb_Node<Real_t>::ClearData(){
 
 template <class Real_t>
 TreeNode* Cheb_Node<Real_t>::NewNode(TreeNode* n_){
-  Cheb_Node<Real_t>* n=(n_==NULL?new Cheb_Node<Real_t>():static_cast<Cheb_Node<Real_t>*>(n_));
+  Cheb_Node<Real_t>* n=(n_==NULL?mem::aligned_new<Cheb_Node<Real_t> >():static_cast<Cheb_Node<Real_t>*>(n_));
   n->cheb_deg=cheb_deg;
   n->input_fn=input_fn;
   n->data_dof=data_dof;

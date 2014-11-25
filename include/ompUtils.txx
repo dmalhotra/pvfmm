@@ -2,6 +2,7 @@
 #include <omp.h>
 #include <cstring>
 #include <algorithm>
+#include <mem_mgr.hpp>
 
 namespace pvfmm{
 
@@ -28,8 +29,8 @@ void omp_par::merge(T A_,T A_last,T B_,T B_last,T C_,int p,StrictWeakOrdering co
   //Split both arrays ( A and B ) into n equal parts.
   //Find the position of each split in the final merged array.
   int n=10;
-  _ValType* split=new _ValType[p*n*2];
-  _DiffType* split_size=new _DiffType[p*n*2];
+  _ValType* split=mem::aligned_new<_ValType>(p*n*2);
+  _DiffType* split_size=mem::aligned_new<_DiffType>(p*n*2);
   #pragma omp parallel for
   for(int i=0;i<p;i++){
     for(int j=0;j<n;j++){
@@ -47,8 +48,8 @@ void omp_par::merge(T A_,T A_last,T B_,T B_last,T C_,int p,StrictWeakOrdering co
 
   //Find the closest split position for each thread that will
   //divide the final array equally between the threads.
-  _DiffType* split_indx_A=new _DiffType[p+1];
-  _DiffType* split_indx_B=new _DiffType[p+1];
+  _DiffType* split_indx_A=mem::aligned_new<_DiffType>(p+1);
+  _DiffType* split_indx_B=mem::aligned_new<_DiffType>(p+1);
   split_indx_A[0]=0;
   split_indx_B[0]=0;
   split_indx_A[p]=N1;
@@ -74,8 +75,8 @@ void omp_par::merge(T A_,T A_last,T B_,T B_last,T C_,int p,StrictWeakOrdering co
     split_indx_A[i]=std::lower_bound(A_,A_last,split1,comp)-A_;
     split_indx_B[i]=std::lower_bound(B_,B_last,split1,comp)-B_;
   }
-  delete[] split;
-  delete[] split_size;
+  mem::aligned_delete(split);
+  mem::aligned_delete(split_size);
 
   //Merge for each thread independently.
   #pragma omp parallel for
@@ -83,8 +84,8 @@ void omp_par::merge(T A_,T A_last,T B_,T B_last,T C_,int p,StrictWeakOrdering co
     T C=C_+split_indx_A[i]+split_indx_B[i];
     std::merge(A_+split_indx_A[i],A_+split_indx_A[i+1],B_+split_indx_B[i],B_+split_indx_B[i+1],C,comp);
   }
-  delete[] split_indx_A;
-  delete[] split_indx_B;
+  mem::aligned_delete(split_indx_A);
+  mem::aligned_delete(split_indx_B);
 }
 
 template <class T,class StrictWeakOrdering>
@@ -100,7 +101,7 @@ void omp_par::merge_sort(T A,T A_last,StrictWeakOrdering comp){
   }
 
   //Split the array A into p equal parts.
-  _DiffType* split=new _DiffType[p+1];
+  _DiffType* split=mem::aligned_new<_DiffType>(p+1);
   split[p]=N;
   #pragma omp parallel for
   for(int id=0;id<p;id++){
@@ -114,7 +115,7 @@ void omp_par::merge_sort(T A,T A_last,StrictWeakOrdering comp){
   }
 
   //Merge two parts at a time.
-  _ValType* B=new _ValType[N];
+  _ValType* B=mem::aligned_new<_ValType>(N);
   _ValType* A_=&A[0];
   _ValType* B_=&B[0];
   for(int j=1;j<p;j=j*2){
@@ -140,8 +141,8 @@ void omp_par::merge_sort(T A,T A_last,StrictWeakOrdering comp){
   }
 
   //Free memory.
-  delete[] split;
-  delete[] B;
+  mem::aligned_delete(split);
+  mem::aligned_delete(B);
 }
 
 template <class T>
@@ -180,7 +181,7 @@ void omp_par::scan(T* A, T* B,I cnt){
       B[j]=B[j-1]+A[j-1];
   }
 
-  T* sum=new T[p];
+  T* sum=mem::aligned_new<T>(p);
   sum[0]=0;
   for(int i=1;i<p;i++)
     sum[i]=sum[i-1]+B[i*step_size-1]+A[i*step_size-1];
@@ -194,7 +195,7 @@ void omp_par::scan(T* A, T* B,I cnt){
     for(I j=(I)start; j<(I)end; j++)
       B[j]+=sum_;
   }
-  delete[] sum;
+  mem::aligned_delete(sum);
 }
 
 }//end namespace
