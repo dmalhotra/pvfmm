@@ -38,7 +38,7 @@ void Cheb_Node<Real_t>::Initialize(TreeNode* parent_, int path2node_, TreeNode::
 
   //Compute Chebyshev approximation.
   if(this->IsLeaf() && !this->IsGhost()){
-    if(input_fn!=NULL && data_dof>0){
+    if(!input_fn.IsEmpty() && data_dof>0){
       Real_t s=pow(0.5,this->Depth());
       int n1=(int)(pow((Real_t)(cheb_deg+1),this->Dim())+0.5);
       std::vector<Real_t> coord=cheb_nodes<Real_t>(cheb_deg,this->Dim());
@@ -126,7 +126,7 @@ template <class Real_t>
 void Cheb_Node<Real_t>::Subdivide() {
   if(!this->IsLeaf()) return;
   MPI_Node<Real_t>::Subdivide();
-  if(cheb_deg<0 || cheb_coeff.Dim()==0 || input_fn!=NULL) return;
+  if(cheb_deg<0 || cheb_coeff.Dim()==0 || !input_fn.IsEmpty()) return;
 
   std::vector<Real_t> x(cheb_deg+1);
   std::vector<Real_t> y(cheb_deg+1);
@@ -152,7 +152,6 @@ void Cheb_Node<Real_t>::Subdivide() {
     Cheb_Node<Real_t>* child=static_cast<Cheb_Node<Real_t>*>(this->Child(i));
     child->cheb_coeff=child_cheb_coeff[i];
     assert(child->cheb_deg==cheb_deg);
-    assert(child->input_fn==input_fn);
     assert(child->tol==tol);
   }
 }

@@ -27,7 +27,31 @@ class Cheb_Node: public MPI_Node<Real_t>{
 
  public:
 
-  typedef void (*fn_ptr)(const Real_t* coord, int n, Real_t* out);
+  template<class Real_t>
+  class Function_t{
+
+    typedef void (*fn_ptr)(const Real_t* coord, int n, Real_t* out);
+
+    public:
+
+    Function_t(): fn_(NULL){}
+
+    Function_t(fn_ptr fn): fn_(fn){}
+
+    virtual ~Function_t(){}
+
+    virtual void operator()(const Real_t* coord, int n, Real_t* out){
+      fn_(coord, n, out);
+    }
+
+    virtual bool IsEmpty(){
+      return (fn_==NULL);
+    }
+
+    private:
+
+    fn_ptr fn_;
+  };
 
   /**
    * \brief Base class for node data. Contains initialization data for the node.
@@ -39,7 +63,7 @@ class Cheb_Node: public MPI_Node<Real_t>{
      Vector<Real_t> cheb_coord; //Chebyshev point samples.
      Vector<Real_t> cheb_value;
 
-     fn_ptr input_fn; // Function pointer.
+     Function_t<Real_t> input_fn; // Function pointer.
      int data_dof;    // Dimension of Chebyshev data.
      int cheb_deg;    // Chebyshev degree
      Real_t tol;      // Tolerance for adaptive refinement.
@@ -169,7 +193,7 @@ class Cheb_Node: public MPI_Node<Real_t>{
    */
   void Curl();
 
-  fn_ptr input_fn;
+  Function_t<Real_t> input_fn;
   Vector<Real_t> cheb_coord;   //coordinates of points
   Vector<Real_t> cheb_value;   //value at points
   Vector<size_t> cheb_scatter; //scatter index mapping original data.
