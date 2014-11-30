@@ -417,50 +417,130 @@ void MPI_Node<T>::ReadVal(std::vector<Real_t> x,std::vector<Real_t> y, std::vect
   }
 }
 
+template <class VTUData_t>
+void AppendVTUData(VTUData_t& vtu_data, VTUData_t& new_data){
+  typedef typename VTUData_t::VTKReal_t VTKReal_t;
+
+  { // Append new_data to vtk_data
+    std::vector<VTKReal_t>&               new_coord=new_data.coord;
+    std::vector<std::string>&             new_name =new_data.name;
+    std::vector<std::vector<VTKReal_t> >& new_value=new_data.value;
+
+    std::vector<int32_t>& new_connect=new_data.connect;
+    std::vector<int32_t>& new_offset =new_data.offset;
+    std::vector<uint8_t>& new_types  =new_data.types;
+
+
+
+    std::vector<VTKReal_t>&               vtu_coord=vtu_data.coord;
+    std::vector<std::string>&             vtu_name =vtu_data.name;
+    std::vector<std::vector<VTKReal_t> >& vtu_value=vtu_data.value;
+
+    std::vector<int32_t>& vtu_connect=vtu_data.connect;
+    std::vector<int32_t>& vtu_offset =vtu_data.offset;
+    std::vector<uint8_t>& vtu_types  =vtu_data.types;
+
+
+
+    size_t old_pts=vtu_coord.size()/COORD_DIM;
+    size_t new_pts=new_coord.size()/COORD_DIM;
+
+    // New points
+    for(size_t i=0;i<new_coord.size();i++){
+      vtu_coord.push_back(new_coord[i]);
+    }
+
+    // Resize old DataArrays
+    for(size_t i=0;i<vtu_value.size();i++){
+      size_t curr_size=vtu_value[i].size();
+      size_t new_size=(curr_size*(old_pts+new_pts))/old_pts;
+      vtu_value[i].resize(new_size,0);
+    }
+
+    // Add new DataArrays
+    for(size_t i=0;i<new_name.size();i++){
+      vtu_name.push_back(new_name[i]);
+      vtu_value.push_back(std::vector<VTKReal_t>());
+      std::vector<VTKReal_t>& value=vtu_value.back();
+      if(new_pts) value.resize((new_value[i].size()*old_pts)/new_pts);
+      for(size_t j=0;j<new_value[i].size();j++){
+        value.push_back(new_value[i][j]);
+      }
+    }
+
+    size_t connect_update=old_pts;
+    size_t offset_update=vtu_connect.size();
+
+    for(size_t i=0;i<new_connect.size();i++){
+      vtu_connect.push_back(connect_update+new_connect[i]);
+    }
+    for(size_t i=0;i<new_offset.size();i++){
+      vtu_offset.push_back(offset_update+new_offset[i]);
+    }
+    for(size_t i=0;i<new_types.size();i++){
+      vtu_types.push_back(new_types[i]);
+    }
+  }
+}
+
 template <class T>
-void MPI_Node<T>::VTU_Data(std::vector<Real_t>& coord, std::vector<Real_t>& value, std::vector<int32_t>& connect, std::vector<int32_t>& offset, std::vector<uint8_t>& types, int lod){
-  if(!pt_coord.Dim()) return;
-  size_t point_cnt=coord.size()/COORD_DIM;
-  size_t connect_cnt=connect.size();
-  for(size_t i=0;i<pt_coord.Dim();i+=3){
-    coord.push_back(pt_coord[i+0]);
-    coord.push_back(pt_coord[i+1]);
-    coord.push_back(pt_coord[i+2]);
-    connect_cnt++;
-    connect.push_back(point_cnt);
-    offset.push_back(connect_cnt);
-    types.push_back(1);
-    point_cnt++;
-  }
-  for(size_t i=0;i<pt_value.Dim();i++) value.push_back(pt_value[i]);
+template <class VTUData_t, class Node_t>
+void MPI_Node<T>::VTU_Data(VTUData_t& vtu_data, std::vector<Node_t*>& nodes, int lod){
+  typedef typename VTUData_t::VTKReal_t VTKReal_t;
 
-  Real_t* c=this->Coord();
-  Real_t s=pow(0.5,this->Depth());
-  size_t data_dof=pt_value.Dim()/(pt_coord.Dim()/dim);
-  for(int i=0;i<8;i++){
-    coord.push_back(c[0]+(i&1?1:0)*s);
-    coord.push_back(c[1]+(i&2?1:0)*s);
-    coord.push_back(c[2]+(i&4?1:0)*s);
-    for(int j=0;j<data_dof;j++) value.push_back(0.0);
-    connect.push_back(point_cnt+i);
-  }
-  offset.push_back(8+connect_cnt);
-  types.push_back(11);
+  VTUData_t new_data;
+  { // Set new data
+    new_data.value.resize(1);
+    new_data.name.push_back("pt_value");
+    std::vector<VTKReal_t>& coord=new_data.coord;
+    std::vector<VTKReal_t>& value=new_data.value[0];
 
-  {// Set point values.
-    Real_t* val_ptr=&value[point_cnt*data_dof];
-    std::vector<Real_t> x(2);
-    std::vector<Real_t> y(2);
-    std::vector<Real_t> z(2);
-    x[0]=c[0]; x[1]=c[0]+s;
-    y[0]=c[1]; y[1]=c[1]+s;
-    z[0]=c[2]; z[1]=c[2]+s;
-    this->ReadVal(x, y, z, val_ptr);
-    //Rearrrange data
-    //(x1,x2,x3,...,y1,y2,...z1,...) => (x1,y1,z1,x2,y2,z2,...)
-    Matrix<Real_t> M(data_dof,8,val_ptr,false);
-    M=M.Transpose();
+    std::vector<int32_t>& connect=new_data.connect;
+    std::vector<int32_t>& offset =new_data.offset;
+    std::vector<uint8_t>& types  =new_data.types;
+
+    size_t point_cnt=0;
+    size_t connect_cnt=0;
+    for(size_t nid=0;nid<nodes.size();nid++){
+      Node_t* n=nodes[nid];
+      if(n->IsGhost() || !n->IsLeaf()) continue;
+
+      for(size_t i=0;i<n->pt_coord.Dim();i+=3){
+        coord.push_back(n->pt_coord[i+0]);
+        coord.push_back(n->pt_coord[i+1]);
+        coord.push_back(n->pt_coord[i+2]);
+        connect_cnt++;
+        connect.push_back(point_cnt);
+        offset.push_back(connect_cnt);
+        types.push_back(1);
+        point_cnt++;
+      }
+      for(size_t i=0;i<n->pt_value.Dim();i++){
+        value.push_back(n->pt_value[i]);
+      }
+    }
+    size_t value_dof=value.size()/point_cnt;
+    assert(value_dof*point_cnt==value.size());
+    for(size_t nid=0;nid<nodes.size();nid++){
+      Node_t* n=nodes[nid];
+      if(n->IsGhost() || !n->IsLeaf()) continue;
+
+      Real_t* c=n->Coord();
+      Real_t s=pow(0.5,n->Depth());
+      for(int i=0;i<8;i++){
+        coord.push_back(c[0]+(i&1?1:0)*s);
+        coord.push_back(c[1]+(i&2?1:0)*s);
+        coord.push_back(c[2]+(i&4?1:0)*s);
+        for(int j=0;j<value_dof;j++) value.push_back(0.0);
+        connect.push_back(point_cnt+i);
+        connect_cnt++;
+      }
+      offset.push_back(connect_cnt);
+      types.push_back(11);
+      point_cnt+=8;
+    }
   }
+  AppendVTUData(vtu_data, new_data);
 }
 
 }//end namespace

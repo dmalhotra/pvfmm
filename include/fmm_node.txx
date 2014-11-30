@@ -187,4 +187,114 @@ void FMM_Node<Node>::InitMultipole(PackedData data, bool own_data){
   }
 };
 
+template <class Node>
+template <class VTUData_t, class VTUNode_t>
+void FMM_Node<Node>::VTU_Data(VTUData_t& vtu_data, std::vector<VTUNode_t*>& nodes, int lod){
+  typedef typename VTUData_t::VTKReal_t VTKReal_t;
+  Node::VTU_Data(vtu_data, nodes, lod);
+
+  VTUData_t src_data;
+  VTUData_t surf_data;
+  VTUData_t trg_data;
+  { // Set src_data
+    VTUData_t& new_data=src_data;
+    new_data.value.resize(1);
+    new_data.name.push_back("src_value");
+    std::vector<VTKReal_t>& coord=new_data.coord;
+    std::vector<VTKReal_t>& value=new_data.value[0];
+
+    std::vector<int32_t>& connect=new_data.connect;
+    std::vector<int32_t>& offset =new_data.offset;
+    std::vector<uint8_t>& types  =new_data.types;
+
+    size_t point_cnt=0;
+    size_t connect_cnt=0;
+    for(size_t nid=0;nid<nodes.size();nid++){
+      VTUNode_t* n=nodes[nid];
+      if(n->IsGhost() || !n->IsLeaf()) continue;
+
+      for(size_t i=0;i<n->src_coord.Dim();i+=3){
+        coord.push_back(n->src_coord[i+0]);
+        coord.push_back(n->src_coord[i+1]);
+        coord.push_back(n->src_coord[i+2]);
+        connect_cnt++;
+        connect.push_back(point_cnt);
+        offset.push_back(connect_cnt);
+        types.push_back(1);
+        point_cnt++;
+      }
+      for(size_t i=0;i<n->src_value.Dim();i++){
+        value.push_back(n->src_value[i]);
+      }
+    }
+  }
+  { // Set surf_data
+    VTUData_t& new_data=surf_data;
+    new_data.value.resize(1);
+    new_data.name.push_back("surf_value");
+    std::vector<VTKReal_t>& coord=new_data.coord;
+    std::vector<VTKReal_t>& value=new_data.value[0];
+
+    std::vector<int32_t>& connect=new_data.connect;
+    std::vector<int32_t>& offset =new_data.offset;
+    std::vector<uint8_t>& types  =new_data.types;
+
+    size_t point_cnt=0;
+    size_t connect_cnt=0;
+    for(size_t nid=0;nid<nodes.size();nid++){
+      VTUNode_t* n=nodes[nid];
+      if(n->IsGhost() || !n->IsLeaf()) continue;
+
+      for(size_t i=0;i<n->surf_coord.Dim();i+=3){
+        coord.push_back(n->surf_coord[i+0]);
+        coord.push_back(n->surf_coord[i+1]);
+        coord.push_back(n->surf_coord[i+2]);
+        connect_cnt++;
+        connect.push_back(point_cnt);
+        offset.push_back(connect_cnt);
+        types.push_back(1);
+        point_cnt++;
+      }
+      for(size_t i=0;i<n->surf_value.Dim();i++){
+        value.push_back(n->surf_value[i]);
+      }
+    }
+  }
+  { // Set trg_data
+    VTUData_t& new_data=trg_data;
+    new_data.value.resize(1);
+    new_data.name.push_back("trg_value");
+    std::vector<VTKReal_t>& coord=new_data.coord;
+    std::vector<VTKReal_t>& value=new_data.value[0];
+
+    std::vector<int32_t>& connect=new_data.connect;
+    std::vector<int32_t>& offset =new_data.offset;
+    std::vector<uint8_t>& types  =new_data.types;
+
+    size_t point_cnt=0;
+    size_t connect_cnt=0;
+    for(size_t nid=0;nid<nodes.size();nid++){
+      VTUNode_t* n=nodes[nid];
+      if(n->IsGhost() || !n->IsLeaf()) continue;
+
+      for(size_t i=0;i<n->trg_coord.Dim();i+=3){
+        coord.push_back(n->trg_coord[i+0]);
+        coord.push_back(n->trg_coord[i+1]);
+        coord.push_back(n->trg_coord[i+2]);
+        connect_cnt++;
+        connect.push_back(point_cnt);
+        offset.push_back(connect_cnt);
+        types.push_back(1);
+        point_cnt++;
+      }
+      for(size_t i=0;i<n->trg_value.Dim();i++){
+        value.push_back(n->trg_value[i]);
+      }
+    }
+  }
+  AppendVTUData(vtu_data, src_data);
+  AppendVTUData(vtu_data, surf_data);
+  AppendVTUData(vtu_data, trg_data);
+}
+
 }//end namespace

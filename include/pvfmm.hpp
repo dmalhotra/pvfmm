@@ -29,7 +29,7 @@ typedef FMM_Node<Cheb_Node<double> > ChebFMM_Node;
 typedef FMM_Cheb<ChebFMM_Node>       ChebFMM;
 typedef FMM_Tree<ChebFMM>            ChebFMM_Tree;
 typedef ChebFMM_Node::NodeData       ChebFMM_Data;
-typedef void (*ChebFn)(const double* , int , double*);
+typedef ChebFMM_Node::Function_t<double> ChebFn;
 
 ChebFMM_Tree* ChebFMM_CreateTree(int cheb_deg, int data_dim, ChebFn fn_ptr, std::vector<double>& trg_coord, MPI_Comm& comm,
                                  double tol=1e-6, int max_pts=100, BoundaryType bndry=FreeSpace, int init_depth=0){

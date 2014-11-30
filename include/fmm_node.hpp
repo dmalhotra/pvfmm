@@ -152,6 +152,12 @@ class FMM_Node: public Node{
    */
   virtual void InitMultipole(PackedData data, bool own_data=true);
 
+  /**
+   * \brief Append node VTU data to vectors.
+   */
+  template <class VTUData_t, class VTUNode_t>
+  static void VTU_Data(VTUData_t& vtu_data, std::vector<VTUNode_t*>& nodes, int lod);
+
   Vector<Real_t> src_coord;  //Point sources.
   Vector<Real_t> src_value;
   Vector<size_t> src_scatter;

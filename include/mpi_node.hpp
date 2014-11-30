@@ -168,7 +168,8 @@ class MPI_Node: public TreeNode{
   /**
    * \brief Append node VTU data to vectors.
    */
-  virtual void VTU_Data(std::vector<Real_t>& coord, std::vector<Real_t>& value, std::vector<int32_t>& connect, std::vector<int32_t>& offset, std::vector<uint8_t>& types, int lod=-1);
+  template <class VTUData_t, class Node_t>
+  static void VTU_Data(VTUData_t& vtu_data, std::vector<Node_t*>& nodes, int lod);
 
   Vector<Real_t> pt_coord;   //coordinates of points
   Vector<Real_t> pt_value;   //value at points

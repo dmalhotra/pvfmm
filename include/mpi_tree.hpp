@@ -8,6 +8,7 @@
 
 #include <mpi.h>
 #include <vector>
+#include <string>
 
 #include <pvfmm_common.hpp>
 #include <mortonid.hpp>
@@ -104,6 +105,21 @@ class MPI_Tree: public Tree<TreeNode>{
    * \brief Construct the LET by exchanging ghost octants.
    */
   void ConstructLET(BoundaryType bndry=FreeSpace);
+
+  template <class VTKReal>
+  struct VTUData_t{
+    typedef VTKReal VTKReal_t;
+
+    // Point data
+    std::vector<VTKReal_t> coord;
+    std::vector<std::vector<VTKReal_t> > value;
+    std::vector<std::string> name;
+
+    // Cell data
+    std::vector<int32_t> connect;
+    std::vector<int32_t> offset;
+    std::vector<uint8_t> types;
+  };
 
   /**
    * \brief Write to a <fname>.vtu file.

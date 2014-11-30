@@ -176,7 +176,8 @@ class Cheb_Node: public MPI_Node<Real_t>{
   /**
    * \brief Append node VTU data to vectors.
    */
-  virtual void VTU_Data(std::vector<Real_t>& coord, std::vector<Real_t>& value, std::vector<int32_t>& connect, std::vector<int32_t>& offset, std::vector<uint8_t>& types, int lod=-1);
+  template <class VTUData_t, class Node_t>
+  static void VTU_Data(VTUData_t& vtu_data, std::vector<Node_t*>& nodes, int lod);
 
   /**
    * \brief Compute gradient of the data.
