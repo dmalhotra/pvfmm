@@ -128,6 +128,8 @@ class TreeNode{
    */
   void SetStatus(int flag);
 
+  size_t node_id; //For translating node pointer to index.
+
  protected:
 
   int dim;               //Dimension of the tree

@@ -171,7 +171,6 @@ class FMM_Node: public Node{
   Vector<size_t> trg_scatter;
 
   std::vector<std::vector<FMM_Node*> > interac_list;
-  size_t node_id; //For translating node pointer to index.
 
  private:
 

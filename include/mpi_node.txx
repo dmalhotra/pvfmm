@@ -209,7 +209,7 @@ void MPI_Node<T>::Truncate(){
           Vector<Real_t>& chld_vec=*chld_pt_coord[i][j];
           vec_size+=chld_vec.Dim();
         }
-        Vector<Real_t> vec=*pt_coord[j];
+        Vector<Real_t>& vec=*pt_coord[j];
         vec.ReInit(vec_size);
 
         vec_size=0;
@@ -227,7 +227,7 @@ void MPI_Node<T>::Truncate(){
           Vector<Real_t>& chld_vec=*chld_pt_value[i][j];
           vec_size+=chld_vec.Dim();
         }
-        Vector<Real_t> vec=*pt_value[j];
+        Vector<Real_t>& vec=*pt_value[j];
         vec.ReInit(vec_size);
 
         vec_size=0;
@@ -245,7 +245,7 @@ void MPI_Node<T>::Truncate(){
           Vector<size_t>& chld_vec=*chld_pt_scatter[i][j];
           vec_size+=chld_vec.Dim();
         }
-        Vector<size_t> vec=*pt_scatter[j];
+        Vector<size_t>& vec=*pt_scatter[j];
         vec.ReInit(vec_size);
 
         vec_size=0;
@@ -519,7 +519,7 @@ void MPI_Node<T>::VTU_Data(VTUData_t& vtu_data, std::vector<Node_t*>& nodes, int
         value.push_back(n->pt_value[i]);
       }
     }
-    size_t value_dof=value.size()/point_cnt;
+    size_t value_dof=(value.size()?value.size()/point_cnt:0);
     assert(value_dof*point_cnt==value.size());
     for(size_t nid=0;nid<nodes.size();nid++){
       Node_t* n=nodes[nid];

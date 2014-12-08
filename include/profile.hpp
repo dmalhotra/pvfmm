@@ -24,11 +24,11 @@ namespace pvfmm{
 class Profile{
   public:
 
-    static void Add_FLOP(long long inc);
+    static long long Add_FLOP(long long inc);
 
-    static void Add_MEM(long long inc);
+    static long long Add_MEM(long long inc);
 
-    static void Enable(bool state){enable_state=state;};
+    static bool Enable(bool state);
 
     static void Tic(const char* name_, const MPI_Comm* comm_=NULL,bool sync_=false, int level=0);
 

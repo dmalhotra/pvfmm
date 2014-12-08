@@ -20,24 +20,39 @@
 
 namespace pvfmm{
 
-void Profile::Add_FLOP(long long inc){
-#if __PROFILE__ >= 0
-  if(!enable_state) return;
+long long Profile::Add_FLOP(long long inc){
+  long long orig_val=FLOP;
+  #if __PROFILE__ >= 0
   #pragma omp critical (FLOP)
-  FLOP+=inc;
-#endif
+  {
+    orig_val=FLOP;
+    FLOP+=inc;
+  }
+  #endif
+  return orig_val;
 }
 
-void Profile::Add_MEM(long long inc){
-#if __PROFILE__ >= 0
-  if(!enable_state) return;
+long long Profile::Add_MEM(long long inc){
+  long long orig_val=MEM;
+  #if __PROFILE__ >= 0
   #pragma omp critical (MEM)
   {
-  MEM+=inc;
-  for(size_t i=0;i<max_mem.size();i++)
-    if(max_mem[i]<MEM) max_mem[i]=MEM;
+    orig_val=MEM;
+    MEM+=inc;
+    for(size_t i=0;i<max_mem.size();i++){
+      if(max_mem[i]<MEM) max_mem[i]=MEM;
+    }
   }
-#endif
+  #endif
+  return orig_val;
+}
+
+bool Profile::Enable(bool state){
+  bool orig_val=enable_state;
+  #if __PROFILE__ >= 0
+  enable_state=state;
+  #endif
+  return orig_val;
 }
 
 void Profile::Tic(const char* name_, const MPI_Comm* comm_,bool sync_, int verbose){

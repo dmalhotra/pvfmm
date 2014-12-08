@@ -38,14 +38,12 @@ class MPI_Tree: public Tree<TreeNode>{
   /**
    * \brief Constructor.
    */
-  MPI_Tree(MPI_Comm c): Tree<Node_t>() {MPI_Comm_dup(c,&comm);}
+  MPI_Tree(MPI_Comm c): Tree<Node_t>() {comm=c;}
 
   /**
    * \brief Virtual destructor.
    */
-  virtual ~MPI_Tree() {
-    MPI_Comm_free(&comm);
-  }
+  virtual ~MPI_Tree() {}
 
   /**
    * \brief Initialize the distributed MPI tree.
