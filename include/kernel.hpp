@@ -164,7 +164,7 @@ namespace pvfmm{ // Predefined Kernel-functions
  * \brief Green's function for the Poisson's equation. Kernel tensor
  * dimension = 1x1.
  */
-template <class T>
+template <class T, int newton_iter=0>
 void laplace_poten(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr);
 
 // Laplace double layer potential.
@@ -177,8 +177,6 @@ void laplace_grad(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cn
 
 #ifndef __MIC__
 #ifdef USE_SSE
-template <>
-void laplace_poten<double>(double* r_src, int src_cnt, double* v_src, int dof, double* r_trg, int trg_cnt, double* k_out, mem::MemoryManager* mem_mgr);
 
 template <>
 void laplace_dbl_poten<double>(double* r_src, int src_cnt, double* v_src, int dof, double* r_trg, int trg_cnt, double* k_out, mem::MemoryManager* mem_mgr);
@@ -194,12 +192,12 @@ void laplace_grad<double>(double* r_src, int src_cnt, double* v_src, int dof, do
 //const Kernel<QuadReal_t> laplace_grad_q=BuildKernel<QuadReal_t, laplace_grad                    >("laplace_grad", 3, std::pair<int,int>(1,3));
 //#endif
 
-const Kernel<double    > laplace_potn_d=BuildKernel<double    , laplace_poten, laplace_dbl_poten>("laplace"     , 3, std::pair<int,int>(1,1));
-const Kernel<double    > laplace_grad_d=BuildKernel<double    , laplace_grad                    >("laplace_grad", 3, std::pair<int,int>(1,3),
+const Kernel<double    > laplace_potn_d=BuildKernel<double    , laplace_poten<double,2>, laplace_dbl_poten>("laplace"     , 3, std::pair<int,int>(1,1));
+const Kernel<double    > laplace_grad_d=BuildKernel<double    , laplace_grad                              >("laplace_grad", 3, std::pair<int,int>(1,3),
   &laplace_potn_d, &laplace_potn_d, NULL, &laplace_potn_d, &laplace_potn_d, NULL, &laplace_potn_d, NULL);
 
-const Kernel<float     > laplace_potn_f=BuildKernel<float     , laplace_poten, laplace_dbl_poten>("laplace"     , 3, std::pair<int,int>(1,1));
-const Kernel<float     > laplace_grad_f=BuildKernel<float     , laplace_grad                    >("laplace_grad", 3, std::pair<int,int>(1,3),
+const Kernel<float     > laplace_potn_f=BuildKernel<float     , laplace_poten<float,1>, laplace_dbl_poten>("laplace"     , 3, std::pair<int,int>(1,1));
+const Kernel<float     > laplace_grad_f=BuildKernel<float     , laplace_grad                             >("laplace_grad", 3, std::pair<int,int>(1,3),
   &laplace_potn_f, &laplace_potn_f, NULL, &laplace_potn_f, &laplace_potn_f, NULL, &laplace_potn_f, NULL);
 
 template<class T>

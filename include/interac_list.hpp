@@ -57,7 +57,7 @@ class InteracList{
     /**
      * \brief Build interaction list for this node.
      */
-    std::vector<Node_t*> BuildList(Node_t* n, Mat_Type t);
+    void BuildList(Node_t* n, Mat_Type t);
 
     /**
      * \brief For an interaction of type t and index i, returns the symmetry

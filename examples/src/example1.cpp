@@ -29,8 +29,8 @@ void nbody(vec&  src_coord, vec&  src_value,
     MPI_Allgather(&send_cnt    , 1, MPI_INT,
                   &recv_cnts[0], 1, MPI_INT, comm);
     pvfmm::omp_par::scan(&recv_cnts[0], &recv_disp[0], np);
-    MPI_Allgatherv(&trg_coord[0]    , send_cnt                    , MPI_DOUBLE,
-                   &glb_trg_coord[0], &recv_cnts[0], &recv_disp[0], MPI_DOUBLE, comm);
+    MPI_Allgatherv(&trg_coord[0]    , send_cnt                    , pvfmm::par::Mpi_datatype<double>::value(),
+                   &glb_trg_coord[0], &recv_cnts[0], &recv_disp[0], pvfmm::par::Mpi_datatype<double>::value(), comm);
   }
 
   { // Evaluate target potential.
@@ -49,7 +49,7 @@ void nbody(vec&  src_coord, vec&  src_value,
       kernel_fn.dbl_layer_poten(&   surf_coord[0]            , n_surf, &surf_value[0], 1,
                                 &glb_trg_coord[0]+a*COORD_DIM,    b-a, &glb_trg_value_[0]+a*kernel_fn.ker_dim[1],NULL);
     }
-    MPI_Allreduce(&glb_trg_value_[0], &glb_trg_value[0], glb_trg_value.size(), MPI_DOUBLE, MPI_SUM, comm);
+    MPI_Allreduce(&glb_trg_value_[0], &glb_trg_value[0], glb_trg_value.size(), pvfmm::par::Mpi_datatype<double>::value(), MPI_SUM, comm);
   }
 
   // Get local target values.
@@ -130,8 +130,8 @@ void fmm_test(size_t N, int mult_order, MPI_Comm comm){
       if(fabs(trg_sample_value_[i])>max_val)
         max_val=fabs(trg_sample_value_[i]);
     }
-    MPI_Reduce(&max_err, &max_err_glb, 1, MPI_DOUBLE, MPI_MAX, 0, comm);
-    MPI_Reduce(&max_val, &max_val_glb, 1, MPI_DOUBLE, MPI_MAX, 0, comm);
+    MPI_Reduce(&max_err, &max_err_glb, 1, pvfmm::par::Mpi_datatype<double>::value(), MPI_MAX, 0, comm);
+    MPI_Reduce(&max_val, &max_val_glb, 1, pvfmm::par::Mpi_datatype<double>::value(), MPI_MAX, 0, comm);
 
     int rank;
     MPI_Comm_rank(comm, &rank);

@@ -185,9 +185,32 @@ void FMM_Tree<FMM_Mat_t>::ClearFMMData() {
   Profile::Tic("ClearFMMData",this->Comm(),true);{
 
   bool device=true;
-  if(setup_data[0+MAX_DEPTH*1]. input_data!=NULL) setup_data[0+MAX_DEPTH*1]. input_data->SetZero();
-  if(setup_data[0+MAX_DEPTH*2].output_data!=NULL) setup_data[0+MAX_DEPTH*2].output_data->SetZero();
-  if(setup_data[0+MAX_DEPTH*0].output_data!=NULL) setup_data[0+MAX_DEPTH*0].output_data->SetZero();
+  int omp_p=omp_get_max_threads();
+  #pragma omp parallel for
+  for(int j=0;j<omp_p;j++){
+    Matrix<Real_t>* mat;
+
+    mat=setup_data[0+MAX_DEPTH*1]. input_data;
+    if(mat!=NULL){
+      size_t a=(mat->Dim(0)*mat->Dim(1)*(j+0))/omp_p;
+      size_t b=(mat->Dim(0)*mat->Dim(1)*(j+1))/omp_p;
+      memset(&(*mat)[0][a],0,(b-a)*sizeof(Real_t));
+    }
+
+    mat=setup_data[0+MAX_DEPTH*2].output_data;
+    if(mat!=NULL){
+      size_t a=(mat->Dim(0)*mat->Dim(1)*(j+0))/omp_p;
+      size_t b=(mat->Dim(0)*mat->Dim(1)*(j+1))/omp_p;
+      memset(&(*mat)[0][a],0,(b-a)*sizeof(Real_t));
+    }
+
+    mat=setup_data[0+MAX_DEPTH*0].output_data;
+    if(mat!=NULL){
+      size_t a=(mat->Dim(0)*mat->Dim(1)*(j+0))/omp_p;
+      size_t b=(mat->Dim(0)*mat->Dim(1)*(j+1))/omp_p;
+      memset(&(*mat)[0][a],0,(b-a)*sizeof(Real_t));
+    }
+  }
 
   if(device){ // Host2Device
     if(setup_data[0+MAX_DEPTH*1]. input_data!=NULL) setup_data[0+MAX_DEPTH*1]. input_data->AllocDevice(true);
@@ -275,30 +298,48 @@ void FMM_Tree<FMM_Mat_t>::UpwardPass() {
 template <class FMM_Mat_t>
 void FMM_Tree<FMM_Mat_t>::BuildInteracLists() {
   std::vector<Node_t*>& n_list=this->GetNodeList();
+  size_t node_cnt=n_list.size();
+
+  size_t all_interac_cnt=0;
+  size_t interac_cnt[Type_Count];
+  for(size_t i=0;i<Type_Count;i++){
+    interac_cnt[i]=interac_list.ListCount((Mat_Type)i);
+    all_interac_cnt+=interac_cnt[i];
+  }
+  node_interac_lst.ReInit(node_cnt,all_interac_cnt);
 
   // Build interaction lists.
   int omp_p=omp_get_max_threads();
-  {
-    size_t k=n_list.size();
-    #pragma omp parallel for
-    for(int j=0;j<omp_p;j++){
-      size_t a=(k*j)/omp_p;
-      size_t b=(k*(j+1))/omp_p;
-      for(size_t i=a;i<b;i++){
-        Node_t* n=n_list[i];
-        n->interac_list.resize(Type_Count);
-        n->interac_list[S2U_Type]=interac_list.BuildList(n,S2U_Type);
-        n->interac_list[U2U_Type]=interac_list.BuildList(n,U2U_Type);
-        n->interac_list[D2D_Type]=interac_list.BuildList(n,D2D_Type);
-        n->interac_list[D2T_Type]=interac_list.BuildList(n,D2T_Type);
-        n->interac_list[U0_Type]=interac_list.BuildList(n,U0_Type);
-        n->interac_list[U1_Type]=interac_list.BuildList(n,U1_Type);
-        n->interac_list[U2_Type]=interac_list.BuildList(n,U2_Type);
-        n->interac_list[V_Type]=interac_list.BuildList(n,V_Type);
-        n->interac_list[V1_Type]=interac_list.BuildList(n,V1_Type);
-        n->interac_list[W_Type]=interac_list.BuildList(n,W_Type);
-        n->interac_list[X_Type]=interac_list.BuildList(n,X_Type);
-      }
+  #pragma omp parallel for
+  for(int j=0;j<omp_p;j++){
+    size_t a=(node_cnt*(j  ))/omp_p;
+    size_t b=(node_cnt*(j+1))/omp_p;
+    for(size_t i=a;i<b;i++){
+      size_t offset=0;
+      Node_t* n=n_list[i];
+      n->interac_list[S2U_Type].ReInit(interac_cnt[S2U_Type],&node_interac_lst[i][offset],false); offset+=interac_cnt[S2U_Type];
+      n->interac_list[U2U_Type].ReInit(interac_cnt[U2U_Type],&node_interac_lst[i][offset],false); offset+=interac_cnt[U2U_Type];
+      n->interac_list[D2D_Type].ReInit(interac_cnt[D2D_Type],&node_interac_lst[i][offset],false); offset+=interac_cnt[D2D_Type];
+      n->interac_list[D2T_Type].ReInit(interac_cnt[D2T_Type],&node_interac_lst[i][offset],false); offset+=interac_cnt[D2T_Type];
+      n->interac_list[ U0_Type].ReInit(interac_cnt[ U0_Type],&node_interac_lst[i][offset],false); offset+=interac_cnt[ U0_Type];
+      n->interac_list[ U1_Type].ReInit(interac_cnt[ U1_Type],&node_interac_lst[i][offset],false); offset+=interac_cnt[ U1_Type];
+      n->interac_list[ U2_Type].ReInit(interac_cnt[ U2_Type],&node_interac_lst[i][offset],false); offset+=interac_cnt[ U2_Type];
+      n->interac_list[  V_Type].ReInit(interac_cnt[  V_Type],&node_interac_lst[i][offset],false); offset+=interac_cnt[  V_Type];
+      n->interac_list[ V1_Type].ReInit(interac_cnt[ V1_Type],&node_interac_lst[i][offset],false); offset+=interac_cnt[ V1_Type];
+      n->interac_list[  W_Type].ReInit(interac_cnt[  W_Type],&node_interac_lst[i][offset],false); offset+=interac_cnt[  W_Type];
+      n->interac_list[  X_Type].ReInit(interac_cnt[  X_Type],&node_interac_lst[i][offset],false); offset+=interac_cnt[  X_Type];
+
+      interac_list.BuildList(n,S2U_Type);
+      interac_list.BuildList(n,U2U_Type);
+      interac_list.BuildList(n,D2D_Type);
+      interac_list.BuildList(n,D2T_Type);
+      interac_list.BuildList(n, U0_Type);
+      interac_list.BuildList(n, U1_Type);
+      interac_list.BuildList(n, U2_Type);
+      interac_list.BuildList(n,  V_Type);
+      interac_list.BuildList(n, V1_Type);
+      interac_list.BuildList(n,  W_Type);
+      interac_list.BuildList(n,  X_Type);
     }
   }
 }

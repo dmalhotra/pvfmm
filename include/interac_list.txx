@@ -93,8 +93,11 @@ std::vector<Perm_Type>& InteracList<Node_t>::PermutList(Mat_Type t, size_t i){
  * \brief Build interaction list for this node.
  */
 template <class Node_t>
-std::vector<Node_t*> InteracList<Node_t>::BuildList(Node_t* n, Mat_Type t){
-  std::vector<Node_t*> interac_list(ListCount(t),NULL);
+void InteracList<Node_t>::BuildList(Node_t* n, Mat_Type t){
+  Vector<Node_t*>& interac_list=n->interac_list[t];
+  if(interac_list.Dim()!=ListCount(t)) interac_list.ReInit(ListCount(t));
+  interac_list.SetZero();
+
   static const int n_collg=(int)pow(3.0,(int)dim);
   static const int n_child=(int)pow(2.0,(int)dim);
   int rel_coord[3];
@@ -108,7 +111,7 @@ std::vector<Node_t*> InteracList<Node_t>::BuildList(Node_t* n, Mat_Type t){
     }
     case U2U_Type:
     {
-      if(n->IsGhost() || n->IsLeaf()) return interac_list;
+      if(n->IsGhost() || n->IsLeaf()) return;
       for(int j=0;j<n_child;j++){
         rel_coord[0]=-1+(j & 1?2:0);
         rel_coord[1]=-1+(j & 2?2:0);
@@ -122,7 +125,7 @@ std::vector<Node_t*> InteracList<Node_t>::BuildList(Node_t* n, Mat_Type t){
     }
     case D2D_Type:
     {
-      if(n->IsGhost() || n->Parent()==NULL) return interac_list;
+      if(n->IsGhost() || n->Parent()==NULL) return;
       Node_t* p=(Node_t*)n->Parent();
       int p2n=n->Path2Node();
       {
@@ -142,7 +145,7 @@ std::vector<Node_t*> InteracList<Node_t>::BuildList(Node_t* n, Mat_Type t){
     }
     case U0_Type:
     {
-      if(n->IsGhost() || n->Parent()==NULL || !n->IsLeaf()) return interac_list;
+      if(n->IsGhost() || n->Parent()==NULL || !n->IsLeaf()) return;
       Node_t* p=(Node_t*)n->Parent();
       int p2n=n->Path2Node();
       for(int i=0;i<n_collg;i++){
@@ -160,7 +163,7 @@ std::vector<Node_t*> InteracList<Node_t>::BuildList(Node_t* n, Mat_Type t){
     }
     case U1_Type:
     {
-      if(n->IsGhost() || !n->IsLeaf()) return interac_list;
+      if(n->IsGhost() || !n->IsLeaf()) return;
       for(int i=0;i<n_collg;i++){
         Node_t* col=(Node_t*)n->Colleague(i);
         if(col!=NULL && col->IsLeaf()){
@@ -176,7 +179,7 @@ std::vector<Node_t*> InteracList<Node_t>::BuildList(Node_t* n, Mat_Type t){
     }
     case U2_Type:
     {
-      if(n->IsGhost() || !n->IsLeaf()) return interac_list;
+      if(n->IsGhost() || !n->IsLeaf()) return;
       for(int i=0;i<n_collg;i++){
         Node_t* col=(Node_t*)n->Colleague(i);
         if(col!=NULL && !col->IsLeaf()){
@@ -197,7 +200,7 @@ std::vector<Node_t*> InteracList<Node_t>::BuildList(Node_t* n, Mat_Type t){
     }
     case V_Type:
     {
-      if(n->IsGhost() || n->Parent()==NULL) return interac_list;
+      if(n->IsGhost() || n->Parent()==NULL) return;
       Node_t* p=(Node_t*)n->Parent();
       int p2n=n->Path2Node();
       for(int i=0;i<n_collg;i++){
@@ -217,7 +220,7 @@ std::vector<Node_t*> InteracList<Node_t>::BuildList(Node_t* n, Mat_Type t){
     }
     case V1_Type:
     {
-      if(n->IsGhost() || n->IsLeaf()) return interac_list;
+      if(n->IsGhost() || n->IsLeaf()) return;
       for(int i=0;i<n_collg;i++){
         Node_t* col=(Node_t*)n->Colleague(i);
         if(col!=NULL && !col->IsLeaf()){
@@ -233,7 +236,7 @@ std::vector<Node_t*> InteracList<Node_t>::BuildList(Node_t* n, Mat_Type t){
     }
     case W_Type:
     {
-      if(n->IsGhost() || !n->IsLeaf()) return interac_list;
+      if(n->IsGhost() || !n->IsLeaf()) return;
       for(int i=0;i<n_collg;i++){
         Node_t* col=(Node_t*)n->Colleague(i);
         if(col!=NULL && !col->IsLeaf()){
@@ -251,7 +254,7 @@ std::vector<Node_t*> InteracList<Node_t>::BuildList(Node_t* n, Mat_Type t){
     }
     case X_Type:
     {
-      if(n->IsGhost() || n->Parent()==NULL) return interac_list;
+      if(n->IsGhost() || n->Parent()==NULL) return;
       Node_t* p=(Node_t*)n->Parent();
       int p2n=n->Path2Node();
       for(int i=0;i<n_collg;i++){
@@ -268,11 +271,8 @@ std::vector<Node_t*> InteracList<Node_t>::BuildList(Node_t* n, Mat_Type t){
       break;
     }
     default:
-      std::vector<Node_t*> empty_list;
-      return empty_list;
       break;
   }
-  return interac_list;
 }
 
 template <class Node_t>

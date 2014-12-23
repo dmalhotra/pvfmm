@@ -58,6 +58,7 @@ lib_libfmm_a_HEADERS = \
 									include/fmm_pts_gpu.hpp \
 									include/fmm_tree.hpp \
 									include/interac_list.hpp \
+									include/intrin_wrapper.hpp \
 									include/kernel.hpp \
 									include/lapack.h \
 									include/legendre_rule.hpp \

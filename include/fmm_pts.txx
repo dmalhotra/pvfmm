@@ -1068,7 +1068,7 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& n
     for(size_t i=0;i<node_lst.size();i++){ // Construct vec_lst
       FMMNode_t* node=node_lst[i];
       Vector<Real_t>& data_vec=node->FMMData()->upward_equiv;
-      if(data_vec.Dim()!=vec_sz) data_vec.ReInit(vec_sz);
+      data_vec.ReInit(vec_sz,NULL,false);
       vec_lst.push_back(&data_vec);
     }
   }
@@ -1108,7 +1108,7 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& n
     for(size_t i=0;i<node_lst.size();i++){ // Construct vec_lst
       FMMNode_t* node=node_lst[i];
       Vector<Real_t>& data_vec=node->FMMData()->dnward_equiv;
-      if(data_vec.Dim()!=vec_sz) data_vec.ReInit(vec_sz);
+      data_vec.ReInit(vec_sz,NULL,false);
       vec_lst.push_back(&data_vec);
     }
   }
@@ -1159,13 +1159,13 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& n
       { // src_value
         Vector<Real_t>& data_vec=node->src_value;
         size_t vec_sz=(node->src_coord.Dim()/COORD_DIM)*src_dof;
-        if(data_vec.Dim()!=vec_sz) data_vec.ReInit(vec_sz);
+        if(data_vec.Dim()!=vec_sz) data_vec.ReInit(vec_sz,NULL,false);
         vec_lst.push_back(&data_vec);
       }
       { // surf_value
         Vector<Real_t>& data_vec=node->surf_value;
         size_t vec_sz=(node->surf_coord.Dim()/COORD_DIM)*surf_dof;
-        if(data_vec.Dim()!=vec_sz) data_vec.ReInit(vec_sz);
+        if(data_vec.Dim()!=vec_sz) data_vec.ReInit(vec_sz,NULL,false);
         vec_lst.push_back(&data_vec);
       }
     }
@@ -1188,7 +1188,7 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& n
       { // trg_value
         Vector<Real_t>& data_vec=node->trg_value;
         size_t vec_sz=(node->trg_coord.Dim()/COORD_DIM)*trg_dof;
-        if(data_vec.Dim()!=vec_sz) data_vec.ReInit(vec_sz);
+        data_vec.ReInit(vec_sz,NULL,false);
         vec_lst.push_back(&data_vec);
       }
     }
@@ -1246,7 +1246,6 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& n
         vec_lst.push_back(&tree->dnwd_equiv_surf[depth]);
       }
     }
-
   }
 
   // Create extra auxiliary buffer.
@@ -1292,9 +1291,11 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& n
         aux_buff.ReInit(1,buff_size*1.05);
       }
 
-      #pragma omp parallel for schedule(dynamic)
+      #pragma omp parallel for
       for(size_t i=0;i<n_vec;i++){
-        mem::memcopy(&aux_buff[0][0]+vec_disp[i],&(*vec_lst[i])[0],vec_size[i]*sizeof(Real_t));
+        if(&(*vec_lst[i])[0]){
+          mem::memcopy(&aux_buff[0][0]+vec_disp[i],&(*vec_lst[i])[0],vec_size[i]*sizeof(Real_t));
+        }
       }
     }
 
@@ -1401,9 +1402,9 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
         #pragma omp parallel for
         for(size_t i=0;i<n_out;i++){
           if(!((FMMNode*)nodes_out[i])->IsGhost() && (level==-1 || ((FMMNode*)nodes_out[i])->Depth()==level)){
-            std::vector<FMMNode*>& lst=((FMMNode*)nodes_out[i])->interac_list[interac_type];
-            mem::memcopy(&trg_interac_list[i][0], &lst[0], lst.size()*sizeof(FMMNode*));
-            assert(lst.size()==mat_cnt);
+            Vector<FMMNode*>& lst=((FMMNode*)nodes_out[i])->interac_list[interac_type];
+            mem::memcopy(&trg_interac_list[i][0], &lst[0], lst.Dim()*sizeof(FMMNode*));
+            assert(lst.Dim()==mat_cnt);
           }
         }
       }
@@ -2849,7 +2850,7 @@ void FMM_Pts<FMMNode>::V_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
           std::set<void*> nodes_in;
           for(size_t i=blk0_start;i<blk0_end;i++){
             nodes_out_.push_back((FMMNode*)nodes_out[i]);
-            std::vector<FMMNode*>& lst=((FMMNode*)nodes_out[i])->interac_list[interac_type];
+            Vector<FMMNode*>& lst=((FMMNode*)nodes_out[i])->interac_list[interac_type];
             for(size_t k=0;k<mat_cnt;k++) if(lst[k]!=NULL) nodes_in.insert(lst[k]);
           }
           for(std::set<void*>::iterator node=nodes_in.begin(); node != nodes_in.end(); node++){
@@ -2900,7 +2901,7 @@ void FMM_Pts<FMMNode>::V_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
             size_t blk1_end  =(nodes_out_.size()*(blk1+1))/n_blk1;
             for(size_t k=0;k<mat_cnt;k++){
               for(size_t i=blk1_start;i<blk1_end;i++){
-                std::vector<FMMNode*>& lst=((FMMNode*)nodes_out_[i])->interac_list[interac_type];
+                Vector<FMMNode*>& lst=((FMMNode*)nodes_out_[i])->interac_list[interac_type];
                 if(lst[k]!=NULL){
                   interac_vec[blk0].push_back(lst[k]->node_id*fftsize*ker_dim0*dof);
                   interac_vec[blk0].push_back(    i          *fftsize*ker_dim1*dof);
@@ -3259,7 +3260,7 @@ void FMM_Pts<FMMNode>::SetupInteracPts(SetupData<Real_t>& setup_data, bool shift
       #pragma omp parallel for
       for(size_t i=0;i<n_out;i++){ // For each target node.
         if(!((FMMNode*)nodes_out[i])->IsGhost() && (level==-1 || ((FMMNode*)nodes_out[i])->Depth()==level)){
-          std::vector<FMMNode*>& lst=((FMMNode*)nodes_out[i])->interac_list[interac_type];
+          Vector<FMMNode*>& lst=((FMMNode*)nodes_out[i])->interac_list[interac_type];
           for(size_t mat_indx=0;mat_indx<mat_cnt;mat_indx++) if(lst[mat_indx]!=NULL){ // For each direction.
             size_t j=lst[mat_indx]->node_id;
             if(input_vector[j*4+0]->Dim()>0 || input_vector[j*4+2]->Dim()>0){
@@ -3548,35 +3549,44 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
 
         size_t interac_cnt=0;
         for(size_t j=0;j<trg_interac_cnt[i];j++){
-          if(ptr_single_layer_kernel!=(size_t)NULL){// Single layer kernel
-            Real_t* src_coord_=coord_data[0]+src_coord[i][2*j+0];
-            assert(thread_buff_size>=dof*M.Dim(0)+dof*M.Dim(1)+src_cnt[i][2*j+0]*COORD_DIM);
-            for(size_t k1=0;k1<src_cnt[i][2*j+0];k1++){ // Compute shifted source coordinates.
-              for(size_t k0=0;k0<COORD_DIM;k0++){
-                s_coord[k1*COORD_DIM+k0]=src_coord_[k1*COORD_DIM+k0]+shift_coord[i][j*COORD_DIM+k0];
-              }
-            }
-
-            single_layer_kernel(                s_coord   , src_cnt[i][2*j+0], input_data[0]+src_value[i][2*j+0], dof,
-                                coord_data[0]+trg_coord[i], trg_cnt[i]       , t_value, NULL);
+          Real_t shift[3]={shift_coord[i][j*COORD_DIM+0],
+                           shift_coord[i][j*COORD_DIM+1],
+                           shift_coord[i][j*COORD_DIM+2]};
+          if(src_cnt[i][2*j+0]*trg_cnt[i]>0){// Single layer kernel
             interac_cnt+=src_cnt[i][2*j+0]*trg_cnt[i];
-          }else if(src_cnt[i][2*j+0]!=0 && trg_cnt[i]!=0){
-            assert(ptr_single_layer_kernel); // Single-layer kernel not implemented
-          }
-          if(ptr_double_layer_kernel!=(size_t)NULL){// Double layer kernel
-            Real_t* src_coord_=coord_data[0]+src_coord[i][2*j+1];
-            assert(thread_buff_size>=dof*M.Dim(0)+dof*M.Dim(1)+src_cnt[i][2*j+1]*COORD_DIM);
-            for(size_t k1=0;k1<src_cnt[i][2*j+1];k1++){ // Compute shifted source coordinates.
-              for(size_t k0=0;k0<COORD_DIM;k0++){
-                s_coord[k1*COORD_DIM+k0]=src_coord_[k1*COORD_DIM+k0]+shift_coord[i][j*COORD_DIM+k0];
+            assert(thread_buff_size>=dof*M.Dim(0)+dof*M.Dim(1)+src_cnt[i][2*j+0]*COORD_DIM);
+
+            Real_t* src_coord_=coord_data[0]+src_coord[i][2*j+0];
+            if(shift[0]!=0 || shift[1]!=0 || shift[2]!=0){ // Compute shifted source coordinates.
+              for(size_t k1=0;k1<src_cnt[i][2*j+0];k1++){
+                s_coord[k1*COORD_DIM+0]=src_coord_[k1*COORD_DIM+0]+shift[0];
+                s_coord[k1*COORD_DIM+1]=src_coord_[k1*COORD_DIM+1]+shift[1];
+                s_coord[k1*COORD_DIM+2]=src_coord_[k1*COORD_DIM+2]+shift[2];
               }
+              src_coord_=s_coord;
             }
 
-            double_layer_kernel(                s_coord   , src_cnt[i][2*j+1], input_data[0]+src_value[i][2*j+1], dof,
+            assert(ptr_single_layer_kernel); // assert(Single-layer kernel is implemented)
+            single_layer_kernel(              src_coord_  , src_cnt[i][2*j+0], input_data[0]+src_value[i][2*j+0], dof,
                                 coord_data[0]+trg_coord[i], trg_cnt[i]       , t_value, NULL);
+          }
+          if(src_cnt[i][2*j+1]*trg_cnt[i]>0){// Double layer kernel
             interac_cnt+=src_cnt[i][2*j+1]*trg_cnt[i];
-          }else if(src_cnt[i][2*j+1]!=0 && trg_cnt[i]!=0){
-            assert(ptr_double_layer_kernel); // Double-layer kernel not implemented
+            assert(thread_buff_size>=dof*M.Dim(0)+dof*M.Dim(1)+src_cnt[i][2*j+1]*COORD_DIM);
+
+            Real_t* src_coord_=coord_data[0]+src_coord[i][2*j+1];
+            if(shift[0]!=0 || shift[1]!=0 || shift[2]!=0){ // Compute shifted source coordinates.
+              for(size_t k1=0;k1<src_cnt[i][2*j+1];k1++){
+                s_coord[k1*COORD_DIM+0]=src_coord_[k1*COORD_DIM+0]+shift[0];
+                s_coord[k1*COORD_DIM+1]=src_coord_[k1*COORD_DIM+1]+shift[1];
+                s_coord[k1*COORD_DIM+2]=src_coord_[k1*COORD_DIM+2]+shift[2];
+              }
+              src_coord_=s_coord;
+            }
+
+            assert(ptr_double_layer_kernel); // assert(Double-layer kernel is implemented)
+            double_layer_kernel(              src_coord_  , src_cnt[i][2*j+1], input_data[0]+src_value[i][2*j+1], dof,
+                                coord_data[0]+trg_coord[i], trg_cnt[i]       , t_value, NULL);
           }
         }
         if(M.Dim(0)>0 && M.Dim(1)>0 && interac_cnt>0){

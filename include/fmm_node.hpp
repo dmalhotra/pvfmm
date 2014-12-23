@@ -170,7 +170,7 @@ class FMM_Node: public Node{
   Vector<Real_t> trg_value;
   Vector<size_t> trg_scatter;
 
-  std::vector<std::vector<FMM_Node*> > interac_list;
+  pvfmm::Vector<FMM_Node*> interac_list[Type_Count];
 
  private:
 

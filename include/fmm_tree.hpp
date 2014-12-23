@@ -95,6 +95,7 @@ class FMM_Tree: public MPI_Tree<typename FMM_Mat_t::FMMNode_t>{
  protected:
 
   std::vector<Matrix<Real_t> > node_data_buff;
+  pvfmm::Matrix<Node_t*> node_interac_lst;
   InteracList<Node_t> interac_list;
   FMM_Mat_t* fmm_mat; //Computes all FMM translations.
   BoundaryType bndry;
