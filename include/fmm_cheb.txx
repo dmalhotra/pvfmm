@@ -844,6 +844,12 @@ void FMM_Cheb<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& 
     }
   }
   FMM_Pts<FMMNode_t>::CollectNodeData(tree, node, buff, n_list, vec_list);
+
+  #pragma omp parallel for
+  for(size_t i=0;i<node.size();i++){
+    node[i]->pt_cnt[0]+=n_coeff;
+    node[i]->pt_cnt[1]+=n_coeff;
+  }
 }
 
 

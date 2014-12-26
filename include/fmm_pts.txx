@@ -1047,11 +1047,24 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& n
       std::vector<std::vector< FMMNode* > > node_lst_(MAX_DEPTH+1);
       FMMNode_t* r_node=NULL;
       for(size_t i=0;i<node.size();i++){
-        if(!node[i]->IsLeaf())
+        if(!node[i]->IsLeaf()){
+          node[i]->pt_cnt[0] =0;
           node_lst_[node[i]->Depth()].push_back(node[i]);
+        }else{
+          node[i]->pt_cnt[0] =node[i]-> src_coord.Dim()/COORD_DIM;
+          node[i]->pt_cnt[0]+=node[i]->surf_coord.Dim()/COORD_DIM;
+        }
         if(node[i]->Depth()==0) r_node=node[i];
       }
       size_t chld_cnt=1UL<<COORD_DIM;
+      for(int i=MAX_DEPTH;i>=0;i--){
+        for(size_t j=0;j<node_lst_[i].size();j++){
+          for(size_t k=0;k<chld_cnt;k++){
+            FMMNode_t* node=(FMMNode_t*)node_lst_[i][j]->Child(k);
+            node_lst_[i][j]->pt_cnt[0]+=node->pt_cnt[0];
+          }
+        }
+      }
       for(int i=0;i<=MAX_DEPTH;i++){
         for(size_t j=0;j<node_lst_[i].size();j++){
           for(size_t k=0;k<chld_cnt;k++){
@@ -1087,11 +1100,23 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& n
       std::vector<std::vector< FMMNode* > > node_lst_(MAX_DEPTH+1);
       FMMNode_t* r_node=NULL;
       for(size_t i=0;i<node.size();i++){
-        if(!node[i]->IsLeaf())
+        if(!node[i]->IsLeaf()){
+          node[i]->pt_cnt[1]=0;
           node_lst_[node[i]->Depth()].push_back(node[i]);
+        }else{
+          node[i]->pt_cnt[1]=node[i]->trg_coord.Dim()/COORD_DIM;
+        }
         if(node[i]->Depth()==0) r_node=node[i];
       }
       size_t chld_cnt=1UL<<COORD_DIM;
+      for(int i=MAX_DEPTH;i>=0;i--){
+        for(size_t j=0;j<node_lst_[i].size();j++){
+          for(size_t k=0;k<chld_cnt;k++){
+            FMMNode_t* node=(FMMNode_t*)node_lst_[i][j]->Child(k);
+            node_lst_[i][j]->pt_cnt[1]+=node->pt_cnt[1];
+          }
+        }
+      }
       for(int i=0;i<=MAX_DEPTH;i++){
         for(size_t j=0;j<node_lst_[i].size();j++){
           for(size_t k=0;k<chld_cnt;k++){
@@ -1410,12 +1435,24 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
       }
       { // Build src_interac_list
         #pragma omp parallel for
-        for(size_t i=0;i<n_in ;i++) ((FMMNode*)nodes_in [i])->node_id=i;
-        #pragma omp parallel for
         for(size_t i=0;i<n_out;i++){
           for(size_t j=0;j<mat_cnt;j++)
           if(trg_interac_list[i][j]!=NULL){
-            src_interac_list[trg_interac_list[i][j]->node_id][j]=(FMMNode*)nodes_out[i];
+            trg_interac_list[i][j]->node_id=n_in;
+          }
+        }
+        #pragma omp parallel for
+        for(size_t i=0;i<n_in ;i++) ((FMMNode*)nodes_in [i])->node_id=i;
+        #pragma omp parallel for
+        for(size_t i=0;i<n_out;i++){
+          for(size_t j=0;j<mat_cnt;j++){
+            if(trg_interac_list[i][j]!=NULL){
+              if(trg_interac_list[i][j]->node_id==n_in){
+                trg_interac_list[i][j]=NULL;
+              }else{
+                src_interac_list[trg_interac_list[i][j]->node_id][j]=(FMMNode*)nodes_out[i];
+              }
+            }
           }
         }
       }
@@ -1469,7 +1506,7 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
           for(size_t i=0;i<n_in ;i++){
             for(size_t j=interac_blk_dsp[k-1];j<interac_blk_dsp[k];j++){
               FMMNode_t* trg_node=src_interac_list[i][j];
-              if(trg_node!=NULL){
+              if(trg_node!=NULL && trg_node->node_id<n_out){
                 size_t depth=(this->Homogen()?trg_node->Depth():0);
                 input_perm .push_back(precomp_data_offset[j][1+4*depth+0]); // prem
                 input_perm .push_back(precomp_data_offset[j][1+4*depth+1]); // scal
@@ -1948,8 +1985,8 @@ void FMM_Pts<FMMNode>::Source2UpSetup(SetupData<Real_t>&  setup_data, FMMTree_t*
 
     setup_data.nodes_in .clear();
     setup_data.nodes_out.clear();
-    for(size_t i=0;i<nodes_in .Dim();i++) if(nodes_in [i]->Depth()==level   || level==-1) setup_data.nodes_in .push_back(nodes_in [i]);
-    for(size_t i=0;i<nodes_out.Dim();i++) if(nodes_out[i]->Depth()==level   || level==-1) setup_data.nodes_out.push_back(nodes_out[i]);
+    for(size_t i=0;i<nodes_in .Dim();i++) if((nodes_in [i]->Depth()==level   || level==-1) && nodes_in [i]->pt_cnt[0]) setup_data.nodes_in .push_back(nodes_in [i]);
+    for(size_t i=0;i<nodes_out.Dim();i++) if((nodes_out[i]->Depth()==level   || level==-1) && nodes_out[i]->pt_cnt[0]) setup_data.nodes_out.push_back(nodes_out[i]);
   }
 
   std::vector<void*>& nodes_in =setup_data.nodes_in ;
@@ -1999,8 +2036,8 @@ void FMM_Pts<FMMNode>::Up2UpSetup(SetupData<Real_t>& setup_data, FMMTree_t* tree
 
     setup_data.nodes_in .clear();
     setup_data.nodes_out.clear();
-    for(size_t i=0;i<nodes_in .Dim();i++) if(nodes_in [i]->Depth()==level+1) setup_data.nodes_in .push_back(nodes_in [i]);
-    for(size_t i=0;i<nodes_out.Dim();i++) if(nodes_out[i]->Depth()==level  ) setup_data.nodes_out.push_back(nodes_out[i]);
+    for(size_t i=0;i<nodes_in .Dim();i++) if((nodes_in [i]->Depth()==level+1) && nodes_in [i]->pt_cnt[0]) setup_data.nodes_in .push_back(nodes_in [i]);
+    for(size_t i=0;i<nodes_out.Dim();i++) if((nodes_out[i]->Depth()==level  ) && nodes_out[i]->pt_cnt[0]) setup_data.nodes_out.push_back(nodes_out[i]);
   }
 
   std::vector<void*>& nodes_in =setup_data.nodes_in ;
@@ -2733,8 +2770,8 @@ void FMM_Pts<FMMNode>::V_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
 
     setup_data.nodes_in .clear();
     setup_data.nodes_out.clear();
-    for(size_t i=0;i<nodes_in .Dim();i++) if(nodes_in [i]->Depth()==level-1 || level==-1) setup_data.nodes_in .push_back(nodes_in [i]);
-    for(size_t i=0;i<nodes_out.Dim();i++) if(nodes_out[i]->Depth()==level-1 || level==-1) setup_data.nodes_out.push_back(nodes_out[i]);
+    for(size_t i=0;i<nodes_in .Dim();i++) if((nodes_in [i]->Depth()==level-1 || level==-1) && nodes_in [i]->pt_cnt[0]) setup_data.nodes_in .push_back(nodes_in [i]);
+    for(size_t i=0;i<nodes_out.Dim();i++) if((nodes_out[i]->Depth()==level-1 || level==-1) && nodes_out[i]->pt_cnt[1]) setup_data.nodes_out.push_back(nodes_out[i]);
   }
   std::vector<void*>& nodes_in =setup_data.nodes_in ;
   std::vector<void*>& nodes_out=setup_data.nodes_out;
@@ -2851,7 +2888,7 @@ void FMM_Pts<FMMNode>::V_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
           for(size_t i=blk0_start;i<blk0_end;i++){
             nodes_out_.push_back((FMMNode*)nodes_out[i]);
             Vector<FMMNode*>& lst=((FMMNode*)nodes_out[i])->interac_list[interac_type];
-            for(size_t k=0;k<mat_cnt;k++) if(lst[k]!=NULL) nodes_in.insert(lst[k]);
+            for(size_t k=0;k<mat_cnt;k++) if(lst[k]!=NULL && lst[k]->pt_cnt[0]) nodes_in.insert(lst[k]);
           }
           for(std::set<void*>::iterator node=nodes_in.begin(); node != nodes_in.end(); node++){
             nodes_in_.push_back((FMMNode*)*node);
@@ -2902,7 +2939,7 @@ void FMM_Pts<FMMNode>::V_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
             for(size_t k=0;k<mat_cnt;k++){
               for(size_t i=blk1_start;i<blk1_end;i++){
                 Vector<FMMNode*>& lst=((FMMNode*)nodes_out_[i])->interac_list[interac_type];
-                if(lst[k]!=NULL){
+                if(lst[k]!=NULL && lst[k]->pt_cnt[0]){
                   interac_vec[blk0].push_back(lst[k]->node_id*fftsize*ker_dim0*dof);
                   interac_vec[blk0].push_back(    i          *fftsize*ker_dim1*dof);
                   interac_dsp_++;
@@ -3151,8 +3188,8 @@ void FMM_Pts<FMMNode>::Down2DownSetup(SetupData<Real_t>& setup_data, FMMTree_t* 
 
     setup_data.nodes_in .clear();
     setup_data.nodes_out.clear();
-    for(size_t i=0;i<nodes_in .Dim();i++) if(nodes_in [i]->Depth()==level-1) setup_data.nodes_in .push_back(nodes_in [i]);
-    for(size_t i=0;i<nodes_out.Dim();i++) if(nodes_out[i]->Depth()==level  ) setup_data.nodes_out.push_back(nodes_out[i]);
+    for(size_t i=0;i<nodes_in .Dim();i++) if((nodes_in [i]->Depth()==level-1) && nodes_in [i]->pt_cnt[1]) setup_data.nodes_in .push_back(nodes_in [i]);
+    for(size_t i=0;i<nodes_out.Dim();i++) if((nodes_out[i]->Depth()==level  ) && nodes_out[i]->pt_cnt[1]) setup_data.nodes_out.push_back(nodes_out[i]);
   }
 
   std::vector<void*>& nodes_in =setup_data.nodes_in ;
@@ -3199,8 +3236,6 @@ void FMM_Pts<FMMNode>::SetupInteracPts(SetupData<Real_t>& setup_data, bool shift
     size_t ker_dim0=setup_data.kernel->ker_dim[0];
     size_t ker_dim1=setup_data.kernel->ker_dim[1];
     size_t dof=1;
-    #pragma omp parallel for
-    for(size_t i=0;i<n_in ;i++) ((FMMNode*)nodes_in [i])->node_id=i;
 
     std::vector<size_t> trg_interac_cnt(n_out,0);
     std::vector<size_t> trg_coord(n_out);
@@ -3262,8 +3297,19 @@ void FMM_Pts<FMMNode>::SetupInteracPts(SetupData<Real_t>& setup_data, bool shift
         if(!((FMMNode*)nodes_out[i])->IsGhost() && (level==-1 || ((FMMNode*)nodes_out[i])->Depth()==level)){
           Vector<FMMNode*>& lst=((FMMNode*)nodes_out[i])->interac_list[interac_type];
           for(size_t mat_indx=0;mat_indx<mat_cnt;mat_indx++) if(lst[mat_indx]!=NULL){ // For each direction.
+            lst[mat_indx]->node_id=n_in;
+          }
+        }
+      }
+      #pragma omp parallel for
+      for(size_t i=0;i<n_in ;i++) ((FMMNode*)nodes_in [i])->node_id=i;
+      #pragma omp parallel for
+      for(size_t i=0;i<n_out;i++){ // For each target node.
+        if(!((FMMNode*)nodes_out[i])->IsGhost() && (level==-1 || ((FMMNode*)nodes_out[i])->Depth()==level)){
+          Vector<FMMNode*>& lst=((FMMNode*)nodes_out[i])->interac_list[interac_type];
+          for(size_t mat_indx=0;mat_indx<mat_cnt;mat_indx++) if(lst[mat_indx]!=NULL){ // For each direction.
             size_t j=lst[mat_indx]->node_id;
-            if(input_vector[j*4+0]->Dim()>0 || input_vector[j*4+2]->Dim()>0){
+            if(j<n_in && (input_vector[j*4+0]->Dim()>0 || input_vector[j*4+2]->Dim()>0)){
               trg_interac_cnt[i]++;
               { // Determine shift for periodic boundary condition
                 Real_t* sc=lst[mat_indx]->Coord();
@@ -3652,8 +3698,8 @@ void FMM_Pts<FMMNode>::X_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
 
     setup_data.nodes_in .clear();
     setup_data.nodes_out.clear();
-    for(size_t i=0;i<nodes_in .Dim();i++) if(nodes_in [i]->Depth()==level-1 || level==-1) setup_data.nodes_in .push_back(nodes_in [i]);
-    for(size_t i=0;i<nodes_out.Dim();i++) if(nodes_out[i]->Depth()==level   || level==-1) setup_data.nodes_out.push_back(nodes_out[i]);
+    for(size_t i=0;i<nodes_in .Dim();i++) if((nodes_in [i]->Depth()==level-1 || level==-1) && nodes_in [i]->pt_cnt[0]) setup_data.nodes_in .push_back(nodes_in [i]);
+    for(size_t i=0;i<nodes_out.Dim();i++) if((nodes_out[i]->Depth()==level   || level==-1) && nodes_out[i]->pt_cnt[1]) setup_data.nodes_out.push_back(nodes_out[i]);
   }
 
   std::vector<void*>& nodes_in =setup_data.nodes_in ;
@@ -3705,8 +3751,8 @@ void FMM_Pts<FMMNode>::W_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
 
     setup_data.nodes_in .clear();
     setup_data.nodes_out.clear();
-    for(size_t i=0;i<nodes_in .Dim();i++) if(nodes_in [i]->Depth()==level+1 || level==-1) setup_data.nodes_in .push_back(nodes_in [i]);
-    for(size_t i=0;i<nodes_out.Dim();i++) if(nodes_out[i]->Depth()==level   || level==-1) setup_data.nodes_out.push_back(nodes_out[i]);
+    for(size_t i=0;i<nodes_in .Dim();i++) if((nodes_in [i]->Depth()==level+1 || level==-1) && nodes_in [i]->pt_cnt[0]) setup_data.nodes_in .push_back(nodes_in [i]);
+    for(size_t i=0;i<nodes_out.Dim();i++) if((nodes_out[i]->Depth()==level   || level==-1) && nodes_out[i]->pt_cnt[1]) setup_data.nodes_out.push_back(nodes_out[i]);
   }
 
   std::vector<void*>& nodes_in =setup_data.nodes_in ;
@@ -3757,8 +3803,8 @@ void FMM_Pts<FMMNode>::U_ListSetup(SetupData<Real_t>& setup_data, FMMTree_t* tre
 
     setup_data.nodes_in .clear();
     setup_data.nodes_out.clear();
-    for(size_t i=0;i<nodes_in .Dim();i++) if((level-1<=nodes_in [i]->Depth() && nodes_in [i]->Depth()<=level+1) || level==-1) setup_data.nodes_in .push_back(nodes_in [i]);
-    for(size_t i=0;i<nodes_out.Dim();i++) if((                                  nodes_out[i]->Depth()==level  ) || level==-1) setup_data.nodes_out.push_back(nodes_out[i]);
+    for(size_t i=0;i<nodes_in .Dim();i++) if(((level-1<=nodes_in [i]->Depth() && nodes_in [i]->Depth()<=level+1) || level==-1) && nodes_in [i]->pt_cnt[0]) setup_data.nodes_in .push_back(nodes_in [i]);
+    for(size_t i=0;i<nodes_out.Dim();i++) if(((                                  nodes_out[i]->Depth()==level  ) || level==-1) && nodes_out[i]->pt_cnt[1]) setup_data.nodes_out.push_back(nodes_out[i]);
   }
 
   std::vector<void*>& nodes_in =setup_data.nodes_in ;
@@ -3808,8 +3854,8 @@ void FMM_Pts<FMMNode>::Down2TargetSetup(SetupData<Real_t>&  setup_data, FMMTree_
 
     setup_data.nodes_in .clear();
     setup_data.nodes_out.clear();
-    for(size_t i=0;i<nodes_in .Dim();i++) if(nodes_in [i]->Depth()==level   || level==-1) setup_data.nodes_in .push_back(nodes_in [i]);
-    for(size_t i=0;i<nodes_out.Dim();i++) if(nodes_out[i]->Depth()==level   || level==-1) setup_data.nodes_out.push_back(nodes_out[i]);
+    for(size_t i=0;i<nodes_in .Dim();i++) if((nodes_in [i]->Depth()==level   || level==-1) && nodes_in [i]->pt_cnt[1]) setup_data.nodes_in .push_back(nodes_in [i]);
+    for(size_t i=0;i<nodes_out.Dim();i++) if((nodes_out[i]->Depth()==level   || level==-1) && nodes_out[i]->pt_cnt[1]) setup_data.nodes_out.push_back(nodes_out[i]);
   }
 
   std::vector<void*>& nodes_in =setup_data.nodes_in ;

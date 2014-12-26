@@ -901,119 +901,225 @@ void laplace_poten(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_c
 
 
 // Laplace double layer potential.
-template <class T>
-void laplace_dbl_poten(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
-#ifndef __MIC__
-  Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(19*dof));
-#endif
+template <class Real_t, class Vec_t=Real_t, Vec_t (*RINV_INTRIN)(Vec_t)=rinv_intrin0<Vec_t> >
+void laplace_dbl_uKernel(Matrix<Real_t>& src_coord, Matrix<Real_t>& src_value, Matrix<Real_t>& trg_coord, Matrix<Real_t>& trg_value){
+  #define SRC_BLK 500
+  size_t VecLen=sizeof(Vec_t)/sizeof(Real_t);
 
-  const T OOFP = -1.0/(4.0*const_pi<T>());
-  for(int t=0;t<trg_cnt;t++){
-    for(int i=0;i<dof;i++){
-      T p=0;
-      for(int s=0;s<src_cnt;s++){
-        T dX_reg=r_trg[3*t  ]-r_src[3*s  ];
-        T dY_reg=r_trg[3*t+1]-r_src[3*s+1];
-        T dZ_reg=r_trg[3*t+2]-r_src[3*s+2];
-        T invR = (dX_reg*dX_reg+dY_reg*dY_reg+dZ_reg*dZ_reg);
-        if (invR!=0) invR = 1.0/sqrt(invR);
-        p = v_src[(s*dof+i)*4+3]*invR*invR*invR;
-        k_out[t*dof+i] += p*OOFP*( dX_reg*v_src[(s*dof+i)*4+0] +
-                                   dY_reg*v_src[(s*dof+i)*4+1] +
-                                   dZ_reg*v_src[(s*dof+i)*4+2] );
+  //// Number of newton iterations
+  size_t NWTN_ITER=0;
+  if(RINV_INTRIN==rinv_intrin0<Vec_t,Real_t>) NWTN_ITER=0;
+  if(RINV_INTRIN==rinv_intrin1<Vec_t,Real_t>) NWTN_ITER=1;
+  if(RINV_INTRIN==rinv_intrin2<Vec_t,Real_t>) NWTN_ITER=2;
+  if(RINV_INTRIN==rinv_intrin3<Vec_t,Real_t>) NWTN_ITER=3;
+
+  Real_t nwtn_scal=1; // scaling factor for newton iterations
+  for(int i=0;i<NWTN_ITER;i++){
+    nwtn_scal=2*nwtn_scal*nwtn_scal*nwtn_scal;
+  }
+  const Real_t OOFP = -1.0/(4*nwtn_scal*nwtn_scal*nwtn_scal*const_pi<Real_t>());
+
+  size_t src_cnt_=src_coord.Dim(1);
+  size_t trg_cnt_=trg_coord.Dim(1);
+  for(size_t sblk=0;sblk<src_cnt_;sblk+=SRC_BLK){
+    size_t src_cnt=src_cnt_-sblk;
+    if(src_cnt>SRC_BLK) src_cnt=SRC_BLK;
+    for(size_t t=0;t<trg_cnt_;t+=VecLen){
+      Vec_t tx=load_intrin<Vec_t>(&trg_coord[0][t]);
+      Vec_t ty=load_intrin<Vec_t>(&trg_coord[1][t]);
+      Vec_t tz=load_intrin<Vec_t>(&trg_coord[2][t]);
+      Vec_t tv=zero_intrin<Vec_t>();
+      for(size_t s=sblk;s<sblk+src_cnt;s++){
+        Vec_t dx=sub_intrin(tx,bcast_intrin<Vec_t>(&src_coord[0][s]));
+        Vec_t dy=sub_intrin(ty,bcast_intrin<Vec_t>(&src_coord[1][s]));
+        Vec_t dz=sub_intrin(tz,bcast_intrin<Vec_t>(&src_coord[2][s]));
+        Vec_t sn0=             bcast_intrin<Vec_t>(&src_value[0][s]) ;
+        Vec_t sn1=             bcast_intrin<Vec_t>(&src_value[1][s]) ;
+        Vec_t sn2=             bcast_intrin<Vec_t>(&src_value[2][s]) ;
+        Vec_t sv=              bcast_intrin<Vec_t>(&src_value[3][s]) ;
+
+        Vec_t r2=        mul_intrin(dx,dx) ;
+        r2=add_intrin(r2,mul_intrin(dy,dy));
+        r2=add_intrin(r2,mul_intrin(dz,dz));
+
+        Vec_t rinv=RINV_INTRIN(r2);
+        Vec_t r3inv=mul_intrin(mul_intrin(rinv,rinv),rinv);
+
+        Vec_t rdotn=            mul_intrin(sn0,dx);
+        rdotn=add_intrin(rdotn, mul_intrin(sn1,dy));
+        rdotn=add_intrin(rdotn, mul_intrin(sn2,dz));
+
+        sv=mul_intrin(sv,rdotn);
+        tv=add_intrin(tv,mul_intrin(r3inv,sv));
       }
+      Vec_t oofp=set_intrin<Vec_t,Real_t>(OOFP);
+      tv=add_intrin(mul_intrin(tv,oofp),load_intrin<Vec_t>(&trg_value[0][t]));
+      store_intrin(&trg_value[0][t],tv);
     }
   }
+
+  { // Add FLOPS
+    #ifndef __MIC__
+    Profile::Add_FLOP((long long)trg_cnt_*(long long)src_cnt_*(20+4*(NWTN_ITER)));
+    #endif
+  }
+  #undef SRC_BLK
 }
 
-// Laplace grdient kernel.
-template <class T>
-void laplace_grad(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
-#ifndef __MIC__
-  Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(10+12*dof));
-#endif
+template <class T, int newton_iter>
+void laplace_dbl_poten(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* v_trg, mem::MemoryManager* mem_mgr){
+  #define LAP_KER_NWTN(nwtn) if(newton_iter==nwtn) \
+        generic_kernel<Real_t, 4, 1, laplace_dbl_uKernel<Real_t,Vec_t, rinv_intrin##nwtn<Vec_t,Real_t> > > \
+            ((Real_t*)r_src, src_cnt, (Real_t*)v_src, dof, (Real_t*)r_trg, trg_cnt, (Real_t*)v_trg, mem_mgr)
+  #define LAPLACE_KERNEL LAP_KER_NWTN(0); LAP_KER_NWTN(1); LAP_KER_NWTN(2); LAP_KER_NWTN(3);
 
-  const T OOFP = -1.0/(4.0*const_pi<T>());
-  if(dof==1){
-    for(int t=0;t<trg_cnt;t++){
-      T p=0;
-      for(int s=0;s<src_cnt;s++){
-        T dX_reg=r_trg[3*t  ]-r_src[3*s  ];
-        T dY_reg=r_trg[3*t+1]-r_src[3*s+1];
-        T dZ_reg=r_trg[3*t+2]-r_src[3*s+2];
-        T invR = (dX_reg*dX_reg+dY_reg*dY_reg+dZ_reg*dZ_reg);
-        if (invR!=0) invR = 1.0/sqrt(invR);
-        p = v_src[s]*invR*invR*invR;
-        k_out[(t)*3+0] += p*OOFP*dX_reg;
-        k_out[(t)*3+1] += p*OOFP*dY_reg;
-        k_out[(t)*3+2] += p*OOFP*dZ_reg;
-      }
-    }
-  }else if(dof==2){
-    for(int t=0;t<trg_cnt;t++){
-      T p=0;
-      for(int s=0;s<src_cnt;s++){
-        T dX_reg=r_trg[3*t  ]-r_src[3*s  ];
-        T dY_reg=r_trg[3*t+1]-r_src[3*s+1];
-        T dZ_reg=r_trg[3*t+2]-r_src[3*s+2];
-        T invR = (dX_reg*dX_reg+dY_reg*dY_reg+dZ_reg*dZ_reg);
-        if (invR!=0) invR = 1.0/sqrt(invR);
-
-        p = v_src[s*dof+0]*invR*invR*invR;
-        k_out[(t*dof+0)*3+0] += p*OOFP*dX_reg;
-        k_out[(t*dof+0)*3+1] += p*OOFP*dY_reg;
-        k_out[(t*dof+0)*3+2] += p*OOFP*dZ_reg;
-
-        p = v_src[s*dof+1]*invR*invR*invR;
-        k_out[(t*dof+1)*3+0] += p*OOFP*dX_reg;
-        k_out[(t*dof+1)*3+1] += p*OOFP*dY_reg;
-        k_out[(t*dof+1)*3+2] += p*OOFP*dZ_reg;
-      }
-    }
-  }else if(dof==3){
-    for(int t=0;t<trg_cnt;t++){
-      T p=0;
-      for(int s=0;s<src_cnt;s++){
-        T dX_reg=r_trg[3*t  ]-r_src[3*s  ];
-        T dY_reg=r_trg[3*t+1]-r_src[3*s+1];
-        T dZ_reg=r_trg[3*t+2]-r_src[3*s+2];
-        T invR = (dX_reg*dX_reg+dY_reg*dY_reg+dZ_reg*dZ_reg);
-        if (invR!=0) invR = 1.0/sqrt(invR);
-
-        p = v_src[s*dof+0]*invR*invR*invR;
-        k_out[(t*dof+0)*3+0] += p*OOFP*dX_reg;
-        k_out[(t*dof+0)*3+1] += p*OOFP*dY_reg;
-        k_out[(t*dof+0)*3+2] += p*OOFP*dZ_reg;
-
-        p = v_src[s*dof+1]*invR*invR*invR;
-        k_out[(t*dof+1)*3+0] += p*OOFP*dX_reg;
-        k_out[(t*dof+1)*3+1] += p*OOFP*dY_reg;
-        k_out[(t*dof+1)*3+2] += p*OOFP*dZ_reg;
-
-        p = v_src[s*dof+2]*invR*invR*invR;
-        k_out[(t*dof+2)*3+0] += p*OOFP*dX_reg;
-        k_out[(t*dof+2)*3+1] += p*OOFP*dY_reg;
-        k_out[(t*dof+2)*3+2] += p*OOFP*dZ_reg;
-      }
-    }
+  if(mem::TypeTraits<T>::ID()==mem::TypeTraits<float>::ID()){
+    typedef float Real_t;
+    #if defined __MIC__
+      #define Vec_t Real_t
+    #elif defined __AVX__
+      #define Vec_t __m256
+    #elif defined __SSE3__
+      #define Vec_t __m128
+    #else
+      #define Vec_t Real_t
+    #endif
+    LAPLACE_KERNEL;
+    #undef Vec_t
+  }else if(mem::TypeTraits<T>::ID()==mem::TypeTraits<double>::ID()){
+    typedef double Real_t;
+    #if defined __MIC__
+      #define Vec_t Real_t
+    #elif defined __AVX__
+      #define Vec_t __m256d
+    #elif defined __SSE3__
+      #define Vec_t __m128d
+    #else
+      #define Vec_t Real_t
+    #endif
+    LAPLACE_KERNEL;
+    #undef Vec_t
   }else{
-    for(int t=0;t<trg_cnt;t++){
-      for(int i=0;i<dof;i++){
-        T p=0;
-        for(int s=0;s<src_cnt;s++){
-          T dX_reg=r_trg[3*t  ]-r_src[3*s  ];
-          T dY_reg=r_trg[3*t+1]-r_src[3*s+1];
-          T dZ_reg=r_trg[3*t+2]-r_src[3*s+2];
-          T invR = (dX_reg*dX_reg+dY_reg*dY_reg+dZ_reg*dZ_reg);
-          if (invR!=0) invR = 1.0/sqrt(invR);
-          p = v_src[s*dof+i]*invR*invR*invR;
-          k_out[(t*dof+i)*3+0] += p*OOFP*dX_reg;
-          k_out[(t*dof+i)*3+1] += p*OOFP*dY_reg;
-          k_out[(t*dof+i)*3+2] += p*OOFP*dZ_reg;
-        }
+    typedef T Real_t;
+    #define Vec_t Real_t
+    LAPLACE_KERNEL;
+    #undef Vec_t
+  }
+
+  #undef LAP_KER_NWTN
+  #undef LAPLACE_KERNEL
+}
+
+
+// Laplace grdient kernel.
+template <class Real_t, class Vec_t=Real_t, Vec_t (*RINV_INTRIN)(Vec_t)=rinv_intrin0<Vec_t> >
+void laplace_grad_uKernel(Matrix<Real_t>& src_coord, Matrix<Real_t>& src_value, Matrix<Real_t>& trg_coord, Matrix<Real_t>& trg_value){
+  #define SRC_BLK 500
+  size_t VecLen=sizeof(Vec_t)/sizeof(Real_t);
+
+  //// Number of newton iterations
+  size_t NWTN_ITER=0;
+  if(RINV_INTRIN==rinv_intrin0<Vec_t,Real_t>) NWTN_ITER=0;
+  if(RINV_INTRIN==rinv_intrin1<Vec_t,Real_t>) NWTN_ITER=1;
+  if(RINV_INTRIN==rinv_intrin2<Vec_t,Real_t>) NWTN_ITER=2;
+  if(RINV_INTRIN==rinv_intrin3<Vec_t,Real_t>) NWTN_ITER=3;
+
+  Real_t nwtn_scal=1; // scaling factor for newton iterations
+  for(int i=0;i<NWTN_ITER;i++){
+    nwtn_scal=2*nwtn_scal*nwtn_scal*nwtn_scal;
+  }
+  const Real_t OOFP = -1.0/(4*nwtn_scal*nwtn_scal*nwtn_scal*const_pi<Real_t>());
+
+  size_t src_cnt_=src_coord.Dim(1);
+  size_t trg_cnt_=trg_coord.Dim(1);
+  for(size_t sblk=0;sblk<src_cnt_;sblk+=SRC_BLK){
+    size_t src_cnt=src_cnt_-sblk;
+    if(src_cnt>SRC_BLK) src_cnt=SRC_BLK;
+    for(size_t t=0;t<trg_cnt_;t+=VecLen){
+      Vec_t tx=load_intrin<Vec_t>(&trg_coord[0][t]);
+      Vec_t ty=load_intrin<Vec_t>(&trg_coord[1][t]);
+      Vec_t tz=load_intrin<Vec_t>(&trg_coord[2][t]);
+      Vec_t tv0=zero_intrin<Vec_t>();
+      Vec_t tv1=zero_intrin<Vec_t>();
+      Vec_t tv2=zero_intrin<Vec_t>();
+      for(size_t s=sblk;s<sblk+src_cnt;s++){
+        Vec_t dx=sub_intrin(tx,bcast_intrin<Vec_t>(&src_coord[0][s]));
+        Vec_t dy=sub_intrin(ty,bcast_intrin<Vec_t>(&src_coord[1][s]));
+        Vec_t dz=sub_intrin(tz,bcast_intrin<Vec_t>(&src_coord[2][s]));
+        Vec_t sv=              bcast_intrin<Vec_t>(&src_value[0][s]) ;
+
+        Vec_t r2=        mul_intrin(dx,dx) ;
+        r2=add_intrin(r2,mul_intrin(dy,dy));
+        r2=add_intrin(r2,mul_intrin(dz,dz));
+
+        Vec_t rinv=RINV_INTRIN(r2);
+        Vec_t r3inv=mul_intrin(mul_intrin(rinv,rinv),rinv);
+
+        sv=mul_intrin(sv,r3inv);
+        tv0=add_intrin(tv0,mul_intrin(sv,dx));
+        tv1=add_intrin(tv1,mul_intrin(sv,dy));
+        tv2=add_intrin(tv2,mul_intrin(sv,dz));
       }
+      Vec_t oofp=set_intrin<Vec_t,Real_t>(OOFP);
+      tv0=add_intrin(mul_intrin(tv0,oofp),load_intrin<Vec_t>(&trg_value[0][t]));
+      tv1=add_intrin(mul_intrin(tv1,oofp),load_intrin<Vec_t>(&trg_value[1][t]));
+      tv2=add_intrin(mul_intrin(tv2,oofp),load_intrin<Vec_t>(&trg_value[2][t]));
+      store_intrin(&trg_value[0][t],tv0);
+      store_intrin(&trg_value[1][t],tv1);
+      store_intrin(&trg_value[2][t],tv2);
     }
   }
+
+  { // Add FLOPS
+    #ifndef __MIC__
+    Profile::Add_FLOP((long long)trg_cnt_*(long long)src_cnt_*(19+4*(NWTN_ITER)));
+    #endif
+  }
+  #undef SRC_BLK
+}
+
+template <class T, int newton_iter>
+void laplace_grad(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* v_trg, mem::MemoryManager* mem_mgr){
+  #define LAP_KER_NWTN(nwtn) if(newton_iter==nwtn) \
+        generic_kernel<Real_t, 1, 3, laplace_grad_uKernel<Real_t,Vec_t, rinv_intrin##nwtn<Vec_t,Real_t> > > \
+            ((Real_t*)r_src, src_cnt, (Real_t*)v_src, dof, (Real_t*)r_trg, trg_cnt, (Real_t*)v_trg, mem_mgr)
+  #define LAPLACE_KERNEL LAP_KER_NWTN(0); LAP_KER_NWTN(1); LAP_KER_NWTN(2); LAP_KER_NWTN(3);
+
+  if(mem::TypeTraits<T>::ID()==mem::TypeTraits<float>::ID()){
+    typedef float Real_t;
+    #if defined __MIC__
+      #define Vec_t Real_t
+    #elif defined __AVX__
+      #define Vec_t __m256
+    #elif defined __SSE3__
+      #define Vec_t __m128
+    #else
+      #define Vec_t Real_t
+    #endif
+    LAPLACE_KERNEL;
+    #undef Vec_t
+  }else if(mem::TypeTraits<T>::ID()==mem::TypeTraits<double>::ID()){
+    typedef double Real_t;
+    #if defined __MIC__
+      #define Vec_t Real_t
+    #elif defined __AVX__
+      #define Vec_t __m256d
+    #elif defined __SSE3__
+      #define Vec_t __m128d
+    #else
+      #define Vec_t Real_t
+    #endif
+    LAPLACE_KERNEL;
+    #undef Vec_t
+  }else{
+    typedef T Real_t;
+    #define Vec_t Real_t
+    LAPLACE_KERNEL;
+    #undef Vec_t
+  }
+
+  #undef LAP_KER_NWTN
+  #undef LAPLACE_KERNEL
 }
 
 

@@ -23,11 +23,8 @@ namespace pvfmm{
 long long Profile::Add_FLOP(long long inc){
   long long orig_val=FLOP;
   #if __PROFILE__ >= 0
-  #pragma omp critical (FLOP)
-  {
-    orig_val=FLOP;
-    FLOP+=inc;
-  }
+  #pragma omp atomic update
+  FLOP+=inc;
   #endif
   return orig_val;
 }
@@ -35,13 +32,10 @@ long long Profile::Add_FLOP(long long inc){
 long long Profile::Add_MEM(long long inc){
   long long orig_val=MEM;
   #if __PROFILE__ >= 0
-  #pragma omp critical (MEM)
-  {
-    orig_val=MEM;
-    MEM+=inc;
-    for(size_t i=0;i<max_mem.size();i++){
-      if(max_mem[i]<MEM) max_mem[i]=MEM;
-    }
+  #pragma omp atomic update
+  MEM+=inc;
+  for(size_t i=0;i<max_mem.size();i++){
+    if(max_mem[i]<MEM) max_mem[i]=MEM;
   }
   #endif
   return orig_val;
