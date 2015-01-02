@@ -24,6 +24,7 @@ namespace DeviceWrapper{
 
   // CUDA functions
   inline void* host_malloc_cuda(size_t size){
+    if(!size) return NULL;
     return malloc(size);
     //void* p;
     //cudaError_t error = cudaHostAlloc(&p, size, cudaHostAllocPortable);
@@ -47,10 +48,13 @@ namespace DeviceWrapper{
     if (error != cudaSuccess)
       std::cout<<cudaGetErrorString(error)<< '\n';
     assert(error == cudaSuccess);
-    error = cudaMalloc((void**)&dev_ptr, len);
+    if(len) error = cudaMalloc((void**)&dev_ptr, len);
     if (error != cudaSuccess)
       std::cout<<cudaGetErrorString(error)<< '\n';
     assert(error == cudaSuccess);
+#else
+    UNUSED(dev_handle);
+    UNUSED(len);
 #endif
     return (uintptr_t)dev_ptr;
   }
@@ -65,6 +69,9 @@ namespace DeviceWrapper{
     assert(error == cudaSuccess);
     error = cudaFree((char*)dev_ptr);
     assert(error == cudaSuccess);
+#else
+    UNUSED(dev_handle);
+    UNUSED(dev_ptr);
 #endif
   }
 
@@ -75,6 +82,10 @@ namespace DeviceWrapper{
     error = cudaMemcpyAsync(dev_ptr, host_ptr, len, cudaMemcpyHostToDevice, *stream);
     if (error != cudaSuccess) std::cout<<cudaGetErrorString(error)<< '\n';
     assert(error == cudaSuccess);
+    #else
+    UNUSED(host_ptr);
+    UNUSED(dev_ptr);
+    UNUSED(len);
     #endif
     return 0;
   }
@@ -88,6 +99,9 @@ namespace DeviceWrapper{
     if (error != cudaSuccess)
       std::cout<<cudaGetErrorString(error)<< '\n';
     assert(error == cudaSuccess);
+    #else
+    UNUSED(host_ptr);
+    UNUSED(len);
     #endif
     return 0;
   }
@@ -104,6 +118,8 @@ namespace DeviceWrapper{
     uintptr_t dev_ptr=(uintptr_t)NULL;
     #ifdef __INTEL_OFFLOAD
     #pragma offload target(mic:0) nocopy( dev_handle: length(len) ALLOC) out(dev_ptr)
+    #else
+    UNUSED(len);
     #endif
     {dev_ptr=(uintptr_t)dev_handle;}
     return dev_ptr;
@@ -115,6 +131,9 @@ namespace DeviceWrapper{
     {
       assert(dev_ptr==(uintptr_t)dev_handle);
     }
+    #else
+    UNUSED(dev_handle);
+    UNUSED(dev_ptr);
     #endif
   }
 
@@ -138,6 +157,11 @@ namespace DeviceWrapper{
       }
     }
     return lock_idx;
+    #else
+    UNUSED(host_ptr);
+    UNUSED(dev_handle);
+    UNUSED(dev_ptr);
+    UNUSED(len);
     #endif
     return -1;
   }
@@ -162,6 +186,11 @@ namespace DeviceWrapper{
       }
     }
     return lock_idx;
+    #else
+    UNUSED(host_ptr);
+    UNUSED(dev_handle);
+    UNUSED(dev_ptr);
+    UNUSED(len);
     #endif
     return -1;
   }
@@ -169,6 +198,8 @@ namespace DeviceWrapper{
   inline void wait_mic(int lock_idx){
     #ifdef __INTEL_OFFLOAD
     MIC_Lock::wait_lock(lock_idx);
+    #else
+    UNUSED(lock_idx);
     #endif
   }
 
@@ -177,6 +208,7 @@ namespace DeviceWrapper{
   // Wrapper functions
 
   inline void* host_malloc(size_t size){
+    if(!size) return NULL;
     #if defined(PVFMM_HAVE_CUDA)
     return host_malloc_cuda(size);
     #else
@@ -198,6 +230,7 @@ namespace DeviceWrapper{
     #elif defined(PVFMM_HAVE_CUDA)
     return alloc_device_cuda(dev_handle,len);
     #else
+    UNUSED(len);
     uintptr_t dev_ptr=(uintptr_t)NULL;
     {dev_ptr=(uintptr_t)dev_handle;}
     return dev_ptr;
@@ -210,7 +243,8 @@ namespace DeviceWrapper{
     #elif defined(PVFMM_HAVE_CUDA)
     free_device_cuda(dev_handle,dev_ptr);
     #else
-    ;
+    UNUSED(dev_handle);
+    UNUSED(dev_ptr);
     #endif
   }
 
@@ -240,7 +274,10 @@ namespace DeviceWrapper{
     #elif defined(PVFMM_HAVE_CUDA)
     lock_idx=device2host_cuda((char*)dev_ptr, host_ptr, len);
     #else
-    ;
+    UNUSED(dev_handle);
+    UNUSED(host_ptr);
+    UNUSED(dev_ptr);
+    UNUSED(len);
     #endif
     return lock_idx;
   }
@@ -251,7 +288,7 @@ namespace DeviceWrapper{
     #elif defined(PVFMM_HAVE_CUDA)
     CUDA_Lock::wait();
     #else
-    ;
+    UNUSED(lock_idx);
     #endif
   }
 
@@ -317,10 +354,10 @@ namespace DeviceWrapper{
   }
 
   inline void MIC_Lock::release_lock(int idx){ // Only call from inside an offload section
-    #ifdef __INTEL_OFFLOAD
-    #ifdef __MIC__
+    #if defined(__INTEL_OFFLOAD) && defined(__MIC__)
     if(idx>=0) lock_vec_[idx]=0;
-    #endif
+    #else
+    UNUSED(idx);
     #endif
   }
 
@@ -340,6 +377,8 @@ namespace DeviceWrapper{
     #pragma offload_wait target(mic:0) wait(&lock_vec[idx])
     lock_vec[idx]=0;
     #endif
+    #else
+    UNUSED(idx);
     #endif
   }
 

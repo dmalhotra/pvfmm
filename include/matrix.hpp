@@ -124,6 +124,9 @@ class Matrix{
 #endif
 };
 
+template <class Y>
+std::ostream& operator<<(std::ostream& output, const Matrix<Y>& M);
+
 
 /**
  * /brief P=[e(p1)*s1 e(p2)*s2 ... e(pn)*sn],
@@ -162,6 +165,12 @@ class Permutation{
   Vector<PERM_INT_T> perm;
   Vector<T> scal;
 };
+
+template <class T>
+Matrix<T> operator*(const Matrix<T>& M, const Permutation<T>& P);
+
+template <class Y>
+std::ostream& operator<<(std::ostream& output, const Permutation<Y>& P);
 
 }//end namespace
 #ifdef __INTEL_OFFLOAD

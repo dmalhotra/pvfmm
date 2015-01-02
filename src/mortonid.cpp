@@ -12,7 +12,7 @@
 
 namespace pvfmm{
 
-void MortonId::NbrList(std::vector<MortonId>& nbrs, unsigned char level, int periodic) const{
+void MortonId::NbrList(std::vector<MortonId>& nbrs, uint8_t level, int periodic) const{
   nbrs.clear();
   static int dim=3;
   static int nbr_cnt=(int)(pow(3.0,dim)+0.5);
@@ -67,7 +67,7 @@ std::vector<MortonId> MortonId::Children() const{
     child[i].x=pX+mask*((i/1)%2);
     child[i].y=pY+mask*((i/2)%2);
     child[i].z=pZ+mask*((i/4)%2);
-    child[i].depth=depth+1;
+    child[i].depth=(uint8_t)(depth+1);
   }
   return child;
 }

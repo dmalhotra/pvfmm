@@ -39,13 +39,13 @@ class MortonId{
 
   MortonId();
 
-  MortonId(MortonId m, unsigned char depth);
+  MortonId(MortonId m, uint8_t depth);
 
   template <class T>
-  MortonId(T x_f,T y_f, T z_f, unsigned char depth=MAX_DEPTH);
+  MortonId(T x_f,T y_f, T z_f, uint8_t depth=MAX_DEPTH);
 
   template <class T>
-  MortonId(T* coord, unsigned char depth=MAX_DEPTH);
+  MortonId(T* coord, uint8_t depth=MAX_DEPTH);
 
   unsigned int GetDepth() const;
 
@@ -54,14 +54,14 @@ class MortonId{
 
   MortonId NextId() const;
 
-  MortonId getAncestor(unsigned char ancestor_level) const;
+  MortonId getAncestor(uint8_t ancestor_level) const;
 
   /**
    * \brief Returns the deepest first descendant.
    */
-  MortonId getDFD(unsigned char level=MAX_DEPTH) const;
+  MortonId getDFD(uint8_t level=MAX_DEPTH) const;
 
-  void NbrList(std::vector<MortonId>& nbrs,unsigned char level, int periodic) const;
+  void NbrList(std::vector<MortonId>& nbrs,uint8_t level, int periodic) const;
 
   std::vector<MortonId> Children() const;
 
@@ -84,7 +84,7 @@ class MortonId{
  private:
 
   UINT_T x,y,z;
-  unsigned char depth;
+  uint8_t depth;
 
 };
 

@@ -44,7 +44,7 @@ Kernel<T>::Kernel(Ker_t poten, Ker_t dbl_poten, const char* name, int dim_, std:
   k_l2l=NULL;
   k_l2t=NULL;
 
-  homogen=true;
+  scale_invar=true;
   src_scal.Resize(ker_dim[0]); src_scal.SetZero();
   trg_scal.Resize(ker_dim[1]); trg_scal.SetZero();
   perm_vec.Resize(Perm_Count);
@@ -116,7 +116,7 @@ void Kernel<T>::Initialize(bool verbose) const{
         M_scal[0][i]=log(s)/log(2.0);
         T err=sqrt(0.5*(dot22/dot11)/(s*s)-0.5);
         if(err>eps_){
-          homogen=false;
+          scale_invar=false;
           M_scal[0][i]=0.0;
         }
         assert(M_scal[0][i]>=0.0); // Kernel function must decay
@@ -125,7 +125,7 @@ void Kernel<T>::Initialize(bool verbose) const{
 
     src_scal.Resize(ker_dim[0]); src_scal.SetZero();
     trg_scal.Resize(ker_dim[1]); trg_scal.SetZero();
-    if(homogen){
+    if(scale_invar){
       Matrix<T> b(ker_dim[0]*ker_dim[1]+1,1); b.SetZero();
       mem::memcopy(&b[0][0],&M_scal[0][0],ker_dim[0]*ker_dim[1]*sizeof(T));
 
@@ -152,13 +152,13 @@ void Kernel<T>::Initialize(bool verbose) const{
       for(size_t i1=0;i1<ker_dim[1];i1++){
         if(M_scal[i0][i1]>=0){
           if(fabs(src_scal[i0]+trg_scal[i1]-M_scal[i0][i1])>eps_){
-            homogen=false;
+            scale_invar=false;
           }
         }
       }
     }
 
-    if(!homogen){
+    if(!scale_invar){
       src_scal.SetZero();
       trg_scal.SetZero();
       //std::cout<<ker_name<<" not-scale-invariant\n";
@@ -332,7 +332,6 @@ void Kernel<T>::Initialize(bool verbose) const{
       }
 
       std::vector<Permutation<long long> > P1vec, P2vec;
-      int dbg_cnt=0;
       { // P1vec
         Matrix<long long>& Pmat=P1;
         std::vector<Permutation<long long> >& Pvec=P1vec;
@@ -534,8 +533,8 @@ void Kernel<T>::Initialize(bool verbose) const{
     std::cout<<"Kernel Name    : "<<ker_name<<'\n';
     std::cout<<"Precision      : "<<(double)eps<<'\n';
     std::cout<<"Symmetry       : "<<(perm_vec.Dim()>0?"yes":"no")<<'\n';
-    std::cout<<"Scale Invariant: "<<(homogen?"yes":"no")<<'\n';
-    if(homogen && ker_dim[0]*ker_dim[1]>0){
+    std::cout<<"Scale Invariant: "<<(scale_invar?"yes":"no")<<'\n';
+    if(scale_invar && ker_dim[0]*ker_dim[1]>0){
       std::cout<<"Scaling Matrix :\n";
       Matrix<T> Src(ker_dim[0],1);
       Matrix<T> Trg(1,ker_dim[1]);
@@ -602,7 +601,14 @@ void Kernel<T>::Initialize(bool verbose) const{
         Matrix<T> M_e2c(n_equiv*ker_dim[0],n_check*ker_dim[1]);
         BuildMatrix(&equiv_surf[0], n_equiv,
                     &check_surf[0], n_check, &(M_e2c[0][0]));
-        Matrix<T> M_c2e=M_e2c.pinv();
+        Matrix<T> M_c2e0, M_c2e1;
+        {
+          Matrix<T> U,S,V;
+          M_e2c.SVD(U,S,V);
+          for(size_t i=0;i<S.Dim(0);i++) S[i][i]=(S[i][i]>1e-13?1.0/S[i][i]:0.0);
+          M_c2e0=V.Transpose()*S;
+          M_c2e1=U.Transpose();
+        }
 
         Matrix<T> M_e2t(n_equiv*ker_dim[0],n_trg*ker_dim[1]);
         BuildMatrix(&equiv_surf[0], n_equiv,
@@ -612,7 +618,7 @@ void Kernel<T>::Initialize(bool verbose) const{
         BuildMatrix( &src_coord[0], n_src,
                      &trg_coord[0], n_trg  , &(M_s2t[0][0]));
 
-        Matrix<T> M=M_s2c*M_c2e*M_e2t-M_s2t;
+        Matrix<T> M=(M_s2c*M_c2e0)*(M_c2e1*M_e2t)-M_s2t;
         T max_error=0, max_value=0;
         for(size_t i=0;i<M.Dim(0);i++)
         for(size_t j=0;j<M.Dim(1);j++){
@@ -621,7 +627,7 @@ void Kernel<T>::Initialize(bool verbose) const{
         }
 
         std::cout<<(double)(max_error/max_value)<<' ';
-        if(homogen) break;
+        if(scale_invar) break;
       }
       std::cout<<"\n";
     }
@@ -807,10 +813,10 @@ void laplace_poten_uKernel(Matrix<Real_t>& src_coord, Matrix<Real_t>& src_value,
 
   //// Number of newton iterations
   size_t NWTN_ITER=0;
-  if(RINV_INTRIN==rinv_intrin0<Vec_t,Real_t>) NWTN_ITER=0;
-  if(RINV_INTRIN==rinv_intrin1<Vec_t,Real_t>) NWTN_ITER=1;
-  if(RINV_INTRIN==rinv_intrin2<Vec_t,Real_t>) NWTN_ITER=2;
-  if(RINV_INTRIN==rinv_intrin3<Vec_t,Real_t>) NWTN_ITER=3;
+  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin0<Vec_t,Real_t>) NWTN_ITER=0;
+  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin1<Vec_t,Real_t>) NWTN_ITER=1;
+  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin2<Vec_t,Real_t>) NWTN_ITER=2;
+  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin3<Vec_t,Real_t>) NWTN_ITER=3;
 
   Real_t nwtn_scal=1; // scaling factor for newton iterations
   for(int i=0;i<NWTN_ITER;i++){
@@ -908,10 +914,10 @@ void laplace_dbl_uKernel(Matrix<Real_t>& src_coord, Matrix<Real_t>& src_value, M
 
   //// Number of newton iterations
   size_t NWTN_ITER=0;
-  if(RINV_INTRIN==rinv_intrin0<Vec_t,Real_t>) NWTN_ITER=0;
-  if(RINV_INTRIN==rinv_intrin1<Vec_t,Real_t>) NWTN_ITER=1;
-  if(RINV_INTRIN==rinv_intrin2<Vec_t,Real_t>) NWTN_ITER=2;
-  if(RINV_INTRIN==rinv_intrin3<Vec_t,Real_t>) NWTN_ITER=3;
+  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin0<Vec_t,Real_t>) NWTN_ITER=0;
+  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin1<Vec_t,Real_t>) NWTN_ITER=1;
+  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin2<Vec_t,Real_t>) NWTN_ITER=2;
+  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin3<Vec_t,Real_t>) NWTN_ITER=3;
 
   Real_t nwtn_scal=1; // scaling factor for newton iterations
   for(int i=0;i<NWTN_ITER;i++){
@@ -1019,10 +1025,10 @@ void laplace_grad_uKernel(Matrix<Real_t>& src_coord, Matrix<Real_t>& src_value, 
 
   //// Number of newton iterations
   size_t NWTN_ITER=0;
-  if(RINV_INTRIN==rinv_intrin0<Vec_t,Real_t>) NWTN_ITER=0;
-  if(RINV_INTRIN==rinv_intrin1<Vec_t,Real_t>) NWTN_ITER=1;
-  if(RINV_INTRIN==rinv_intrin2<Vec_t,Real_t>) NWTN_ITER=2;
-  if(RINV_INTRIN==rinv_intrin3<Vec_t,Real_t>) NWTN_ITER=3;
+  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin0<Vec_t,Real_t>) NWTN_ITER=0;
+  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin1<Vec_t,Real_t>) NWTN_ITER=1;
+  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin2<Vec_t,Real_t>) NWTN_ITER=2;
+  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin3<Vec_t,Real_t>) NWTN_ITER=3;
 
   Real_t nwtn_scal=1; // scaling factor for newton iterations
   for(int i=0;i<NWTN_ITER;i++){

@@ -79,7 +79,7 @@ void fmm_test(size_t N, int mult_order, MPI_Comm comm){
   pvfmm::mem::MemoryManager mem_mgr(10000000);
 
   // Construct tree.
-  size_t max_pts=300;
+  size_t max_pts=600;
   pvfmm::PtFMM_Tree* tree=PtFMM_CreateTree(src_coord, src_value, surf_coord, surf_value, trg_coord, comm, max_pts, pvfmm::FreeSpace);
 
   // Load matrices.

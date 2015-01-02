@@ -292,7 +292,7 @@ Permutation<Real_t> cheb_perm(size_t q, size_t p_indx, const Permutation<Real_t>
 
 template <class FMMNode>
 Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_Type type, Perm_Type perm_indx){
-  int dim=3; //Only supporting 3D
+  //int dim=3; //Only supporting 3D
   Real_t eps=1e-10;
 
   //Check if the matrix already exists.
@@ -307,14 +307,6 @@ Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_Type t
   Permutation<Real_t> P;
   switch (type){
 
-    case UC2UE_Type:
-    {
-      break;
-    }
-    case DC2DE_Type:
-    {
-      break;
-    }
     case S2U_Type:
     {
       Vector<Real_t> scal_exp;
@@ -323,7 +315,7 @@ Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_Type t
         ker_perm=this->kernel->k_s2m->perm_vec[0     +p_indx];
         scal_exp=this->kernel->k_s2m->src_scal;
         for(size_t i=0;i<scal_exp.Dim();i++) scal_exp[i]-=COORD_DIM;
-        P=cheb_perm(q, p_indx, ker_perm, (this->Homogen()?&scal_exp:NULL));
+        P=cheb_perm(q, p_indx, ker_perm, (this->ScaleInvar()?&scal_exp:NULL));
       }else{
         ker_perm=this->kernel->k_m2m->perm_vec[0     +p_indx];
         scal_exp=this->kernel->k_m2m->src_scal;
@@ -332,8 +324,8 @@ Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_Type t
         // Check that target perm for the two kernels agree.
         Permutation<Real_t> ker_perm0=this->kernel->k_s2m->perm_vec[C_Perm+p_indx];
         Permutation<Real_t> ker_perm1=this->kernel->k_m2m->perm_vec[C_Perm+p_indx];
-        assert(ker_perm0.Dim()>0 && ker_perm0.Dim()==ker_perm1.Dim());
-        if(fabs(ker_perm0.scal[0]-ker_perm1.scal[0])>eps){
+        assert(ker_perm0.Dim()==ker_perm1.Dim());
+        if(ker_perm0.Dim()>0 && fabs(ker_perm0.scal[0]-ker_perm1.scal[0])>eps){
           for(size_t i=0;i<ker_perm0.Dim();i++){
             ker_perm0.scal[i]*=-1.0;
           }
@@ -346,29 +338,24 @@ Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_Type t
           assert(fabs(ker_perm0.scal[i]-ker_perm1.scal[i])<eps);
         }
 
+        Real_t s=0;
         // Check that target scaling for the two kernels agree.
         const Vector<Real_t>& scal_exp0=this->kernel->k_s2m->trg_scal;
         const Vector<Real_t>& scal_exp1=this->kernel->k_m2m->trg_scal;
         assert(scal_exp0.Dim()>0 && scal_exp0.Dim()==scal_exp1.Dim());
-        Real_t s=(scal_exp0[0]-scal_exp1[0]);
-        for(size_t i=1;i<scal_exp0.Dim();i++){
-          assert(fabs(s-(scal_exp0[i]-scal_exp1[i]))<eps);
-          // In general this is not necessary, but to allow this, we must
-          // also change src_scal accordingly.
+        if(scal_exp0.Dim()>0){
+          s=(scal_exp0[0]-scal_exp1[0]);
+          for(size_t i=1;i<scal_exp0.Dim();i++){
+            assert(fabs(s-(scal_exp0[i]-scal_exp1[i]))<eps);
+            // In general this is not necessary, but to allow this, we must
+            // also change src_scal accordingly.
+          }
         }
 
         // Apply the difference in scaling of the two kernels.
         for(size_t i=0;i<scal_exp.Dim();i++) scal_exp[i]+=s;
-        P=equiv_surf_perm(m, p_indx, ker_perm, (this->Homogen()?&scal_exp:NULL));
+        P=equiv_surf_perm(m, p_indx, ker_perm, (this->ScaleInvar()?&scal_exp:NULL));
       }
-      break;
-    }
-    case U2U_Type:
-    {
-      break;
-    }
-    case D2D_Type:
-    {
       break;
     }
     case D2T_Type:
@@ -376,13 +363,48 @@ Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_Type t
       Vector<Real_t> scal_exp;
       Permutation<Real_t> ker_perm;
       if(perm_indx<C_Perm){ // Source permutation
-        ker_perm=this->kernel->k_l2t->perm_vec[0     +p_indx];
-        scal_exp=this->kernel->k_l2t->src_scal;
-        P=equiv_surf_perm(m, p_indx, ker_perm, (this->Homogen()?&scal_exp:NULL));
+        ker_perm=this->kernel->k_l2l->perm_vec[C_Perm+p_indx];
+        scal_exp=this->kernel->k_l2l->trg_scal;
+        for(size_t i=0;i<scal_exp.Dim();i++) scal_exp[i]=-scal_exp[i];
+
+        // Check that source perm for the two kernels agree.
+        Permutation<Real_t> ker_perm0=this->kernel->k_l2t->perm_vec[0     +p_indx];
+        Permutation<Real_t> ker_perm1=this->kernel->k_l2l->perm_vec[0     +p_indx];
+        assert(ker_perm0.Dim()==ker_perm1.Dim());
+        if(ker_perm0.Dim()>0 && fabs(ker_perm0.scal[0]-ker_perm1.scal[0])>eps){
+          for(size_t i=0;i<ker_perm0.Dim();i++){
+            ker_perm0.scal[i]*=-1.0;
+          }
+          for(size_t i=0;i<ker_perm.Dim();i++){
+            ker_perm.scal[i]*=-1.0;
+          }
+        }
+        for(size_t i=0;i<ker_perm0.Dim();i++){
+          assert(    (ker_perm0.perm[i]-ker_perm1.perm[i])== 0);
+          assert(fabs(ker_perm0.scal[i]-ker_perm1.scal[i])<eps);
+        }
+
+        Real_t s=0;
+        // Check that source scaling for the two kernels agree.
+        const Vector<Real_t>& scal_exp0=this->kernel->k_l2t->src_scal;
+        const Vector<Real_t>& scal_exp1=this->kernel->k_l2l->src_scal;
+        assert(scal_exp0.Dim()>0 && scal_exp0.Dim()==scal_exp1.Dim());
+        if(scal_exp0.Dim()>0){
+          s=(scal_exp0[0]-scal_exp1[0]);
+          for(size_t i=1;i<scal_exp0.Dim();i++){
+            assert(fabs(s-(scal_exp0[i]-scal_exp1[i]))<eps);
+            // In general this is not necessary, but to allow this, we must
+            // also change trg_scal accordingly.
+          }
+        }
+
+        // Apply the difference in scaling of the two kernels.
+        for(size_t i=0;i<scal_exp.Dim();i++) scal_exp[i]+=s;
+        P=equiv_surf_perm(m, p_indx, ker_perm, (this->ScaleInvar()?&scal_exp:NULL));
       }else{ // Target permutation
         ker_perm=this->kernel->k_l2t->perm_vec[C_Perm+p_indx];
         scal_exp=this->kernel->k_l2t->trg_scal;
-        P=cheb_perm(q, p_indx, ker_perm, (this->Homogen()?&scal_exp:NULL));
+        P=cheb_perm(q, p_indx, ker_perm, (this->ScaleInvar()?&scal_exp:NULL));
       }
       break;
     }
@@ -398,7 +420,7 @@ Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_Type t
         ker_perm=this->kernel->k_s2t->perm_vec[C_Perm+p_indx];
         scal_exp=this->kernel->k_s2t->trg_scal;
       }
-      P=cheb_perm(q, p_indx, ker_perm, (this->Homogen()?&scal_exp:NULL));
+      P=cheb_perm(q, p_indx, ker_perm, (this->ScaleInvar()?&scal_exp:NULL));
       break;
     }
     case U1_Type:
@@ -411,14 +433,6 @@ Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_Type t
       P=PrecompPerm(U0_Type, perm_indx);
       break;
     }
-    case V_Type:
-    {
-      break;
-    }
-    case V1_Type:
-    {
-      break;
-    }
     case W_Type:
     {
       Vector<Real_t> scal_exp;
@@ -426,11 +440,11 @@ Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_Type t
       if(perm_indx<C_Perm){ // Source permutation
         ker_perm=this->kernel->k_m2t->perm_vec[0     +p_indx];
         scal_exp=this->kernel->k_m2t->src_scal;
-        P=equiv_surf_perm(m, p_indx, ker_perm, (this->Homogen()?&scal_exp:NULL));
+        P=equiv_surf_perm(m, p_indx, ker_perm, (this->ScaleInvar()?&scal_exp:NULL));
       }else{ // Target permutation
         ker_perm=this->kernel->k_m2t->perm_vec[C_Perm+p_indx];
         scal_exp=this->kernel->k_m2t->trg_scal;
-        P=cheb_perm(q, p_indx, ker_perm, (this->Homogen()?&scal_exp:NULL));
+        P=cheb_perm(q, p_indx, ker_perm, (this->ScaleInvar()?&scal_exp:NULL));
       }
       break;
     }
@@ -442,43 +456,11 @@ Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_Type t
         ker_perm=this->kernel->k_s2l->perm_vec[0     +p_indx];
         scal_exp=this->kernel->k_s2l->src_scal;
         for(size_t i=0;i<scal_exp.Dim();i++) scal_exp[i]-=COORD_DIM;
-        P=cheb_perm(q, p_indx, ker_perm, (this->Homogen()?&scal_exp:NULL));
+        P=cheb_perm(q, p_indx, ker_perm, (this->ScaleInvar()?&scal_exp:NULL));
       }else{
-        ker_perm=this->kernel->k_l2l->perm_vec[0     +p_indx];
-        scal_exp=this->kernel->k_l2l->src_scal;
-        for(size_t i=0;i<scal_exp.Dim();i++) scal_exp[i]=-scal_exp[i];
-
-        // Check that target perm for the two kernels agree.
-        Permutation<Real_t> ker_perm0=this->kernel->k_s2l->perm_vec[C_Perm+p_indx];
-        Permutation<Real_t> ker_perm1=this->kernel->k_l2l->perm_vec[C_Perm+p_indx];
-        assert(ker_perm0.Dim()>0 && ker_perm0.Dim()==ker_perm1.Dim());
-        if(fabs(ker_perm0.scal[0]-ker_perm1.scal[0])>eps){
-          for(size_t i=0;i<ker_perm0.Dim();i++){
-            ker_perm0.scal[i]*=-1.0;
-          }
-          for(size_t i=0;i<ker_perm.Dim();i++){
-            ker_perm.scal[i]*=-1.0;
-          }
-        }
-        for(size_t i=0;i<ker_perm0.Dim();i++){
-          assert(    (ker_perm0.perm[i]-ker_perm1.perm[i])== 0);
-          assert(fabs(ker_perm0.scal[i]-ker_perm1.scal[i])<eps);
-        }
-
-        // Check that target scaling for the two kernels agree.
-        const Vector<Real_t>& scal_exp0=this->kernel->k_s2l->trg_scal;
-        const Vector<Real_t>& scal_exp1=this->kernel->k_l2l->trg_scal;
-        assert(scal_exp0.Dim()>0 && scal_exp0.Dim()==scal_exp1.Dim());
-        Real_t s=(scal_exp0[0]-scal_exp1[0]);
-        for(size_t i=1;i<scal_exp0.Dim();i++){
-          assert(fabs(s-(scal_exp0[i]-scal_exp1[i]))<eps);
-          // In general this is not necessary, but to allow this, we must
-          // also change src_scal accordingly.
-        }
-
-        // Apply the difference in scaling of the two kernels.
-        for(size_t i=0;i<scal_exp.Dim();i++) scal_exp[i]+=s;
-        P=equiv_surf_perm(m, p_indx, ker_perm, (this->Homogen()?&scal_exp:NULL));
+        ker_perm=this->kernel->k_s2l->perm_vec[C_Perm+p_indx];
+        scal_exp=this->kernel->k_s2l->trg_scal;
+        P=equiv_surf_perm(m, p_indx, ker_perm, (this->ScaleInvar()?&scal_exp:NULL));
       }
       break;
     }
@@ -497,7 +479,7 @@ Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_Type t
 
 template <class FMMNode>
 Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type type, size_t mat_indx){
-  if(this->Homogen()) level=0;
+  if(this->ScaleInvar()) level=0;
 
   //Check if the matrix already exists.
   //Compute matrix from symmetry class (if possible).
@@ -569,8 +551,9 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
         MPI_Allreduce(M_s2c_local[0], M_s2c[0], M_s2c.Dim(0)*M_s2c.Dim(1), par::Mpi_datatype<Real_t>::value(), par::Mpi_datatype<Real_t>::sum(), this->comm);
       }
 
-      Matrix<Real_t>& M_c2e = this->Precomp(level, UC2UE_Type, 0);
-      M=M_s2c*M_c2e;
+      Matrix<Real_t>& M_c2e0 = this->Precomp(level, UC2UE0_Type, 0);
+      Matrix<Real_t>& M_c2e1 = this->Precomp(level, UC2UE1_Type, 0);
+      M=(M_s2c*M_c2e0)*M_c2e1;
       break;
     }
     case D2T_Type:
@@ -797,8 +780,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
         if(!myrank) std::cout<<"\r                    \r"<<std::flush;
         MPI_Allreduce(M_xs2c_local[0], M_xs2c[0], M_xs2c.Dim(0)*M_xs2c.Dim(1), par::Mpi_datatype<Real_t>::value(), par::Mpi_datatype<Real_t>::sum(), this->comm);
       }
-      Matrix<Real_t>& M_c2e = this->Precomp(level, DC2DE_Type, 0);
-      M=M_xs2c*M_c2e;
+      M=M_xs2c;
       break;
     }
     default:
@@ -855,7 +837,7 @@ void FMM_Cheb<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& 
 
 template <class FMMNode>
 void FMM_Cheb<FMMNode>::Source2UpSetup(SetupData<Real_t>& setup_data, FMMTree_t* tree, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device){
-  if(this->MultipoleOrder()==0) return;
+  if(!this->MultipoleOrder()) return;
   FMM_Pts<FMMNode>::Source2UpSetup(setup_data, tree, buff, n_list, level, device);
 
   { // Set setup_data
@@ -884,8 +866,10 @@ void FMM_Cheb<FMMNode>::Source2UpSetup(SetupData<Real_t>& setup_data, FMMTree_t*
 
   this->SetupInterac(setup_data,device);
 }
+
 template <class FMMNode>
 void FMM_Cheb<FMMNode>::Source2Up     (SetupData<Real_t>& setup_data, bool device){
+  if(!this->MultipoleOrder()) return;
   //Add Source2Up contribution.
   this->EvalList(setup_data, device);
 }
@@ -894,7 +878,7 @@ void FMM_Cheb<FMMNode>::Source2Up     (SetupData<Real_t>& setup_data, bool devic
 
 template <class FMMNode>
 void FMM_Cheb<FMMNode>::X_ListSetup(SetupData<Real_t>& setup_data, FMMTree_t* tree, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device){
-  if(this->MultipoleOrder()==0) return;
+  if(!this->MultipoleOrder()) return;
   FMM_Pts<FMMNode>::X_ListSetup(setup_data, tree, buff, n_list, level, device);
 
   { // Set setup_data
@@ -930,6 +914,7 @@ void FMM_Cheb<FMMNode>::X_ListSetup(SetupData<Real_t>& setup_data, FMMTree_t* tr
 
 template <class FMMNode>
 void FMM_Cheb<FMMNode>::X_List     (SetupData<Real_t>& setup_data, bool device){
+  if(!this->MultipoleOrder()) return;
   //Add X_List contribution.
   FMM_Pts<FMMNode>::X_List(setup_data, device);
   this->EvalList(setup_data, device);
@@ -939,7 +924,7 @@ void FMM_Cheb<FMMNode>::X_List     (SetupData<Real_t>& setup_data, bool device){
 
 template <class FMMNode>
 void FMM_Cheb<FMMNode>::W_ListSetup(SetupData<Real_t>& setup_data, FMMTree_t* tree, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device){
-  if(this->MultipoleOrder()==0) return;
+  if(!this->MultipoleOrder()) return;
   { // Set setup_data
     setup_data.level=level;
     setup_data.kernel=this->kernel->k_m2t;
@@ -973,6 +958,7 @@ void FMM_Cheb<FMMNode>::W_ListSetup(SetupData<Real_t>& setup_data, FMMTree_t* tr
 
 template <class FMMNode>
 void FMM_Cheb<FMMNode>::W_List     (SetupData<Real_t>& setup_data, bool device){
+  if(!this->MultipoleOrder()) return;
   //Add W_List contribution.
   this->EvalList(setup_data, device);
 }
@@ -1027,7 +1013,7 @@ void FMM_Cheb<FMMNode>::U_List     (SetupData<Real_t>& setup_data, bool device){
 
 template <class FMMNode>
 void FMM_Cheb<FMMNode>::Down2TargetSetup(SetupData<Real_t>& setup_data, FMMTree_t* tree, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device){
-  if(this->MultipoleOrder()==0) return;
+  if(!this->MultipoleOrder()) return;
   { // Set setup_data
     setup_data.level=level;
     setup_data.kernel=this->kernel->k_l2t;
@@ -1057,6 +1043,7 @@ void FMM_Cheb<FMMNode>::Down2TargetSetup(SetupData<Real_t>& setup_data, FMMTree_
 
 template <class FMMNode>
 void FMM_Cheb<FMMNode>::Down2Target     (SetupData<Real_t>& setup_data, bool device){
+  if(!this->MultipoleOrder()) return;
   //Add Down2Target contribution.
   this->EvalList(setup_data, device);
 }

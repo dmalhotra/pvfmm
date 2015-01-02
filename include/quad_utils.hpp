@@ -15,7 +15,7 @@
 
 typedef PVFMM_QUAD_T QuadReal_t;
 
-inline std::ostream& operator<<(std::ostream& output, const QuadReal_t& q_);
+inline std::ostream& operator<<(std::ostream& output, const QuadReal_t q_);
 
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push,target(mic))
@@ -23,17 +23,17 @@ inline std::ostream& operator<<(std::ostream& output, const QuadReal_t& q_);
 
 inline QuadReal_t atoquad(const char* str);
 
-inline QuadReal_t fabs(const QuadReal_t& f);
+inline QuadReal_t fabs(const QuadReal_t f);
 
-inline QuadReal_t sqrt(const QuadReal_t& a);
+inline QuadReal_t sqrt(const QuadReal_t a);
 
-inline QuadReal_t sin(const QuadReal_t& a);
+inline QuadReal_t sin(const QuadReal_t a);
 
-inline QuadReal_t cos(const QuadReal_t& a);
+inline QuadReal_t cos(const QuadReal_t a);
 
-inline QuadReal_t exp(const QuadReal_t& a);
+inline QuadReal_t exp(const QuadReal_t a);
 
-inline QuadReal_t log(const QuadReal_t& a);
+inline QuadReal_t log(const QuadReal_t a);
 
 template<>
 inline QuadReal_t const_pi<QuadReal_t>(){

@@ -116,7 +116,7 @@ void MemoryManager::test(){
       tmp=(double*)memgr.malloc(M*sizeof(double)); assert(tmp);
       tt=omp_get_wtime();
       #pragma omp parallel for
-      for(size_t i=0;i<M;i+=64) tmp[i]=i;
+      for(size_t i=0;i<M;i+=64) tmp[i]=(double)i;
       tt=omp_get_wtime()-tt;
       std::cout<<tt<<' ';
       memgr.free(tmp);
@@ -132,7 +132,7 @@ void MemoryManager::test(){
       tmp=(double*)DeviceWrapper::host_malloc(M*sizeof(double)); assert(tmp);
       tt=omp_get_wtime();
       #pragma omp parallel for
-      for(size_t i=0;i<M;i+=64) tmp[i]=i;
+      for(size_t i=0;i<M;i+=64) tmp[i]=(double)i;
       tt=omp_get_wtime()-tt;
       std::cout<<tt<<' ';
       DeviceWrapper::host_free(tmp);

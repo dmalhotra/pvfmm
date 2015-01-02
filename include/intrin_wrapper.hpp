@@ -383,11 +383,10 @@ inline VEC rinv_intrin0(VEC r2){
   #define NWTN2 0
   #define NWTN3 0
 
-  Real_t scal=1;
-  Real_t const_nwtn0=3*scal*scal; scal=(NWTN0?2*scal*scal*scal:scal);
-  Real_t const_nwtn1=3*scal*scal; scal=(NWTN1?2*scal*scal*scal:scal);
-  Real_t const_nwtn2=3*scal*scal; scal=(NWTN2?2*scal*scal*scal:scal);
-  Real_t const_nwtn3=3*scal*scal; scal=(NWTN3?2*scal*scal*scal:scal);
+  //Real_t scal=1;                      Real_t const_nwtn0=3*scal*scal;
+  //scal=(NWTN0?2*scal*scal*scal:scal); Real_t const_nwtn1=3*scal*scal;
+  //scal=(NWTN1?2*scal*scal*scal:scal); Real_t const_nwtn2=3*scal*scal;
+  //scal=(NWTN2?2*scal*scal*scal:scal); Real_t const_nwtn3=3*scal*scal;
 
   VEC rinv;
   #if NWTN0
@@ -421,11 +420,10 @@ inline VEC rinv_intrin1(VEC r2){
   #define NWTN2 0
   #define NWTN3 0
 
-  Real_t scal=1;
-  Real_t const_nwtn0=3*scal*scal; scal=(NWTN0?2*scal*scal*scal:scal);
-  Real_t const_nwtn1=3*scal*scal; scal=(NWTN1?2*scal*scal*scal:scal);
-  Real_t const_nwtn2=3*scal*scal; scal=(NWTN2?2*scal*scal*scal:scal);
-  Real_t const_nwtn3=3*scal*scal; scal=(NWTN3?2*scal*scal*scal:scal);
+  Real_t scal=1;                      //Real_t const_nwtn0=3*scal*scal;
+  scal=(NWTN0?2*scal*scal*scal:scal); Real_t const_nwtn1=3*scal*scal;
+  //scal=(NWTN1?2*scal*scal*scal:scal); Real_t const_nwtn2=3*scal*scal;
+  //scal=(NWTN2?2*scal*scal*scal:scal); Real_t const_nwtn3=3*scal*scal;
 
   VEC rinv;
   #if NWTN0
@@ -459,11 +457,10 @@ inline VEC rinv_intrin2(VEC r2){
   #define NWTN2 1
   #define NWTN3 0
 
-  Real_t scal=1;
-  Real_t const_nwtn0=3*scal*scal; scal=(NWTN0?2*scal*scal*scal:scal);
-  Real_t const_nwtn1=3*scal*scal; scal=(NWTN1?2*scal*scal*scal:scal);
-  Real_t const_nwtn2=3*scal*scal; scal=(NWTN2?2*scal*scal*scal:scal);
-  Real_t const_nwtn3=3*scal*scal; scal=(NWTN3?2*scal*scal*scal:scal);
+  Real_t scal=1;                      //Real_t const_nwtn0=3*scal*scal;
+  scal=(NWTN0?2*scal*scal*scal:scal); Real_t const_nwtn1=3*scal*scal;
+  scal=(NWTN1?2*scal*scal*scal:scal); Real_t const_nwtn2=3*scal*scal;
+  //scal=(NWTN2?2*scal*scal*scal:scal); Real_t const_nwtn3=3*scal*scal;
 
   VEC rinv;
   #if NWTN0
@@ -497,11 +494,10 @@ inline VEC rinv_intrin3(VEC r2){
   #define NWTN2 1
   #define NWTN3 1
 
-  Real_t scal=1;
-  Real_t const_nwtn0=3*scal*scal; scal=(NWTN0?2*scal*scal*scal:scal);
-  Real_t const_nwtn1=3*scal*scal; scal=(NWTN1?2*scal*scal*scal:scal);
-  Real_t const_nwtn2=3*scal*scal; scal=(NWTN2?2*scal*scal*scal:scal);
-  Real_t const_nwtn3=3*scal*scal; scal=(NWTN3?2*scal*scal*scal:scal);
+  Real_t scal=1;                      //Real_t const_nwtn0=3*scal*scal;
+  scal=(NWTN0?2*scal*scal*scal:scal); Real_t const_nwtn1=3*scal*scal;
+  scal=(NWTN1?2*scal*scal*scal:scal); Real_t const_nwtn2=3*scal*scal;
+  scal=(NWTN2?2*scal*scal*scal:scal); Real_t const_nwtn3=3*scal*scal;
 
   VEC rinv;
   #if NWTN0

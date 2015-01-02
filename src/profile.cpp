@@ -169,8 +169,8 @@ void Profile::print(const MPI_Comm* comm_){
       ff.push(f_log[i]);
       mm.push(m_log[i]);
 
-      std::string s;
-      out_stack.push(s);
+      std::string ss;
+      out_stack.push(ss);
     }else{
       double t0=t_log[i]-tt.top();tt.pop();
       double f0=(double)(f_log[i]-ff.top())*1e-9;ff.pop();
@@ -200,7 +200,7 @@ void Profile::print(const MPI_Comm* comm_){
       fs_sum=f_sum/t_max;
 
       if(!rank){
-        std::string s=out_stack.top();out_stack.pop();
+        std::string s0=out_stack.top();out_stack.pop();
         std::string s1=out_stack.top();out_stack.pop();
         std::stringstream ss(std::stringstream::in | std::stringstream::out);
         ss<<setiosflags(std::ios::fixed)<<std::setprecision(4)<<std::setiosflags(std::ios::left);
@@ -237,8 +237,8 @@ void Profile::print(const MPI_Comm* comm_){
         ss<<"  "<<std::setw(width)<<m_max;
         ss<<"  "<<std::setw(width)<<m_final<<'\n';
 
-        s1+=ss.str()+s;
-        if(!s.empty() && (i+1<e_log.size()?e_log[i+1]:false)){
+        s1+=ss.str()+s0;
+        if(!s0.empty() && (i+1<e_log.size()?e_log[i+1]:false)){
           for(size_t j=0;j<level;j++){
             size_t l=i+1;
             size_t k=level-1;

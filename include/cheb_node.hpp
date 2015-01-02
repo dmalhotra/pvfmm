@@ -27,10 +27,10 @@ class Cheb_Node: public MPI_Node<Real_t>{
 
  public:
 
-  template<class Real_t>
+  template<class T>
   class Function_t{
 
-    typedef void (*fn_ptr)(const Real_t* coord, int n, Real_t* out);
+    typedef void (*fn_ptr)(const T* coord, int n, T* out);
 
     public:
 
@@ -40,7 +40,7 @@ class Cheb_Node: public MPI_Node<Real_t>{
 
     virtual ~Function_t(){}
 
-    virtual void operator()(const Real_t* coord, int n, Real_t* out){
+    virtual void operator()(const T* coord, int n, T* out){
       fn_(coord, n, out);
     }
 

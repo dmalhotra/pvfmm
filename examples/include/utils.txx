@@ -279,9 +279,10 @@ std::vector<Real_t> point_distrib(DistribType dist_type, size_t N, MPI_Comm comm
   int np, myrank;
   MPI_Comm_size(comm, &np);
   MPI_Comm_rank(comm, &myrank);
-  std::vector<Real_t> coord;
-  srand48(myrank+1);
+  static size_t seed=myrank+1; seed+=np;
+  srand48(seed);
 
+  std::vector<Real_t> coord;
   switch(dist_type){
   case UnifGrid:
     {

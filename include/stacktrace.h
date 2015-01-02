@@ -25,7 +25,6 @@ inline void print_stacktrace(FILE *out = stderr, int skip=1){
   fname[fname_len]='\0';
 
   // Print
-  int frame=0;
   for(int i = skip; i < addrlen; i++) {
     // Get command
     char cmd[10240];
@@ -54,6 +53,8 @@ inline void print_stacktrace(FILE *out = stderr, int skip=1){
 
 inline void abortHandler( int signum, siginfo_t* si, void* unused ){
   static bool first_time=true;
+  UNUSED(unused);
+  UNUSED(si);
 
   #pragma omp critical (STACK_TRACE)
   if(first_time){

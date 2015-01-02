@@ -103,6 +103,9 @@ are given below:
 'Cafu (ICES)'
      ./configure CXXFLAGS="-mavx" --with-fftw="$FFTW_DIR" LDFLAGS="-L/usr/lib64/nvidia/" --with-cuda="$CUDA_DIR" NVCCFLAGS="-arch=compute_35 -code=sm_35"
 
+`GCC-4.9 on OS X Yosemite'
+     ./configure CXXFLAGS="-Wa,-q -fabi-version=6 -mavx" --with-fftw="$FFTW_DIR"
+
 
 `configure' Invocation
 ======================

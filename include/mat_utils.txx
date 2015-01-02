@@ -104,7 +104,7 @@ namespace mat{
   //#define SVD_DEBUG
 
   template <class T>
-  void GivensL(T* S_, const size_t dim[2], size_t m, T a, T b){
+  static void GivensL(T* S_, const size_t dim[2], size_t m, T a, T b){
     T r=sqrt(a*a+b*b);
     T c=a/r;
     T s=-b/r;
@@ -122,7 +122,7 @@ namespace mat{
   }
 
   template <class T>
-  void GivensR(T* S_, const size_t dim[2], size_t m, T a, T b){
+  static void GivensR(T* S_, const size_t dim[2], size_t m, T a, T b){
     T r=sqrt(a*a+b*b);
     T c=a/r;
     T s=-b/r;
@@ -140,7 +140,7 @@ namespace mat{
   }
 
   template <class T>
-  void SVD(const size_t dim[2], T* U_, T* S_, T* V_, T eps=-1){
+  static void SVD(const size_t dim[2], T* U_, T* S_, T* V_, T eps=-1){
     assert(dim[0]>=dim[1]);
     #ifdef SVD_DEBUG
     Matrix<T> M0(dim[0],dim[1],S_);

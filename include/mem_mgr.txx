@@ -44,7 +44,7 @@ MemoryManager::MemHead* MemoryManager::GetMemHead(void* p){
   return (MemHead*)(((char*)p)-header_size);
 }
 
-void* MemoryManager::malloc(const size_t& n_elem, const size_t& type_size) const{
+void* MemoryManager::malloc(const size_t n_elem, const size_t type_size) const{
   if(!n_elem) return NULL;
   static uintptr_t alignment=MEM_ALIGN-1;
   static uintptr_t header_size=(uintptr_t)(sizeof(MemHead)+alignment) & ~(uintptr_t)alignment;
@@ -132,8 +132,8 @@ void MemoryManager::free(void* p) const{
   MemHead* mem_head=(MemHead*)base;
 
   if(base<&buff[0] || base>=&buff[buff_size]){ // Use system free
-    char* p=(char*)((uintptr_t)base-((uint16_t*)base)[-1]);
-    return DeviceWrapper::host_free(p);
+    char* p_=(char*)((uintptr_t)base-((uint16_t*)base)[-1]);
+    return DeviceWrapper::host_free(p_);
   }
 
   size_t n_indx=mem_head->n_indx;
@@ -169,9 +169,7 @@ void MemoryManager::free(void* p) const{
     delete_node(n_prev_indx);
 
     if(n.prev){
-      size_t n_prev_indx=n.prev;
-      MemNode& n_prev=node_buff[n_prev_indx-1];
-      n_prev.next=n_indx;
+      node_buff[n.prev-1].next=n_indx;
     }
   }
   if(n.next!=0 && node_buff[n.next-1].free){
@@ -183,9 +181,7 @@ void MemoryManager::free(void* p) const{
     delete_node(n_next_indx);
 
     if(n.next){
-      size_t n_next_indx=n.next;
-      MemNode& n_next=node_buff[n_next_indx-1];
-      n_next.prev=n_indx;
+      node_buff[n.next-1].prev=n_indx;
     }
   }
   n.free=true; // Insert n to free_map

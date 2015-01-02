@@ -35,8 +35,10 @@ void InteracList<Node_t>::Initialize(unsigned int dim_, PrecompMat<Real_t>* mat_
   rel_coord.resize(Type_Count);
   hash_lut.resize(Type_Count);
 
-  InitList(0,0,1,UC2UE_Type);
-  InitList(0,0,1,DC2DE_Type);
+  InitList(0,0,1,UC2UE0_Type);
+  InitList(0,0,1,UC2UE1_Type);
+  InitList(0,0,1,DC2DE0_Type);
+  InitList(0,0,1,DC2DE1_Type);
 
   InitList(0,0,1,S2U_Type);
   InitList(1,1,2,U2U_Type);

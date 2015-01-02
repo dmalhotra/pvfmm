@@ -11,10 +11,10 @@ namespace pvfmm{
 
 inline MortonId::MortonId():x(0), y(0), z(0), depth(0){}
 
-inline MortonId::MortonId(MortonId m, unsigned char depth_):x(m.x), y(m.y), z(m.z), depth(depth_){}
+inline MortonId::MortonId(MortonId m, uint8_t depth_):x(m.x), y(m.y), z(m.z), depth(depth_){}
 
 template <class T>
-inline MortonId::MortonId(T x_f,T y_f, T z_f, unsigned char depth_): depth(depth_){
+inline MortonId::MortonId(T x_f,T y_f, T z_f, uint8_t depth_): depth(depth_){
   static UINT_T max_int=((UINT_T)1)<<(MAX_DEPTH);
   x=(UINT_T)floor(x_f*max_int);
   y=(UINT_T)floor(y_f*max_int);
@@ -22,7 +22,7 @@ inline MortonId::MortonId(T x_f,T y_f, T z_f, unsigned char depth_): depth(depth
 }
 
 template <class T>
-inline MortonId::MortonId(T* coord, unsigned char depth_): depth(depth_){
+inline MortonId::MortonId(T* coord, uint8_t depth_): depth(depth_){
   static UINT_T max_int=((UINT_T)1)<<(MAX_DEPTH);
   x=(UINT_T)floor(coord[0]*max_int);
   y=(UINT_T)floor(coord[1]*max_int);
@@ -59,11 +59,12 @@ inline MortonId MortonId::NextId() const{
       break;
     mask=(mask<<1);
   }
-  m.depth=i;
+  if(i<0) i=0;
+  m.depth=(uint8_t)i;
   return m;
 }
 
-inline MortonId MortonId::getAncestor(unsigned char ancestor_level) const{
+inline MortonId MortonId::getAncestor(uint8_t ancestor_level) const{
   MortonId m=*this;
   m.depth=ancestor_level;
 
@@ -74,7 +75,7 @@ inline MortonId MortonId::getAncestor(unsigned char ancestor_level) const{
   return m;
 }
 
-inline MortonId MortonId::getDFD(unsigned char level) const{
+inline MortonId MortonId::getDFD(uint8_t level) const{
   MortonId m=*this;
   m.depth=level;
   return m;

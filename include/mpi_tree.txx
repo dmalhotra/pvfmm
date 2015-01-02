@@ -781,7 +781,6 @@ inline int balanceOctree (std::vector<MortonId > &in, std::vector<MortonId > &ou
 
     //Add new nodes level-by-level.
     std::vector<MortonId> nbrs;
-    unsigned int num_chld=1UL<<dim;
     for(unsigned int l=maxDepth;l>=1;l--){
       //Build set of parents of balancing nodes.
       std::set<MortonId> nbrs_parent;
@@ -1590,8 +1589,8 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
         if(comm_data.node->Depth()==0) continue;
         if(comm_data.mid.getDFD()<mins_r0) continue;
 
-        MortonId mid0=comm_data.mid.         getDFD();
-        MortonId mid1=comm_data.mid.NextId().getDFD();
+        //MortonId mid0=comm_data.mid.         getDFD();
+        //MortonId mid1=comm_data.mid.NextId().getDFD();
 
         comm_data.mid.NbrList(nbr_lst,comm_data.node->Depth()-1, bndry==Periodic);
         comm_data.usr_cnt=nbr_lst.size();
@@ -1952,7 +1951,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
         }
 
         std::vector<Node_t*> recv_nodes(recv_data.size());
-        int nchld=(1UL<<this->Dim()); // Number of children.
+//        int nchld=(1UL<<this->Dim()); // Number of children.
 //        for(size_t i=0;i<recv_data.size();i++){ // Find received octants in tree.
 //          CommData& comm_data=*(CommData*)recv_data[i];
 //          MortonId& mid=comm_data.mid;

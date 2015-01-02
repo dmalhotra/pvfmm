@@ -132,9 +132,9 @@ class FMM_Pts{
   int MultipoleOrder(){return multipole_order;}
 
   /**
-   * \brief Whether using homogeneous kernel?
+   * \brief Whether using scale-invariant kernel?
    */
-  bool Homogen(){return kernel->homogen;}
+  bool ScaleInvar(){return kernel->scale_invar;}
 
   virtual void CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& nodes, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, std::vector<std::vector<Vector<Real_t>* > > vec_list = std::vector<std::vector<Vector<Real_t>* > >(0));
 
@@ -143,9 +143,9 @@ class FMM_Pts{
   template <int SYNC=__DEVICE_SYNC__>
   void EvalList    (SetupData<Real_t>& setup_data, bool device=false); // Run on CPU by default.
 
-  void SetupInteracPts(SetupData<Real_t>& setup_data, bool shift_src, bool shift_trg, Matrix<Real_t>* M, bool device);
+  void PtSetup(SetupData<Real_t>&  setup_data, void* data_);
   template <int SYNC=__DEVICE_SYNC__>
-  void EvalListPts    (SetupData<Real_t>& setup_data, bool device=false); // Run on CPU by default.
+  void EvalListPts(SetupData<Real_t>& setup_data, bool device=false); // Run on CPU by default.
 
   /**
    * \brief Initialize multipole expansions for the given array of leaf nodes
@@ -223,7 +223,7 @@ class FMM_Pts{
   typename FFTW_t<Real_t>::plan vlist_fftplan; bool vlist_fft_flag;
 
   void FFT_Check2Equiv(size_t dof, size_t m, size_t ker_dim0, Vector<size_t>& ifft_vec, Vector<Real_t>& ifft_scl,
-      Vector<Real_t>& input_data, Vector<Real_t>& output_data, Vector<Real_t>& buffer_, Matrix<Real_t>& M);
+      Vector<Real_t>& input_data, Vector<Real_t>& output_data, Vector<Real_t>& buffer_);
   typename FFTW_t<Real_t>::plan vlist_ifftplan; bool vlist_ifft_flag;
 
   mem::MemoryManager* mem_mgr;

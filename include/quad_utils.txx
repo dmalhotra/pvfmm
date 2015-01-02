@@ -13,7 +13,7 @@
 #include <vector>
 
 QuadReal_t atoquad(const char* str){
-  size_t i=0;
+  int i=0;
   QuadReal_t sign=1.0;
   for(;str[i]!='\0';i++){
     char c=str[i];
@@ -42,20 +42,20 @@ QuadReal_t atoquad(const char* str){
   return sign*val;
 }
 
-QuadReal_t fabs(const QuadReal_t& f){
+QuadReal_t fabs(const QuadReal_t f){
   if(f>=0.0) return f;
   else return -f;
 }
 
-QuadReal_t sqrt(const QuadReal_t& a){
+QuadReal_t sqrt(const QuadReal_t a){
   QuadReal_t b=sqrt((double)a);
   b=(b+a/b)*0.5;
   b=(b+a/b)*0.5;
   return b;
 }
 
-QuadReal_t sin(const QuadReal_t& a){
-  const size_t N=200;
+QuadReal_t sin(const QuadReal_t a){
+  const int N=200;
   static std::vector<QuadReal_t> theta;
   static std::vector<QuadReal_t> sinval;
   static std::vector<QuadReal_t> cosval;
@@ -96,8 +96,8 @@ QuadReal_t sin(const QuadReal_t& a){
   return (a<0.0?-sval:sval);
 }
 
-QuadReal_t cos(const QuadReal_t& a){
-  const size_t N=200;
+QuadReal_t cos(const QuadReal_t a){
+  const int N=200;
   static std::vector<QuadReal_t> theta;
   static std::vector<QuadReal_t> sinval;
   static std::vector<QuadReal_t> cosval;
@@ -138,8 +138,8 @@ QuadReal_t cos(const QuadReal_t& a){
   return cval;
 }
 
-QuadReal_t exp(const QuadReal_t& a){
-  const size_t N=200;
+QuadReal_t exp(const QuadReal_t a){
+  const int N=200;
   static std::vector<QuadReal_t> theta0;
   static std::vector<QuadReal_t> theta1;
   static std::vector<QuadReal_t> expval0;
@@ -183,15 +183,15 @@ QuadReal_t exp(const QuadReal_t& a){
   return (a<0.0?1.0/eval:eval);
 }
 
-QuadReal_t log(const QuadReal_t& a){
+QuadReal_t log(const QuadReal_t a){
   QuadReal_t y0=log((double)a);
   y0=y0+(a/exp(y0)-1.0);
   y0=y0+(a/exp(y0)-1.0);
   return y0;
 }
 
-std::ostream& operator<<(std::ostream& output, const QuadReal_t& q_){
-  int width=output.width();
+std::ostream& operator<<(std::ostream& output, const QuadReal_t q_){
+  //int width=output.width();
   output<<std::setw(1);
 
   QuadReal_t q=q_;
@@ -217,7 +217,7 @@ std::ostream& operator<<(std::ostream& output, const QuadReal_t& q_){
     exp++;
   }
 
-  for(size_t i=0;i<34;i++){
+  for(int i=0;i<34;i++){
     output<<(int)q;
     if(i==0) output<<".";
     q=(q-int(q))*10;

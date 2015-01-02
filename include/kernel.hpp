@@ -70,7 +70,7 @@ struct Kernel{
   size_t dev_dbl_layer_poten;
 
   mutable bool init;
-  mutable bool homogen;
+  mutable bool scale_invar;
   mutable Vector<T> src_scal;
   mutable Vector<T> trg_scal;
   mutable Vector<Permutation<T> > perm_vec;

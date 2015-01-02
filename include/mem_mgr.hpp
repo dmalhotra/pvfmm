@@ -71,7 +71,7 @@ class MemoryManager{
 
     static inline MemHead* GetMemHead(void* p);
 
-    inline void* malloc(const size_t& n_elem=1, const size_t& type_size=sizeof(char)) const;
+    inline void* malloc(const size_t n_elem=1, const size_t type_size=sizeof(char)) const;
 
     inline void free(void* p) const;
 
@@ -127,6 +127,13 @@ class MemoryManager{
 /** A global MemoryManager object. This is the default for aligned_new and
  * aligned_free */
 extern MemoryManager glbMemMgr;
+
+
+inline uintptr_t align_ptr(uintptr_t ptr){
+  static uintptr_t     ALIGN_MINUS_ONE=MEM_ALIGN-1;
+  static uintptr_t NOT_ALIGN_MINUS_ONE=~ALIGN_MINUS_ONE;
+  return ((ptr+ALIGN_MINUS_ONE) & NOT_ALIGN_MINUS_ONE);
+}
 
 /**
  * \brief Aligned allocation as an alternative to new. Uses placement new to

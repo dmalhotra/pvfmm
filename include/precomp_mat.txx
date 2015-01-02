@@ -21,9 +21,9 @@ namespace pvfmm{
 
 #define PRECOMP_MIN_DEPTH 40
 template <class T>
-PrecompMat<T>::PrecompMat(bool homogen, int max_d): homogeneous(homogen), max_depth(max_d){
+PrecompMat<T>::PrecompMat(bool scale_invar_, int max_d): scale_invar(scale_invar_), max_depth(max_d){
 
-  if(!homogen) mat.resize((max_d+PRECOMP_MIN_DEPTH)*Type_Count); //For each U,V,W,X
+  if(!scale_invar) mat.resize((max_d+PRECOMP_MIN_DEPTH)*Type_Count); //For each U,V,W,X
   else mat.resize(Type_Count);
   for(size_t i=0;i<mat.size();i++)
     mat[i].resize(500);
@@ -43,7 +43,7 @@ PrecompMat<T>::PrecompMat(bool homogen, int max_d): homogeneous(homogen), max_de
 
 template <class T>
 Matrix<T>& PrecompMat<T>::Mat(int l, Mat_Type type, size_t indx){
-  int level=(homogeneous?0:l+PRECOMP_MIN_DEPTH);
+  int level=(scale_invar?0:l+PRECOMP_MIN_DEPTH);
   assert(level*Type_Count+type<mat.size());
   //#pragma omp critical (PrecompMAT)
   if(indx>=mat[level*Type_Count+type].size()){
@@ -84,12 +84,6 @@ Permutation<T>& PrecompMat<T>::Perm(Mat_Type type, size_t indx){
 }
 
 
-inline static uintptr_t align_ptr(uintptr_t ptr){
-  static uintptr_t     ALIGN_MINUS_ONE=MEM_ALIGN-1;
-  static uintptr_t NOT_ALIGN_MINUS_ONE=~ALIGN_MINUS_ONE;
-  return ((ptr+ALIGN_MINUS_ONE) & NOT_ALIGN_MINUS_ONE);
-}
-
 template <class T>
 size_t PrecompMat<T>::CompactData(int level, Mat_Type type, Matrix<char>& comp_data, size_t offset){
   struct HeaderData{
@@ -107,36 +101,36 @@ size_t PrecompMat<T>::CompactData(int level, Mat_Type type, Matrix<char>& comp_d
     }
   }
 
-  std::vector<Matrix<T> >& mat_=mat[(homogeneous?0:level+PRECOMP_MIN_DEPTH)*Type_Count+type];
+  std::vector<Matrix<T> >& mat_=mat[(scale_invar?0:level+PRECOMP_MIN_DEPTH)*Type_Count+type];
   size_t mat_cnt=mat_.size();
   size_t indx_size=0;
   size_t mem_size=0;
 
   int omp_p=omp_get_max_threads();
-  size_t l0=(homogeneous?0:level);
-  size_t l1=(homogeneous?max_depth:level+1);
+  size_t l0=(scale_invar?0:level);
+  size_t l1=(scale_invar?max_depth:level+1);
 
   { // Determine memory size.
     indx_size+=sizeof(HeaderData); // HeaderData
     indx_size+=mat_cnt*(1+(2+2)*(l1-l0))*sizeof(size_t); //Mat, Perm_R, Perm_C.
-    indx_size=align_ptr(indx_size);
+    indx_size=mem::align_ptr(indx_size);
 
     for(size_t j=0;j<mat_cnt;j++){
       Matrix     <T>& M =Mat   (level,type,j);
       if(M.Dim(0)>0 && M.Dim(1)>0){
-        mem_size+=M.Dim(0)*M.Dim(1)*sizeof(T); mem_size=align_ptr(mem_size);
+        mem_size+=M.Dim(0)*M.Dim(1)*sizeof(T); mem_size=mem::align_ptr(mem_size);
       }
 
       for(size_t l=l0;l<l1;l++){
         Permutation<T>& Pr=Perm_R(l,type,j);
         Permutation<T>& Pc=Perm_C(l,type,j);
         if(Pr.Dim()>0){
-          mem_size+=Pr.Dim()*sizeof(PERM_INT_T); mem_size=align_ptr(mem_size);
-          mem_size+=Pr.Dim()*sizeof(T);          mem_size=align_ptr(mem_size);
+          mem_size+=Pr.Dim()*sizeof(PERM_INT_T); mem_size=mem::align_ptr(mem_size);
+          mem_size+=Pr.Dim()*sizeof(T);          mem_size=mem::align_ptr(mem_size);
         }
         if(Pc.Dim()>0){
-          mem_size+=Pc.Dim()*sizeof(PERM_INT_T); mem_size=align_ptr(mem_size);
-          mem_size+=Pc.Dim()*sizeof(T);          mem_size=align_ptr(mem_size);
+          mem_size+=Pc.Dim()*sizeof(PERM_INT_T); mem_size=mem::align_ptr(mem_size);
+          mem_size+=Pc.Dim()*sizeof(T);          mem_size=mem::align_ptr(mem_size);
         }
       }
     }
@@ -168,27 +162,28 @@ size_t PrecompMat<T>::CompactData(int level, Mat_Type type, Matrix<char>& comp_d
     for(size_t j=0;j<mat_cnt;j++){
       Matrix     <T>& M =Mat   (level,type,j);
       offset_indx[j][0]=data_offset; indx_ptr+=sizeof(size_t);
-      data_offset+=M.Dim(0)*M.Dim(1)*sizeof(T); mem_size=align_ptr(mem_size);
+      data_offset+=M.Dim(0)*M.Dim(1)*sizeof(T); mem_size=mem::align_ptr(mem_size);
 
       for(size_t l=l0;l<l1;l++){
         Permutation<T>& Pr=Perm_R(l,type,j);
         offset_indx[j][1+4*(l-l0)+0]=data_offset;
-        data_offset+=Pr.Dim()*sizeof(PERM_INT_T); mem_size=align_ptr(mem_size);
+        data_offset+=Pr.Dim()*sizeof(PERM_INT_T); mem_size=mem::align_ptr(mem_size);
         offset_indx[j][1+4*(l-l0)+1]=data_offset;
-        data_offset+=Pr.Dim()*sizeof(T);          mem_size=align_ptr(mem_size);
+        data_offset+=Pr.Dim()*sizeof(T);          mem_size=mem::align_ptr(mem_size);
 
         Permutation<T>& Pc=Perm_C(l,type,j);
         offset_indx[j][1+4*(l-l0)+2]=data_offset;
-        data_offset+=Pc.Dim()*sizeof(PERM_INT_T); mem_size=align_ptr(mem_size);
+        data_offset+=Pc.Dim()*sizeof(PERM_INT_T); mem_size=mem::align_ptr(mem_size);
         offset_indx[j][1+4*(l-l0)+3]=data_offset;
-        data_offset+=Pc.Dim()*sizeof(T);          mem_size=align_ptr(mem_size);
+        data_offset+=Pc.Dim()*sizeof(T);          mem_size=mem::align_ptr(mem_size);
       }
     }
   }
   #pragma omp parallel for
   for(int tid=0;tid<omp_p;tid++){ // Copy data.
     char* indx_ptr=comp_data[0]+offset;
-    HeaderData& header=*(HeaderData*)indx_ptr;indx_ptr+=sizeof(HeaderData);
+    //HeaderData& header=*(HeaderData*)indx_ptr;
+    indx_ptr+=sizeof(HeaderData);
     Matrix<size_t> offset_indx(mat_cnt,1+(2+2)*(l1-l0), (size_t*)indx_ptr, false);
 
     for(size_t j=0;j<mat_cnt;j++){
@@ -235,7 +230,7 @@ void PrecompMat<T>::Save2File(const char* fname, bool replace){
   int tmp;
   tmp=sizeof(T);
   fwrite(&tmp,sizeof(int),1,f);
-  tmp=(homogeneous?1:0);
+  tmp=(scale_invar?1:0);
   fwrite(&tmp,sizeof(int),1,f);
   tmp=max_depth;
   fwrite(&tmp,sizeof(int),1,f);
@@ -323,10 +318,10 @@ void PrecompMat<T>::LoadFile(const char* fname, MPI_Comm comm){
     tmp=*(int*)f_ptr; f_ptr+=sizeof(int);
     assert(tmp==sizeof(T));
     tmp=*(int*)f_ptr; f_ptr+=sizeof(int);
-    homogeneous=tmp;
+    scale_invar=tmp;
     int max_depth_;
     max_depth_=*(int*)f_ptr; f_ptr+=sizeof(int);
-    size_t mat_size=(size_t)Type_Count*(homogeneous?1:max_depth_+PRECOMP_MIN_DEPTH);
+    size_t mat_size=(size_t)Type_Count*(scale_invar?1:max_depth_+PRECOMP_MIN_DEPTH);
     if(mat.size()<mat_size){
       max_depth=max_depth_;
       mat.resize(mat_size);
@@ -372,8 +367,8 @@ std::vector<T>& PrecompMat<T>::RelativeTrgCoord(){
 }
 
 template <class T>
-bool PrecompMat<T>::Homogen(){
-  return homogeneous;
+bool PrecompMat<T>::ScaleInvar(){
+  return scale_invar;
 }
 
 }//end namespace

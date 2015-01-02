@@ -19,21 +19,23 @@
 namespace pvfmm{
 
 typedef enum{
-  UC2UE_Type= 0,
-  DC2DE_Type= 1,
-  S2U_Type  = 2,
-  U2U_Type  = 3,
-  D2D_Type  = 4,
-  D2T_Type  = 5,
-  U0_Type   = 6,
-  U1_Type   = 7,
-  U2_Type   = 8,
-  V_Type    = 9,
-  W_Type    =10,
-  X_Type    =11,
-  V1_Type   =12,
-  BC_Type   =13,
-  Type_Count=14
+  UC2UE0_Type= 0,
+  UC2UE1_Type= 1,
+  DC2DE0_Type= 2,
+  DC2DE1_Type= 3,
+  S2U_Type  = 4,
+  U2U_Type  = 5,
+  D2D_Type  = 6,
+  D2T_Type  = 7,
+  U0_Type   = 8,
+  U1_Type   = 9,
+  U2_Type   =10,
+  V_Type    =11,
+  W_Type    =12,
+  X_Type    =13,
+  V1_Type   =14,
+  BC_Type   =15,
+  Type_Count=16
 } Mat_Type;
 
 typedef enum{
@@ -53,7 +55,7 @@ class PrecompMat{
 
  public:
 
-  PrecompMat(bool homogen, int max_d);
+  PrecompMat(bool scale_invar, int max_d);
 
   Matrix<T>& Mat(int l, Mat_Type type, size_t indx);
 
@@ -71,7 +73,7 @@ class PrecompMat{
 
   std::vector<T>& RelativeTrgCoord();
 
-  bool Homogen();
+  bool ScaleInvar();
 
  private:
 
@@ -81,7 +83,7 @@ class PrecompMat{
   std::vector<std::vector<Permutation<T> > > perm_c;
   std::vector<T> rel_trg_coord;
 
-  bool homogeneous;
+  bool scale_invar;
   int max_depth;
 };
 
