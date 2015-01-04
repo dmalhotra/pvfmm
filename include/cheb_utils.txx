@@ -684,15 +684,15 @@ void quad_rule(int n, T* x, T* w){
     for(size_t i=0;i<n;i++) M[0][i]/=2.0;
 
     std::vector<T> w_sample(n,0);
-    for(size_t i=0;i<n;i+=2) w_sample=-((T)2.0/(n+1)/(n-1));
+    for(long i=0;i<n;i+=2) w_sample[i]=-((T)2.0/(i+1)/(i-1));
     //if(n>0) w_sample[0]=2.0;
     //if(n>1) w_sample[1]=0.0;
     //if(n>2) w_sample[2]=-((T)2.0)/3;
     //if(n>3) w_sample[3]=0.0;
     //if(n>4) w_sample[4]=-((T)2.0)/15;
     //if(n>5) w_sample[5]=0.0;
-    //if(n>6) w_sample[5]=((T)64)/7-((T)96)/5+((T)36)/3-2;
-    //if(n>7) w_sample[5]=0;
+    //if(n>6) w_sample[6]=((T)64)/7-((T)96)/5+((T)36)/3-2;
+    //if(n>7) w_sample[7]=0;
     //if(n>8){
     //  T eps=machine_eps<T>()*64;
     //  std::vector<T> qx(n-1);
@@ -1090,7 +1090,7 @@ std::vector<T> cheb_integ(int m, T* s_, T r_, const Kernel<T>& kernel){
   int k_dim=kernel.ker_dim[0]*kernel.ker_dim[1];
   std::vector<T> U=integ<T>(m+1,s,r,n,kernel);
   std::vector<T> U_;
-  while(err>eps*n*n){
+  while(err>eps*n){
     n=(int)round(n*1.3);
     if(n>300){
       std::cout<<"Cheb_Integ::Failed to converge.[";

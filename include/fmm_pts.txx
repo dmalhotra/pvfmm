@@ -284,7 +284,7 @@ void FMM_Pts<FMMNode>::Initialize(int mult_order, const MPI_Comm& comm_, const K
       M.Resize(0,0);
     } // */
   }
-  //this->PrecompAll(BC_Type,0);
+  this->PrecompAll(BC_Type,0);
   Profile::Toc();
 
   Profile::Tic("PrecompU2U",&comm,false,4);
@@ -382,11 +382,6 @@ Permutation<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::PrecompPerm(Mat_Type ty
   //Compute the matrix.
   Permutation<Real_t> P;
   switch (type){
-
-    case S2U_Type:
-    {
-      break;
-    }
     case U2U_Type:
     {
       Vector<Real_t> scal_exp;
@@ -415,42 +410,6 @@ Permutation<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::PrecompPerm(Mat_Type ty
         scal_exp=kernel->k_l2l->trg_scal;
       }
       P=equiv_surf_perm(m, p_indx, ker_perm, (this->ScaleInvar()?&scal_exp:NULL));
-      break;
-    }
-    case D2T_Type:
-    {
-      break;
-    }
-    case U0_Type:
-    {
-      break;
-    }
-    case U1_Type:
-    {
-      break;
-    }
-    case U2_Type:
-    {
-      break;
-    }
-    case V_Type:
-    {
-      break;
-    }
-    case V1_Type:
-    {
-      break;
-    }
-    case W_Type:
-    {
-      break;
-    }
-    case X_Type:
-    {
-      break;
-    }
-    case BC_Type:
-    {
       break;
     }
     default:
@@ -511,7 +470,12 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
 
       Matrix<Real_t> U,S,V;
       M_e2c.SVD(U,S,V);
-      for(size_t i=0;i<S.Dim(0);i++) S[i][i]=(S[i][i]>1e-13?1.0/S[i][i]:0.0);
+      Real_t eps=1, max_S=0;
+      while(eps*(Real_t)0.5+(Real_t)1.0>1.0) eps*=0.5;
+      for(size_t i=0;i<std::min(S.Dim(0),S.Dim(1));i++){
+        if(fabs(S[i][i])>max_S) max_S=fabs(S[i][i]);
+      }
+      for(size_t i=0;i<S.Dim(0);i++) S[i][i]=(S[i][i]>eps*max_S*4?1.0/S[i][i]:0.0);
       M=V.Transpose()*S;//*U.Transpose();
       break;
     }
@@ -536,13 +500,6 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
       Matrix<Real_t> U,S,V;
       M_e2c.SVD(U,S,V);
       M=U.Transpose();
-
-      //Real_t eps=1.0;
-      //while(eps+(Real_t)1.0>1.0) eps*=0.5;
-      //M=M_e2c.pinv(sqrt(eps)); //check 2 equivalent
-
-      //M.SetZero();
-      //for(size_t i=0;i<M.Dim(0);i++) M[i][i]=1.0;
       break;
     }
     case DC2DE0_Type:
@@ -565,7 +522,12 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
 
       Matrix<Real_t> U,S,V;
       M_e2c.SVD(U,S,V);
-      for(size_t i=0;i<S.Dim(0);i++) S[i][i]=(S[i][i]>1e-13?1.0/S[i][i]:0.0);
+      Real_t eps=1, max_S=0;
+      while(eps*(Real_t)0.5+(Real_t)1.0>1.0) eps*=0.5;
+      for(size_t i=0;i<std::min(S.Dim(0),S.Dim(1));i++){
+        if(fabs(S[i][i])>max_S) max_S=fabs(S[i][i]);
+      }
+      for(size_t i=0;i<S.Dim(0);i++) S[i][i]=(S[i][i]>eps*max_S*4?1.0/S[i][i]:0.0);
       M=V.Transpose()*S;//*U.Transpose();
       break;
     }
@@ -590,17 +552,6 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
       Matrix<Real_t> U,S,V;
       M_e2c.SVD(U,S,V);
       M=U.Transpose();
-
-      //Real_t eps=1.0;
-      //while(eps+(Real_t)1.0>1.0) eps*=0.5;
-      //M=M_e2c.pinv(sqrt(eps)); //check 2 equivalent
-
-      //M.SetZero();
-      //for(size_t i=0;i<M.Dim(0);i++) M[i][i]=1.0;
-      break;
-    }
-    case S2U_Type:
-    {
       break;
     }
     case U2U_Type:
@@ -690,18 +641,6 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
       Matrix<Real_t>& M_c2e0=Precomp(level,DC2DE0_Type,0);
       Matrix<Real_t>& M_c2e1=Precomp(level,DC2DE1_Type,0);
       M=M_c2e0*(M_c2e1*M);
-      break;
-    }
-    case U0_Type:
-    {
-      break;
-    }
-    case U1_Type:
-    {
-      break;
-    }
-    case U2_Type:
-    {
       break;
     }
     case V_Type:
@@ -823,15 +762,11 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
       }
       break;
     }
-    case X_Type:
-    {
-      break;
-    }
     case BC_Type:
     {
       if(!this->ScaleInvar() || MultipoleOrder()==0) break;
-      if(kernel->k_m2l->ker_dim[1]!=kernel->k_m2m->ker_dim[1]) break;
-      if(kernel->k_m2l->ker_dim[0]!=kernel->k_l2l->ker_dim[0]) break;
+      if(kernel->k_m2l->ker_dim[0]!=kernel->k_m2m->ker_dim[0]) break;
+      if(kernel->k_m2l->ker_dim[1]!=kernel->k_l2l->ker_dim[1]) break;
       const int* ker_dim=kernel->k_m2l->ker_dim;
       size_t mat_cnt_m2m=interac_list.ListCount(U2U_Type);
       size_t n_surf=(6*(MultipoleOrder()-1)*(MultipoleOrder()-1)+2);  //Total number of points.
@@ -839,23 +774,32 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
         Matrix<Real_t> M_m2m[BC_LEVELS+1];
         Matrix<Real_t> M_m2l[BC_LEVELS+1];
         Matrix<Real_t> M_l2l[BC_LEVELS+1];
-        Matrix<Real_t> M_zero_avg(n_surf*ker_dim[0],n_surf*ker_dim[0]);
+        Matrix<Real_t> M_equiv_zero_avg(n_surf*ker_dim[0],n_surf*ker_dim[0]);
+        Matrix<Real_t> M_check_zero_avg(n_surf*ker_dim[1],n_surf*ker_dim[1]);
         { // Set average multipole charge to zero. (improves stability for large BC_LEVELS)
-          M_zero_avg.SetZero();
+          M_equiv_zero_avg.SetZero();
           for(size_t i=0;i<n_surf*ker_dim[0];i++)
-            M_zero_avg[i][i]+=1;
+            M_equiv_zero_avg[i][i]+=1;
           for(size_t i=0;i<n_surf;i++)
             for(size_t j=0;j<n_surf;j++)
               for(size_t k=0;k<ker_dim[0];k++)
-                M_zero_avg[i*ker_dim[0]+k][j*ker_dim[0]+k]-=1.0/n_surf;
+                M_equiv_zero_avg[i*ker_dim[0]+k][j*ker_dim[0]+k]-=1.0/n_surf;
+        }
+        { // Set average check potential to zero. (improves stability for large BC_LEVELS)
+          M_check_zero_avg.SetZero();
+          for(size_t i=0;i<n_surf*ker_dim[1];i++)
+            M_check_zero_avg[i][i]+=1;
+          for(size_t i=0;i<n_surf;i++)
+            for(size_t j=0;j<n_surf;j++)
+              for(size_t k=0;k<ker_dim[1];k++)
+                M_check_zero_avg[i*ker_dim[1]+k][j*ker_dim[1]+k]-=1.0/n_surf;
         }
         for(int level=0; level>=-BC_LEVELS; level--){
-          // Compute M_l2l
-          {
+          { // Compute M_l2l
             this->Precomp(level, D2D_Type, 0);
             Permutation<Real_t>& Pr = this->interac_list.Perm_R(level, D2D_Type, 0);
             Permutation<Real_t>& Pc = this->interac_list.Perm_C(level, D2D_Type, 0);
-            M_l2l[-level] = Pr * this->Precomp(level, D2D_Type, this->interac_list.InteracClass(D2D_Type, 0)) * Pc;
+            M_l2l[-level] = M_check_zero_avg * Pr * this->Precomp(level, D2D_Type, this->interac_list.InteracClass(D2D_Type, 0)) * Pc * M_check_zero_avg;
             assert(M_l2l[-level].Dim(0)>0 && M_l2l[-level].Dim(1)>0);
           }
 
@@ -867,93 +811,59 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
             Matrix<Real_t> M = Pr * this->Precomp(level, U2U_Type, this->interac_list.InteracClass(U2U_Type, mat_indx)) * Pc;
             assert(M.Dim(0)>0 && M.Dim(1)>0);
 
-            if(mat_indx==0) M_m2m[-level] = M_zero_avg*M;
-            else M_m2m[-level] += M_zero_avg*M;
+            if(mat_indx==0) M_m2m[-level] = M_equiv_zero_avg*M*M_equiv_zero_avg;
+            else M_m2m[-level] += M_equiv_zero_avg*M*M_equiv_zero_avg;
           }
 
           // Compute M_m2l
           if(!ScaleInvar() || level==0){
             Real_t s=(1UL<<(-level));
-            Real_t ue_coord[3]={0,0,0};
             Real_t dc_coord[3]={0,0,0};
-            std::vector<Real_t> src_coord=u_equiv_surf(MultipoleOrder(), ue_coord, level);
             std::vector<Real_t> trg_coord=d_check_surf(MultipoleOrder(), dc_coord, level);
-            Matrix<Real_t> M_ue2dc(n_surf*ker_dim[0], n_surf*ker_dim[1]);
-            M_ue2dc.SetZero();
+            Matrix<Real_t> M_ue2dc(n_surf*ker_dim[0], n_surf*ker_dim[1]); M_ue2dc.SetZero();
 
             for(int x0=-2;x0<4;x0++)
             for(int x1=-2;x1<4;x1++)
             for(int x2=-2;x2<4;x2++)
             if(abs(x0)>1 || abs(x1)>1 || abs(x2)>1){
-              ue_coord[0]=x0*s; ue_coord[1]=x1*s; ue_coord[2]=x2*s;
+              Real_t ue_coord[3]={x0*s, x1*s, x2*s};
               std::vector<Real_t> src_coord=u_equiv_surf(MultipoleOrder(), ue_coord, level);
               Matrix<Real_t> M_tmp(n_surf*ker_dim[0], n_surf*ker_dim[1]);
               kernel->k_m2l->BuildMatrix(&src_coord[0], n_surf,
-                                     &trg_coord[0], n_surf, &(M_tmp[0][0]));
+                                         &trg_coord[0], n_surf, &(M_tmp[0][0]));
               M_ue2dc+=M_tmp;
             }
 
-            // Shift by constant.
-            for(size_t i=0;i<M_ue2dc.Dim(0);i++){
-              std::vector<Real_t> avg(ker_dim[1],0);
-              for(size_t j=0; j<M_ue2dc.Dim(1); j+=ker_dim[1])
-                for(int k=0; k<ker_dim[1]; k++) avg[k]+=M_ue2dc[i][j+k];
-              for(int k=0; k<ker_dim[1]; k++) avg[k]/=n_surf;
-              for(size_t j=0; j<M_ue2dc.Dim(1); j+=ker_dim[1])
-                for(int k=0; k<ker_dim[1]; k++) M_ue2dc[i][j+k]-=avg[k];
+            M_m2l[-level]=M_check_zero_avg*M_ue2dc * M_check_zero_avg;
+          }else{
+            M_m2l[-level]=M_equiv_zero_avg * M_m2l[-level-1] * M_check_zero_avg;
+            if(ScaleInvar()){ // Scale M_m2l
+              Permutation<Real_t> ker_perm=this->kernel->k_m2l->perm_vec[0     +Scaling];
+              Vector<Real_t> scal_exp=this->kernel->k_m2l->src_scal;
+              for(size_t i=0;i<scal_exp.Dim();i++) scal_exp[i]=-scal_exp[i];
+              Permutation<Real_t> P=equiv_surf_perm(MultipoleOrder(), Scaling, ker_perm, &scal_exp);
+              M_m2l[-level]=P*M_m2l[-level];
             }
-
-            Matrix<Real_t>& M_dc2de0 = Precomp(level, DC2DE0_Type, 0);
-            Matrix<Real_t>& M_dc2de1 = Precomp(level, DC2DE1_Type, 0);
-            M_m2l[-level]=(M_ue2dc*M_dc2de0)*M_dc2de1;
-          }else M_m2l[-level]=M_m2l[-level-1];
-        }
-
-        for(int level=-BC_LEVELS;level<=0;level++){
-          if(level==-BC_LEVELS) M = M_m2l[-level];
-          else                  M = M_m2l[-level] + M_m2m[-level]*M*M_l2l[-level];
-
-          { // Shift by constant. (improves stability for large BC_LEVELS)
-            Matrix<Real_t> M_de2dc(n_surf*ker_dim[0], n_surf*ker_dim[1]);
-            { // M_de2dc TODO: For scale-invariant kernels, compute only once.
-              // Coord of downward check surface
-              Real_t c[3]={0,0,0};
-              int level_=(ScaleInvar()?0:level);
-              std::vector<Real_t> check_surf=d_check_surf(MultipoleOrder(),c,level_);
-              size_t n_ch=check_surf.size()/3;
-
-              // Coord of downward equivalent surface
-              std::vector<Real_t> equiv_surf=d_equiv_surf(MultipoleOrder(),c,level_);
-              size_t n_eq=equiv_surf.size()/3;
-
-              // Evaluate potential at check surface due to equivalent surface.
-              kernel->k_m2l->BuildMatrix(&equiv_surf[0], n_eq,
-                                     &check_surf[0], n_ch, &(M_de2dc[0][0]));
+            if(ScaleInvar()){ // Scale M_m2l
+              Permutation<Real_t> ker_perm=this->kernel->k_m2l->perm_vec[C_Perm+Scaling];
+              Vector<Real_t> scal_exp=this->kernel->k_m2l->trg_scal;
+              for(size_t i=0;i<scal_exp.Dim();i++) scal_exp[i]=-scal_exp[i];
+              Permutation<Real_t> P=equiv_surf_perm(MultipoleOrder(), Scaling, ker_perm, &scal_exp);
+              M_m2l[-level]=M_m2l[-level]*P;
             }
-            Matrix<Real_t> M_ue2dc=M*M_de2dc;
-
-            for(size_t i=0;i<M_ue2dc.Dim(0);i++){
-              std::vector<Real_t> avg(ker_dim[1],0);
-              for(size_t j=0; j<M_ue2dc.Dim(1); j+=ker_dim[1])
-                for(int k=0; k<ker_dim[1]; k++) avg[k]+=M_ue2dc[i][j+k];
-              for(int k=0; k<ker_dim[1]; k++) avg[k]/=n_surf;
-              for(size_t j=0; j<M_ue2dc.Dim(1); j+=ker_dim[1])
-                for(int k=0; k<ker_dim[1]; k++) M_ue2dc[i][j+k]-=avg[k];
-            }
-
-            Matrix<Real_t>& M_dc2de0 = Precomp(level, DC2DE0_Type, 0);
-            Matrix<Real_t>& M_dc2de1 = Precomp(level, DC2DE1_Type, 0);
-            M=(M_ue2dc*M_dc2de0)*M_dc2de1;
           }
         }
-
+        for(int level=-BC_LEVELS;level<=0;level++){
+          if(level==-BC_LEVELS) M = M_m2l[-level];
+          else                  M = M_equiv_zero_avg * (M_m2l[-level] + M_m2m[-level]*M*M_l2l[-level]) * M_equiv_zero_avg;
+        }
         { // ax+by+cz+d correction.
           std::vector<Real_t> corner_pts;
           corner_pts.push_back(0); corner_pts.push_back(0); corner_pts.push_back(0);
           corner_pts.push_back(1); corner_pts.push_back(0); corner_pts.push_back(0);
           corner_pts.push_back(0); corner_pts.push_back(1); corner_pts.push_back(0);
           corner_pts.push_back(0); corner_pts.push_back(0); corner_pts.push_back(1);
-          size_t n_corner=corner_pts.size()/3;
+          size_t n_corner=corner_pts.size()/COORD_DIM;
 
           // Coord of downward equivalent surface
           Real_t c[3]={0,0,0};
@@ -966,8 +876,10 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
             { // Error from local expansion.
               Matrix<Real_t> M_e2pt(n_surf*ker_dim[0],n_corner*ker_dim[1]);
               kernel->k_m2l->BuildMatrix(&dn_equiv_surf[0], n_surf,
-                                     &corner_pts[0], n_corner, &(M_e2pt[0][0]));
-              M_err=M*M_e2pt;
+                                            &corner_pts[0], n_corner, &(M_e2pt[0][0]));
+              Matrix<Real_t>& M_dc2de0 = Precomp(0, DC2DE0_Type, 0);
+              Matrix<Real_t>& M_dc2de1 = Precomp(0, DC2DE1_Type, 0);
+              M_err=(M*M_dc2de0)*(M_dc2de1*M_e2pt);
             }
             for(size_t k=0;k<4;k++){ // Error from colleagues of root.
               for(int j0=-1;j0<=1;j0++)
@@ -979,7 +891,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
                 if(fabs(pt_coord[0]-0.5)>1.0 || fabs(pt_coord[1]-0.5)>1.0 || fabs(pt_coord[2]-0.5)>1.0){
                   Matrix<Real_t> M_e2pt(n_surf*ker_dim[0],ker_dim[1]);
                   kernel->k_m2l->BuildMatrix(&up_equiv_surf[0], n_surf,
-                                         &pt_coord[0], 1, &(M_e2pt[0][0]));
+                                                  &pt_coord[0], 1, &(M_e2pt[0][0]));
                   for(size_t i=0;i<M_e2pt.Dim(0);i++)
                     for(size_t j=0;j<M_e2pt.Dim(1);j++)
                       M_err[i][k*ker_dim[1]+j]+=M_e2pt[i][j];
@@ -993,16 +905,14 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
           for(size_t k=0;k<ker_dim[1];k++)
           for(size_t j=0;j<n_surf;j++){
             M_grad[i][j*ker_dim[1]+k]=(M_err[i][0*ker_dim[1]+k]                         )*1.0                         +
-                                          (M_err[i][1*ker_dim[1]+k]-M_err[i][0*ker_dim[1]+k])*dn_check_surf[j*COORD_DIM+0]+
-                                          (M_err[i][2*ker_dim[1]+k]-M_err[i][0*ker_dim[1]+k])*dn_check_surf[j*COORD_DIM+1]+
-                                          (M_err[i][3*ker_dim[1]+k]-M_err[i][0*ker_dim[1]+k])*dn_check_surf[j*COORD_DIM+2];
+                                      (M_err[i][1*ker_dim[1]+k]-M_err[i][0*ker_dim[1]+k])*dn_check_surf[j*COORD_DIM+0]+
+                                      (M_err[i][2*ker_dim[1]+k]-M_err[i][0*ker_dim[1]+k])*dn_check_surf[j*COORD_DIM+1]+
+                                      (M_err[i][3*ker_dim[1]+k]-M_err[i][0*ker_dim[1]+k])*dn_check_surf[j*COORD_DIM+2];
           }
-
-          Matrix<Real_t>& M_dc2de0 = Precomp(0, DC2DE0_Type, 0);
-          Matrix<Real_t>& M_dc2de1 = Precomp(0, DC2DE1_Type, 0);
-          M-=(M_grad*M_dc2de0)*M_dc2de1;
+          M-=M_grad;
         }
-        if(0){ // Free memory
+
+        if(!this->ScaleInvar()){ // Free memory
           Mat_Type type=D2D_Type;
           for(int l=-BC_LEVELS;l<0;l++)
           for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
@@ -2414,7 +2324,6 @@ void FMM_Pts<FMMNode>::Up2Up     (SetupData<Real_t>& setup_data, bool device){
 
 template <class FMMNode>
 void FMM_Pts<FMMNode>::PeriodicBC(FMMNode* node){
-  return;// TODO fix this
   if(!this->ScaleInvar() || this->MultipoleOrder()==0) return;
   Matrix<Real_t>& M = Precomp(0, BC_Type, 0);
 

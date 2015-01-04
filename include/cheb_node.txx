@@ -218,6 +218,7 @@ void Cheb_Node<Real_t>::VTU_Data(VTUData_t& vtu_data, std::vector<Node_t*>& node
       grid_pts[0]=0.0; grid_pts[gridpt_cnt-1]=1.0;
     }
 
+    Vector<Real_t> gridval;
     for(size_t nid=0;nid<nodes.size();nid++){
       Node_t* n=nodes[nid];
       if(n->IsGhost() || !n->IsLeaf()) continue;
@@ -245,7 +246,8 @@ void Cheb_Node<Real_t>::VTU_Data(VTUData_t& vtu_data, std::vector<Node_t*>& node
       }
 
       {// Set point values.
-        Real_t* val_ptr=&value[point_cnt*n->data_dof];
+        if(gridval.Dim()!=n->data_dof*gridpt_cnt*gridpt_cnt*gridpt_cnt)
+          gridval.ReInit(n->data_dof*gridpt_cnt*gridpt_cnt*gridpt_cnt);
         std::vector<Real_t> x(gridpt_cnt);
         std::vector<Real_t> y(gridpt_cnt);
         std::vector<Real_t> z(gridpt_cnt);
@@ -254,10 +256,11 @@ void Cheb_Node<Real_t>::VTU_Data(VTUData_t& vtu_data, std::vector<Node_t*>& node
           y[i]=c[1]+s*grid_pts[i];
           z[i]=c[2]+s*grid_pts[i];
         }
-        n->ReadVal(x, y, z, val_ptr);
+        n->ReadVal(x, y, z, &gridval[0]);
         //Rearrrange data
         //(x1,x2,x3,...,y1,y2,...z1,...) => (x1,y1,z1,x2,y2,z2,...)
-        Matrix<Real_t> M(n->data_dof,gridpt_cnt*gridpt_cnt*gridpt_cnt,val_ptr,false);
+        Matrix<VTKReal_t> M(n->data_dof,gridpt_cnt*gridpt_cnt*gridpt_cnt,&value[point_cnt*n->data_dof],false);
+        for(size_t i=0;i<gridval.Dim();i++) M[0][i]=gridval[i];
         M=M.Transpose();
       }
     }

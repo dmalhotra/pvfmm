@@ -605,7 +605,12 @@ void Kernel<T>::Initialize(bool verbose) const{
         {
           Matrix<T> U,S,V;
           M_e2c.SVD(U,S,V);
-          for(size_t i=0;i<S.Dim(0);i++) S[i][i]=(S[i][i]>1e-13?1.0/S[i][i]:0.0);
+          T eps=1, max_S=0;
+          while(eps*(T)0.5+(T)1.0>1.0) eps*=0.5;
+          for(size_t i=0;i<std::min(S.Dim(0),S.Dim(1));i++){
+            if(fabs(S[i][i])>max_S) max_S=fabs(S[i][i]);
+          }
+          for(size_t i=0;i<S.Dim(0);i++) S[i][i]=(S[i][i]>eps*max_S*4?1.0/S[i][i]:0.0);
           M_c2e0=V.Transpose()*S;
           M_c2e1=U.Transpose();
         }
