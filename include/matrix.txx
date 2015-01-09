@@ -172,9 +172,26 @@ void Matrix<T>::Write(const char* fname){
     std::cout<<"Unable to open file for writing:"<<fname<<'\n';
     return;
   }
-  size_t dim_[2]={dim[0],dim[1]};
-  fwrite(dim_,sizeof(size_t),2,f1);
+  uint32_t dim_[2]={dim[0],dim[1]};
+  fwrite(dim_,sizeof(uint32_t),2,f1);
   fwrite(data_ptr,sizeof(T),dim[0]*dim[1],f1);
+  fclose(f1);
+}
+
+template <class T>
+void Matrix<T>::Read(const char* fname){
+  FILE* f1=fopen(fname,"r");
+  if(f1==NULL){
+    std::cout<<"Unable to open file for reading:"<<fname<<'\n';
+    return;
+  }
+  uint32_t dim_[2];
+  size_t readlen=fread (dim_, sizeof(uint32_t), 2, f1);
+  assert(readlen==2);
+
+  ReInit(dim_[0],dim_[1]);
+  readlen=fread(data_ptr,sizeof(T),dim[0]*dim[1],f1);
+  assert(readlen==dim[0]*dim[1]);
   fclose(f1);
 }
 

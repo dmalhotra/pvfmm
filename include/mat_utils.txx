@@ -159,7 +159,7 @@ namespace mat{
           for(size_t j=i;j<dim[0];j++){
             x_inv_norm+=S(j,i)*S(j,i);
           }
-          x_inv_norm=1/sqrt(x_inv_norm);
+          if(x_inv_norm>0) x_inv_norm=1/sqrt(x_inv_norm);
 
           T alpha=sqrt(1+x1*x_inv_norm);
           T beta=x_inv_norm/alpha;
@@ -203,7 +203,7 @@ namespace mat{
           for(size_t j=i+1;j<dim[1];j++){
             x_inv_norm+=S(i,j)*S(i,j);
           }
-          x_inv_norm=1/sqrt(x_inv_norm);
+          if(x_inv_norm>0) x_inv_norm=1/sqrt(x_inv_norm);
 
           T alpha=sqrt(1+x1*x_inv_norm);
           T beta=x_inv_norm/alpha;
@@ -255,34 +255,43 @@ namespace mat{
       //while(k0<dim[1]-1 && fabs(S(k0,k0+1))<=eps*(fabs(S(k0,k0))+fabs(S(k0+1,k0+1)))) k0++;
       while(k0<dim[1]-1 && fabs(S(k0,k0+1))<=eps*S_max) k0++;
       if(k0==dim[1]-1) continue;
-      size_t k=k0;
 
-      size_t n=k0+1;
+      size_t n=k0+2;
       //while(n<dim[1] && fabs(S(n-1,n))>eps*(fabs(S(n-1,n-1))+fabs(S(n,n)))) n++;
       while(n<dim[1] && fabs(S(n-1,n))>eps*S_max) n++;
 
-      T mu=0;
-      if(n>2){ // Compute mu
-        T C[3][2];
-        C[0][0]=S(n-2,n-2)*S(n-2,n-2)+S(n-3,n-2)*S(n-3,n-2); C[0][1]=S(n-2,n-2)*S(n-2,n-1);
-        C[1][0]=S(n-2,n-2)*S(n-2,n-1); C[1][1]=S(n-1,n-1)*S(n-1,n-1)+S(n-2,n-1)*S(n-2,n-1);
+      T alpha=0;
+      T beta=0;
+      { // Compute mu
+        T C[2][2];
+        C[0][0]=S(n-2,n-2)*S(n-2,n-2);
+        if(n-k0>2) C[0][0]+=S(n-3,n-2)*S(n-3,n-2);
+        C[0][1]=S(n-2,n-2)*S(n-2,n-1);
+        C[1][0]=S(n-2,n-2)*S(n-2,n-1);
+        C[1][1]=S(n-1,n-1)*S(n-1,n-1)+S(n-2,n-1)*S(n-2,n-1);
 
         T b=-(C[0][0]+C[1][1])/2;
         T c=  C[0][0]*C[1][1] - C[0][1]*C[1][0];
-        T d=sqrt(b*b-c);
+        T d=0;
+        if(b*b-c>0) d=sqrt(b*b-c);
+        else{
+          T b=(C[0][0]-C[1][1])/2;
+          T c=-C[0][1]*C[1][0];
+          if(b*b-c>0) d=sqrt(b*b-c);
+        }
+
         T lambda1=-b+d;
         T lambda2=-b-d;
 
         T d1=lambda1-C[1][1]; d1=(d1<0?-d1:d1);
         T d2=lambda2-C[1][1]; d2=(d2<0?-d2:d2);
-        mu=(d1<d2?lambda1:lambda2);
+        T mu=(d1<d2?lambda1:lambda2);
+
+        alpha=S(k0,k0)*S(k0,k0)-mu;
+        beta=S(k0,k0)*S(k0,k0+1);
       }
 
-      T alpha=S(k,k)*S(k,k)-mu;
-      T beta=S(k,k)*S(k,k+1);
-
-      for(;k<n-1;k++)
-      {
+      for(size_t k=k0;k<n-1;k++){
         size_t dimU[2]={dim[0],dim[0]};
         size_t dimV[2]={dim[1],dim[1]};
         GivensR(S_,dim ,k,alpha,beta);
@@ -295,6 +304,24 @@ namespace mat{
 
         alpha=S(k,k+1);
         beta=S(k,k+2);
+      }
+
+      { // Make S bi-diagonal again
+        for(size_t i0=k0;i0<n-1;i0++){
+          for(size_t i1=0;i1<dim[1];i1++){
+            if(i0>i1 || i0+1<i1) S(i0,i1)=0;
+          }
+        }
+        for(size_t i0=0;i0<dim[0];i0++){
+          for(size_t i1=k0;i1<n-1;i1++){
+            if(i0>i1 || i0+1<i1) S(i0,i1)=0;
+          }
+        }
+        for(size_t i=0;i<dim[1]-1;i++){
+          if(fabs(S(i,i+1))<=eps*S_max){
+            S(i,i+1)=0;
+          }
+        }
       }
       //std::cout<<iter<<' '<<k0<<' '<<n<<'\n';
     }

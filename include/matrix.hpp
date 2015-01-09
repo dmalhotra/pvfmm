@@ -71,6 +71,8 @@ class Matrix{
 
   void Write(const char* fname);
 
+  void Read(const char* fname);
+
   size_t Dim(size_t i) const;
 
   void Resize(size_t i, size_t j);
