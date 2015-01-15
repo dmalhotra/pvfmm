@@ -1066,6 +1066,7 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& n
         }else{
           node[i]->pt_cnt[0] =node[i]-> src_coord.Dim()/COORD_DIM;
           node[i]->pt_cnt[0]+=node[i]->surf_coord.Dim()/COORD_DIM;
+          if(node[i]->IsGhost()) node[i]->pt_cnt[0]++; // TODO: temporary fix, pt_cnt not known for ghost nodes
         }
         if(node[i]->Depth()==0) r_node=node[i];
       }
@@ -4158,7 +4159,7 @@ void FMM_Pts<FMMNode>::X_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
     std::vector<std::vector<size_t> > interac_cnt_(omp_p);
 
     size_t m=this->MultipoleOrder();
-    size_t Nsrf=(6*(m-1)*(m-1)+2)*COORD_DIM;
+    size_t Nsrf=(6*(m-1)*(m-1)+2);
     #pragma omp parallel for
     for(size_t tid=0;tid<omp_p;tid++){
       std::vector<size_t>& in_node    =in_node_[tid]    ;
@@ -4170,7 +4171,7 @@ void FMM_Pts<FMMNode>::X_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
       size_t b=(nodes_out.size()*(tid+1))/omp_p;
       for(size_t i=a;i<b;i++){
         FMMNode_t* tnode=(FMMNode_t*)nodes_out[i];
-        if(tnode->IsLeaf() && data.trg_coord.cnt[i]<=Nsrf){ // skip: handled in U-list
+        if(tnode->IsLeaf() && tnode->pt_cnt[1]<=Nsrf){ // skip: handled in U-list
           interac_cnt.push_back(0);
           continue;
         }
@@ -4445,7 +4446,7 @@ void FMM_Pts<FMMNode>::W_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
     std::vector<std::vector<size_t> > interac_cnt_(omp_p);
 
     size_t m=this->MultipoleOrder();
-    size_t Nsrf=(6*(m-1)*(m-1)+2)*COORD_DIM;
+    size_t Nsrf=(6*(m-1)*(m-1)+2);
     #pragma omp parallel for
     for(size_t tid=0;tid<omp_p;tid++){
       std::vector<size_t>& in_node    =in_node_[tid]    ;
@@ -4467,7 +4468,8 @@ void FMM_Pts<FMMNode>::W_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
             FMMNode_t* snode=intlst[j];
             size_t snode_id=snode->node_id;
             if(snode_id>=nodes_in.size() || nodes_in[snode_id]!=snode) continue;
-            if(snode->IsLeaf() && data.src_coord.cnt[snode_id]+data.srf_coord.cnt[snode_id]<=Nsrf) continue; // skip: handled in U-list
+            if(snode->IsGhost() && snode->src_coord.Dim()+snode->surf_coord.Dim()==0){ // Is non-leaf ghost node
+            }else if(snode->IsLeaf() && snode->pt_cnt[0]<=Nsrf) continue; // skip: handled in U-list
             in_node.push_back(snode_id);
             scal_idx.push_back(snode->Depth());
             { // set coord_shift
@@ -4742,7 +4744,7 @@ void FMM_Pts<FMMNode>::U_ListSetup(SetupData<Real_t>& setup_data, FMMTree_t* tre
     std::vector<std::vector<size_t> > interac_cnt_(omp_p);
 
     size_t m=this->MultipoleOrder();
-    size_t Nsrf=(6*(m-1)*(m-1)+2)*COORD_DIM;
+    size_t Nsrf=(6*(m-1)*(m-1)+2);
     #pragma omp parallel for
     for(size_t tid=0;tid<omp_p;tid++){
       std::vector<size_t>& in_node    =in_node_[tid]    ;
@@ -4832,7 +4834,7 @@ void FMM_Pts<FMMNode>::U_ListSetup(SetupData<Real_t>& setup_data, FMMTree_t* tre
         { // X_Type
           Mat_Type type=X_Type;
           Vector<FMMNode_t*>& intlst=tnode->interac_list[type];
-          if(data.trg_coord.cnt[i]<=Nsrf)
+          if(tnode->pt_cnt[1]<=Nsrf)
           for(size_t j=0;j<intlst.Dim();j++) if(intlst[j]){
             FMMNode_t* snode=intlst[j];
             size_t snode_id=snode->node_id;
@@ -4861,7 +4863,8 @@ void FMM_Pts<FMMNode>::U_ListSetup(SetupData<Real_t>& setup_data, FMMTree_t* tre
             FMMNode_t* snode=intlst[j];
             size_t snode_id=snode->node_id;
             if(snode_id>=nodes_in.size() || nodes_in[snode_id]!=snode) continue;
-            if(data.src_coord.cnt[snode_id]+data.srf_coord.cnt[snode_id]> Nsrf) continue;
+            if(snode->IsGhost() && snode->src_coord.Dim()+snode->surf_coord.Dim()==0) continue; // Is non-leaf ghost node
+            if(snode->pt_cnt[0]> Nsrf) continue;
             in_node.push_back(snode_id);
             scal_idx.push_back(snode->Depth());
             { // set coord_shift
