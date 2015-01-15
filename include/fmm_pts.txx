@@ -234,14 +234,15 @@ void FMM_Pts<FMMNode>::Initialize(int mult_order, const MPI_Comm& comm_, const K
   kernel=kernel_;
   assert(kernel!=NULL);
 
+  bool save_precomp=false;
   mat=new PrecompMat<Real_t>(ScaleInvar(), MAX_DEPTH+1);
-  if(this->mat_fname.size()==0){
+  if(this->mat_fname.size()==0 && !this->ScaleInvar()){
     std::stringstream st;
     st<<PVFMM_PRECOMP_DATA_PATH;
 
     if(!st.str().size()){ // look in PVFMM_DIR
       char* pvfmm_dir = getenv ("PVFMM_DIR");
-      if(pvfmm_dir) st<<pvfmm_dir<<'/';
+      if(pvfmm_dir) st<<pvfmm_dir;
     }
 
     #ifndef STAT_MACROS_BROKEN
@@ -254,12 +255,14 @@ void FMM_Pts<FMMNode>::Initialize(int mult_order, const MPI_Comm& comm_, const K
     }
     #endif
 
+    if(st.str().size()) st<<'/';
     st<<"Precomp_"<<kernel->ker_name.c_str()<<"_m"<<mult_order;
     if(sizeof(Real_t)==8) st<<"";
     else if(sizeof(Real_t)==4) st<<"_f";
     else st<<"_t"<<sizeof(Real_t);
     st<<".data";
     this->mat_fname=st.str();
+    save_precomp=true;
   }
   this->mat->LoadFile(mat_fname.c_str(), this->comm);
 
@@ -294,6 +297,18 @@ void FMM_Pts<FMMNode>::Initialize(int mult_order, const MPI_Comm& comm_, const K
   Profile::Tic("PrecompD2D",&comm,false,4);
   this->PrecompAll(D2D_Type);
   Profile::Toc();
+
+  if(save_precomp){
+    Profile::Tic("Save2File",&this->comm,false,4);
+    if(!rank){
+      std::cout<<this->mat_fname.c_str()<<'\n';
+      FILE* f=fopen(this->mat_fname.c_str(),"r");
+      if(f==NULL) { //File does not exists.
+        this->mat->Save2File(this->mat_fname.c_str());
+      }else fclose(f);
+    }
+    Profile::Toc();
+  }
 
   Profile::Tic("PrecompV",&comm,false,4);
   this->PrecompAll(V_Type);
