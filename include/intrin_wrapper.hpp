@@ -118,7 +118,7 @@ inline __m128d load_intrin(double const* a){
 
 template <>
 inline __m128 bcast_intrin(float const* a){
-  return _mm_broadcast_ss((float*)a);
+  return _mm_set_ps1(a[0]);
 }
 
 template <>
