@@ -583,7 +583,7 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
         fmm_mat->SetupPrecomp(setup_data[i+MAX_DEPTH*2],device);
         Profile::Toc();
       }
-      {// Precomp V
+      if(0){// Precomp V
         Profile::Tic("Precomp-V",this->Comm(),false,10);
         fmm_mat->SetupPrecomp(setup_data[i+MAX_DEPTH*3], /*device*/ false);
         Profile::Toc();

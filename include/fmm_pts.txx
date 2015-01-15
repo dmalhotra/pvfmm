@@ -766,7 +766,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
 
       // Coord of downward equivalent surface
       int* coord2=interac_list.RelativeCoord(type,mat_indx);
-      Real_t c[3]={(coord2[0]+1)*s*0.25,(coord2[1]+1)*s*0.25,(coord2[2]+1)*s*0.25};
+      Real_t c[3]={(Real_t)((coord2[0]+1)*s*0.25),(Real_t)((coord2[1]+1)*s*0.25),(Real_t)((coord2[2]+1)*s*0.25)};
       std::vector<Real_t> equiv_surf=u_equiv_surf(MultipoleOrder(),c,level+1);
       size_t n_eq=equiv_surf.size()/3;
 
@@ -3049,7 +3049,7 @@ void FMM_Pts<FMMNode>::V_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
   size_t n_out=nodes_out.size();
 
   // Setup precomputed data.
-  if(setup_data.precomp_data->Dim(0)*setup_data.precomp_data->Dim(1)==0) SetupPrecomp(setup_data,device);
+  //if(setup_data.precomp_data->Dim(0)*setup_data.precomp_data->Dim(1)==0) SetupPrecomp(setup_data,device);
 
   // Build interac_data
   Profile::Tic("Interac-Data",&this->comm,true,25);
@@ -3061,6 +3061,8 @@ void FMM_Pts<FMMNode>::V_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
     size_t mat_cnt=this->interac_list.ListCount(interac_type);
     Matrix<size_t> precomp_data_offset;
     std::vector<size_t> interac_mat;
+    std::vector<Real_t*> interac_mat_ptr;
+#if 0 // Since we skip SetupPrecomp for V-list
     { // Load precomp_data for interac_type.
       struct HeaderData{
         size_t total_size;
@@ -3079,6 +3081,14 @@ void FMM_Pts<FMMNode>::V_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
         interac_mat.push_back(precomp_data_offset[mat_id][0]);
       }
     }
+#else
+    {
+      for(size_t mat_id=0;mat_id<mat_cnt;mat_id++){
+        Matrix<Real_t>& M = this->mat->Mat(level, interac_type, mat_id);
+        interac_mat_ptr.push_back(&M[0][0]);
+      }
+    }
+#endif
 
     size_t dof;
     size_t m=MultipoleOrder();
@@ -3201,6 +3211,7 @@ void FMM_Pts<FMMNode>::V_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
         data_size+=sizeof(size_t)+interac_dsp[blk0].size()*sizeof(size_t);
       }
       data_size+=sizeof(size_t)+interac_mat.size()*sizeof(size_t);
+      data_size+=sizeof(size_t)+interac_mat_ptr.size()*sizeof(Real_t*);
       if(data_size>interac_data.Dim(0)*interac_data.Dim(1))
         interac_data.ReInit(1,data_size);
       char* data_ptr=&interac_data[0][0];
@@ -3215,6 +3226,10 @@ void FMM_Pts<FMMNode>::V_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
       ((size_t*)data_ptr)[0]= interac_mat.size(); data_ptr+=sizeof(size_t);
       mem::memcopy(data_ptr, &interac_mat[0], interac_mat.size()*sizeof(size_t));
       data_ptr+=interac_mat.size()*sizeof(size_t);
+
+      ((size_t*)data_ptr)[0]= interac_mat_ptr.size(); data_ptr+=sizeof(size_t);
+      mem::memcopy(data_ptr, &interac_mat_ptr[0], interac_mat_ptr.size()*sizeof(Real_t*));
+      data_ptr+=interac_mat_ptr.size()*sizeof(Real_t*);
 
       for(size_t blk0=0;blk0<n_blk0;blk0++){
         ((size_t*)data_ptr)[0]= fft_vec[blk0].size(); data_ptr+=sizeof(size_t);
@@ -3269,7 +3284,7 @@ void FMM_Pts<FMMNode>::V_List     (SetupData<Real_t>&  setup_data, bool device){
   int level=setup_data.level;
   size_t buff_size=*((size_t*)&setup_data.interac_data[0][0]);
   typename Vector<char>::Device          buff;
-  typename Matrix<char>::Device  precomp_data;
+  //typename Matrix<char>::Device  precomp_data;
   typename Matrix<char>::Device  interac_data;
   typename Matrix<Real_t>::Device  input_data;
   typename Matrix<Real_t>::Device output_data;
@@ -3277,14 +3292,14 @@ void FMM_Pts<FMMNode>::V_List     (SetupData<Real_t>&  setup_data, bool device){
   if(device){
     if(this->dev_buffer.Dim()<buff_size) this->dev_buffer.ReInit(buff_size);
     buff        =       this-> dev_buffer. AllocDevice(false);
-    precomp_data= setup_data.precomp_data->AllocDevice(false);
+    //precomp_data= setup_data.precomp_data->AllocDevice(false);
     interac_data= setup_data.interac_data. AllocDevice(false);
     input_data  = setup_data.  input_data->AllocDevice(false);
     output_data = setup_data. output_data->AllocDevice(false);
   }else{
     if(this->cpu_buffer.Dim()<buff_size) this->cpu_buffer.ReInit(buff_size);
     buff        =       this-> cpu_buffer;
-    precomp_data=*setup_data.precomp_data;
+    //precomp_data=*setup_data.precomp_data;
     interac_data= setup_data.interac_data;
     input_data  =*setup_data.  input_data;
     output_data =*setup_data. output_data;
@@ -3322,10 +3337,22 @@ void FMM_Pts<FMMNode>::V_List     (SetupData<Real_t>&  setup_data, bool device){
       Vector<size_t> interac_mat;
       interac_mat.ReInit(((size_t*)data_ptr)[0],(size_t*)(data_ptr+sizeof(size_t)),false);
       data_ptr+=sizeof(size_t)+interac_mat.Dim()*sizeof(size_t);
+
+      Vector<Real_t*> interac_mat_ptr;
+      interac_mat_ptr.ReInit(((size_t*)data_ptr)[0],(Real_t**)(data_ptr+sizeof(size_t)),false);
+      data_ptr+=sizeof(size_t)+interac_mat_ptr.Dim()*sizeof(Real_t*);
+
+#if 0 // Since we skip SetupPrecomp for V-list
       precomp_mat.Resize(interac_mat.Dim());
       for(size_t i=0;i<interac_mat.Dim();i++){
         precomp_mat[i]=(Real_t*)(precomp_data[0]+interac_mat[i]);
       }
+#else
+      precomp_mat.Resize(interac_mat_ptr.Dim());
+      for(size_t i=0;i<interac_mat_ptr.Dim();i++){
+        precomp_mat[i]=interac_mat_ptr[i];
+      }
+#endif
 
       for(size_t blk0=0;blk0<n_blk0;blk0++){
         fft_vec[blk0].ReInit(((size_t*)data_ptr)[0],(size_t*)(data_ptr+sizeof(size_t)),false);
