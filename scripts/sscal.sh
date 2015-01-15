@@ -3,20 +3,12 @@
 CORES=16;
 export EXEC=examples/bin/fmm_cheb
 
-# Set run parameters
-declare -a    nodes=();
-declare -a    cores=();
-declare -a mpi_proc=();
-declare -a  threads=();
-declare -a testcase=();
-declare -a    n_pts=();
-declare -a        m=();
-declare -a        q=();
-declare -a      tol=();
-declare -a    depth=();
-declare -a     unif=();
-declare -a     adap=();
-declare -a max_time=();
+# List arrays and corresponding executable option prefix
+declare -a opt_array=(nodes cores mpi_proc threads testcase n_pts m_pts m q tol depth unif adap max_time);
+declare -a opt_names=(    -     -        -     omp     test     N     M m q tol     d unif adap        -);
+for (( i=0; i<${#opt_names[@]}; i++ )) ; do # Declare arrays
+  eval "declare -a ${opt_array[$i]}=()";
+done
 
 
 ###################################################################################################
@@ -84,26 +76,7 @@ max_time+=(      2400      2400      2400      2400      2400       2400       2
 
 ###################################################################################################
 
-# Export arrays
-export    nodes_="$(declare -p    nodes)";
-export    cores_="$(declare -p    cores)";
-export mpi_proc_="$(declare -p mpi_proc)";
-export  threads_="$(declare -p  threads)";
-export testcase_="$(declare -p testcase)";
-export    n_pts_="$(declare -p    n_pts)";
-export    m_pts_="$(declare -p    m_pts)";
-export        m_="$(declare -p        m)";
-export        q_="$(declare -p        q)";
-export      tol_="$(declare -p      tol)";
-export    depth_="$(declare -p    depth)";
-export     unif_="$(declare -p     unif)";
-export     adap_="$(declare -p     adap)";
-export max_time_="$(declare -p max_time)";
-
-export RESULT_FNAME=$(basename ${0%.*}).out;
-export WORK_DIR=$(dirname ${PWD}/$0)/..
-cd ${WORK_DIR}
-
+WORK_DIR=$(dirname ${PWD}/$0)/..
 TERM_WIDTH=$(stty size | cut -d ' ' -f 2)
-./scripts/.submit_jobs.sh | cut -b -${TERM_WIDTH}
+source ${WORK_DIR}/scripts/.submit_jobs.sh | cut -b -${TERM_WIDTH}
 

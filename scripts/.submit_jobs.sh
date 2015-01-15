@@ -1,5 +1,6 @@
 #!/bin/bash
 
+cd ${WORK_DIR}
 make ${EXEC} -j
 if [ ! -f ${EXEC} ] ; then exit -1; fi;
 
@@ -13,52 +14,37 @@ else
   export TIMEOUT="scripts/.timeout3 -t ";
 fi
 
-eval    $nodes_;
-eval    $cores_;
-eval $mpi_proc_;
-eval  $threads_;
-eval $testcase_;
-eval    $n_pts_;
-eval    $m_pts_;
-eval        $m_;
-eval        $q_;
-eval      $tol_;
-eval    $depth_;
-eval     $unif_;
-eval     $adap_;
-eval $max_time_;
-
 declare -a     args=();
 declare -a    fname=();
 for (( k=0; k<${#nodes[@]}; k++ )) ; do
   if [ "${nodes[k]}" == ":" ]; then continue; fi;
-  args[$k]="-omp ${threads[k]} -test ${testcase[k]} -N ${n_pts[k]} -M ${m_pts[k]} -m ${m[k]} -q ${q[k]} -d ${depth[k]} -tol ${tol[k]}";
+
+  # Set output filename
   case $HOSTNAME in
-    *titan*) #titan.ccs.ornl.gov
-        fname[$k]="host_titan";
-      ;;
-    *stampede*) #stampede.tacc.utexas.edu
-        fname[$k]="host_stampede";
-      ;;
-    *ls4*) #lonestar.tacc.utexas.edu
-        fname[$k]="host_lonestar";
-      ;;
-    *ronaldo*) #ronaldo.ices.utexas.edu
-        fname[$k]="host_ronaldo";
-      ;;
-    *) # none of the known machines
-        fname[$k]="host_${HOSTNAME}";
+    *titan*) fname[$k]="host_titan";;
+    *stampede*) fname[$k]="host_stampede";;
+    *ls4*) fname[$k]="host_lonestar";;
+    *ronaldo*) fname[$k]="host_ronaldo";;
+    *) fname[$k]="host_${HOSTNAME}";;
   esac
-  fname[$k]="${fname[$k]}_n${nodes[k]}_mpi${mpi_proc[k]}_omp${threads[k]}_test${testcase[k]}_N${n_pts[k]}_M${m_pts[k]}_m${m[k]}_q${q[k]}_d${depth[k]}_tol${tol[k]}";
-  if (( ${unif[k]} )) ; then
-    args[$k]="${args[$k]} -unif";
-    fname[$k]="${fname[$k]}_unif";
-  fi;
-  if (( ${adap[k]} )) ; then
-    args[$k]="${args[$k]} -adap";
-    fname[$k]="${fname[$k]}_adap";
-  fi;
+  fname[$k]="${fname[$k]}_nds${nodes[k]}_mpi${mpi_proc[k]}";
+
+  # Set executable options
+  for (( i=0; i<${#opt_names[@]}; i++ )) ; do
+    if [ "${opt_names[i]}" != "-" ]; then
+      eval "opt_val=\${${opt_array[i]}[$k]}";
+      args[$k]="${args[k]} -${opt_names[i]} $opt_val";
+      fname[$k]="${fname[k]}_${opt_names[i]}$opt_val";
+    fi
+  done
 done
+
+# export arrays
+export    nodes_="$(declare -p    nodes)";
+export    cores_="$(declare -p    cores)";
+export mpi_proc_="$(declare -p mpi_proc)";
+export  threads_="$(declare -p  threads)";
+export max_time_="$(declare -p max_time)";
 export     args_="$(declare -p     args)";
 export    fname_="$(declare -p    fname)";
 
@@ -84,13 +70,8 @@ for (( k=0; k<${#nodes[@]}; k++ )) ; do
   done;
 
   export    NODES=${nodes[k]};    # Number of compute nodes.
-  export    CORES=${cores[k]};    # Number of cores per node.
   export MPI_PROC=${mpi_proc[k]}; # Number of MPI processes.
-  export  THREADS=${threads[k]};  # Number of threads per MPI process.
-  export TESTCASE=${testcase[k]}; # Test case.
-  export MULORDER=${m[k]};        # Multipole order.
-  export CHBORDER=${q[k]};        # Chebyshev degree.
-  export    FNAME=${RESULT_DIR}/$(basename ${EXEC})_nds${NODES}_mpi${MPI_PROC}
+  FNAME=${RESULT_DIR}/$(basename ${EXEC})_nds${NODES}_mpi${MPI_PROC}
 
   #Submit Job
   case $HOSTNAME in
@@ -148,5 +129,4 @@ for (( k=0; k<${#nodes[@]}; k++ )) ; do
 done;
 
 # Display results
-./scripts/.results.sh
-
+source ./scripts/.results.sh

@@ -301,7 +301,6 @@ void FMM_Pts<FMMNode>::Initialize(int mult_order, const MPI_Comm& comm_, const K
   if(save_precomp){
     Profile::Tic("Save2File",&this->comm,false,4);
     if(!rank){
-      std::cout<<this->mat_fname.c_str()<<'\n';
       FILE* f=fopen(this->mat_fname.c_str(),"r");
       if(f==NULL) { //File does not exists.
         this->mat->Save2File(this->mat_fname.c_str());
