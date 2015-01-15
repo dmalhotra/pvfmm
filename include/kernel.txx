@@ -866,7 +866,7 @@ void laplace_poten_uKernel(Matrix<Real_t>& src_coord, Matrix<Real_t>& src_value,
   #undef SRC_BLK
 }
 
-template <class T, int newton_iter>
+template <class T, int newton_iter=0>
 void laplace_poten(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* v_trg, mem::MemoryManager* mem_mgr){
   #define LAP_KER_NWTN(nwtn) if(newton_iter==nwtn) \
         generic_kernel<Real_t, 1, 1, laplace_poten_uKernel<Real_t,Vec_t, rinv_intrin##nwtn<Vec_t,Real_t> > > \
@@ -977,7 +977,7 @@ void laplace_dbl_uKernel(Matrix<Real_t>& src_coord, Matrix<Real_t>& src_value, M
   #undef SRC_BLK
 }
 
-template <class T, int newton_iter>
+template <class T, int newton_iter=0>
 void laplace_dbl_poten(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* v_trg, mem::MemoryManager* mem_mgr){
   #define LAP_KER_NWTN(nwtn) if(newton_iter==nwtn) \
         generic_kernel<Real_t, 4, 1, laplace_dbl_uKernel<Real_t,Vec_t, rinv_intrin##nwtn<Vec_t,Real_t> > > \
@@ -1089,7 +1089,7 @@ void laplace_grad_uKernel(Matrix<Real_t>& src_coord, Matrix<Real_t>& src_value, 
   #undef SRC_BLK
 }
 
-template <class T, int newton_iter>
+template <class T, int newton_iter=0>
 void laplace_grad(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* v_trg, mem::MemoryManager* mem_mgr){
   #define LAP_KER_NWTN(nwtn) if(newton_iter==nwtn) \
         generic_kernel<Real_t, 1, 3, laplace_grad_uKernel<Real_t,Vec_t, rinv_intrin##nwtn<Vec_t,Real_t> > > \
@@ -1131,6 +1131,31 @@ void laplace_grad(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cn
 
   #undef LAP_KER_NWTN
   #undef LAPLACE_KERNEL
+}
+
+
+template<class T> const Kernel<T>& LaplaceKernel<T>::potential(){
+  static Kernel<T> potn_ker=BuildKernel<T, laplace_poten<T,1>, laplace_dbl_poten<T,1> >("laplace"     , 3, std::pair<int,int>(1,1));
+  return potn_ker;
+}
+template<class T> const Kernel<T>& LaplaceKernel<T>::gradient(){
+  static Kernel<T> potn_ker=BuildKernel<T, laplace_poten<T,1>, laplace_dbl_poten<T,1> >("laplace"     , 3, std::pair<int,int>(1,1));
+  static Kernel<T> grad_ker=BuildKernel<T, laplace_grad <T,1>                         >("laplace_grad", 3, std::pair<int,int>(1,3),
+      &potn_ker, &potn_ker, NULL, &potn_ker, &potn_ker, NULL, &potn_ker, NULL);
+  return grad_ker;
+}
+
+template<> const Kernel<double>& LaplaceKernel<double>::potential(){
+  typedef double T;
+  static Kernel<T> potn_ker=BuildKernel<T, laplace_poten<T,2>, laplace_dbl_poten<T,2> >("laplace"     , 3, std::pair<int,int>(1,1));
+  return potn_ker;
+}
+template<> const Kernel<double>& LaplaceKernel<double>::gradient(){
+  typedef double T;
+  static Kernel<T> potn_ker=BuildKernel<T, laplace_poten<T,2>, laplace_dbl_poten<T,2> >("laplace"     , 3, std::pair<int,int>(1,1));
+  static Kernel<T> grad_ker=BuildKernel<T, laplace_grad <T,2>                         >("laplace_grad", 3, std::pair<int,int>(1,3),
+      &potn_ker, &potn_ker, NULL, &potn_ker, &potn_ker, NULL, &potn_ker, NULL);
+  return grad_ker;
 }
 
 
@@ -2176,6 +2201,23 @@ void stokes_grad<double>(double* r_src, int src_cnt, double* v_src_, int dof, do
 #endif
 #endif
 
+template<class T> const Kernel<T>& StokesKernel<T>::velocity(){
+  static Kernel<T> ker=BuildKernel<T, stokes_vel, stokes_sym_dip>("stokes_vel"   , 3, std::pair<int,int>(3,3));
+  return ker;
+}
+template<class T> const Kernel<T>& StokesKernel<T>::pressure(){
+  static Kernel<T> ker=BuildKernel<T, stokes_press              >("stokes_press" , 3, std::pair<int,int>(3,1));
+  return ker;
+}
+template<class T> const Kernel<T>& StokesKernel<T>::stress(){
+  static Kernel<T> ker=BuildKernel<T, stokes_stress             >("stokes_stress", 3, std::pair<int,int>(3,9));
+  return ker;
+}
+template<class T> const Kernel<T>& StokesKernel<T>::vel_grad(){
+  static Kernel<T> ker=BuildKernel<T, stokes_grad               >("stokes_grad"  , 3, std::pair<int,int>(3,9));
+  return ker;
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////                  BIOT-SAVART KERNEL                            ////////
@@ -2217,6 +2259,11 @@ void biot_savart(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cn
   }
 }
 
+template<class T> const Kernel<T>& BiotSavartKernel<T>::potential(){
+  static Kernel<T> ker=BuildKernel<T, biot_savart>("biot_savart", 3, std::pair<int,int>(3,3));
+  return ker;
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////                   HELMHOLTZ KERNEL                             ////////
@@ -2244,7 +2291,7 @@ void helmholtz_poten(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg
         if (R!=0){
           R = sqrt(R);
           T invR=1.0/R;
-          T G[2]={cos(mu*R)*invR, sin(mu*R)*invR};
+          T G[2]={(T)cos(mu*R)*invR, (T)sin(mu*R)*invR};
           p[0] += v_src[(s*dof+i)*2+0]*G[0] - v_src[(s*dof+i)*2+1]*G[1];
           p[1] += v_src[(s*dof+i)*2+0]*G[1] + v_src[(s*dof+i)*2+1]*G[0];
         }
@@ -2255,9 +2302,9 @@ void helmholtz_poten(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg
   }
 }
 
-template <class T>
-void helmholtz_grad(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
-  //TODO Implement this.
+template<class T> const Kernel<T>& HelmholtzKernel<T>::potential(){
+  static Kernel<T> ker=BuildKernel<T, helmholtz_poten>("helmholtz"     , 3, std::pair<int,int>(2,2));
+  return ker;
 }
 
 }//end namespace

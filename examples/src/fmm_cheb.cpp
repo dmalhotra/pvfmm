@@ -230,37 +230,35 @@ void fmm_test(int test_case, size_t N, size_t M, bool unif, int mult_order, int 
       fn_input_=fn_input_t1<Real_t>;
       fn_poten_=fn_poten_t1<Real_t>;
       fn_grad_ =fn_grad_t1<Real_t>;
-      mykernel     =&pvfmm::LaplaceKernel<Real_t>::potn_ker();
-      //mykernel_grad=&pvfmm::LaplaceKernel<Real_t>::grad_ker();
+      mykernel     =&pvfmm::LaplaceKernel<Real_t>::potential();
+      //mykernel_grad=&pvfmm::LaplaceKernel<Real_t>::gradient();
       bndry=pvfmm::Periodic;
       break;
     case 2:
       fn_input_=fn_input_t2<Real_t>;
       fn_poten_=fn_poten_t2<Real_t>;
       fn_grad_ =fn_grad_t2<Real_t>;
-      mykernel     =&pvfmm::LaplaceKernel<Real_t>::potn_ker();
-      //mykernel_grad=&pvfmm::LaplaceKernel<Real_t>::grad_ker();
+      mykernel     =&pvfmm::LaplaceKernel<Real_t>::potential();
+      //mykernel_grad=&pvfmm::LaplaceKernel<Real_t>::gradient();
       bndry=pvfmm::FreeSpace;
       break;
     case 3:
       fn_input_=fn_input_t3<Real_t>;
       fn_poten_=fn_poten_t3<Real_t>;
-      mykernel     =&pvfmm::ker_stokes_vel;
-      //mykernel_grad=&pvfmm::ker_stokes_grad;
+      mykernel     =&pvfmm::StokesKernel<Real_t>::velocity();
+      //mykernel_grad=&pvfmm::StokesKernel<Real_t>::vel_grad();
       bndry=pvfmm::FreeSpace;
       break;
     case 4:
       fn_input_=fn_input_t4<Real_t>;
       fn_poten_=fn_poten_t4<Real_t>;
-      mykernel     =&pvfmm::ker_biot_savart;
-      //mykernel_grad=&pvfmm::ker_biot_savart_grad;
+      mykernel     =&pvfmm::BiotSavartKernel<Real_t>::potential();
       bndry=pvfmm::FreeSpace;
       break;
     case 5:
       fn_input_=fn_input_t5<Real_t>;
       fn_poten_=fn_poten_t5<Real_t>;
-      mykernel     =&pvfmm::ker_helmholtz;
-      //mykernel_grad=&pvfmm::ker_helmholtz_grad;
+      mykernel     =&pvfmm::HelmholtzKernel<Real_t>::potential();
       bndry=pvfmm::FreeSpace;
       break;
     default:
@@ -543,12 +541,13 @@ int main(int argc, char **argv){
   omp_set_num_threads( atoi(commandline_option(argc, argv,  "-omp",     "1", false, "-omp  <int> = (1)    : Number of OpenMP threads."          )));
   size_t   N=(size_t)strtod(commandline_option(argc, argv,    "-N",     "1",  true, "-N    <int>          : Number of point sources."           ),NULL);
   size_t   M=(size_t)strtod(commandline_option(argc, argv,    "-M",     "1", false, "-M    <int>          : Number of points per octant."       ),NULL);
-  bool  unif=              (commandline_option(argc, argv, "-unif",    NULL, false, "-unif                : Uniform point distribution."        )!=NULL);
+  bool  unif=   (1==strtoul(commandline_option(argc, argv, "-unif",     "0", false, "-unif <0/1> =  (0)   : Uniform point distribution."        ),NULL,10));
   int      m=       strtoul(commandline_option(argc, argv,    "-m",    "10", false, "-m    <int> = (10)   : Multipole order (+ve even integer)."),NULL,10);
   int      q=       strtoul(commandline_option(argc, argv,    "-q",    "14", false, "-q    <int> = (14)   : Chebyshev order (+ve integer)."     ),NULL,10);
   int      d=       strtoul(commandline_option(argc, argv,    "-d",    "15", false, "-d    <int> = (15)   : Maximum tree depth."                ),NULL,10);
   double tol=        strtod(commandline_option(argc, argv,  "-tol",  "1e-5", false, "-tol <real> = (1e-5) : Tolerance for adaptive refinement." ),NULL);
-  bool  adap=              (commandline_option(argc, argv, "-adap",    NULL, false, "-adap                : Adaptive tree refinement."          )!=NULL);
+  bool  adap=   (1==strtoul(commandline_option(argc, argv, "-adap",     "0", false, "-adap <0/1> =  (0)   : Adaptive tree refinement."          ),NULL,10));
+  bool    sp=   (1==strtoul(commandline_option(argc, argv,   "-sp",     "0", false, "-sp   <0/1> =  (0)   : Single Precision."                  ),NULL,10));
   int   test=       strtoul(commandline_option(argc, argv, "-test",     "1", false,
        "-test <int> = (1)    : 1) Laplace, Smooth Gaussian, Periodic Boundary\n\
                                2) Laplace, Discontinuous Sphere, FreeSpace Boundary\n\
@@ -560,7 +559,8 @@ int main(int argc, char **argv){
 
   // Run FMM with above options.
   pvfmm::Profile::Tic("FMM_Test",&comm,true);
-  fmm_test<double>(test, N,M,unif, m,q, d, adap,tol, comm);
+  if(sp) fmm_test<float >(test, N,M,unif, m,q, d, adap,tol, comm);
+  else   fmm_test<double>(test, N,M,unif, m,q, d, adap,tol, comm);
   pvfmm::Profile::Toc();
 
   //Output Profiling results.

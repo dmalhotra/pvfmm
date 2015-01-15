@@ -156,132 +156,29 @@ Kernel<T> BuildKernel(const char* name, int dim, std::pair<int,int> k_dim,
 #endif
 namespace pvfmm{ // Predefined Kernel-functions
 
-////////////////////////////////////////////////////////////////////////////////
-////////                   LAPLACE KERNEL                               ////////
-////////////////////////////////////////////////////////////////////////////////
-
-/**
- * \brief Green's function for the Poisson's equation. Kernel tensor
- * dimension = 1x1.
- */
-template <class T, int newton_iter=0>
-void laplace_poten(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr);
-
-// Laplace double layer potential.
-template <class T, int newton_iter=0>
-void laplace_dbl_poten(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr);
-
-// Laplace grdient kernel.
-template <class T, int newton_iter=0>
-void laplace_grad(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr);
-
-
-//#ifdef PVFMM_QUAD_T
-//const Kernel<QuadReal_t> laplace_potn_q=BuildKernel<QuadReal_t, laplace_poten, laplace_dbl_poten>("laplace"     , 3, std::pair<int,int>(1,1));
-//const Kernel<QuadReal_t> laplace_grad_q=BuildKernel<QuadReal_t, laplace_grad                    >("laplace_grad", 3, std::pair<int,int>(1,3));
-//#endif
-
-const Kernel<double    > laplace_potn_d=BuildKernel<double    , laplace_poten<double,2>, laplace_dbl_poten<double,2> >("laplace"     , 3, std::pair<int,int>(1,1));
-const Kernel<double    > laplace_grad_d=BuildKernel<double    , laplace_grad <double,2>                              >("laplace_grad", 3, std::pair<int,int>(1,3),
-  &laplace_potn_d, &laplace_potn_d, NULL, &laplace_potn_d, &laplace_potn_d, NULL, &laplace_potn_d, NULL);
-
-const Kernel<float     > laplace_potn_f=BuildKernel<float     , laplace_poten<float,1>, laplace_dbl_poten<float,1> >("laplace"     , 3, std::pair<int,int>(1,1));
-const Kernel<float     > laplace_grad_f=BuildKernel<float     , laplace_grad <float,1>                             >("laplace_grad", 3, std::pair<int,int>(1,3),
-  &laplace_potn_f, &laplace_potn_f, NULL, &laplace_potn_f, &laplace_potn_f, NULL, &laplace_potn_f, NULL);
-
 template<class T>
 struct LaplaceKernel{
-  inline static const Kernel<T>& potn_ker();
-  inline static const Kernel<T>& grad_ker();
+  inline static const Kernel<T>& potential();
+  inline static const Kernel<T>& gradient();
 };
 
-//#ifdef PVFMM_QUAD_T
-//template<> const Kernel<QuadReal_t>& LaplaceKernel<QuadReal_t>::potn_ker(){ return laplace_potn_q; };
-//template<> const Kernel<QuadReal_t>& LaplaceKernel<QuadReal_t>::grad_ker(){ return laplace_grad_q; };
-//#endif
+template<class T>
+struct StokesKernel{
+  inline static const Kernel<T>& velocity();
+  inline static const Kernel<T>& pressure();
+  inline static const Kernel<T>& stress  ();
+  inline static const Kernel<T>& vel_grad();
+};
 
-template<> const Kernel<double>& LaplaceKernel<double>::potn_ker(){ return laplace_potn_d; };
-template<> const Kernel<double>& LaplaceKernel<double>::grad_ker(){ return laplace_grad_d; };
+template<class T>
+struct BiotSavartKernel{
+  inline static const Kernel<T>& potential();
+};
 
-template<> const Kernel<float>& LaplaceKernel<float>::potn_ker(){ return laplace_potn_f; };
-template<> const Kernel<float>& LaplaceKernel<float>::grad_ker(){ return laplace_grad_f; };
-
-////////////////////////////////////////////////////////////////////////////////
-////////                   STOKES KERNEL                             ////////
-////////////////////////////////////////////////////////////////////////////////
-
-/**
- * \brief Green's function for the Stokes's equation. Kernel tensor
- * dimension = 3x3.
- */
-template <class T>
-void stokes_vel(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr);
-
-template <class T>
-void stokes_sym_dip(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr);
-
-template <class T>
-void stokes_press(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr);
-
-template <class T>
-void stokes_stress(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr);
-
-template <class T>
-void stokes_grad(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr);
-
-
-#ifndef __MIC__
-#ifdef USE_SSE
-template <>
-void stokes_vel<double>(double* r_src, int src_cnt, double* v_src_, int dof, double* r_trg, int trg_cnt, double* k_out, mem::MemoryManager* mem_mgr);
-
-template <>
-void stokes_press<double>(double* r_src, int src_cnt, double* v_src_, int dof, double* r_trg, int trg_cnt, double* k_out, mem::MemoryManager* mem_mgr);
-
-template <>
-void stokes_stress<double>(double* r_src, int src_cnt, double* v_src_, int dof, double* r_trg, int trg_cnt, double* k_out, mem::MemoryManager* mem_mgr);
-
-template <>
-void stokes_grad<double>(double* r_src, int src_cnt, double* v_src_, int dof, double* r_trg, int trg_cnt, double* k_out, mem::MemoryManager* mem_mgr);
-#endif
-#endif
-
-const Kernel<double> ker_stokes_vel   =BuildKernel<double, stokes_vel, stokes_sym_dip>("stokes_vel"   , 3, std::pair<int,int>(3,3));
-
-const Kernel<double> ker_stokes_press =BuildKernel<double, stokes_press              >("stokes_press" , 3, std::pair<int,int>(3,1));
-
-const Kernel<double> ker_stokes_stress=BuildKernel<double, stokes_stress             >("stokes_stress", 3, std::pair<int,int>(3,9));
-
-const Kernel<double> ker_stokes_grad  =BuildKernel<double, stokes_grad               >("stokes_grad"  , 3, std::pair<int,int>(3,9));
-
-////////////////////////////////////////////////////////////////////////////////
-////////                  BIOT-SAVART KERNEL                            ////////
-////////////////////////////////////////////////////////////////////////////////
-
-template <class T>
-void biot_savart(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr);
-
-const Kernel<double> ker_biot_savart=BuildKernel<double, biot_savart>("biot_savart", 3, std::pair<int,int>(3,3));
-
-////////////////////////////////////////////////////////////////////////////////
-////////                   HELMHOLTZ KERNEL                             ////////
-////////////////////////////////////////////////////////////////////////////////
-
-/**
- * \brief Green's function for the Helmholtz's equation. Kernel tensor
- * dimension = 2x2.
- */
-template <class T>
-void helmholtz_poten(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr);
-
-template <class T>
-void helmholtz_grad(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr);
-
-
-
-const Kernel<double> ker_helmholtz     =BuildKernel<double, helmholtz_poten>("helmholtz"     , 3, std::pair<int,int>(2,2));
-
-const Kernel<double> ker_helmholtz_grad=BuildKernel<double, helmholtz_grad >("helmholtz_grad", 3, std::pair<int,int>(2,6));
+template<class T>
+struct HelmholtzKernel{
+  inline static const Kernel<T>& potential();
+};
 
 }//end namespace
 #ifdef __INTEL_OFFLOAD

@@ -59,7 +59,7 @@ void nbody(vec&  src_coord, vec&  src_value,
 void fmm_test(size_t N, int mult_order, MPI_Comm comm){
 
   // Set kernel.
-  const pvfmm::Kernel<double>& kernel_fn=pvfmm::laplace_grad_d;
+  const pvfmm::Kernel<double>& kernel_fn=pvfmm::LaplaceKernel<double>::gradient();
 
   // Create target and source vectors.
   vec  trg_coord=point_distrib<double>(RandUnif,N,comm);
