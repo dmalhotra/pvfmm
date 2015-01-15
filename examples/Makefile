@@ -23,6 +23,7 @@ INCDIR = ./include
 TARGET_BIN = \
        $(BINDIR)/example1 \
        $(BINDIR)/example2 \
+       $(BINDIR)/fmm_pts \
        $(BINDIR)/fmm_cheb
 
 all : $(TARGET_BIN)

@@ -5,7 +5,7 @@
  */
 
 template <class FMM_Mat_t>
-void CheckFMMOutput(pvfmm::FMM_Tree<FMM_Mat_t>* mytree, const pvfmm::Kernel<typename FMM_Mat_t::Real_t>* mykernel){
+void CheckFMMOutput(pvfmm::FMM_Tree<FMM_Mat_t>* mytree, const pvfmm::Kernel<typename FMM_Mat_t::Real_t>* mykernel, std::string t_name){
   if(mykernel==NULL) return;
 
   // Find out number of OMP thereads.
@@ -102,8 +102,8 @@ void CheckFMMOutput(pvfmm::FMM_Tree<FMM_Mat_t>* mytree, const pvfmm::Kernel<type
     MPI_Reduce(&max_   , &glb_max    , 1, pvfmm::par::Mpi_datatype<Real_t>::value(), pvfmm::par::Mpi_datatype<Real_t>::max(), 0, c1);
     MPI_Reduce(&max_err, &glb_max_err, 1, pvfmm::par::Mpi_datatype<Real_t>::value(), pvfmm::par::Mpi_datatype<Real_t>::max(), 0, c1);
     if(!myrank){
-      std::cout<<"Maximum Absolute Error ["<<mykernel->ker_name<<"] :  "<<std::scientific<<glb_max_err<<'\n';
-      std::cout<<"Maximum Relative Error ["<<mykernel->ker_name<<"] :  "<<std::scientific<<glb_max_err/glb_max<<'\n';
+      std::cout<<"Maximum Absolute Error ["<<t_name<<"] :  "<<std::scientific<<glb_max_err<<'\n';
+      std::cout<<"Maximum Relative Error ["<<t_name<<"] :  "<<std::scientific<<glb_max_err/glb_max<<'\n';
     }
   }
 }
