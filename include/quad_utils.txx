@@ -73,7 +73,7 @@ QuadReal_t sin(const QuadReal_t a){
       }
 
       sinval[N-1]=theta[N-1];
-      cosval[N-1]=1.0-sinval[N-1]*sinval[N-1];
+      cosval[N-1]=1.0-sinval[N-1]*sinval[N-1]/2;
       for(int i=N-2;i>=0;i--){
         sinval[i]=2.0*sinval[i+1]*cosval[i+1];
         cosval[i]=sqrt(1.0-sinval[i]*sinval[i]);
@@ -115,7 +115,7 @@ QuadReal_t cos(const QuadReal_t a){
       }
 
       sinval[N-1]=theta[N-1];
-      cosval[N-1]=1.0-sinval[N-1]*sinval[N-1];
+      cosval[N-1]=1.0-sinval[N-1]*sinval[N-1]/2;
       for(int i=N-2;i>=0;i--){
         sinval[i]=2.0*sinval[i+1]*cosval[i+1];
         cosval[i]=sqrt(1.0-sinval[i]*sinval[i]);

@@ -24,7 +24,7 @@ namespace pvfmm{
  */
 template <class FMM_Mat_t>
 class FMM_Tree: public MPI_Tree<typename FMM_Mat_t::FMMNode_t>{
-  friend FMM_Mat_t;
+  friend FMM_Pts<typename FMM_Mat_t::FMMNode_t>;
 
  public:
 

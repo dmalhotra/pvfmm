@@ -94,7 +94,7 @@ std::vector<Real_t> surface(int p, Real_t* c, Real_t alpha, int depth){
 template <class Real_t>
 std::vector<Real_t> u_check_surf(int p, Real_t* c, int depth){
   Real_t r=0.5*pow(0.5,depth);
-  Real_t coord[3]={c[0]-r*(RAD1-1.0),c[1]-r*(RAD1-1.0),c[2]-r*(RAD1-1.0)};
+  Real_t coord[3]={(Real_t)(c[0]-r*(RAD1-1.0)),(Real_t)(c[1]-r*(RAD1-1.0)),(Real_t)(c[2]-r*(RAD1-1.0))};
   return surface(p,coord,(Real_t)RAD1,depth);
 }
 
@@ -105,7 +105,7 @@ std::vector<Real_t> u_check_surf(int p, Real_t* c, int depth){
 template <class Real_t>
 std::vector<Real_t> u_equiv_surf(int p, Real_t* c, int depth){
   Real_t r=0.5*pow(0.5,depth);
-  Real_t coord[3]={c[0]-r*(RAD0-1.0),c[1]-r*(RAD0-1.0),c[2]-r*(RAD0-1.0)};
+  Real_t coord[3]={(Real_t)(c[0]-r*(RAD0-1.0)),(Real_t)(c[1]-r*(RAD0-1.0)),(Real_t)(c[2]-r*(RAD0-1.0))};
   return surface(p,coord,(Real_t)RAD0,depth);
 }
 
@@ -116,7 +116,7 @@ std::vector<Real_t> u_equiv_surf(int p, Real_t* c, int depth){
 template <class Real_t>
 std::vector<Real_t> d_check_surf(int p, Real_t* c, int depth){
   Real_t r=0.5*pow(0.5,depth);
-  Real_t coord[3]={c[0]-r*(RAD0-1.0),c[1]-r*(RAD0-1.0),c[2]-r*(RAD0-1.0)};
+  Real_t coord[3]={(Real_t)(c[0]-r*(RAD0-1.0)),(Real_t)(c[1]-r*(RAD0-1.0)),(Real_t)(c[2]-r*(RAD0-1.0))};
   return surface(p,coord,(Real_t)RAD0,depth);
 }
 
@@ -127,7 +127,7 @@ std::vector<Real_t> d_check_surf(int p, Real_t* c, int depth){
 template <class Real_t>
 std::vector<Real_t> d_equiv_surf(int p, Real_t* c, int depth){
   Real_t r=0.5*pow(0.5,depth);
-  Real_t coord[3]={c[0]-r*(RAD1-1.0),c[1]-r*(RAD1-1.0),c[2]-r*(RAD1-1.0)};
+  Real_t coord[3]={(Real_t)(c[0]-r*(RAD1-1.0)),(Real_t)(c[1]-r*(RAD1-1.0)),(Real_t)(c[2]-r*(RAD1-1.0))};
   return surface(p,coord,(Real_t)RAD1,depth);
 }
 

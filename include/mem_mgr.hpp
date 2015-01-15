@@ -8,6 +8,7 @@
 
 // TODO: Implement fast stack allocation.
 
+#include <omp.h>
 #include <cstdlib>
 #include <stdint.h>
 #include <cassert>
