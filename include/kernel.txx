@@ -1167,42 +1167,127 @@ template<> const Kernel<double>& LaplaceKernel<double>::gradient(){
  * \brief Green's function for the Stokes's equation. Kernel tensor
  * dimension = 3x3.
  */
-template <class T>
-void stokes_vel(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
-#ifndef __MIC__
-  Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(28*dof));
-#endif
+template <class Real_t, class Vec_t=Real_t, Vec_t (*RINV_INTRIN)(Vec_t)=rinv_intrin0<Vec_t> >
+void stokes_vel_uKernel(Matrix<Real_t>& src_coord, Matrix<Real_t>& src_value, Matrix<Real_t>& trg_coord, Matrix<Real_t>& trg_value){
+  #define SRC_BLK 1000
+  size_t VecLen=sizeof(Vec_t)/sizeof(Real_t);
 
-  const T mu=1.0;
-  const T OOEPMU = 1.0/(8.0*const_pi<T>()*mu);
-  for(int t=0;t<trg_cnt;t++){
-    for(int i=0;i<dof;i++){
-      T p[3]={0,0,0};
-      for(int s=0;s<src_cnt;s++){
-        T dR[3]={r_trg[3*t  ]-r_src[3*s  ],
-                 r_trg[3*t+1]-r_src[3*s+1],
-                 r_trg[3*t+2]-r_src[3*s+2]};
-        T R = (dR[0]*dR[0]+dR[1]*dR[1]+dR[2]*dR[2]);
-        if (R!=0){
-          T invR2=1.0/R;
-          T invR=sqrt(invR2);
-          T v_src[3]={v_src_[(s*dof+i)*3  ],
-                      v_src_[(s*dof+i)*3+1],
-                      v_src_[(s*dof+i)*3+2]};
-          T inner_prod=(v_src[0]*dR[0] +
-                        v_src[1]*dR[1] +
-                        v_src[2]*dR[2])* invR2;
-          p[0] += (v_src[0] + dR[0]*inner_prod)*invR;
-          p[1] += (v_src[1] + dR[1]*inner_prod)*invR;
-          p[2] += (v_src[2] + dR[2]*inner_prod)*invR;
-        }
+  //// Number of newton iterations
+  size_t NWTN_ITER=0;
+  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin0<Vec_t,Real_t>) NWTN_ITER=0;
+  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin1<Vec_t,Real_t>) NWTN_ITER=1;
+  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin2<Vec_t,Real_t>) NWTN_ITER=2;
+  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin3<Vec_t,Real_t>) NWTN_ITER=3;
+
+  Real_t nwtn_scal=1; // scaling factor for newton iterations
+  for(int i=0;i<NWTN_ITER;i++){
+    nwtn_scal=2*nwtn_scal*nwtn_scal*nwtn_scal;
+  }
+  const Real_t OOEP = 1.0/(8*nwtn_scal*const_pi<Real_t>());
+  Vec_t inv_nwrn_scal2=set_intrin<Vec_t,Real_t>(1.0/(nwtn_scal*nwtn_scal));
+
+  size_t src_cnt_=src_coord.Dim(1);
+  size_t trg_cnt_=trg_coord.Dim(1);
+  for(size_t sblk=0;sblk<src_cnt_;sblk+=SRC_BLK){
+    size_t src_cnt=src_cnt_-sblk;
+    if(src_cnt>SRC_BLK) src_cnt=SRC_BLK;
+    for(size_t t=0;t<trg_cnt_;t+=VecLen){
+      Vec_t tx=load_intrin<Vec_t>(&trg_coord[0][t]);
+      Vec_t ty=load_intrin<Vec_t>(&trg_coord[1][t]);
+      Vec_t tz=load_intrin<Vec_t>(&trg_coord[2][t]);
+
+      Vec_t tvx=zero_intrin<Vec_t>();
+      Vec_t tvy=zero_intrin<Vec_t>();
+      Vec_t tvz=zero_intrin<Vec_t>();
+      for(size_t s=sblk;s<sblk+src_cnt;s++){
+        Vec_t dx=sub_intrin(tx,bcast_intrin<Vec_t>(&src_coord[0][s]));
+        Vec_t dy=sub_intrin(ty,bcast_intrin<Vec_t>(&src_coord[1][s]));
+        Vec_t dz=sub_intrin(tz,bcast_intrin<Vec_t>(&src_coord[2][s]));
+
+        Vec_t svx=             bcast_intrin<Vec_t>(&src_value[0][s]) ;
+        Vec_t svy=             bcast_intrin<Vec_t>(&src_value[1][s]) ;
+        Vec_t svz=             bcast_intrin<Vec_t>(&src_value[2][s]) ;
+
+        Vec_t r2=        mul_intrin(dx,dx) ;
+        r2=add_intrin(r2,mul_intrin(dy,dy));
+        r2=add_intrin(r2,mul_intrin(dz,dz));
+
+        Vec_t rinv=RINV_INTRIN(r2);
+        Vec_t rinv2=mul_intrin(mul_intrin(rinv,rinv),inv_nwrn_scal2);
+
+        Vec_t inner_prod=                mul_intrin(svx,dx) ;
+        inner_prod=add_intrin(inner_prod,mul_intrin(svy,dy));
+        inner_prod=add_intrin(inner_prod,mul_intrin(svz,dz));
+        inner_prod=mul_intrin(inner_prod,rinv2);
+
+        tvx=add_intrin(tvx,mul_intrin(rinv,add_intrin(svx,mul_intrin(dx,inner_prod))));
+        tvy=add_intrin(tvy,mul_intrin(rinv,add_intrin(svy,mul_intrin(dy,inner_prod))));
+        tvz=add_intrin(tvz,mul_intrin(rinv,add_intrin(svz,mul_intrin(dz,inner_prod))));
       }
-      k_out[(t*dof+i)*3+0] += p[0]*OOEPMU;
-      k_out[(t*dof+i)*3+1] += p[1]*OOEPMU;
-      k_out[(t*dof+i)*3+2] += p[2]*OOEPMU;
+      Vec_t ooep=set_intrin<Vec_t,Real_t>(OOEP);
+
+      tvx=add_intrin(mul_intrin(tvx,ooep),load_intrin<Vec_t>(&trg_value[0][t]));
+      tvy=add_intrin(mul_intrin(tvy,ooep),load_intrin<Vec_t>(&trg_value[1][t]));
+      tvz=add_intrin(mul_intrin(tvz,ooep),load_intrin<Vec_t>(&trg_value[2][t]));
+
+      store_intrin(&trg_value[0][t],tvx);
+      store_intrin(&trg_value[1][t],tvy);
+      store_intrin(&trg_value[2][t],tvz);
     }
   }
+
+  { // Add FLOPS
+    #ifndef __MIC__
+    Profile::Add_FLOP((long long)trg_cnt_*(long long)src_cnt_*(29+4*(NWTN_ITER)));
+    #endif
+  }
+  #undef SRC_BLK
 }
+
+template <class T, int newton_iter=0>
+void stokes_vel(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* v_trg, mem::MemoryManager* mem_mgr){
+  #define STK_KER_NWTN(nwtn) if(newton_iter==nwtn) \
+        generic_kernel<Real_t, 3, 3, stokes_vel_uKernel<Real_t,Vec_t, rinv_intrin##nwtn<Vec_t,Real_t> > > \
+            ((Real_t*)r_src, src_cnt, (Real_t*)v_src, dof, (Real_t*)r_trg, trg_cnt, (Real_t*)v_trg, mem_mgr)
+  #define STOKES_KERNEL STK_KER_NWTN(0); STK_KER_NWTN(1); STK_KER_NWTN(2); STK_KER_NWTN(3);
+
+  if(mem::TypeTraits<T>::ID()==mem::TypeTraits<float>::ID()){
+    typedef float Real_t;
+    #if defined __MIC__
+      #define Vec_t Real_t
+    #elif defined __AVX__
+      #define Vec_t __m256
+    #elif defined __SSE3__
+      #define Vec_t __m128
+    #else
+      #define Vec_t Real_t
+    #endif
+    STOKES_KERNEL;
+    #undef Vec_t
+  }else if(mem::TypeTraits<T>::ID()==mem::TypeTraits<double>::ID()){
+    typedef double Real_t;
+    #if defined __MIC__
+      #define Vec_t Real_t
+    #elif defined __AVX__
+      #define Vec_t __m256d
+    #elif defined __SSE3__
+      #define Vec_t __m128d
+    #else
+      #define Vec_t Real_t
+    #endif
+    STOKES_KERNEL;
+    #undef Vec_t
+  }else{
+    typedef T Real_t;
+    #define Vec_t Real_t
+    STOKES_KERNEL;
+    #undef Vec_t
+  }
+
+  #undef STK_KER_NWTN
+  #undef STOKES_KERNEL
+}
+
 
 template <class T>
 void stokes_sym_dip(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
@@ -1386,168 +1471,6 @@ namespace
 #define IDEAL_ALIGNMENT 16
 #define SIMD_LEN (int)(IDEAL_ALIGNMENT / sizeof(double))
 #define DECL_SIMD_ALIGNED  __declspec(align(IDEAL_ALIGNMENT))
-
-  void stokesDirectVecSSE(
-      const int ns,
-      const int nt,
-      const double *sx,
-      const double *sy,
-      const double *sz,
-      const double *tx,
-      const double *ty,
-      const double *tz,
-      const double *srcDen,
-      double *trgVal,
-      const double cof )
-  {
-    if ( size_t(sx)%IDEAL_ALIGNMENT || size_t(sy)%IDEAL_ALIGNMENT || size_t(sz)%IDEAL_ALIGNMENT )
-      abort();
-    double mu = cof;
-
-    double OOEP = 1.0/(8.0*const_pi<double>());
-    __m128d tempx;
-    __m128d tempy;
-    __m128d tempz;
-    double oomeu = 1/mu;
-
-    double aux_arr[3*SIMD_LEN+1];
-    double *tempvalx;
-    double *tempvaly;
-    double *tempvalz;
-    if (size_t(aux_arr)%IDEAL_ALIGNMENT)  // if aux_arr is misaligned
-    {
-      tempvalx = aux_arr + 1;
-      if (size_t(tempvalx)%IDEAL_ALIGNMENT)
-        abort();
-    }
-    else
-      tempvalx = aux_arr;
-    tempvaly=tempvalx+SIMD_LEN;
-    tempvalz=tempvaly+SIMD_LEN;
-
-
-    /*! One over eight pi */
-    __m128d ooep = _mm_set1_pd (OOEP);
-    __m128d half = _mm_set1_pd (0.5);
-    __m128d opf = _mm_set1_pd (1.5);
-    __m128d zero = _mm_setzero_pd ();
-    __m128d oomu = _mm_set1_pd (1/mu);
-
-    // loop over sources
-    int i = 0;
-    for (; i < nt; i++) {
-      tempx = _mm_setzero_pd();
-      tempy = _mm_setzero_pd();
-      tempz = _mm_setzero_pd();
-
-      __m128d txi = _mm_load1_pd (&tx[i]);
-      __m128d tyi = _mm_load1_pd (&ty[i]);
-      __m128d tzi = _mm_load1_pd (&tz[i]);
-      int j = 0;
-      // Load and calculate in groups of SIMD_LEN
-      for (; j + SIMD_LEN <= ns; j+=SIMD_LEN) {
-        __m128d sxj = _mm_load_pd (&sx[j]);
-        __m128d syj = _mm_load_pd (&sy[j]);
-        __m128d szj = _mm_load_pd (&sz[j]);
-        __m128d sdenx = _mm_set_pd (srcDen[(j+1)*3],   srcDen[j*3]);
-        __m128d sdeny = _mm_set_pd (srcDen[(j+1)*3+1], srcDen[j*3+1]);
-        __m128d sdenz = _mm_set_pd (srcDen[(j+1)*3+2], srcDen[j*3+2]);
-
-        __m128d dX, dY, dZ;
-        __m128d dR2;
-        __m128d S;
-
-        dX = _mm_sub_pd(txi , sxj);
-        dY = _mm_sub_pd(tyi , syj);
-        dZ = _mm_sub_pd(tzi , szj);
-
-        sxj = _mm_mul_pd(dX, dX);
-        syj = _mm_mul_pd(dY, dY);
-        szj = _mm_mul_pd(dZ, dZ);
-
-        dR2 = _mm_add_pd(sxj, syj);
-        dR2 = _mm_add_pd(szj, dR2);
-        __m128d temp = _mm_cmpeq_pd (dR2, zero);
-
-        __m128d xhalf = _mm_mul_pd (half, dR2);
-        __m128 dR2_s  =  _mm_cvtpd_ps(dR2);
-        __m128 S_s    = _mm_rsqrt_ps(dR2_s);
-        __m128d S_d   = _mm_cvtps_pd(S_s);
-        // To handle the condition when src and trg coincide
-        S_d = _mm_andnot_pd (temp, S_d);
-
-        S = _mm_mul_pd (S_d, S_d);
-        S = _mm_mul_pd (S, xhalf);
-        S = _mm_sub_pd (opf, S);
-        S = _mm_mul_pd (S, S_d);
-
-        __m128d dotx = _mm_mul_pd (dX, sdenx);
-        __m128d doty = _mm_mul_pd (dY, sdeny);
-        __m128d dotz = _mm_mul_pd (dZ, sdenz);
-
-        __m128d dot_sum = _mm_add_pd (dotx, doty);
-        dot_sum = _mm_add_pd (dot_sum, dotz);
-
-        dot_sum = _mm_mul_pd (dot_sum, S);
-        dot_sum = _mm_mul_pd (dot_sum, S);
-        dotx = _mm_mul_pd (dot_sum, dX);
-        doty = _mm_mul_pd (dot_sum, dY);
-        dotz = _mm_mul_pd (dot_sum, dZ);
-
-        sdenx = _mm_add_pd (sdenx, dotx);
-        sdeny = _mm_add_pd (sdeny, doty);
-        sdenz = _mm_add_pd (sdenz, dotz);
-
-        sdenx = _mm_mul_pd (sdenx, S);
-        sdeny = _mm_mul_pd (sdeny, S);
-        sdenz = _mm_mul_pd (sdenz, S);
-
-        tempx = _mm_add_pd (sdenx, tempx);
-        tempy = _mm_add_pd (sdeny, tempy);
-        tempz = _mm_add_pd (sdenz, tempz);
-
-      }
-      tempx = _mm_mul_pd (tempx, ooep);
-      tempy = _mm_mul_pd (tempy, ooep);
-      tempz = _mm_mul_pd (tempz, ooep);
-
-      tempx = _mm_mul_pd (tempx, oomu);
-      tempy = _mm_mul_pd (tempy, oomu);
-      tempz = _mm_mul_pd (tempz, oomu);
-
-      _mm_store_pd(tempvalx, tempx);
-      _mm_store_pd(tempvaly, tempy);
-      _mm_store_pd(tempvalz, tempz);
-      for (int k = 0; k < SIMD_LEN; k++) {
-        trgVal[i*3]   += tempvalx[k];
-        trgVal[i*3+1] += tempvaly[k];
-        trgVal[i*3+2] += tempvalz[k];
-      }
-
-      for (; j < ns; j++) {
-        double x = tx[i] - sx[j];
-        double y = ty[i] - sy[j];
-        double z = tz[i] - sz[j];
-        double r2 = x*x + y*y + z*z;
-        double r = sqrt(r2);
-        double invdr;
-        if (r == 0)
-          invdr = 0;
-        else
-          invdr = 1/r;
-        double dot = (x*srcDen[j*3] + y*srcDen[j*3+1] + z*srcDen[j*3+2]) * invdr * invdr;
-        double denx = srcDen[j*3] + dot*x;
-        double deny = srcDen[j*3+1] + dot*y;
-        double denz = srcDen[j*3+2] + dot*z;
-
-        trgVal[i*3] += denx*invdr*OOEP*oomeu;
-        trgVal[i*3+1] += deny*invdr*OOEP*oomeu;
-        trgVal[i*3+2] += denz*invdr*OOEP*oomeu;
-      }
-    }
-
-    return;
-  }
 
   void stokesPressureSSE(
       const int ns,
@@ -2052,34 +1975,6 @@ namespace
 #define X(s,k) (s)[(k)*COORD_DIM]
 #define Y(s,k) (s)[(k)*COORD_DIM+1]
 #define Z(s,k) (s)[(k)*COORD_DIM+2]
-  void stokesDirectSSEShuffle(const int ns, const int nt, double const src[], double const trg[], double const den[], double pot[], const double kernel_coef, mem::MemoryManager* mem_mgr=NULL)
-  {
-
-    std::vector<double> xs(ns+1);   std::vector<double> xt(nt);
-    std::vector<double> ys(ns+1);   std::vector<double> yt(nt);
-    std::vector<double> zs(ns+1);   std::vector<double> zt(nt);
-
-    int x_shift = size_t(&xs[0]) % IDEAL_ALIGNMENT ? 1:0;
-    int y_shift = size_t(&ys[0]) % IDEAL_ALIGNMENT ? 1:0;
-    int z_shift = size_t(&zs[0]) % IDEAL_ALIGNMENT ? 1:0;
-
-    //1. reshuffle memory
-    for (int k =0;k<ns;k++){
-      xs[k+x_shift]=X(src,k);
-      ys[k+y_shift]=Y(src,k);
-      zs[k+z_shift]=Z(src,k);
-    }
-    for (int k=0;k<nt;k++){
-      xt[k]=X(trg,k);
-      yt[k]=Y(trg,k);
-      zt[k]=Z(trg,k);
-    }
-
-    //2. perform caclulation
-    stokesDirectVecSSE(ns,nt,&xs[x_shift],&ys[y_shift],&zs[z_shift],&xt[0],&yt[0],&zt[0],den,pot,kernel_coef);
-    return;
-  }
-
   void stokesPressureSSEShuffle(const int ns, const int nt, double const src[], double const trg[], double const den[], double pot[], mem::MemoryManager* mem_mgr=NULL)
   {
     std::vector<double> xs(ns+1);   std::vector<double> xt(nt);
@@ -2169,14 +2064,6 @@ namespace
 }
 
 template <>
-void stokes_vel<double>(double* r_src, int src_cnt, double* v_src_, int dof, double* r_trg, int trg_cnt, double* k_out, mem::MemoryManager* mem_mgr){
-  Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(28*dof));
-
-  const double mu=1.0;
-  stokesDirectSSEShuffle(src_cnt, trg_cnt, r_src, r_trg, v_src_, k_out, mu, mem_mgr);
-}
-
-template <>
 void stokes_press<double>(double* r_src, int src_cnt, double* v_src_, int dof, double* r_trg, int trg_cnt, double* k_out, mem::MemoryManager* mem_mgr){
   Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(17*dof));
 
@@ -2202,7 +2089,7 @@ void stokes_grad<double>(double* r_src, int src_cnt, double* v_src_, int dof, do
 #endif
 
 template<class T> const Kernel<T>& StokesKernel<T>::velocity(){
-  static Kernel<T> ker=BuildKernel<T, stokes_vel, stokes_sym_dip>("stokes_vel"   , 3, std::pair<int,int>(3,3));
+  static Kernel<T> ker=BuildKernel<T, stokes_vel<T,1>, stokes_sym_dip>("stokes_vel"   , 3, std::pair<int,int>(3,3));
   return ker;
 }
 template<class T> const Kernel<T>& StokesKernel<T>::pressure(){
@@ -2218,49 +2105,139 @@ template<class T> const Kernel<T>& StokesKernel<T>::vel_grad(){
   return ker;
 }
 
+template<> const Kernel<double>& StokesKernel<double>::velocity(){
+  typedef double T;
+  static Kernel<T> ker=BuildKernel<T, stokes_vel<T,2>, stokes_sym_dip>("stokes_vel"   , 3, std::pair<int,int>(3,3));
+  return ker;
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////                  BIOT-SAVART KERNEL                            ////////
 ////////////////////////////////////////////////////////////////////////////////
 
-template <class T>
-void biot_savart(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
-#ifndef __MIC__
-  Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(26*dof));
-#endif
+template <class Real_t, class Vec_t=Real_t, Vec_t (*RINV_INTRIN)(Vec_t)=rinv_intrin0<Vec_t> >
+void biot_savart_uKernel(Matrix<Real_t>& src_coord, Matrix<Real_t>& src_value, Matrix<Real_t>& trg_coord, Matrix<Real_t>& trg_value){
+  #define SRC_BLK 1000
+  size_t VecLen=sizeof(Vec_t)/sizeof(Real_t);
 
-  const T OOFP = -1.0/(4.0*const_pi<T>());
-  for(int t=0;t<trg_cnt;t++){
-    for(int i=0;i<dof;i++){
-      T p[3]={0,0,0};
-      for(int s=0;s<src_cnt;s++){
-        T dR[3]={r_trg[3*t  ]-r_src[3*s  ],
-                 r_trg[3*t+1]-r_src[3*s+1],
-                 r_trg[3*t+2]-r_src[3*s+2]};
-        T R2 = (dR[0]*dR[0]+dR[1]*dR[1]+dR[2]*dR[2]);
-        if (R2!=0){
-          T invR2=1.0/R2;
-          T invR=sqrt(invR2);
-          T invR3=invR*invR2;
+  //// Number of newton iterations
+  size_t NWTN_ITER=0;
+  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin0<Vec_t,Real_t>) NWTN_ITER=0;
+  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin1<Vec_t,Real_t>) NWTN_ITER=1;
+  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin2<Vec_t,Real_t>) NWTN_ITER=2;
+  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin3<Vec_t,Real_t>) NWTN_ITER=3;
 
-          T v_src[3]={v_src_[(s*dof+i)*3  ],
-                      v_src_[(s*dof+i)*3+1],
-                      v_src_[(s*dof+i)*3+2]};
+  Real_t nwtn_scal=1; // scaling factor for newton iterations
+  for(int i=0;i<NWTN_ITER;i++){
+    nwtn_scal=2*nwtn_scal*nwtn_scal*nwtn_scal;
+  }
+  const Real_t OOFP = 1.0/(4*nwtn_scal*nwtn_scal*nwtn_scal*const_pi<Real_t>());
 
-          p[0] -= (v_src[1]*dR[2]-v_src[2]*dR[1])*invR3;
-          p[1] -= (v_src[2]*dR[0]-v_src[0]*dR[2])*invR3;
-          p[2] -= (v_src[0]*dR[1]-v_src[1]*dR[0])*invR3;
-        }
+  size_t src_cnt_=src_coord.Dim(1);
+  size_t trg_cnt_=trg_coord.Dim(1);
+  for(size_t sblk=0;sblk<src_cnt_;sblk+=SRC_BLK){
+    size_t src_cnt=src_cnt_-sblk;
+    if(src_cnt>SRC_BLK) src_cnt=SRC_BLK;
+    for(size_t t=0;t<trg_cnt_;t+=VecLen){
+      Vec_t tx=load_intrin<Vec_t>(&trg_coord[0][t]);
+      Vec_t ty=load_intrin<Vec_t>(&trg_coord[1][t]);
+      Vec_t tz=load_intrin<Vec_t>(&trg_coord[2][t]);
+
+      Vec_t tvx=zero_intrin<Vec_t>();
+      Vec_t tvy=zero_intrin<Vec_t>();
+      Vec_t tvz=zero_intrin<Vec_t>();
+      for(size_t s=sblk;s<sblk+src_cnt;s++){
+        Vec_t dx=sub_intrin(tx,bcast_intrin<Vec_t>(&src_coord[0][s]));
+        Vec_t dy=sub_intrin(ty,bcast_intrin<Vec_t>(&src_coord[1][s]));
+        Vec_t dz=sub_intrin(tz,bcast_intrin<Vec_t>(&src_coord[2][s]));
+
+        Vec_t svx=             bcast_intrin<Vec_t>(&src_value[0][s]) ;
+        Vec_t svy=             bcast_intrin<Vec_t>(&src_value[1][s]) ;
+        Vec_t svz=             bcast_intrin<Vec_t>(&src_value[2][s]) ;
+
+        Vec_t r2=        mul_intrin(dx,dx) ;
+        r2=add_intrin(r2,mul_intrin(dy,dy));
+        r2=add_intrin(r2,mul_intrin(dz,dz));
+
+        Vec_t rinv=RINV_INTRIN(r2);
+        Vec_t rinv3=mul_intrin(mul_intrin(rinv,rinv),rinv);
+
+        tvx=sub_intrin(tvx,mul_intrin(rinv3,sub_intrin(mul_intrin(svy,dz),mul_intrin(svz,dy))));
+        tvy=sub_intrin(tvy,mul_intrin(rinv3,sub_intrin(mul_intrin(svz,dx),mul_intrin(svx,dz))));
+        tvz=sub_intrin(tvz,mul_intrin(rinv3,sub_intrin(mul_intrin(svx,dy),mul_intrin(svy,dx))));
       }
-      k_out[(t*dof+i)*3+0] += p[0]*OOFP;
-      k_out[(t*dof+i)*3+1] += p[1]*OOFP;
-      k_out[(t*dof+i)*3+2] += p[2]*OOFP;
+      Vec_t oofp=set_intrin<Vec_t,Real_t>(OOFP);
+
+      tvx=add_intrin(mul_intrin(tvx,oofp),load_intrin<Vec_t>(&trg_value[0][t]));
+      tvy=add_intrin(mul_intrin(tvy,oofp),load_intrin<Vec_t>(&trg_value[1][t]));
+      tvz=add_intrin(mul_intrin(tvz,oofp),load_intrin<Vec_t>(&trg_value[2][t]));
+
+      store_intrin(&trg_value[0][t],tvx);
+      store_intrin(&trg_value[1][t],tvy);
+      store_intrin(&trg_value[2][t],tvz);
     }
   }
+
+  { // Add FLOPS
+    #ifndef __MIC__
+    Profile::Add_FLOP((long long)trg_cnt_*(long long)src_cnt_*(29+4*(NWTN_ITER)));
+    #endif
+  }
+  #undef SRC_BLK
+}
+
+template <class T, int newton_iter=0>
+void biot_savart(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* v_trg, mem::MemoryManager* mem_mgr){
+  #define BS_KER_NWTN(nwtn) if(newton_iter==nwtn) \
+        generic_kernel<Real_t, 3, 3, biot_savart_uKernel<Real_t,Vec_t, rinv_intrin##nwtn<Vec_t,Real_t> > > \
+            ((Real_t*)r_src, src_cnt, (Real_t*)v_src, dof, (Real_t*)r_trg, trg_cnt, (Real_t*)v_trg, mem_mgr)
+  #define BIOTSAVART_KERNEL BS_KER_NWTN(0); BS_KER_NWTN(1); BS_KER_NWTN(2); BS_KER_NWTN(3);
+
+  if(mem::TypeTraits<T>::ID()==mem::TypeTraits<float>::ID()){
+    typedef float Real_t;
+    #if defined __MIC__
+      #define Vec_t Real_t
+    #elif defined __AVX__
+      #define Vec_t __m256
+    #elif defined __SSE3__
+      #define Vec_t __m128
+    #else
+      #define Vec_t Real_t
+    #endif
+    BIOTSAVART_KERNEL;
+    #undef Vec_t
+  }else if(mem::TypeTraits<T>::ID()==mem::TypeTraits<double>::ID()){
+    typedef double Real_t;
+    #if defined __MIC__
+      #define Vec_t Real_t
+    #elif defined __AVX__
+      #define Vec_t __m256d
+    #elif defined __SSE3__
+      #define Vec_t __m128d
+    #else
+      #define Vec_t Real_t
+    #endif
+    BIOTSAVART_KERNEL;
+    #undef Vec_t
+  }else{
+    typedef T Real_t;
+    #define Vec_t Real_t
+    BIOTSAVART_KERNEL;
+    #undef Vec_t
+  }
+
+  #undef BS_KER_NWTN
+  #undef BIOTSAVART_KERNEL
 }
 
 template<class T> const Kernel<T>& BiotSavartKernel<T>::potential(){
-  static Kernel<T> ker=BuildKernel<T, biot_savart>("biot_savart", 3, std::pair<int,int>(3,3));
+  static Kernel<T> ker=BuildKernel<T, biot_savart<T,1> >("biot_savart", 3, std::pair<int,int>(3,3));
+  return ker;
+}
+template<> const Kernel<double>& BiotSavartKernel<double>::potential(){
+  typedef double T;
+  static Kernel<T> ker=BuildKernel<T, biot_savart<T,2> >("biot_savart", 3, std::pair<int,int>(3,3));
   return ker;
 }
 
@@ -2273,37 +2250,127 @@ template<class T> const Kernel<T>& BiotSavartKernel<T>::potential(){
  * \brief Green's function for the Helmholtz's equation. Kernel tensor
  * dimension = 2x2.
  */
-template <class T>
-void helmholtz_poten(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr){
-#ifndef __MIC__
-  Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(24*dof));
-#endif
+template <class Real_t, class Vec_t=Real_t, Vec_t (*RINV_INTRIN)(Vec_t)=rinv_intrin0<Vec_t> >
+void helmholtz_poten_uKernel(Matrix<Real_t>& src_coord, Matrix<Real_t>& src_value, Matrix<Real_t>& trg_coord, Matrix<Real_t>& trg_value){
 
-  const T mu = (20.0*const_pi<T>());
-  for(int t=0;t<trg_cnt;t++){
-    for(int i=0;i<dof;i++){
-      T p[2]={0,0};
-      for(int s=0;s<src_cnt;s++){
-        T dX_reg=r_trg[3*t  ]-r_src[3*s  ];
-        T dY_reg=r_trg[3*t+1]-r_src[3*s+1];
-        T dZ_reg=r_trg[3*t+2]-r_src[3*s+2];
-        T R = (dX_reg*dX_reg+dY_reg*dY_reg+dZ_reg*dZ_reg);
-        if (R!=0){
-          R = sqrt(R);
-          T invR=1.0/R;
-          T G[2]={(T)cos(mu*R)*invR, (T)sin(mu*R)*invR};
-          p[0] += v_src[(s*dof+i)*2+0]*G[0] - v_src[(s*dof+i)*2+1]*G[1];
-          p[1] += v_src[(s*dof+i)*2+0]*G[1] + v_src[(s*dof+i)*2+1]*G[0];
-        }
+  #define SRC_BLK 1000
+  size_t VecLen=sizeof(Vec_t)/sizeof(Real_t);
+
+  //// Number of newton iterations
+  size_t NWTN_ITER=0;
+  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin0<Vec_t,Real_t>) NWTN_ITER=0;
+  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin1<Vec_t,Real_t>) NWTN_ITER=1;
+  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin2<Vec_t,Real_t>) NWTN_ITER=2;
+  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin3<Vec_t,Real_t>) NWTN_ITER=3;
+
+  Real_t nwtn_scal=1; // scaling factor for newton iterations
+  for(int i=0;i<NWTN_ITER;i++){
+    nwtn_scal=2*nwtn_scal*nwtn_scal*nwtn_scal;
+  }
+  const Real_t OOFP = 1.0/(4*nwtn_scal*const_pi<Real_t>());
+  const Vec_t mu = set_intrin<Vec_t,Real_t>(20.0*const_pi<Real_t>()/nwtn_scal);
+
+  size_t src_cnt_=src_coord.Dim(1);
+  size_t trg_cnt_=trg_coord.Dim(1);
+  for(size_t sblk=0;sblk<src_cnt_;sblk+=SRC_BLK){
+    size_t src_cnt=src_cnt_-sblk;
+    if(src_cnt>SRC_BLK) src_cnt=SRC_BLK;
+    for(size_t t=0;t<trg_cnt_;t+=VecLen){
+      Vec_t tx=load_intrin<Vec_t>(&trg_coord[0][t]);
+      Vec_t ty=load_intrin<Vec_t>(&trg_coord[1][t]);
+      Vec_t tz=load_intrin<Vec_t>(&trg_coord[2][t]);
+
+      Vec_t tvx=zero_intrin<Vec_t>();
+      Vec_t tvy=zero_intrin<Vec_t>();
+      for(size_t s=sblk;s<sblk+src_cnt;s++){
+        Vec_t dx=sub_intrin(tx,bcast_intrin<Vec_t>(&src_coord[0][s]));
+        Vec_t dy=sub_intrin(ty,bcast_intrin<Vec_t>(&src_coord[1][s]));
+        Vec_t dz=sub_intrin(tz,bcast_intrin<Vec_t>(&src_coord[2][s]));
+
+        Vec_t svx=             bcast_intrin<Vec_t>(&src_value[0][s]) ;
+        Vec_t svy=             bcast_intrin<Vec_t>(&src_value[1][s]) ;
+
+        Vec_t r2=        mul_intrin(dx,dx) ;
+        r2=add_intrin(r2,mul_intrin(dy,dy));
+        r2=add_intrin(r2,mul_intrin(dz,dz));
+        Vec_t rinv=RINV_INTRIN(r2);
+
+        Vec_t mu_r=mul_intrin(mu,mul_intrin(r2,rinv));
+        Vec_t G0=mul_intrin(cos_intrin(mu_r),rinv);
+        Vec_t G1=mul_intrin(sin_intrin(mu_r),rinv);
+
+        tvx=add_intrin(tvx,sub_intrin(mul_intrin(svx,G0),mul_intrin(svy,G1)));
+        tvy=add_intrin(tvy,add_intrin(mul_intrin(svx,G1),mul_intrin(svy,G0)));
       }
-      k_out[(t*dof+i)*2+0] += p[0];
-      k_out[(t*dof+i)*2+1] += p[1];
+      Vec_t oofp=set_intrin<Vec_t,Real_t>(OOFP);
+
+      tvx=add_intrin(mul_intrin(tvx,oofp),load_intrin<Vec_t>(&trg_value[0][t]));
+      tvy=add_intrin(mul_intrin(tvy,oofp),load_intrin<Vec_t>(&trg_value[1][t]));
+
+      store_intrin(&trg_value[0][t],tvx);
+      store_intrin(&trg_value[1][t],tvy);
     }
   }
+
+  { // Add FLOPS
+    #ifndef __MIC__
+    Profile::Add_FLOP((long long)trg_cnt_*(long long)src_cnt_*(24+4*(NWTN_ITER)));
+    #endif
+  }
+  #undef SRC_BLK
+}
+
+template <class T, int newton_iter=0>
+void helmholtz_poten(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* v_trg, mem::MemoryManager* mem_mgr){
+  #define HELM_KER_NWTN(nwtn) if(newton_iter==nwtn) \
+        generic_kernel<Real_t, 2, 2, helmholtz_poten_uKernel<Real_t,Vec_t, rinv_intrin##nwtn<Vec_t,Real_t> > > \
+            ((Real_t*)r_src, src_cnt, (Real_t*)v_src, dof, (Real_t*)r_trg, trg_cnt, (Real_t*)v_trg, mem_mgr)
+  #define HELMHOLTZ_KERNEL HELM_KER_NWTN(0); HELM_KER_NWTN(1); HELM_KER_NWTN(2); HELM_KER_NWTN(3);
+
+  if(mem::TypeTraits<T>::ID()==mem::TypeTraits<float>::ID()){
+    typedef float Real_t;
+    #if defined __MIC__
+      #define Vec_t Real_t
+    #elif defined __AVX__
+      #define Vec_t __m256
+    #elif defined __SSE3__
+      #define Vec_t __m128
+    #else
+      #define Vec_t Real_t
+    #endif
+    HELMHOLTZ_KERNEL;
+    #undef Vec_t
+  }else if(mem::TypeTraits<T>::ID()==mem::TypeTraits<double>::ID()){
+    typedef double Real_t;
+    #if defined __MIC__
+      #define Vec_t Real_t
+    #elif defined __AVX__
+      #define Vec_t __m256d
+    #elif defined __SSE3__
+      #define Vec_t __m128d
+    #else
+      #define Vec_t Real_t
+    #endif
+    HELMHOLTZ_KERNEL;
+    #undef Vec_t
+  }else{
+    typedef T Real_t;
+    #define Vec_t Real_t
+    HELMHOLTZ_KERNEL;
+    #undef Vec_t
+  }
+
+  #undef HELM_KER_NWTN
+  #undef HELMHOLTZ_KERNEL
 }
 
 template<class T> const Kernel<T>& HelmholtzKernel<T>::potential(){
-  static Kernel<T> ker=BuildKernel<T, helmholtz_poten>("helmholtz"     , 3, std::pair<int,int>(2,2));
+  static Kernel<T> ker=BuildKernel<T, helmholtz_poten<T,1> >("helmholtz"     , 3, std::pair<int,int>(2,2));
+  return ker;
+}
+template<> const Kernel<double>& HelmholtzKernel<double>::potential(){
+  typedef double T;
+  static Kernel<T> ker=BuildKernel<T, helmholtz_poten<T,3> >("helmholtz"     , 3, std::pair<int,int>(2,2));
   return ker;
 }
 

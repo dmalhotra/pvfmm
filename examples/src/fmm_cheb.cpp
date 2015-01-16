@@ -190,7 +190,7 @@ void fn_input_t5(const Real_t* coord, int n, Real_t* out){
     const Real_t* c=&coord[i*COORD_DIM];
     {
       Real_t r_2=(c[0]-0.5)*(c[0]-0.5)+(c[1]-0.5)*(c[1]-0.5)+(c[2]-0.5)*(c[2]-0.5);
-      out[i*dof+0]=((2*a*r_2+3)*2*a*exp(a*r_2)+mu*mu*exp(a*r_2))/4.0/M_PI;
+      out[i*dof+0]=((2*a*r_2+3)*2*a*exp(a*r_2)+mu*mu*exp(a*r_2));
       out[i*dof+1]=0;
     }
   }

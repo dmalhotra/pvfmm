@@ -83,6 +83,16 @@ inline T rinv_single_intrin(const T& r2){
   return 0;
 }
 
+template <class T>
+inline T sin_intrin(const T& t){
+  return sin(t);
+}
+
+template <class T>
+inline T cos_intrin(const T& t){
+  return cos(t);
+}
+
 
 
 #ifdef __SSE3__
@@ -226,6 +236,52 @@ inline __m128d rinv_single_intrin(const __m128d& r2){
   #undef PD2PS
   #undef PS2PD
 }
+
+#ifdef PVFMM_HAVE_INTEL_SVML
+template <>
+inline __m128 sin_intrin(const __m128& t){
+  return _mm_sin_ps(t);
+}
+
+template <>
+inline __m128 cos_intrin(const __m128& t){
+  return _mm_cos_ps(t);
+}
+
+template <>
+inline __m128d sin_intrin(const __m128d& t){
+  return _mm_sin_pd(t);
+}
+
+template <>
+inline __m128d cos_intrin(const __m128d& t){
+  return _mm_cos_pd(t);
+}
+#else
+template <>
+inline __m128 sin_intrin(const __m128& t_){
+  union{float e[4];__m128 d;} t; store_intrin(t.e, t_);
+  return _mm_set_ps(sin(t.e[3]),sin(t.e[2]),sin(t.e[1]),sin(t.e[0]));
+}
+
+template <>
+inline __m128 cos_intrin(const __m128& t_){
+  union{float e[4];__m128 d;} t; store_intrin(t.e, t_);
+  return _mm_set_ps(cos(t.e[3]),cos(t.e[2]),cos(t.e[1]),cos(t.e[0]));
+}
+
+template <>
+inline __m128d sin_intrin(const __m128d& t_){
+  union{double e[2];__m128d d;} t; store_intrin(t.e, t_);
+  return _mm_set_pd(sin(t.e[1]),sin(t.e[0]));
+}
+
+template <>
+inline __m128d cos_intrin(const __m128d& t_){
+  union{double e[2];__m128d d;} t; store_intrin(t.e, t_);
+  return _mm_set_pd(cos(t.e[1]),cos(t.e[0]));
+}
+#endif
 #endif
 
 
@@ -372,6 +428,52 @@ inline __m256d rinv_single_intrin(const __m256d& r2){
   #undef PD2PS
   #undef PS2PD
 }
+
+#ifdef PVFMM_HAVE_INTEL_SVML
+template <>
+inline __m256 sin_intrin(const __m256& t){
+  return _mm256_sin_ps(t);
+}
+
+template <>
+inline __m256 cos_intrin(const __m256& t){
+  return _mm256_cos_ps(t);
+}
+
+template <>
+inline __m256d sin_intrin(const __m256d& t){
+  return _mm256_sin_pd(t);
+}
+
+template <>
+inline __m256d cos_intrin(const __m256d& t){
+  return _mm256_cos_pd(t);
+}
+#else
+template <>
+inline __m256 sin_intrin(const __m256& t_){
+  union{float e[8];__m256 d;} t; store_intrin(t.e, t_);//t.d=t_;
+  return _mm256_set_ps(sin(t.e[7]),sin(t.e[6]),sin(t.e[5]),sin(t.e[4]),sin(t.e[3]),sin(t.e[2]),sin(t.e[1]),sin(t.e[0]));
+}
+
+template <>
+inline __m256 cos_intrin(const __m256& t_){
+  union{float e[8];__m256 d;} t; store_intrin(t.e, t_);//t.d=t_;
+  return _mm256_set_ps(cos(t.e[7]),cos(t.e[6]),cos(t.e[5]),cos(t.e[4]),cos(t.e[3]),cos(t.e[2]),cos(t.e[1]),cos(t.e[0]));
+}
+
+template <>
+inline __m256d sin_intrin(const __m256d& t_){
+  union{double e[4];__m256d d;} t; store_intrin(t.e, t_);//t.d=t_;
+  return _mm256_set_pd(sin(t.e[3]),sin(t.e[2]),sin(t.e[1]),sin(t.e[0]));
+}
+
+template <>
+inline __m256d cos_intrin(const __m256d& t_){
+  union{double e[4];__m256d d;} t; store_intrin(t.e, t_);//t.d=t_;
+  return _mm256_set_pd(cos(t.e[3]),cos(t.e[2]),cos(t.e[1]),cos(t.e[0]));
+}
+#endif
 #endif
 
 

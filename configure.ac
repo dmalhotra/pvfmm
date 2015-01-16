@@ -191,6 +191,7 @@ AC_FUNC_ERROR_AT_LINE
 AC_FUNC_MALLOC
 AC_FUNC_STRTOD
 AC_CHECK_FUNCS([floor memset pow sqrt strtol strtoul])
+AX_CHECK_SVML
 
 # Path for precomputed data files.
 AC_ARG_WITH(precomp-dir,
