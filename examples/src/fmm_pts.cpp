@@ -29,6 +29,9 @@ void fmm_test(int ker, size_t N, size_t M, Real_t b, int dist, int mult_order, i
       mykernel     =&pvfmm::LaplaceKernel<Real_t>::gradient();
       break;
     case 3:
+      mykernel     =&pvfmm::StokesKernel<Real_t>::velocity();
+      break;
+    case 4:
       mykernel     =&pvfmm::HelmholtzKernel<Real_t>::potential();
       break;
     default:
@@ -76,21 +79,59 @@ void fmm_test(int ker, size_t N, size_t M, Real_t b, int dist, int mult_order, i
   }
 
   //Initialize FMM_Mat.
-  FMM_Mat_t* fmm_mat=new FMM_Mat_t;
-  fmm_mat->Initialize(mult_order,comm,mykernel);
+  FMM_Mat_t fmm_mat;
+  fmm_mat.Initialize(mult_order,comm,mykernel);
 
-  //Create Tree and initialize with input data.
-  FMM_Tree_t* tree=new FMM_Tree_t(comm);
-  tree->Initialize(&tree_data);
+  //Create Tree.
+  FMM_Tree_t tree(comm);
 
-  //Initialize FMM Tree
-  tree->InitFMM_Tree(false,bndry);
+  pvfmm::Vector<Real_t> trg_value;
+  for(size_t i=0;i<2;i++){ // Compute potential
+    pvfmm::Profile::Tic("TotalTime",&comm,true);
+
+    //Initialize tree with input data.
+    tree.Initialize(&tree_data);
+
+    //Initialize FMM Tree
+    tree.InitFMM_Tree(false,bndry);
+
+    // Setup FMM
+    tree.SetupFMM(&fmm_mat);
+    tree.RunFMM();
+
+    ////Re-run FMM
+    //tree->ClearFMMData();
+    //tree->RunFMM();
+
+    { // Scatter trg values
+      pvfmm::Profile::Tic("Scatter",&comm,true);
+      pvfmm::Vector<size_t> trg_scatter;
+      { // build trg_scatter
+        std::vector<Real_t> trg_value_;
+        std::vector<size_t> trg_scatter_;
+        std::vector<FMMNode_t*>& nodes=tree.GetNodeList();
+        for(size_t i=0;i<nodes.size();i++){
+          if(nodes[i]->IsLeaf() && !nodes[i]->IsGhost()){
+            pvfmm::Vector<Real_t>& trg_value=nodes[i]->trg_value;
+            pvfmm::Vector<size_t>& trg_scatter=nodes[i]->trg_scatter;
+            for(size_t j=0;j<trg_value.Dim();j++) trg_value_.push_back(trg_value[j]);
+            for(size_t j=0;j<trg_scatter.Dim();j++) trg_scatter_.push_back(trg_scatter[j]);
+          }
+        }
+        trg_value=trg_value_;
+        trg_scatter=trg_scatter_;
+      }
+      pvfmm::par::ScatterReverse(trg_value,trg_scatter,*tree.Comm(),tree_data.trg_coord.Dim()*mykernel->ker_dim[1]/COORD_DIM);
+      pvfmm::Profile::Toc();
+    }
+    pvfmm::Profile::Toc();
+  }
 
   { //Output max tree depth.
     long nleaf=0, maxdepth=0;
     std::vector<size_t> all_nodes(MAX_DEPTH+1,0);
     std::vector<size_t> leaf_nodes(MAX_DEPTH+1,0);
-    std::vector<FMMNode_t*>& nodes=tree->GetNodeList();
+    std::vector<FMMNode_t*>& nodes=tree.GetNodeList();
     for(size_t i=0;i<nodes.size();i++){
       FMMNode_t* n=nodes[i];
       if(!n->IsGhost()) all_nodes[n->Depth()]++;
@@ -128,25 +169,11 @@ void fmm_test(int ker, size_t N, size_t M, Real_t b, int dist, int mult_order, i
     if(!myrank) std::cout<<"Tree Depth: "<<maxdepth_glb<<'\n';
   }
 
-  // Setup FMM
-  tree->SetupFMM(fmm_mat);
-  tree->RunFMM();
-
-  //Re-run FMM
-  tree->ClearFMMData();
-  tree->RunFMM();
-
   //Find error in FMM output.
-  CheckFMMOutput<FMM_Mat_t>(tree, mykernel, "Output");
+  CheckFMMOutput<FMM_Mat_t>(&tree, mykernel, "Output");
 
   //Write2File
   //tree->Write2File("result/output");
-
-  //Delete matrices.
-  delete fmm_mat;
-
-  //Delete the tree.
-  delete tree;
 }
 
 int main(int argc, char **argv){
@@ -167,7 +194,8 @@ int main(int argc, char **argv){
   int    ker=       strtoul(commandline_option(argc, argv,  "-ker",     "1", false,
        "-ker  <int> =  (1)   : 1) Laplace potential\n\
                                2) Laplace gradient\n\
-                               3) Helmholtz"),NULL,10);
+                               3) Stokes velocity\n\
+                               4) Helmholtz"),NULL,10);
   commandline_option_end(argc, argv);
   pvfmm::Profile::Enable(true);
 

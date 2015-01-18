@@ -65,23 +65,121 @@ sin_pr+=(           1         1         1         0         0         0         
 max_time+=(   1000000   1000000   1000000   1000000   1000000   1000000   1000000   1000000   1000000 :)
 
 
+
+
+
 ###################################################################################################
-#    Convergence Helmholtz kernel (wave-number=10), 1M points, uniform distribution (ellipse)     #
+#              Convergence Stokes velocity kernel, 1M points, uniform distribution                #
 ###################################################################################################
-nodes+=(            1         1         1         1         1         1         1         1 :)
-cores+=(     ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES} :)
-mpi_proc+=(         1         1         1         1         1         1         1         1 :)
-threads+=(   ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES} :)
-ker+=(              3         3         3         3         3         3         3         3 :)
-n_pts+=(         1e+6      1e+6      1e+6      1e+6      1e+6      1e+6      1e+6      1e+6 :)
-m_pts+=(          370       430       640       370       430       640       640       640 :)
-m_pts+=(          150       150       150       200       300       400       400       400 :)
-b_len+=(            1         1         1         1         1         1         1         1 :)
-dist+=(             0         0         0         0         0         0         0         0 :)
-m+=(                8        10        10        12        14        16        18        20 :)
-depth+=(           15        15        15        15        15        15        15        15 :)
-sin_pr+=(           1         1         0         0         0         0         0         0 :)
-max_time+=(   1000000   1000000   1000000   1000000   1000000   1000000   1000000   1000000 :)
+nodes+=(            1         1         1         1         1         1         1         1         1 :)
+cores+=(     ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES} :)
+mpi_proc+=(         1         1         1         1         1         1         1         1         1 :)
+threads+=(   ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES} :)
+ker+=(              3         3         3         3         3         3         3         3         3 :)
+n_pts+=(         1e+6      1e+6      1e+6      1e+6      1e+6      1e+6      1e+6      1e+6      1e+6 :)
+m_pts+=(          300       300       300       300       300       300       300       300       300 :)
+b_len+=(       0.8125    0.8125      0.75      0.75     0.625       1.0       1.0     0.875      0.75 :)
+dist+=(             0         0         0         0         0         0         0         0         0 :)
+m+=(                2         4         6         6         8        10        12        14        16 :)
+depth+=(            6         6         6         6         6         5         5         5         5 :)
+sin_pr+=(           1         1         1         0         0         0         0         0         0 :)
+max_time+=(   1000000   1000000   1000000   1000000   1000000   1000000   1000000   1000000   1000000 :)
+
+
+###################################################################################################
+#        Convergence Stokes velocity kernel, 1M points, non-uniform distribution (sphere)         #
+###################################################################################################
+nodes+=(            1         1         1         1         1         1         1         1         1 :)
+cores+=(     ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES} :)
+mpi_proc+=(         1         1         1         1         1         1         1         1         1 :)
+threads+=(   ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES} :)
+ker+=(              3         3         3         3         3         3         3         3         3 :)
+n_pts+=(         1e+6      1e+6      1e+6      1e+6      1e+6      1e+6      1e+6      1e+6      1e+6 :)
+m_pts+=(          190       270       370       260       370       430       640      1000      1400 :)
+b_len+=(            1         1         1         1         1         1         1         1         1 :)
+dist+=(             1         1         1         1         1         1         1         1         1 :)
+m+=(                2         4         6         6         8        10        12        14        16 :)
+depth+=(           15        15        15        15        15        15        15        15        15 :)
+sin_pr+=(           1         1         1         0         0         0         0         0         0 :)
+max_time+=(   1000000   1000000   1000000   1000000   1000000   1000000   1000000   1000000   1000000 :)
+
+
+###################################################################################################
+#        Convergence Stokes velocity kernel, 1M points, non-uniform distribution (ellipse)        #
+###################################################################################################
+nodes+=(            1         1         1         1         1         1         1         1         1 :)
+cores+=(     ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES} :)
+mpi_proc+=(         1         1         1         1         1         1         1         1         1 :)
+threads+=(   ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES} :)
+ker+=(              3         3         3         3         3         3         3         3         3 :)
+n_pts+=(         1e+6      1e+6      1e+6      1e+6      1e+6      1e+6      1e+6      1e+6      1e+6 :)
+m_pts+=(          190       270       370       260       370       430       640      1000      1400 :)
+b_len+=(            1         1         1         1         1         1         1         1         1 :)
+dist+=(             2         2         2         2         2         2         2         2         2 :)
+m+=(                2         4         6         6         8        10        12        14        16 :)
+depth+=(           15        15        15        15        15        15        15        15        15 :)
+sin_pr+=(           1         1         1         0         0         0         0         0         0 :)
+max_time+=(   1000000   1000000   1000000   1000000   1000000   1000000   1000000   1000000   1000000 :)
+
+
+
+
+
+
+###################################################################################################
+#         Convergence Helmholtz kernel (wave-number=10), 1M points, uniform distribution          #
+###################################################################################################
+nodes+=(            1         1         1         1         1         1         1 :)
+cores+=(     ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES} :)
+mpi_proc+=(         1         1         1         1         1         1         1 :)
+threads+=(   ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES} :)
+ker+=(              4         4         4         4         4         4         4 :)
+n_pts+=(         1e+6      1e+6      1e+6      1e+6      1e+6      1e+6      1e+6 :)
+m_pts+=(          300       400       400       600       800      1400      1800 :)
+b_len+=(            1         1         1         1         1         1         1 :)
+dist+=(             0         0         0         0         0         0         0 :)
+m+=(                8        10        10        12        14        16        18 :)
+depth+=(           15        15        15        15        15        15        15 :)
+sin_pr+=(           1         1         0         0         0         0         0 :)
+max_time+=(   1000000   1000000   1000000   1000000   1000000   1000000   1000000 :)
+
+
+###################################################################################################
+#   Convergence Helmholtz kernel (wave-number=10), 1M points, non-uniform distribution (sphere)   #
+###################################################################################################
+nodes+=(            1         1         1         1         1         1         1 :)
+cores+=(     ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES} :)
+mpi_proc+=(         1         1         1         1         1         1         1 :)
+threads+=(   ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES} :)
+ker+=(              4         4         4         4         4         4         4 :)
+n_pts+=(         1e+6      1e+6      1e+6      1e+6      1e+6      1e+6      1e+6 :)
+m_pts+=(          300       400       400       600       800      1400      1800 :)
+b_len+=(            1         1         1         1         1         1         1 :)
+dist+=(             1         1         1         1         1         1         1 :)
+m+=(                8        10        10        12        14        16        18 :)
+depth+=(           15        15        15        15        15        15        15 :)
+sin_pr+=(           1         1         0         0         0         0         0 :)
+max_time+=(   1000000   1000000   1000000   1000000   1000000   1000000   1000000 :)
+
+
+###################################################################################################
+#  Convergence Helmholtz kernel (wave-number=10), 1M points, non-uniform distribution (ellipse)   #
+###################################################################################################
+nodes+=(            1         1         1         1         1         1         1 :)
+cores+=(     ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES} :)
+mpi_proc+=(         1         1         1         1         1         1         1 :)
+threads+=(   ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES}  ${CORES} :)
+ker+=(              4         4         4         4         4         4         4 :)
+n_pts+=(         1e+6      1e+6      1e+6      1e+6      1e+6      1e+6      1e+6 :)
+m_pts+=(          300       400       400       600       800      1400      1800 :)
+b_len+=(            1         1         1         1         1         1         1 :)
+dist+=(             2         2         2         2         2         2         2 :)
+m+=(                8        10        10        12        14        16        18 :)
+depth+=(           15        15        15        15        15        15        15 :)
+sin_pr+=(           1         1         0         0         0         0         0 :)
+max_time+=(   1000000   1000000   1000000   1000000   1000000   1000000   1000000 :)
+
+
 
 
 RESULT_HEADER=" Script: $0          Convergence with multipole order for 1M points"

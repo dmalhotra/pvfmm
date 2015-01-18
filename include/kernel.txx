@@ -1169,7 +1169,7 @@ template<> const Kernel<double>& LaplaceKernel<double>::gradient(){
  */
 template <class Real_t, class Vec_t=Real_t, Vec_t (*RINV_INTRIN)(Vec_t)=rinv_intrin0<Vec_t> >
 void stokes_vel_uKernel(Matrix<Real_t>& src_coord, Matrix<Real_t>& src_value, Matrix<Real_t>& trg_coord, Matrix<Real_t>& trg_value){
-  #define SRC_BLK 1000
+  #define SRC_BLK 500
   size_t VecLen=sizeof(Vec_t)/sizeof(Real_t);
 
   //// Number of newton iterations
@@ -2118,7 +2118,7 @@ template<> const Kernel<double>& StokesKernel<double>::velocity(){
 
 template <class Real_t, class Vec_t=Real_t, Vec_t (*RINV_INTRIN)(Vec_t)=rinv_intrin0<Vec_t> >
 void biot_savart_uKernel(Matrix<Real_t>& src_coord, Matrix<Real_t>& src_value, Matrix<Real_t>& trg_coord, Matrix<Real_t>& trg_value){
-  #define SRC_BLK 1000
+  #define SRC_BLK 500
   size_t VecLen=sizeof(Vec_t)/sizeof(Real_t);
 
   //// Number of newton iterations
@@ -2253,7 +2253,7 @@ template<> const Kernel<double>& BiotSavartKernel<double>::potential(){
 template <class Real_t, class Vec_t=Real_t, Vec_t (*RINV_INTRIN)(Vec_t)=rinv_intrin0<Vec_t> >
 void helmholtz_poten_uKernel(Matrix<Real_t>& src_coord, Matrix<Real_t>& src_value, Matrix<Real_t>& trg_coord, Matrix<Real_t>& trg_value){
 
-  #define SRC_BLK 1000
+  #define SRC_BLK 500
   size_t VecLen=sizeof(Vec_t)/sizeof(Real_t);
 
   //// Number of newton iterations

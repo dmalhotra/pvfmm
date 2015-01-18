@@ -336,7 +336,7 @@ std::vector<Real_t> point_distrib(DistribType dist_type, size_t N, MPI_Comm comm
       size_t N_local=end-start;
       coord.resize(N_local*3);
 
-      const Real_t r=0.25;
+      const Real_t r=0.45;
       const Real_t center[3]={0.5,0.5,0.5};
       for(size_t i=0;i<N_local;i++){
         Real_t* y=&coord[i*3];
@@ -365,9 +365,9 @@ std::vector<Real_t> point_distrib(DistribType dist_type, size_t N, MPI_Comm comm
           r=sqrt((y[0]-center[0])*(y[0]-center[0])
                 +(y[1]-center[1])*(y[1]-center[1])
                 +(y[2]-center[2])*(y[2]-center[2]));
-          y[0]=center[0]+0.1*(y[0]-center[0])/r;
-          y[1]=center[1]+0.1*(y[1]-center[1])/r;
-          y[2]=center[2]+0.1*(y[2]-center[2])/r;
+          y[0]=center[0]+0.45*(y[0]-center[0])/r;
+          y[1]=center[1]+0.45*(y[1]-center[1])/r;
+          y[2]=center[2]+0.45*(y[2]-center[2])/r;
         }
       }
     }

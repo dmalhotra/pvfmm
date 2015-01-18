@@ -55,7 +55,7 @@ class PrecompMat{
 
  public:
 
-  PrecompMat(bool scale_invar, int max_d);
+  PrecompMat(bool scale_invar);
 
   Matrix<T>& Mat(int l, Mat_Type type, size_t indx);
 
@@ -84,7 +84,6 @@ class PrecompMat{
   std::vector<T> rel_trg_coord;
 
   bool scale_invar;
-  int max_depth;
 };
 
 }//end namespace

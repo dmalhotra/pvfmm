@@ -235,8 +235,8 @@ void FMM_Pts<FMMNode>::Initialize(int mult_order, const MPI_Comm& comm_, const K
   assert(kernel!=NULL);
 
   bool save_precomp=false;
-  mat=new PrecompMat<Real_t>(ScaleInvar(), MAX_DEPTH+1);
-  if(this->mat_fname.size()==0 && !this->ScaleInvar()){
+  mat=new PrecompMat<Real_t>(ScaleInvar());
+  if(this->mat_fname.size()==0){// && !this->ScaleInvar()){
     std::stringstream st;
     st<<PVFMM_PRECOMP_DATA_PATH;
 
