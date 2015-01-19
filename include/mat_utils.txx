@@ -106,36 +106,36 @@ namespace mat{
   template <class T>
   static void GivensL(T* S_, const size_t dim[2], size_t m, T a, T b){
     T r=sqrt(a*a+b*b);
-    T c=a/r;
+    T c=(a/r)-1;
     T s=-b/r;
 
-    #pragma omp parallel for
-    for(size_t i=0;i<dim[1];i++){
-      T S0=S(m+0,i);
-      T S1=S(m+1,i);
-      S(m  ,i)+=S0*(c-1);
-      S(m  ,i)+=S1*(-s );
+    T S0, S1;
 
-      S(m+1,i)+=S0*( s );
-      S(m+1,i)+=S1*(c-1);
+    #pragma omp parallel for private(S0, S1)
+    for(size_t i=0;i<dim[1];i++){
+      S0=S(m+0,i);
+      S1=S(m+1,i);
+      S(m  ,i)+=S0*(c) + S1*(-s);
+
+      S(m+1,i)+=S0*( s ) + S1*(c);
     }
   }
 
   template <class T>
   static void GivensR(T* S_, const size_t dim[2], size_t m, T a, T b){
     T r=sqrt(a*a+b*b);
-    T c=a/r;
+    T c=(a/r)-1;
     T s=-b/r;
 
-    #pragma omp parallel for
-    for(size_t i=0;i<dim[0];i++){
-      T S0=S(i,m+0);
-      T S1=S(i,m+1);
-      S(i,m  )+=S0*(c-1);
-      S(i,m  )+=S1*(-s );
+    T S0, S1;
 
-      S(i,m+1)+=S0*( s );
-      S(i,m+1)+=S1*(c-1);
+    #pragma omp parallel for private(S0, S1)
+    for(size_t i=0;i<dim[0];i++){
+      S0=S(i,m+0);
+      S1=S(i,m+1);
+      S(i,m  )+=S0*(c) + S1*(-s);
+
+      S(i,m+1)+=S0*( s ) + S1*(c);
     }
   }
 
@@ -149,20 +149,23 @@ namespace mat{
     { // Bi-diagonalization
       size_t n=std::min(dim[0],dim[1]);
       std::vector<T> house_vec(std::max(dim[0],dim[1]));
+
+      T x1, x_inv_norm, alpha, beta, dot_prod;
+
       for(size_t i=0;i<n;i++){
         // Column Householder
         {
-          T x1=S(i,i);
+          x1=S(i,i);
           if(x1<0) x1=-x1;
 
-          T x_inv_norm=0;
+          x_inv_norm=0;
           for(size_t j=i;j<dim[0];j++){
             x_inv_norm+=S(j,i)*S(j,i);
           }
           if(x_inv_norm>0) x_inv_norm=1/sqrt(x_inv_norm);
 
-          T alpha=sqrt(1+x1*x_inv_norm);
-          T beta=x_inv_norm/alpha;
+          alpha=sqrt(1+x1*x_inv_norm);
+          beta=x_inv_norm/alpha;
 
           house_vec[i]=-alpha;
           for(size_t j=i+1;j<dim[0];j++){
@@ -172,9 +175,9 @@ namespace mat{
             house_vec[j]=-house_vec[j];
           }
         }
-        #pragma omp parallel for
+        #pragma omp parallel for private(dot_prod)
         for(size_t k=i;k<dim[1];k++){
-          T dot_prod=0;
+          dot_prod=0;
           for(size_t j=i;j<dim[0];j++){
             dot_prod+=S(j,k)*house_vec[j];
           }
@@ -182,9 +185,9 @@ namespace mat{
             S(j,k)-=dot_prod*house_vec[j];
           }
         }
-        #pragma omp parallel for
+        #pragma omp parallel for private(dot_prod)
         for(size_t k=0;k<dim[0];k++){
-          T dot_prod=0;
+          dot_prod=0;
           for(size_t j=i;j<dim[0];j++){
             dot_prod+=U(k,j)*house_vec[j];
           }
@@ -196,17 +199,17 @@ namespace mat{
         // Row Householder
         if(i>=n-1) continue;
         {
-          T x1=S(i,i+1);
+          x1=S(i,i+1);
           if(x1<0) x1=-x1;
 
-          T x_inv_norm=0;
+          x_inv_norm=0;
           for(size_t j=i+1;j<dim[1];j++){
             x_inv_norm+=S(i,j)*S(i,j);
           }
           if(x_inv_norm>0) x_inv_norm=1/sqrt(x_inv_norm);
 
-          T alpha=sqrt(1+x1*x_inv_norm);
-          T beta=x_inv_norm/alpha;
+          alpha=sqrt(1+x1*x_inv_norm);
+          beta=x_inv_norm/alpha;
 
           house_vec[i+1]=-alpha;
           for(size_t j=i+2;j<dim[1];j++){
@@ -216,9 +219,9 @@ namespace mat{
             house_vec[j]=-house_vec[j];
           }
         }
-        #pragma omp parallel for
+        #pragma omp parallel for private(dot_prod)
         for(size_t k=i;k<dim[0];k++){
-          T dot_prod=0;
+          dot_prod=0;
           for(size_t j=i+1;j<dim[1];j++){
             dot_prod+=S(k,j)*house_vec[j];
           }
@@ -226,9 +229,9 @@ namespace mat{
             S(k,j)-=dot_prod*house_vec[j];
           }
         }
-        #pragma omp parallel for
+        #pragma omp parallel for private(dot_prod)
         for(size_t k=0;k<dim[1];k++){
-          T dot_prod=0;
+          dot_prod=0;
           for(size_t j=i+1;j<dim[1];j++){
             dot_prod+=V(j,k)*house_vec[j];
           }
@@ -246,10 +249,13 @@ namespace mat{
       while(eps+(T)1.0>1.0) eps*=0.5;
       eps*=64.0;
     }
+
+    T S_max, alpha, beta, C[2][2], b, c, d, b1, c1, d1, d2, lambda1, lambda2, mu; 
+
     while(k0<dim[1]-1){ // Diagonalization
       iter++;
 
-      T S_max=0.0;
+      S_max=0.0;
       for(size_t i=0;i<dim[1];i++) S_max=(S_max>S(i,i)?S_max:S(i,i));
 
       //while(k0<dim[1]-1 && fabs(S(k0,k0+1))<=eps*(fabs(S(k0,k0))+fabs(S(k0+1,k0+1)))) k0++;
@@ -260,32 +266,32 @@ namespace mat{
       //while(n<dim[1] && fabs(S(n-1,n))>eps*(fabs(S(n-1,n-1))+fabs(S(n,n)))) n++;
       while(n<dim[1] && fabs(S(n-1,n))>eps*S_max) n++;
 
-      T alpha=0;
-      T beta=0;
+      alpha=0;
+      beta=0;
       { // Compute mu
-        T C[2][2];
+        C[2][2];
         C[0][0]=S(n-2,n-2)*S(n-2,n-2);
         if(n-k0>2) C[0][0]+=S(n-3,n-2)*S(n-3,n-2);
         C[0][1]=S(n-2,n-2)*S(n-2,n-1);
         C[1][0]=S(n-2,n-2)*S(n-2,n-1);
         C[1][1]=S(n-1,n-1)*S(n-1,n-1)+S(n-2,n-1)*S(n-2,n-1);
 
-        T b=-(C[0][0]+C[1][1])/2;
-        T c=  C[0][0]*C[1][1] - C[0][1]*C[1][0];
-        T d=0;
+        b=-(C[0][0]+C[1][1])/2;
+        c=  C[0][0]*C[1][1] - C[0][1]*C[1][0];
+        d=0;
         if(b*b-c>0) d=sqrt(b*b-c);
         else{
-          T b=(C[0][0]-C[1][1])/2;
-          T c=-C[0][1]*C[1][0];
-          if(b*b-c>0) d=sqrt(b*b-c);
+          b1=(C[0][0]-C[1][1])/2;
+          c1=-C[0][1]*C[1][0];
+          if(b1*b1-c1>0) d=sqrt(b1*b1-c1);
         }
 
-        T lambda1=-b+d;
-        T lambda2=-b-d;
+        lambda1=-b+d;
+        lambda2=-b-d;
 
-        T d1=lambda1-C[1][1]; d1=(d1<0?-d1:d1);
-        T d2=lambda2-C[1][1]; d2=(d2<0?-d2:d2);
-        T mu=(d1<d2?lambda1:lambda2);
+        d1=lambda1-C[1][1]; d1=(d1<0?-d1:d1);
+        d2=lambda2-C[1][1]; d2=(d2<0?-d2:d2);
+        mu=(d1<d2?lambda1:lambda2);
 
         alpha=S(k0,k0)*S(k0,k0)-mu;
         beta=S(k0,k0)*S(k0,k0+1);
@@ -307,16 +313,19 @@ namespace mat{
       }
 
       { // Make S bi-diagonal again
+	#pragma omp parallel for collapse(2)
         for(size_t i0=k0;i0<n-1;i0++){
           for(size_t i1=0;i1<dim[1];i1++){
             if(i0>i1 || i0+1<i1) S(i0,i1)=0;
           }
         }
+	#pragma omp parallel for collapse(2)
         for(size_t i0=0;i0<dim[0];i0++){
           for(size_t i1=k0;i1<n-1;i1++){
             if(i0>i1 || i0+1<i1) S(i0,i1)=0;
           }
         }
+	#pragma omp parallel for
         for(size_t i=0;i<dim[1]-1;i++){
           if(fabs(S(i,i+1))<=eps*S_max){
             S(i,i+1)=0;
