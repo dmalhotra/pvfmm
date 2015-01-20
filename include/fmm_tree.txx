@@ -98,10 +98,6 @@ void FMM_Tree<FMM_Mat_t>::SetupFMM(FMM_Mat_t* fmm_mat_) {
   this->SetColleagues(bndry);
   Profile::Toc();
 
-  Profile::Tic("BuildLists",this->Comm(),false,3);
-  BuildInteracLists();
-  Profile::Toc();
-
   Profile::Tic("CollectNodeData",this->Comm(),false,3);
   //Build node list.
   Node_t* n=dynamic_cast<Node_t*>(this->PostorderFirst());
@@ -113,6 +109,10 @@ void FMM_Tree<FMM_Mat_t>::SetupFMM(FMM_Mat_t* fmm_mat_) {
   //Collect node data into continuous array.
   std::vector<Vector<Node_t*> > node_lists; // TODO: Remove this parameter, not really needed
   fmm_mat->CollectNodeData((MatTree_t*)this,all_nodes, node_data_buff, node_lists);
+  Profile::Toc();
+
+  Profile::Tic("BuildLists",this->Comm(),false,3);
+  BuildInteracLists();
   Profile::Toc();
 
   setup_data.resize(8*MAX_DEPTH);
@@ -297,7 +297,15 @@ void FMM_Tree<FMM_Mat_t>::UpwardPass() {
 
 template <class FMM_Mat_t>
 void FMM_Tree<FMM_Mat_t>::BuildInteracLists() {
-  std::vector<Node_t*>& n_list=this->GetNodeList();
+  std::vector<Node_t*> n_list;
+  { // Build n_list
+    std::vector<Node_t*>& nodes=this->GetNodeList();
+    for(size_t i=0;i<nodes.size();i++){
+      if(!nodes[i]->IsGhost() && nodes[i]->pt_cnt[1]){
+        n_list.push_back(nodes[i]);
+      }
+    }
+  }
   size_t node_cnt=n_list.size();
 
   std::vector<Mat_Type> type_lst;
