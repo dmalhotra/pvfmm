@@ -2012,6 +2012,7 @@ void FMM_Pts<FMMNode>::Source2UpSetup(SetupData<Real_t>&  setup_data, FMMTree_t*
     Vector<Real_t> coord_shift;
     Vector<size_t> interac_cnt;
     Vector<size_t> interac_dsp;
+    Vector<size_t> interac_cst;
     Vector<Real_t> scal[4*MAX_DEPTH];
     Matrix<Real_t> M[4];
   };
@@ -3494,6 +3495,7 @@ void FMM_Pts<FMMNode>::PtSetup(SetupData<Real_t>& setup_data, void* data_){
     Vector<Real_t> coord_shift;
     Vector<size_t> interac_cnt;
     Vector<size_t> interac_dsp;
+    Vector<size_t> interac_cst;
     Vector<Real_t> scal[4*MAX_DEPTH];
     Matrix<Real_t> M[4];
   };
@@ -3511,6 +3513,30 @@ void FMM_Pts<FMMNode>::PtSetup(SetupData<Real_t>& setup_data, void* data_){
     InteracData interac_data;
   };
   ptSetupData& data=*(ptSetupData*)data_;
+  if(data.interac_data.interac_cnt.Dim()){ // Set data.interac_data.interac_cst
+    InteracData& intdata=data.interac_data;
+
+    Vector<size_t>  cnt;
+    Vector<size_t>& dsp=intdata.interac_cst;
+    cnt.ReInit(intdata.interac_cnt.Dim());
+    dsp.ReInit(intdata.interac_dsp.Dim());
+    for(size_t trg=0;trg<cnt.Dim();trg++){
+      size_t trg_cnt=data.trg_coord.cnt[trg];
+
+      cnt[trg]=0;
+      for(size_t i=0;i<intdata.interac_cnt[trg];i++){
+        size_t int_id=intdata.interac_dsp[trg]+i;
+        size_t src=intdata.in_node[int_id];
+
+        size_t src_cnt=data.src_coord.cnt[src];
+        size_t srf_cnt=data.srf_coord.cnt[src];
+        cnt[trg]+=(src_cnt+srf_cnt)*trg_cnt;
+      }
+    }
+
+    dsp[0]=cnt[0];
+    omp_par::scan(&cnt[0],&dsp[0],dsp.Dim());
+  }
   { // pack data
     struct PackedSetupData{
       size_t size;
@@ -3546,6 +3572,7 @@ void FMM_Pts<FMMNode>::PtSetup(SetupData<Real_t>& setup_data, void* data_){
       size_t      coord_shift_size; size_t       coord_shift_offset;
       size_t      interac_cnt_size; size_t       interac_cnt_offset;
       size_t      interac_dsp_size; size_t       interac_dsp_offset;
+      size_t      interac_cst_size; size_t       interac_cst_offset;
       size_t scal_dim[4*MAX_DEPTH]; size_t scal_offset[4*MAX_DEPTH];
       size_t            Mdim[4][2]; size_t              M_offset[4];
     };
@@ -3585,6 +3612,7 @@ void FMM_Pts<FMMNode>::PtSetup(SetupData<Real_t>& setup_data, void* data_){
       pkd_data.coord_shift_offset=offset; pkd_data.coord_shift_size=intdata.coord_shift.Dim(); offset+=mem::align_ptr(sizeof(Real_t)*pkd_data.coord_shift_size);
       pkd_data.interac_cnt_offset=offset; pkd_data.interac_cnt_size=intdata.interac_cnt.Dim(); offset+=mem::align_ptr(sizeof(size_t)*pkd_data.interac_cnt_size);
       pkd_data.interac_dsp_offset=offset; pkd_data.interac_dsp_size=intdata.interac_dsp.Dim(); offset+=mem::align_ptr(sizeof(size_t)*pkd_data.interac_dsp_size);
+      pkd_data.interac_cst_offset=offset; pkd_data.interac_cst_size=intdata.interac_cst.Dim(); offset+=mem::align_ptr(sizeof(size_t)*pkd_data.interac_cst_size);
 
       for(size_t i=0;i<4*MAX_DEPTH;i++){
         pkd_data.scal_offset[i]=offset; pkd_data.scal_dim[i]=intdata.scal[i].Dim(); offset+=mem::align_ptr(sizeof(Real_t)*pkd_data.scal_dim[i]);
@@ -3626,6 +3654,7 @@ void FMM_Pts<FMMNode>::PtSetup(SetupData<Real_t>& setup_data, void* data_){
       if(pkd_data.coord_shift_size) memcpy(&buff[0][pkd_data.coord_shift_offset], &intdata.coord_shift[0], pkd_data.coord_shift_size*sizeof(Real_t));
       if(pkd_data.interac_cnt_size) memcpy(&buff[0][pkd_data.interac_cnt_offset], &intdata.interac_cnt[0], pkd_data.interac_cnt_size*sizeof(size_t));
       if(pkd_data.interac_dsp_size) memcpy(&buff[0][pkd_data.interac_dsp_offset], &intdata.interac_dsp[0], pkd_data.interac_dsp_size*sizeof(size_t));
+      if(pkd_data.interac_cst_size) memcpy(&buff[0][pkd_data.interac_cst_offset], &intdata.interac_cst[0], pkd_data.interac_cst_size*sizeof(size_t));
       for(size_t i=0;i<4*MAX_DEPTH;i++){
         if(intdata.scal[i].Dim()) memcpy(&buff[0][pkd_data.scal_offset[i]], &intdata.scal[i][0], intdata.scal[i].Dim()*sizeof(Real_t));
       }
@@ -3705,6 +3734,7 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
       Vector<Real_t> coord_shift;
       Vector<size_t> interac_cnt;
       Vector<size_t> interac_dsp;
+      Vector<size_t> interac_cst;
       Vector<Real_t> scal[4*MAX_DEPTH];
       Matrix<Real_t> M[4];
     };
@@ -3758,6 +3788,7 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
         size_t      coord_shift_size; size_t       coord_shift_offset;
         size_t      interac_cnt_size; size_t       interac_cnt_offset;
         size_t      interac_dsp_size; size_t       interac_dsp_offset;
+        size_t      interac_cst_size; size_t       interac_cst_offset;
         size_t scal_dim[4*MAX_DEPTH]; size_t scal_offset[4*MAX_DEPTH];
         size_t            Mdim[4][2]; size_t              M_offset[4];
       };
@@ -3797,6 +3828,7 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
       intdata.coord_shift.ReInit(pkd_data.coord_shift_size, (Real_t*)&setupdata[0][pkd_data.coord_shift_offset],false);
       intdata.interac_cnt.ReInit(pkd_data.interac_cnt_size, (size_t*)&setupdata[0][pkd_data.interac_cnt_offset],false);
       intdata.interac_dsp.ReInit(pkd_data.interac_dsp_size, (size_t*)&setupdata[0][pkd_data.interac_dsp_offset],false);
+      intdata.interac_cst.ReInit(pkd_data.interac_cst_size, (size_t*)&setupdata[0][pkd_data.interac_cst_offset],false);
       for(size_t i=0;i<4*MAX_DEPTH;i++){
         intdata.scal[i].ReInit(pkd_data.scal_dim[i], (Real_t*)&setupdata[0][pkd_data.scal_offset[i]],false);
       }
@@ -3861,8 +3893,16 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
           }
         }
 
-        size_t trg_a=((tid+0)*intdata.interac_cnt.Dim())/omp_p;
-        size_t trg_b=((tid+1)*intdata.interac_cnt.Dim())/omp_p;
+        size_t trg_a, trg_b;
+        { // Determine trg_a, trg_b
+          //trg_a=((tid+0)*intdata.interac_cnt.Dim())/omp_p;
+          //trg_b=((tid+1)*intdata.interac_cnt.Dim())/omp_p;
+          Vector<size_t>& interac_cst=intdata.interac_cst;
+          size_t cost=interac_cst[interac_cst.Dim()-1];
+          trg_a=std::lower_bound(&interac_cst[0],&interac_cst[interac_cst.Dim()-1],(cost*(tid+0))/omp_p)-&interac_cst[0]+1;
+          trg_b=std::lower_bound(&interac_cst[0],&interac_cst[interac_cst.Dim()-1],(cost*(tid+1))/omp_p)-&interac_cst[0]+1;
+          if(tid==0) trg_a=0;
+        }
         for(size_t trg0=trg_a;trg0<trg_b;){
           size_t trg1_max=1;
           if(vcnt){ // Find trg1_max
@@ -4098,6 +4138,7 @@ void FMM_Pts<FMMNode>::X_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
     Vector<Real_t> coord_shift;
     Vector<size_t> interac_cnt;
     Vector<size_t> interac_dsp;
+    Vector<size_t> interac_cst;
     Vector<Real_t> scal[4*MAX_DEPTH];
     Matrix<Real_t> M[4];
   };
@@ -4399,6 +4440,7 @@ void FMM_Pts<FMMNode>::W_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
     Vector<Real_t> coord_shift;
     Vector<size_t> interac_cnt;
     Vector<size_t> interac_dsp;
+    Vector<size_t> interac_cst;
     Vector<Real_t> scal[4*MAX_DEPTH];
     Matrix<Real_t> M[4];
   };
@@ -4683,6 +4725,7 @@ void FMM_Pts<FMMNode>::U_ListSetup(SetupData<Real_t>& setup_data, FMMTree_t* tre
     Vector<Real_t> coord_shift;
     Vector<size_t> interac_cnt;
     Vector<size_t> interac_dsp;
+    Vector<size_t> interac_cst;
     Vector<Real_t> scal[4*MAX_DEPTH];
     Matrix<Real_t> M[4];
   };
@@ -5078,6 +5121,7 @@ void FMM_Pts<FMMNode>::Down2TargetSetup(SetupData<Real_t>&  setup_data, FMMTree_
     Vector<Real_t> coord_shift;
     Vector<size_t> interac_cnt;
     Vector<size_t> interac_dsp;
+    Vector<size_t> interac_cst;
     Vector<Real_t> scal[4*MAX_DEPTH];
     Matrix<Real_t> M[4];
   };

@@ -5,6 +5,7 @@
  * \brief This file contains implementation of BLAS and LAPACK wrapper functions.
  */
 
+#include <mpi.h>
 #include <blas.h>
 #include <lapack.h>
 #include <mat_utils.hpp>

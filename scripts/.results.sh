@@ -112,6 +112,7 @@ for (( l=0; l<${#nodes[@]}; l++ )) ; do
       2) FNAME=${FNAME_ASYNC};;
     esac
     if [ ! -f ${FNAME} ] ; then  continue; fi;
+    if [ ! -s ${FNAME} ] ; then  continue; fi;
     subrow_cnt=$(( $subrow_cnt + 1 ))
 
     ######################### Parse Data #################################

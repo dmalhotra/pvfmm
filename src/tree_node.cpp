@@ -5,6 +5,7 @@
  * \brief This file contains the implementation of the class TreeNode.
  */
 
+#include <mpi.h>
 #include <tree_node.hpp>
 #include <assert.h>
 #include <iostream>

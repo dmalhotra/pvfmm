@@ -6,6 +6,7 @@
  * uses a pre-allocated buffer of size defined in call to the constructor.
  */
 
+#include <mpi.h>
 #include <mem_mgr.hpp>
 
 #include <omp.h>
