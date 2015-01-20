@@ -1291,7 +1291,6 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& n
   // Create extra auxiliary buffer.
   if(buff_list.size()<=vec_list.size()) buff_list.resize(vec_list.size()+1);
   for(size_t indx=0;indx<vec_list.size();indx++){ // Resize buffer
-    Matrix<Real_t>&              aux_buff=buff_list[vec_list.size()];
     Matrix<Real_t>&                  buff=buff_list[indx];
     std::vector<Vector<Real_t>*>& vec_lst= vec_list[indx];
     bool keep_data=(indx==4 || indx==6);
@@ -1327,15 +1326,15 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& n
     size_t buff_size=vec_size[n_vec-1]+vec_disp[n_vec-1];
     if(!buff_size) continue;
 
-    if(keep_data){ // Copy to aux_buff
-      if(aux_buff.Dim(0)*aux_buff.Dim(1)<buff_size){ // Resize aux_buff
-        aux_buff.ReInit(1,buff_size*1.05);
+    if(keep_data){ // Copy to dev_buffer
+      if(dev_buffer.Dim()<buff_size*sizeof(Real_t)){ // Resize dev_buffer
+        dev_buffer.ReInit(buff_size*sizeof(Real_t)*1.05);
       }
 
       #pragma omp parallel for
       for(size_t i=0;i<n_vec;i++){
         if(&(*vec_lst[i])[0]){
-          mem::memcopy(&aux_buff[0][0]+vec_disp[i],&(*vec_lst[i])[0],vec_size[i]*sizeof(Real_t));
+          mem::memcopy(((Real_t*)&dev_buffer[0])+vec_disp[i],&(*vec_lst[i])[0],vec_size[i]*sizeof(Real_t));
         }
       }
     }
@@ -1344,12 +1343,12 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& n
       buff.ReInit(1,buff_size*1.05);
     }
 
-    if(keep_data){ // Copy to buff (from aux_buff)
+    if(keep_data){ // Copy to buff (from dev_buffer)
       #pragma omp parallel for
       for(size_t tid=0;tid<omp_p;tid++){
         size_t a=(buff_size*(tid+0))/omp_p;
         size_t b=(buff_size*(tid+1))/omp_p;
-        mem::memcopy(&buff[0][0]+a,&aux_buff[0][0]+a,(b-a)*sizeof(Real_t));
+        mem::memcopy(&buff[0][0]+a,((Real_t*)&dev_buffer[0])+a,(b-a)*sizeof(Real_t));
       }
     }
 
@@ -1553,7 +1552,6 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
       }
     }
     if(this->dev_buffer.Dim()<buff_size) this->dev_buffer.ReInit(buff_size);
-    if(this->cpu_buffer.Dim()<buff_size) this->cpu_buffer.ReInit(buff_size);
 
     { // Set interac_data.
       size_t data_size=sizeof(size_t)*4;
@@ -1757,7 +1755,7 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
     input_data  = setup_data.  input_data->AllocDevice(false);
     output_data = setup_data. output_data->AllocDevice(false);
   }else{
-    buff        =       this-> cpu_buffer;
+    buff        =       this-> dev_buffer;
     precomp_data=*setup_data.precomp_data;
     interac_data= setup_data.interac_data;
     input_data  =*setup_data.  input_data;
@@ -3309,8 +3307,8 @@ void FMM_Pts<FMMNode>::V_List     (SetupData<Real_t>&  setup_data, bool device){
     input_data  = setup_data.  input_data->AllocDevice(false);
     output_data = setup_data. output_data->AllocDevice(false);
   }else{
-    if(this->cpu_buffer.Dim()<buff_size) this->cpu_buffer.ReInit(buff_size);
-    buff        =       this-> cpu_buffer;
+    if(this->dev_buffer.Dim()<buff_size) this->dev_buffer.ReInit(buff_size);
+    buff        =       this-> dev_buffer;
     //precomp_data=*setup_data.precomp_data;
     interac_data= setup_data.interac_data;
     input_data  =*setup_data.  input_data;
@@ -3676,7 +3674,7 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
     ptr_single_layer_kernel=setup_data.kernel->dev_ker_poten;
     ptr_double_layer_kernel=setup_data.kernel->dev_dbl_layer_poten;
   }else{
-    dev_buff    =       this-> cpu_buffer;
+    dev_buff    =       this-> dev_buffer;
     interac_data= setup_data.interac_data;
     if(setup_data.  coord_data!=NULL) coord_data  =*setup_data.  coord_data;
     if(setup_data.  input_data!=NULL) input_data  =*setup_data.  input_data;
@@ -3827,7 +3825,7 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
         }
 
         size_t vcnt=0;
-        Matrix<Real_t> vbuff[6];
+        std::vector<Matrix<Real_t> > vbuff(6);
         { // init vbuff[0:5]
           size_t vdim_=0, vdim[6];
           for(size_t indx=0;indx<6;indx++){

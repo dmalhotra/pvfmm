@@ -300,10 +300,22 @@ void FMM_Tree<FMM_Mat_t>::BuildInteracLists() {
   std::vector<Node_t*>& n_list=this->GetNodeList();
   size_t node_cnt=n_list.size();
 
+  std::vector<Mat_Type> type_lst;
+  type_lst.push_back(S2U_Type);
+  type_lst.push_back(U2U_Type);
+  type_lst.push_back(D2D_Type);
+  type_lst.push_back(D2T_Type);
+  type_lst.push_back(U0_Type );
+  type_lst.push_back(U1_Type );
+  type_lst.push_back(U2_Type );
+  type_lst.push_back(W_Type  );
+  type_lst.push_back(X_Type  );
+  type_lst.push_back(V1_Type );
+
   size_t all_interac_cnt=0;
-  size_t interac_cnt[Type_Count];
-  for(size_t i=0;i<Type_Count;i++){
-    interac_cnt[i]=interac_list.ListCount((Mat_Type)i);
+  pvfmm::Vector<size_t> interac_cnt(type_lst.size());
+  for(size_t i=0;i<type_lst.size();i++){
+    interac_cnt[i]=interac_list.ListCount(type_lst[i]);
     all_interac_cnt+=interac_cnt[i];
   }
   node_interac_lst.ReInit(node_cnt,all_interac_cnt);
@@ -317,9 +329,9 @@ void FMM_Tree<FMM_Mat_t>::BuildInteracLists() {
     for(size_t i=a;i<b;i++){
       size_t offset=0;
       Node_t* n=n_list[i];
-      for(size_t k=0;k<Type_Count;k++){
-        n->interac_list[k].ReInit(interac_cnt[k],&node_interac_lst[i][offset],false);
-        interac_list.BuildList(n,(Mat_Type)k);
+      for(size_t k=0;k<type_lst.size();k++){
+        n->interac_list[type_lst[k]].ReInit(interac_cnt[k],&node_interac_lst[i][offset],false);
+        interac_list.BuildList(n,type_lst[k]);
         offset+=interac_cnt[k];
       }
     }

@@ -207,7 +207,6 @@ class FMM_Pts{
   virtual void CopyOutput(FMMNode** nodes, size_t n);
 
   Vector<char> dev_buffer;
-  Vector<char> cpu_buffer;
 
  protected:
 
