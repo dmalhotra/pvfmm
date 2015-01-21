@@ -1,5 +1,6 @@
 #!/bin/bash
 
+cd ${WORK_DIR}
 make ${EXEC} -j
 if [ ! -f ${EXEC} ] ; then exit -1; fi;
 

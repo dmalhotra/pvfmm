@@ -3520,6 +3520,7 @@ void FMM_Pts<FMMNode>::PtSetup(SetupData<Real_t>& setup_data, void* data_){
     Vector<size_t>& dsp=intdata.interac_cst;
     cnt.ReInit(intdata.interac_cnt.Dim());
     dsp.ReInit(intdata.interac_dsp.Dim());
+    #pragma omp parallel for
     for(size_t trg=0;trg<cnt.Dim();trg++){
       size_t trg_cnt=data.trg_coord.cnt[trg];
 
@@ -3893,8 +3894,8 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
           }
         }
 
-        size_t trg_a, trg_b;
-        { // Determine trg_a, trg_b
+        size_t trg_a=0, trg_b=0;
+        if(intdata.interac_cst.Dim()){ // Determine trg_a, trg_b
           //trg_a=((tid+0)*intdata.interac_cnt.Dim())/omp_p;
           //trg_b=((tid+1)*intdata.interac_cnt.Dim())/omp_p;
           Vector<size_t>& interac_cst=intdata.interac_cst;
@@ -3918,7 +3919,7 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
             assert(interac_cnt<=vcnt);
             for(size_t k=0;k<6;k++){
               if(vbuff[k].Dim(0)*vbuff[k].Dim(1)){
-                vbuff[k].ReInit(interac_cnt,vbuff[k].Dim(1),vbuff[k][0]);
+                vbuff[k].ReInit(interac_cnt,vbuff[k].Dim(1),vbuff[k][0],false);
               }
             }
           }else{

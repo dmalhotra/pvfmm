@@ -25,6 +25,9 @@ export MIC_KMP_AFFINITY=explicit,granularity=fine,proclist=[1-240:1]
 export MIC_OMP_NUM_THREADS=240
 export MIC_USE_2MB_BUFFERS=64K
 
+export KMP_AFFINITY=scatter
+export I_MPI_HYDRA_BRANCH_COUNT=32
+
 for (( k=0; k<${#nodes[@]}; k++ )) ; do
   if [ "${nodes[k]}" == "${NODES}" ] &&
      [ "${mpi_proc[k]}" == "${MPI_PROC}" ]; then
