@@ -3902,6 +3902,7 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
           size_t cost=interac_cst[interac_cst.Dim()-1];
           trg_a=std::lower_bound(&interac_cst[0],&interac_cst[interac_cst.Dim()-1],(cost*(tid+0))/omp_p)-&interac_cst[0]+1;
           trg_b=std::lower_bound(&interac_cst[0],&interac_cst[interac_cst.Dim()-1],(cost*(tid+1))/omp_p)-&interac_cst[0]+1;
+          if(tid==omp_p-1) trg_b=interac_cst.Dim();
           if(tid==0) trg_a=0;
         }
         for(size_t trg0=trg_a;trg0<trg_b;){
