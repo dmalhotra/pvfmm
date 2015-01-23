@@ -1060,10 +1060,9 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& n
       FMMNode_t* r_node=NULL;
       for(size_t i=0;i<node.size();i++){
         if(!node[i]->IsLeaf()){
-          node[i]->pt_cnt[0] =0;
           node_lst_[node[i]->Depth()].push_back(node[i]);
         }else{
-          node[i]->pt_cnt[0] =node[i]-> src_coord.Dim()/COORD_DIM;
+          node[i]->pt_cnt[0]+=node[i]-> src_coord.Dim()/COORD_DIM;
           node[i]->pt_cnt[0]+=node[i]->surf_coord.Dim()/COORD_DIM;
           if(node[i]->IsGhost()) node[i]->pt_cnt[0]++; // TODO: temporary fix, pt_cnt not known for ghost nodes
         }
@@ -1115,10 +1114,9 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& n
       FMMNode_t* r_node=NULL;
       for(size_t i=0;i<node.size();i++){
         if(!node[i]->IsLeaf()){
-          node[i]->pt_cnt[1]=0;
           node_lst_[node[i]->Depth()].push_back(node[i]);
         }else{
-          node[i]->pt_cnt[1]=node[i]->trg_coord.Dim()/COORD_DIM;
+          node[i]->pt_cnt[1]+=node[i]->trg_coord.Dim()/COORD_DIM;
         }
         if(node[i]->Depth()==0) r_node=node[i];
       }

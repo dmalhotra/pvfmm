@@ -103,6 +103,8 @@ void FMM_Tree<FMM_Mat_t>::SetupFMM(FMM_Mat_t* fmm_mat_) {
   Node_t* n=dynamic_cast<Node_t*>(this->PostorderFirst());
   std::vector<Node_t*> all_nodes;
   while(n!=NULL){
+    n->pt_cnt[0]=0;
+    n->pt_cnt[1]=0;
     all_nodes.push_back(n);
     n=static_cast<Node_t*>(this->PostorderNxt(n));
   }
