@@ -269,12 +269,13 @@ namespace mat{
       alpha=0;
       beta=0;
       { // Compute mu
-        C[2][2];
-        C[0][0]=S(n-2,n-2)*S(n-2,n-2);
-        if(n-k0>2) C[0][0]+=S(n-3,n-2)*S(n-3,n-2);
-        C[0][1]=S(n-2,n-2)*S(n-2,n-1);
-        C[1][0]=S(n-2,n-2)*S(n-2,n-1);
-        C[1][1]=S(n-1,n-1)*S(n-1,n-1)+S(n-2,n-1)*S(n-2,n-1);
+	mu = S(n-2, n-2);
+	lambda1 = S(n-2, n-1);
+	lambda2 = S(n-1, n-1);
+
+	C[0][0] = mu * mu;
+	C[0][1] = C[1][0] = mu * lambda1;
+	C[1][1] = lambda1 * lambda1 + lambda2 * lambda2;
 
         b=-(C[0][0]+C[1][1])/2;
         c=  C[0][0]*C[1][1] - C[0][1]*C[1][0];
@@ -289,8 +290,10 @@ namespace mat{
         lambda1=-b+d;
         lambda2=-b-d;
 
-        d1=lambda1-C[1][1]; d1=(d1<0?-d1:d1);
-        d2=lambda2-C[1][1]; d2=(d2<0?-d2:d2);
+        d1=lambda1-C[1][1]; 
+	d1=(d1<0?-d1:d1);
+        d2=lambda2-C[1][1]; 
+	d2=(d2<0?-d2:d2);
         mu=(d1<d2?lambda1:lambda2);
 
         alpha=S(k0,k0)*S(k0,k0)-mu;
@@ -313,23 +316,18 @@ namespace mat{
       }
 
       { // Make S bi-diagonal again
-	#pragma omp parallel for collapse(2)
-        for(size_t i0=k0;i0<n-1;i0++){
-          for(size_t i1=0;i1<dim[1];i1++){
-            if(i0>i1 || i0+1<i1) S(i0,i1)=0;
-          }
-        }
-	#pragma omp parallel for collapse(2)
-        for(size_t i0=0;i0<dim[0];i0++){
-          for(size_t i1=k0;i1<n-1;i1++){
-            if(i0>i1 || i0+1<i1) S(i0,i1)=0;
-          }
-        }
-	#pragma omp parallel for
+#pragma omp parallel
+	{
+	#pragma omp for
+	for(size_t i = 0; i < dim[1]-1;i++) {
+		memset(&S(i,0),0, sizeof(T) * i);
+		memset(&S(i,i+2),0, sizeof(T) * (n-i+2));
+	}
+	#pragma omp for
         for(size_t i=0;i<dim[1]-1;i++){
-          if(fabs(S(i,i+1))<=eps*S_max){
-            S(i,i+1)=0;
-          }
+        	if(fabs(S(i,i+1))<=eps*S_max){
+            		S(i,i+1)=0;
+          	}
         }
       }
       //std::cout<<iter<<' '<<k0<<' '<<n<<'\n';
