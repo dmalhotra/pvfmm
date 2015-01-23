@@ -252,19 +252,21 @@ namespace mat{
 
     T S_max, alpha, beta, C[2][2], b, c, d, b1, c1, d1, d2, lambda1, lambda2, mu; 
 
-    while(k0<dim[1]-1){ // Diagonalization
+    S_max = 0.0;
+    for(size_t i=0;i<dim[1];i++) S_max=(S_max>S(i,i)?S_max:S(i,i));
+
+    while(k0<dim[1]-2){ // Diagonalization
       iter++;
 
-      S_max=0.0;
-      for(size_t i=0;i<dim[1];i++) S_max=(S_max>S(i,i)?S_max:S(i,i));
-
-      //while(k0<dim[1]-1 && fabs(S(k0,k0+1))<=eps*(fabs(S(k0,k0))+fabs(S(k0+1,k0+1)))) k0++;
-      while(k0<dim[1]-1 && fabs(S(k0,k0+1))<=eps*S_max) k0++;
-      if(k0==dim[1]-1) continue;
+      while(k0<dim[1]-2 && fabs(S(k0,k0+1))<=eps*S_max) k0++;
+      if(k0==dim[1]-2) continue;
 
       size_t n=k0+2;
-      //while(n<dim[1] && fabs(S(n-1,n))>eps*(fabs(S(n-1,n-1))+fabs(S(n,n)))) n++;
-      while(n<dim[1] && fabs(S(n-1,n))>eps*S_max) n++;
+      while(n<dim[1]-1 && fabs(S(n-1,n))>eps*S_max) n++;
+
+      if(n == dim[1]-1 && fabs(S(n-1, n))) {
+         n++;
+      }
 
       alpha=0;
       beta=0;
