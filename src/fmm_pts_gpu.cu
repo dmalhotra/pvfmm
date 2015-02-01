@@ -2,10 +2,11 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <cassert>
+#include <fmm_pts_gpu.hpp>
 
-__global__
-void  in_perm_k(char* precomp_data, double*  input_data, char* buff_in , size_t*  input_perm, size_t vec_cnt, size_t M_dim0){
-  extern __shared__ double s[];
+template <class Real_t>
+__global__ void  in_perm_k(char* precomp_data, Real_t*  input_data, char* buff_in , size_t*  input_perm, size_t vec_cnt, size_t M_dim0){
+  extern __shared__ char s_[]; Real_t* s=(Real_t*)&s_[0];
 
   /* Specifing range. */
   int a = ( blockIdx.x     *vec_cnt)/gridDim.x;
@@ -13,9 +14,9 @@ void  in_perm_k(char* precomp_data, double*  input_data, char* buff_in , size_t*
 
   for(int i = a; i < b; i++) { // Compute permutations.
     const size_t* perm= (size_t*) (precomp_data + input_perm[i*4+0]);
-    const double* scal= (double*) (precomp_data + input_perm[i*4+1]);
-    const double*v_in = (double*) (input_data   + input_perm[i*4+3]);
-    double*      v_out= (double*) (buff_in      + input_perm[i*4+2]);
+    const Real_t* scal= (Real_t*) (precomp_data + input_perm[i*4+1]);
+    const Real_t*v_in = (Real_t*) (input_data   + input_perm[i*4+3]);
+    Real_t*      v_out= (Real_t*) (buff_in      + input_perm[i*4+2]);
     for (size_t j = threadIdx.x; j < M_dim0; j+=blockDim.x) s[j] = v_in[j];
     __syncthreads();
     for (size_t j = threadIdx.x; j < M_dim0; j+=blockDim.x) v_out[j] = s[perm[j]]*scal[j];
@@ -23,9 +24,9 @@ void  in_perm_k(char* precomp_data, double*  input_data, char* buff_in , size_t*
   }
 };
 
-__global__
-void out_perm_k(char* precomp_data, double* output_data, char* buff_out, size_t* output_perm, size_t vec_cnt, size_t M_dim1){
-  extern __shared__ double s[];
+template <class Real_t>
+__global__ void out_perm_k(char* precomp_data, Real_t* output_data, char* buff_out, size_t* output_perm, size_t vec_cnt, size_t M_dim1){
+  extern __shared__ char s_[]; Real_t* s=(Real_t*)&s_[0];
   for (size_t j = threadIdx.x; j < M_dim1; j+=blockDim.x) s[j] = 0;
 
   /* Specifing range. */
@@ -43,9 +44,9 @@ void out_perm_k(char* precomp_data, double* output_data, char* buff_out, size_t*
 
   for(int i = a; i < b; i++) { // Compute permutations.
     size_t  *perm = (size_t*) (precomp_data + output_perm[i*4+0]);
-    double  *scal = (double*) (precomp_data + output_perm[i*4+1]);
-    double *v_in  = (double*) (buff_out     + output_perm[i*4+2]);
-    double *v_out = (double*) (output_data  + output_perm[i*4+3]);
+    Real_t  *scal = (Real_t*) (precomp_data + output_perm[i*4+1]);
+    Real_t *v_in  = (Real_t*) (buff_out     + output_perm[i*4+2]);
+    Real_t *v_out = (Real_t*) (output_data  + output_perm[i*4+3]);
     for(size_t j = threadIdx.x; j<M_dim1; j+=blockDim.x){
       s[j] += v_in[perm[j]]*scal[j];
     }
@@ -57,20 +58,35 @@ void out_perm_k(char* precomp_data, double* output_data, char* buff_out, size_t*
   }
 };
 
+template <class Real_t>
+void  in_perm_gpu_(char* precomp_data, Real_t*  input_data, char* buff_in , size_t*  input_perm, size_t vec_cnt, size_t M_dim0, cudaStream_t *stream){
+  if (vec_cnt == 0) return;
+  in_perm_k <Real_t><<<1024, 256, M_dim0*sizeof(Real_t), *stream>>>(precomp_data,  input_data, buff_in ,  input_perm, vec_cnt, M_dim0);
+  cudaError_t error = cudaGetLastError();
+  assert(error == cudaSuccess);
+};
+
+template <class Real_t>
+void out_perm_gpu_(char* precomp_data, Real_t* output_data, char* buff_out, size_t* output_perm, size_t vec_cnt, size_t M_dim1, cudaStream_t *stream){
+  if (vec_cnt == 0) return;
+  out_perm_k<Real_t><<<1024, 256, M_dim1*sizeof(Real_t), *stream>>>(precomp_data, output_data, buff_out, output_perm, vec_cnt, M_dim1);
+  cudaError_t error = cudaGetLastError();
+  assert(error == cudaSuccess);
+};
+
 extern "C" {
+  void  in_perm_gpu_f(char* precomp_data,  float*  input_data, char* buff_in , size_t*  input_perm, size_t vec_cnt, size_t M_dim0, cudaStream_t *stream){
+    in_perm_gpu_(precomp_data,input_data,buff_in,input_perm,vec_cnt,M_dim0,stream);
+  }
+  void  in_perm_gpu_d(char* precomp_data, double*  input_data, char* buff_in , size_t*  input_perm, size_t vec_cnt, size_t M_dim0, cudaStream_t *stream){
+    in_perm_gpu_(precomp_data,input_data,buff_in,input_perm,vec_cnt,M_dim0,stream);
+  }
 
-  void  in_perm_d(char* precomp_data, double*  input_data, char* buff_in , size_t*  input_perm, size_t vec_cnt, size_t M_dim0, cudaStream_t *stream){
-    if (vec_cnt == 0) return;
-    in_perm_k <<<1024, 256, M_dim0*sizeof(double), *stream>>>(precomp_data,  input_data, buff_in ,  input_perm, vec_cnt, M_dim0);
-    cudaError_t error = cudaGetLastError();
-    assert(error == cudaSuccess);
-  };
-
-  void out_perm_d(char* precomp_data, double* output_data, char* buff_out, size_t* output_perm, size_t vec_cnt, size_t M_dim1, cudaStream_t *stream){
-    if (vec_cnt == 0) return;
-    out_perm_k<<<1024, 256, M_dim1*sizeof(double), *stream>>>(precomp_data, output_data, buff_out, output_perm, vec_cnt, M_dim1);
-    cudaError_t error = cudaGetLastError();
-    assert(error == cudaSuccess);
-  };
-
+  void out_perm_gpu_f(char* precomp_data,  float* output_data, char* buff_out, size_t* output_perm, size_t vec_cnt, size_t M_dim1, cudaStream_t *stream){
+    out_perm_gpu_(precomp_data,output_data,buff_out,output_perm,vec_cnt,M_dim1,stream);
+  }
+  void out_perm_gpu_d(char* precomp_data, double* output_data, char* buff_out, size_t* output_perm, size_t vec_cnt, size_t M_dim1, cudaStream_t *stream){
+    out_perm_gpu_(precomp_data,output_data,buff_out,output_perm,vec_cnt,M_dim1,stream);
+  }
 }
+

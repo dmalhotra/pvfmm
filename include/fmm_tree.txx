@@ -61,9 +61,9 @@ void FMM_Tree<FMM_Mat_t>::InitFMM_Tree(bool refine, BoundaryType bndry_) {
   Profile::Toc();
 
   //Redistribute nodes.
-  Profile::Tic("Redistribute",this->Comm(),true,5);
-  this->RedistNodes();
-  Profile::Toc();
+//  Profile::Tic("Redistribute",this->Comm(),true,5);
+//  this->RedistNodes();
+//  Profile::Toc();
 
   }Profile::Toc();
 }
@@ -299,50 +299,53 @@ void FMM_Tree<FMM_Mat_t>::UpwardPass() {
 
 template <class FMM_Mat_t>
 void FMM_Tree<FMM_Mat_t>::BuildInteracLists() {
-  std::vector<Node_t*> n_list;
+  std::vector<Node_t*> n_list_src;
+  std::vector<Node_t*> n_list_trg;
   { // Build n_list
     std::vector<Node_t*>& nodes=this->GetNodeList();
     for(size_t i=0;i<nodes.size();i++){
+      if(!nodes[i]->IsGhost() && nodes[i]->pt_cnt[0]){
+        n_list_src.push_back(nodes[i]);
+      }
       if(!nodes[i]->IsGhost() && nodes[i]->pt_cnt[1]){
-        n_list.push_back(nodes[i]);
+        n_list_trg.push_back(nodes[i]);
       }
     }
   }
-  size_t node_cnt=n_list.size();
+  size_t node_cnt=std::max(n_list_src.size(),n_list_trg.size());
 
   std::vector<Mat_Type> type_lst;
-  type_lst.push_back(S2U_Type);
-  type_lst.push_back(U2U_Type);
-  type_lst.push_back(D2D_Type);
-  type_lst.push_back(D2T_Type);
-  type_lst.push_back(U0_Type );
-  type_lst.push_back(U1_Type );
-  type_lst.push_back(U2_Type );
-  type_lst.push_back(W_Type  );
-  type_lst.push_back(X_Type  );
-  type_lst.push_back(V1_Type );
-
-  size_t all_interac_cnt=0;
-  pvfmm::Vector<size_t> interac_cnt(type_lst.size());
+  std::vector<std::vector<Node_t*>*> type_node_lst;
+  type_lst.push_back(S2U_Type); type_node_lst.push_back(&n_list_src);
+  type_lst.push_back(U2U_Type); type_node_lst.push_back(&n_list_src);
+  type_lst.push_back(D2D_Type); type_node_lst.push_back(&n_list_trg);
+  type_lst.push_back(D2T_Type); type_node_lst.push_back(&n_list_trg);
+  type_lst.push_back(U0_Type ); type_node_lst.push_back(&n_list_trg);
+  type_lst.push_back(U1_Type ); type_node_lst.push_back(&n_list_trg);
+  type_lst.push_back(U2_Type ); type_node_lst.push_back(&n_list_trg);
+  type_lst.push_back(W_Type  ); type_node_lst.push_back(&n_list_trg);
+  type_lst.push_back(X_Type  ); type_node_lst.push_back(&n_list_trg);
+  type_lst.push_back(V1_Type ); type_node_lst.push_back(&n_list_trg);
+  std::vector<size_t> interac_cnt(type_lst.size());
+  std::vector<size_t> interac_dsp(type_lst.size(),0);
   for(size_t i=0;i<type_lst.size();i++){
     interac_cnt[i]=interac_list.ListCount(type_lst[i]);
-    all_interac_cnt+=interac_cnt[i];
   }
-  node_interac_lst.ReInit(node_cnt,all_interac_cnt);
+  omp_par::scan(&interac_cnt[0],&interac_dsp[0],type_lst.size());
+  node_interac_lst.ReInit(node_cnt,interac_cnt.back()+interac_dsp.back());
 
   // Build interaction lists.
   int omp_p=omp_get_max_threads();
   #pragma omp parallel for
   for(int j=0;j<omp_p;j++){
-    size_t a=(node_cnt*(j  ))/omp_p;
-    size_t b=(node_cnt*(j+1))/omp_p;
-    for(size_t i=a;i<b;i++){
-      size_t offset=0;
-      Node_t* n=n_list[i];
-      for(size_t k=0;k<type_lst.size();k++){
-        n->interac_list[type_lst[k]].ReInit(interac_cnt[k],&node_interac_lst[i][offset],false);
+    for(size_t k=0;k<type_lst.size();k++){
+      std::vector<Node_t*>& n_list=*type_node_lst[k];
+      size_t a=(n_list.size()*(j  ))/omp_p;
+      size_t b=(n_list.size()*(j+1))/omp_p;
+      for(size_t i=a;i<b;i++){
+        Node_t* n=n_list[i];
+        n->interac_list[type_lst[k]].ReInit(interac_cnt[k],&node_interac_lst[i][interac_dsp[k]],false);
         interac_list.BuildList(n,type_lst[k]);
-        offset+=interac_cnt[k];
       }
     }
   }
@@ -630,8 +633,8 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
       Profile::Tic("Device2Host:LocExp",this->Comm(),false,5);
       if(setup_data[0+MAX_DEPTH*2].output_data!=NULL){
         Matrix<Real_t>& output_data=*setup_data[0+MAX_DEPTH*2].output_data;
-        assert(fmm_mat->dev_buffer.Dim()>=output_data.Dim(0)*output_data.Dim(1));
-        output_data.Device2Host((Real_t*)&fmm_mat->dev_buffer[0]);
+        assert(fmm_mat->staging_buffer.Dim()*sizeof(Real_t)>=output_data.Dim(0)*output_data.Dim(1));
+        output_data.Device2Host((Real_t*)&fmm_mat->staging_buffer[0]);
       }
       Profile::Toc();
     }
@@ -669,7 +672,7 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
   #if defined(__INTEL_OFFLOAD) || defined(PVFMM_HAVE_CUDA)
   Profile::Tic("D2H_Wait:LocExp",this->Comm(),false,5);
   if(device) if(setup_data[0+MAX_DEPTH*2].output_data!=NULL){
-    Real_t* dev_ptr=(Real_t*)&fmm_mat->dev_buffer[0];
+    Real_t* dev_ptr=(Real_t*)&fmm_mat->staging_buffer[0];
     Matrix<Real_t>& output_data=*setup_data[0+MAX_DEPTH*2].output_data;
     size_t n=output_data.Dim(0)*output_data.Dim(1);
     Real_t* host_ptr=output_data[0];
@@ -685,8 +688,8 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
   Profile::Tic("Device2Host:Trg",this->Comm(),false,5);
   if(device) if(setup_data[0+MAX_DEPTH*0].output_data!=NULL){ // Device2Host: Target
     Matrix<Real_t>& output_data=*setup_data[0+MAX_DEPTH*0].output_data;
-    assert(fmm_mat->dev_buffer.Dim()>=output_data.Dim(0)*output_data.Dim(1));
-    output_data.Device2Host((Real_t*)&fmm_mat->dev_buffer[0]);
+    assert(fmm_mat->staging_buffer.Dim()>=sizeof(Real_t)*output_data.Dim(0)*output_data.Dim(1));
+    output_data.Device2Host((Real_t*)&fmm_mat->staging_buffer[0]);
   }
   Profile::Toc();
   #endif
@@ -708,7 +711,7 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
   #if defined(__INTEL_OFFLOAD) || defined(PVFMM_HAVE_CUDA)
   Profile::Tic("D2H_Wait:Trg",this->Comm(),false,5);
   if(device) if(setup_data[0+MAX_DEPTH*0].output_data!=NULL){
-    Real_t* dev_ptr=(Real_t*)&fmm_mat->dev_buffer[0];
+    Real_t* dev_ptr=(Real_t*)&fmm_mat->staging_buffer[0];
     Matrix<Real_t>& output_data=*setup_data[0+MAX_DEPTH*0].output_data;
     size_t n=output_data.Dim(0)*output_data.Dim(1);
     Real_t* host_ptr=output_data[0];

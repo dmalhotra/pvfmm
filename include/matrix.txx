@@ -348,7 +348,7 @@ void Matrix<T>::CUBLASGEMM(Matrix<T>& M_r, const Matrix<T>& A, const Matrix<T>& 
   assert(M_r.dim[1]==B.dim[1]);
   Profile::Add_FLOP(2*(((long long)A.dim[0])*A.dim[1])*B.dim[1]);
   mat::cublasgemm('N', 'N', B.dim[1], A.dim[0], A.dim[1],
-      1.0, B.data_ptr, B.dim[1], A.data_ptr, A.dim[1], beta, M_r.data_ptr, M_r.dim[1]);
+      (T)1.0, B.data_ptr, B.dim[1], A.data_ptr, A.dim[1], beta, M_r.data_ptr, M_r.dim[1]);
 }
 #endif
 

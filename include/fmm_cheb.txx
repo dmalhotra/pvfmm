@@ -581,7 +581,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
       // Coord of target points
       Real_t s=pow(0.5,level);
       int* coord=this->interac_list.RelativeCoord(type,mat_indx);
-      Real_t coord_diff[3]={(coord[0]-1)*s*0.5,(coord[1]-1)*s*0.5,(coord[2]-1)*s*0.5};
+      Real_t coord_diff[3]={(Real_t)((coord[0]-1)*s*0.5),(Real_t)((coord[1]-1.0)*s*0.5),(Real_t)((coord[2]-1.0)*s*0.5)};
       std::vector<Real_t>& rel_trg_coord = this->mat->RelativeTrgCoord();
       size_t n_trg = rel_trg_coord.size()/3;
       std::vector<Real_t> trg_coord(n_trg*3);
@@ -681,7 +681,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
       // Coord of target points
       Real_t s=pow(0.5,level);
       int* coord=this->interac_list.RelativeCoord(type,mat_indx);
-      Real_t coord_diff[3]={(coord[0]+1)*s*0.25,(coord[1]+1)*s*0.25,(coord[2]+1)*s*0.25};
+      Real_t coord_diff[3]={(Real_t)((coord[0]+1)*s*0.25),(Real_t)((coord[1]+1)*s*0.25),(Real_t)((coord[2]+1)*s*0.25)};
       std::vector<Real_t>& rel_trg_coord = this->mat->RelativeTrgCoord();
       size_t n_trg = rel_trg_coord.size()/3;
       std::vector<Real_t> trg_coord(n_trg*3);
@@ -752,7 +752,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
       // Coord of target points
       Real_t s=pow(0.5,level-1);
       int* coord=this->interac_list.RelativeCoord(type,mat_indx);
-      Real_t c[3]={-(coord[0]-1)*s*0.25,-(coord[1]-1)*s*0.25,-(coord[2]-1)*s*0.25};
+      Real_t c[3]={-(Real_t)((coord[0]-1)*s*0.25),-(Real_t)((coord[1]-1)*s*0.25),-(Real_t)((coord[2]-1)*s*0.25)};
       std::vector<Real_t> trg_coord=d_check_surf(this->MultipoleOrder(),c,level);
       size_t n_trg=trg_coord.size()/3;
 
@@ -825,10 +825,14 @@ void FMM_Cheb<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& 
       }
     }
   }
-  #pragma omp parallel for
-  for(size_t i=0;i<node.size();i++){
-    node[i]->pt_cnt[0]+=2*n_coeff;
-    node[i]->pt_cnt[1]+=2*n_coeff;
+  { // Set pt_cnt
+    size_t m=this->MultipoleOrder();
+    size_t Nsrf=(6*(m-1)*(m-1)+2);
+    #pragma omp parallel for
+    for(size_t i=0;i<node.size();i++){
+      node[i]->pt_cnt[0]+=2*Nsrf;
+      node[i]->pt_cnt[1]+=2*Nsrf;
+    }
   }
   FMM_Pts<FMMNode_t>::CollectNodeData(tree, node, buff, n_list, vec_list);
 }
@@ -870,6 +874,7 @@ template <class FMMNode>
 void FMM_Cheb<FMMNode>::Source2Up     (SetupData<Real_t>& setup_data, bool device){
   if(!this->MultipoleOrder()) return;
   //Add Source2Up contribution.
+  FMM_Pts<FMMNode>::Source2Up(setup_data, device);
   this->EvalList(setup_data, device);
 }
 

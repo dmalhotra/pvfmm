@@ -136,9 +136,9 @@ void Cheb_Node<Real_t>::Subdivide() {
   Vector<Real_t> child_cheb_coeff[8];
   int n=(1UL<<this->Dim());
   for(int i=0;i<n;i++){
-    Real_t coord[3]={((i  )%2?0:-1.0),
-                     ((i/2)%2?0:-1.0),
-                     ((i/4)%2?0:-1.0)};
+    Real_t coord[3]={(Real_t)((i  )%2?0:-1.0),
+                     (Real_t)((i/2)%2?0:-1.0),
+                     (Real_t)((i/4)%2?0:-1.0)};
     for(int j=0;j<=cheb_deg;j++){
       x[j]=cheb_node[j]+coord[0];
       y[j]=cheb_node[j]+coord[1];

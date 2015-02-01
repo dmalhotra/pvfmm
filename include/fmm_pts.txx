@@ -1606,6 +1606,11 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
   if(device){ // Host2Device
     Profile::Tic("Host2Device",&this->comm,false,25);
     setup_data.interac_data .AllocDevice(true);
+    if(staging_buffer.Dim()<sizeof(Real_t)*output_data.Dim(0)*output_data.Dim(1)){
+      staging_buffer.ReInit(sizeof(Real_t)*output_data.Dim(0)*output_data.Dim(1));
+      staging_buffer.SetZero();
+      staging_buffer.AllocDevice(true);
+    }
     Profile::Toc();
   }
 }
@@ -1994,8 +1999,8 @@ void FMM_Pts<FMMNode>::Source2UpSetup(SetupData<Real_t>&  setup_data, FMMTree_t*
 
     setup_data.nodes_in .clear();
     setup_data.nodes_out.clear();
-    for(size_t i=0;i<nodes_in .Dim();i++) if((nodes_in [i]->Depth()==level || level==-1) && nodes_in [i]->pt_cnt[0] && nodes_in [i]->IsLeaf() && !nodes_in [i]->IsGhost()) setup_data.nodes_in .push_back(nodes_in [i]);
-    for(size_t i=0;i<nodes_out.Dim();i++) if((nodes_out[i]->Depth()==level || level==-1) && nodes_out[i]->pt_cnt[0] && nodes_out[i]->IsLeaf() && !nodes_out[i]->IsGhost()) setup_data.nodes_out.push_back(nodes_out[i]);
+    for(size_t i=0;i<nodes_in .Dim();i++) if((nodes_in [i]->Depth()==level || level==-1) && (nodes_in [i]->src_coord.Dim() || nodes_in [i]->surf_coord.Dim()) && nodes_in [i]->IsLeaf() && !nodes_in [i]->IsGhost()) setup_data.nodes_in .push_back(nodes_in [i]);
+    for(size_t i=0;i<nodes_out.Dim();i++) if((nodes_out[i]->Depth()==level || level==-1) && (nodes_out[i]->src_coord.Dim() || nodes_out[i]->surf_coord.Dim()) && nodes_out[i]->IsLeaf() && !nodes_out[i]->IsGhost()) setup_data.nodes_out.push_back(nodes_out[i]);
   }
 
   struct PackedData{
@@ -4122,8 +4127,8 @@ void FMM_Pts<FMMNode>::X_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
 
     setup_data.nodes_in .clear();
     setup_data.nodes_out.clear();
-    for(size_t i=0;i<nodes_in .Dim();i++) if((level==0 || level==-1) && nodes_in [i]->pt_cnt[0] && nodes_in [i]->IsLeaf()                            ) setup_data.nodes_in .push_back(nodes_in [i]);
-    for(size_t i=0;i<nodes_out.Dim();i++) if((level==0 || level==-1) && nodes_out[i]->pt_cnt[1]                           && !nodes_out[i]->IsGhost()) setup_data.nodes_out.push_back(nodes_out[i]);
+    for(size_t i=0;i<nodes_in .Dim();i++) if((level==0 || level==-1) && (nodes_in [i]->src_coord.Dim() || nodes_in [i]->surf_coord.Dim()) &&  nodes_in [i]->IsLeaf ()) setup_data.nodes_in .push_back(nodes_in [i]);
+    for(size_t i=0;i<nodes_out.Dim();i++) if((level==0 || level==-1) &&  nodes_out[i]->pt_cnt[1]                                          && !nodes_out[i]->IsGhost()) setup_data.nodes_out.push_back(nodes_out[i]);
   }
 
   struct PackedData{
@@ -4424,8 +4429,8 @@ void FMM_Pts<FMMNode>::W_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
 
     setup_data.nodes_in .clear();
     setup_data.nodes_out.clear();
-    for(size_t i=0;i<nodes_in .Dim();i++) if((level==0 || level==-1) && nodes_in [i]->pt_cnt[0]                                                      ) setup_data.nodes_in .push_back(nodes_in [i]);
-    for(size_t i=0;i<nodes_out.Dim();i++) if((level==0 || level==-1) && nodes_out[i]->pt_cnt[1] && nodes_out[i]->IsLeaf() && !nodes_out[i]->IsGhost()) setup_data.nodes_out.push_back(nodes_out[i]);
+    for(size_t i=0;i<nodes_in .Dim();i++) if((level==0 || level==-1) && nodes_in [i]->pt_cnt[0]                                                            ) setup_data.nodes_in .push_back(nodes_in [i]);
+    for(size_t i=0;i<nodes_out.Dim();i++) if((level==0 || level==-1) && nodes_out[i]->trg_coord.Dim() && nodes_out[i]->IsLeaf() && !nodes_out[i]->IsGhost()) setup_data.nodes_out.push_back(nodes_out[i]);
   }
 
   struct PackedData{
@@ -4709,8 +4714,8 @@ void FMM_Pts<FMMNode>::U_ListSetup(SetupData<Real_t>& setup_data, FMMTree_t* tre
 
     setup_data.nodes_in .clear();
     setup_data.nodes_out.clear();
-    for(size_t i=0;i<nodes_in .Dim();i++) if((level==0 || level==-1) && nodes_in [i]->pt_cnt[0] && nodes_in [i]->IsLeaf()                            ) setup_data.nodes_in .push_back(nodes_in [i]);
-    for(size_t i=0;i<nodes_out.Dim();i++) if((level==0 || level==-1) && nodes_out[i]->pt_cnt[1] && nodes_out[i]->IsLeaf() && !nodes_out[i]->IsGhost()) setup_data.nodes_out.push_back(nodes_out[i]);
+    for(size_t i=0;i<nodes_in .Dim();i++) if((level==0 || level==-1) && (nodes_in [i]->src_coord.Dim() || nodes_in [i]->surf_coord.Dim()) && nodes_in [i]->IsLeaf()                            ) setup_data.nodes_in .push_back(nodes_in [i]);
+    for(size_t i=0;i<nodes_out.Dim();i++) if((level==0 || level==-1) && (nodes_out[i]->trg_coord.Dim()                                  ) && nodes_out[i]->IsLeaf() && !nodes_out[i]->IsGhost()) setup_data.nodes_out.push_back(nodes_out[i]);
   }
 
   struct PackedData{
@@ -5105,8 +5110,8 @@ void FMM_Pts<FMMNode>::Down2TargetSetup(SetupData<Real_t>&  setup_data, FMMTree_
 
     setup_data.nodes_in .clear();
     setup_data.nodes_out.clear();
-    for(size_t i=0;i<nodes_in .Dim();i++) if((nodes_in [i]->Depth()==level || level==-1) && nodes_in [i]->pt_cnt[1] && nodes_in [i]->IsLeaf() && !nodes_in [i]->IsGhost()) setup_data.nodes_in .push_back(nodes_in [i]);
-    for(size_t i=0;i<nodes_out.Dim();i++) if((nodes_out[i]->Depth()==level || level==-1) && nodes_out[i]->pt_cnt[1] && nodes_out[i]->IsLeaf() && !nodes_out[i]->IsGhost()) setup_data.nodes_out.push_back(nodes_out[i]);
+    for(size_t i=0;i<nodes_in .Dim();i++) if((nodes_in [i]->Depth()==level || level==-1) && nodes_in [i]->trg_coord.Dim() && nodes_in [i]->IsLeaf() && !nodes_in [i]->IsGhost()) setup_data.nodes_in .push_back(nodes_in [i]);
+    for(size_t i=0;i<nodes_out.Dim();i++) if((nodes_out[i]->Depth()==level || level==-1) && nodes_out[i]->trg_coord.Dim() && nodes_out[i]->IsLeaf() && !nodes_out[i]->IsGhost()) setup_data.nodes_out.push_back(nodes_out[i]);
   }
 
   struct PackedData{

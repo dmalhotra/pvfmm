@@ -938,6 +938,8 @@ inline int balanceOctree (std::vector<MortonId > &in, std::vector<MortonId > &ou
 
 template <class TreeNode>
 void MPI_Tree<TreeNode>::Balance21(BoundaryType bndry) {
+  bool redist=true;
+
   int num_proc,myrank;
   MPI_Comm_rank(*Comm(),&myrank);
   MPI_Comm_size(*Comm(),&num_proc);
@@ -957,6 +959,29 @@ void MPI_Tree<TreeNode>::Balance21(BoundaryType bndry) {
   Profile::Tic("ot::balanceOctree",Comm(),true,10);
   std::vector<MortonId> out;
   balanceOctree(in, out, this->Dim(), this->max_depth, (bndry==Periodic), *Comm());
+  if(!redist){ // Use original partitioning
+    std::vector<int> cnt(num_proc,0);
+    std::vector<int> dsp(num_proc+1,out.size());
+    std::vector<MortonId> mins=GetMins();
+    for(size_t i=0;i<num_proc;i++){
+      size_t indx=std::lower_bound(&out[0],&out[0]+out.size(),mins[i],std::less<MortonId>())-&out[0];
+      dsp[i]=indx;
+    }
+    for(size_t i=0;i<num_proc;i++){
+      cnt[i]=dsp[i+1]-dsp[i];
+    }
+
+    std::vector<int> recv_cnt(num_proc);
+    std::vector<int> recv_dsp(num_proc);
+    MPI_Alltoall(&     cnt[0], 1, MPI_INT,
+                 &recv_cnt[0], 1, MPI_INT, *Comm());
+    omp_par::scan(&recv_cnt[0],&recv_dsp[0],num_proc);
+
+    in.resize(recv_cnt[num_proc-1]+recv_dsp[num_proc-1]);
+    par::Mpi_Alltoallv_sparse(&out[0], &     cnt[0], &     dsp[0],
+                              & in[0], &recv_cnt[0], &recv_dsp[0], *Comm());
+    in.swap(out);
+  }
   Profile::Toc();
 
   //Get new_mins.
@@ -967,7 +992,7 @@ void MPI_Tree<TreeNode>::Balance21(BoundaryType bndry) {
 
   // Refine to new_mins in my range of octants
   // or else RedistNodes(...) will not work correctly.
-  {
+  if(redist){
     int i=0;
     std::vector<MortonId> mins=GetMins();
     while(new_mins[i]<mins[myrank] && i<num_proc) i++; //TODO: Use binary search.
@@ -980,7 +1005,7 @@ void MPI_Tree<TreeNode>::Balance21(BoundaryType bndry) {
 
   //Redist nodes using new_mins.
   Profile::Tic("RedistNodes",Comm(),true,10);
-  RedistNodes(&out[0]);
+  if(redist) RedistNodes(&out[0]);
   #ifndef NDEBUG
   std::vector<MortonId> mins=GetMins();
   assert(mins[myrank].getDFD()==out[0].getDFD());
@@ -1642,7 +1667,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
   { // Pack shared nodes.
     #pragma omp parallel for
     for(size_t tid=0;tid<omp_p;tid++){
-      size_t buff_length=10l*1024l*1024l; // 10MB buffer per thread.
+      size_t buff_length=100l*1024l*1024l; // 100MB buffer per thread.
       char* buff=(char*)this->memgr.malloc(buff_length);
 
       size_t a=( tid   *shared_data.size())/omp_p;
