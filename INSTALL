@@ -9,13 +9,14 @@ The following section describes the installation steps.
 Basic Installation
 ==================
 
-   Briefly, the shell commands `./configure; make; make install' should
+   Briefly, the shell commands `./autogen.sh; ./configure; make; make install' should
 configure, build, and install this package.
 
    The simplest way to compile this package is:
 
   1. `cd' to the directory containing the package's source code and type
-     `./configure' to configure the package for your system.
+     `./autogen.sh' to call the autotools which create the configure-script.
+     Then you type `./configure' to configure the package for your system.
 
      Running `configure' might take a while.  While running, it prints
      some messages telling which features it is checking for.
