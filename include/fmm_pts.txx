@@ -848,7 +848,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
               M_ue2dc+=M_tmp;
             }
 
-            M_m2l[-level]=M_check_zero_avg*M_ue2dc * M_check_zero_avg;
+            M_m2l[-level]=M_equiv_zero_avg*M_ue2dc * M_check_zero_avg;
           }else{
             M_m2l[-level]=M_equiv_zero_avg * M_m2l[-level-1] * M_check_zero_avg;
             if(ScaleInvar()){ // Scale M_m2l
@@ -869,7 +869,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
         }
         for(int level=-BC_LEVELS;level<=0;level++){
           if(level==-BC_LEVELS) M = M_m2l[-level];
-          else                  M = M_equiv_zero_avg * (M_m2l[-level] + M_m2m[-level]*M*M_l2l[-level]) * M_equiv_zero_avg;
+          else                  M = M_equiv_zero_avg * (M_m2l[-level] + M_m2m[-level]*M*M_l2l[-level]) * M_check_zero_avg;
         }
         { // ax+by+cz+d correction.
           std::vector<Real_t> corner_pts;
@@ -888,8 +888,8 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
           Matrix<Real_t> M_err;
           { // Evaluate potential at corner due to upward and dnward equivalent surface.
             { // Error from local expansion.
-              Matrix<Real_t> M_e2pt(n_surf*ker_dim[0],n_corner*ker_dim[1]);
-              kernel->k_m2l->BuildMatrix(&dn_equiv_surf[0], n_surf,
+              Matrix<Real_t> M_e2pt(n_surf*kernel->k_l2l->ker_dim[0],n_corner*kernel->k_l2l->ker_dim[1]);
+              kernel->k_l2l->BuildMatrix(&dn_equiv_surf[0], n_surf,
                                             &corner_pts[0], n_corner, &(M_e2pt[0][0]));
               Matrix<Real_t>& M_dc2de0 = Precomp(0, DC2DE0_Type, 0);
               Matrix<Real_t>& M_dc2de1 = Precomp(0, DC2DE1_Type, 0);
