@@ -11,7 +11,15 @@ namespace pvfmm{
 
 inline MortonId::MortonId():x(0), y(0), z(0), depth(0){}
 
-inline MortonId::MortonId(MortonId m, uint8_t depth_):x(m.x), y(m.y), z(m.z), depth(depth_){}
+inline MortonId::MortonId(MortonId m, uint8_t depth_):x(m.x), y(m.y), z(m.z), depth(depth_){
+  { // Set depth
+    assert(depth<=MAX_DEPTH);
+    UINT_T mask=~((((UINT_T)1)<<(MAX_DEPTH-depth))-1);
+    x=x & mask;
+    y=y & mask;
+    z=z & mask;
+  }
+}
 
 template <class T>
 inline MortonId::MortonId(T x_f,T y_f, T z_f, uint8_t depth_): depth(depth_){
@@ -19,6 +27,13 @@ inline MortonId::MortonId(T x_f,T y_f, T z_f, uint8_t depth_): depth(depth_){
   x=(UINT_T)floor(x_f*max_int);
   y=(UINT_T)floor(y_f*max_int);
   z=(UINT_T)floor(z_f*max_int);
+  { // Set depth
+    assert(depth<=MAX_DEPTH);
+    UINT_T mask=~((((UINT_T)1)<<(MAX_DEPTH-depth))-1);
+    x=x & mask;
+    y=y & mask;
+    z=z & mask;
+  }
 }
 
 template <class T>
@@ -27,6 +42,13 @@ inline MortonId::MortonId(T* coord, uint8_t depth_): depth(depth_){
   x=(UINT_T)floor(coord[0]*max_int);
   y=(UINT_T)floor(coord[1]*max_int);
   z=(UINT_T)floor(coord[2]*max_int);
+  { // Set depth
+    assert(depth<=MAX_DEPTH);
+    UINT_T mask=~((((UINT_T)1)<<(MAX_DEPTH-depth))-1);
+    x=x & mask;
+    y=y & mask;
+    z=z & mask;
+  }
 }
 
 template <class T>
