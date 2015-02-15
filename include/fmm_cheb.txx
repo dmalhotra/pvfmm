@@ -811,6 +811,8 @@ void FMM_Cheb<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& 
         Vector<Real_t>& data_vec=node[i]->ChebData();
         if(data_vec.Dim()!=vec_sz) data_vec.ReInit(vec_sz);
         vec_list[indx].push_back(&data_vec);
+      }else{
+        node[i]->ChebData().ReInit(0);
       }
     }
   }
@@ -822,6 +824,8 @@ void FMM_Cheb<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& 
         Vector<Real_t>& data_vec=((FMMData*)node[i]->FMMData())->cheb_out;
         if(data_vec.Dim()!=vec_sz) data_vec.ReInit(vec_sz);
         vec_list[indx].push_back(&data_vec);
+      }else{
+        ((FMMData*)node[i]->FMMData())->cheb_out.ReInit(0);
       }
     }
   }

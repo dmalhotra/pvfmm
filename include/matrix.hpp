@@ -36,11 +36,12 @@ class Matrix{
     Device& operator=(Matrix& M){
       dim[0]=M.Dim(0);
       dim[1]=M.Dim(1);
-      dev_ptr=(uintptr_t)M[0];
+      dev_ptr=(uintptr_t)M.data_ptr;
       return *this;
     }
 
     inline T* operator[](size_t j) const{
+      assert(j<dim[0]);
       return &((T*)dev_ptr)[j*dim[1]];
     }
 

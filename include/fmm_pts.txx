@@ -1187,6 +1187,9 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& n
     for(size_t i=0;i<node.size();i++){// Construct node_lst
       if(node[i]->IsLeaf()){
         node_lst.push_back(node[i]);
+      }else{
+        node[i]->src_value.ReInit(0);
+        node[i]->surf_value.ReInit(0);
       }
     }
     n_list[indx]=node_lst;
@@ -1216,6 +1219,8 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& n
     for(size_t i=0;i<node.size();i++){// Construct node_lst
       if(node[i]->IsLeaf() && !node[i]->IsGhost()){
         node_lst.push_back(node[i]);
+      }else{
+        node[i]->trg_value.ReInit(0);
       }
     }
     n_list[indx]=node_lst;
@@ -1238,6 +1243,10 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& n
     for(size_t i=0;i<node.size();i++){// Construct node_lst
       if(node[i]->IsLeaf()){
         node_lst.push_back(node[i]);
+      }else{
+        node[i]->src_coord.ReInit(0);
+        node[i]->surf_coord.ReInit(0);
+        node[i]->trg_coord.ReInit(0);
       }
     }
     n_list[indx]=node_lst;
@@ -4010,30 +4019,45 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
                 Real_t* vbuff2_ptr=(vbuff[2].Dim(0)*vbuff[2].Dim(1)?vbuff[2][interac_idx]:src_value[0]);
                 Real_t* vbuff3_ptr=(vbuff[3].Dim(0)*vbuff[3].Dim(1)?vbuff[3][interac_idx]:trg_value[0]);
 
-                { // coord_shift
-                  Real_t* shift=&intdata.coord_shift[int_id*COORD_DIM];
-                  if(shift[0]!=0 || shift[1]!=0 || shift[2]!=0){
-                    size_t vdim=src_coord.Dim(1);
-                    Vector<Real_t> new_coord(vdim, &buff[0], false);
-                    assert(buff.Dim()>=vdim); // Thread buffer is too small
-                    //buff.ReInit(buff.Dim()-vdim, &buff[vdim], false);
-                    for(size_t j=0;j<vdim;j+=COORD_DIM){
-                      for(size_t k=0;k<COORD_DIM;k++){
-                        new_coord[j+k]=src_coord[0][j+k]+shift[k];
-                      }
-                    }
-                    src_coord.ReInit(1, vdim, &new_coord[0], false);
-                  }
-                }
                 if(src_coord.Dim(1)){
+                  { // coord_shift
+                    Real_t* shift=&intdata.coord_shift[int_id*COORD_DIM];
+                    if(shift[0]!=0 || shift[1]!=0 || shift[2]!=0){
+                      size_t vdim=src_coord.Dim(1);
+                      Vector<Real_t> new_coord(vdim, &buff[0], false);
+                      assert(buff.Dim()>=vdim); // Thread buffer is too small
+                      //buff.ReInit(buff.Dim()-vdim, &buff[vdim], false);
+                      for(size_t j=0;j<vdim;j+=COORD_DIM){
+                        for(size_t k=0;k<COORD_DIM;k++){
+                          new_coord[j+k]=src_coord[0][j+k]+shift[k];
+                        }
+                      }
+                      src_coord.ReInit(1, vdim, &new_coord[0], false);
+                    }
+                  }
                   assert(ptr_single_layer_kernel); // assert(Single-layer kernel is implemented)
                   single_layer_kernel(src_coord[0], src_coord.Dim(1)/COORD_DIM, vbuff2_ptr, 1,
                                       trg_coord[0], trg_coord.Dim(1)/COORD_DIM, vbuff3_ptr, NULL);
                 }
                 if(srf_coord.Dim(1)){
+                  { // coord_shift
+                    Real_t* shift=&intdata.coord_shift[int_id*COORD_DIM];
+                    if(shift[0]!=0 || shift[1]!=0 || shift[2]!=0){
+                      size_t vdim=srf_coord.Dim(1);
+                      Vector<Real_t> new_coord(vdim, &buff[0], false);
+                      assert(buff.Dim()>=vdim); // Thread buffer is too small
+                      //buff.ReInit(buff.Dim()-vdim, &buff[vdim], false);
+                      for(size_t j=0;j<vdim;j+=COORD_DIM){
+                        for(size_t k=0;k<COORD_DIM;k++){
+                          new_coord[j+k]=srf_coord[0][j+k]+shift[k];
+                        }
+                      }
+                      srf_coord.ReInit(1, vdim, &new_coord[0], false);
+                    }
+                  }
                   assert(ptr_double_layer_kernel); // assert(Double-layer kernel is implemented)
                   double_layer_kernel(srf_coord[0], srf_coord.Dim(1)/COORD_DIM, srf_value[0], 1,
-                                      trg_coord[0], trg_coord.Dim(1)/COORD_DIM, trg_value[0], NULL);
+                                      trg_coord[0], trg_coord.Dim(1)/COORD_DIM, vbuff3_ptr, NULL);
                 }
                 interac_idx++;
               }

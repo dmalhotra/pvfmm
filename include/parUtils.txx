@@ -18,6 +18,7 @@
 #include <dtypes.h>
 #include <ompUtils.h>
 #include <mem_mgr.hpp>
+#include <matrix.hpp>
 
 namespace pvfmm{
 namespace par{
@@ -337,14 +338,7 @@ namespace par{
       long long nn = recvSz[npesLong-1] + recvOff[npes-1];
 
       // allocate memory for the new arrays ...
-      Vector<T> newNodes;
-      {
-        if(nodeList.Capacity()>nn+std::max(nn,nlSize)){
-          newNodes.ReInit(nn,&nodeList[0]+std::max(nn,nlSize),false);
-        //}else if(buff!=NULL && buff->Dim()>nn*sizeof(T)){
-        //  newNodes.ReInit(nn,(T*)&(*buff)[0],false);
-        }else newNodes.Resize(nn);
-      }
+      Vector<T> newNodes(nn);
 
       // perform All2All  ...
       par::Mpi_Alltoallv_sparse<T>(&nodeList[0], &sendSz[0], &sendOff[0],
@@ -536,20 +530,7 @@ namespace par{
       MPI_Comm_rank(comm, &rank);
       long long npesLong = npes;
 
-      //Vector<char> buff;
-      //if(buff_!=NULL && buff_->Dim()>0){
-      //  buff.ReInit(buff_->Dim(),&(*buff_)[0],false);
-      //}
-
-      Vector<Pair_t> parray;
-      { // Allocate memory
-        //size_t parray_size=key.Dim()*sizeof(Pair_t);
-        //if(buff.Dim()>parray_size){
-        //  parray.ReInit(key.Dim(),(Pair_t*)&buff[0],false);
-        //  buff.ReInit(buff.Dim()-parray_size,&buff[0]+parray_size,false);
-        //}else
-        parray.Resize(key.Dim());
-      }
+      Vector<Pair_t> parray(key.Dim());
       { // Build global index.
         long long glb_dsp=0;
         long long loc_size=key.Dim();
@@ -594,7 +575,7 @@ namespace par{
         if(nlSize>0) {
           // Determine processor range.
           long long pid1=std::lower_bound(&split_key[0], &split_key[0]+npesLong, psorted[       0].key)-&split_key[0]-1;
-          long long pid2=std::upper_bound(&split_key[0], &split_key[0]+npesLong, psorted[nlSize-1].key)-&split_key[0]+0;
+          long long pid2=std::upper_bound(&split_key[0], &split_key[0]+npesLong, psorted[nlSize-1].key)-&split_key[0]+1;
           pid1=(pid1<       0?       0:pid1);
           pid2=(pid2>npesLong?npesLong:pid2);
 
@@ -623,19 +604,14 @@ namespace par{
         long long nn = recvSz[npesLong-1] + recvOff[npesLong-1];
 
         // allocate memory for the new arrays ...
-        Vector<Pair_t> newNodes;
-        {
-          if(psorted.Capacity()>nn+std::max(nn,nlSize)){
-            newNodes.ReInit(nn,&psorted[0]+std::max(nn,nlSize),false);
-          }else newNodes.Resize(nn);
-        }
+        Vector<Pair_t> newNodes(nn);
 
         // perform All2All  ...
         par::Mpi_Alltoallv_sparse<Pair_t>(&psorted[0], &sendSz[0], &sendOff[0],
             &newNodes[0], &recvSz[0], &recvOff[0], comm);
 
         // reset the pointer ...
-        psorted=newNodes;
+        psorted.Swap(newNodes);
       }
 
       scatter_index.Resize(psorted.Dim());
@@ -775,7 +751,7 @@ namespace par{
     }
 
   template<typename T>
-    int ScatterReverse(Vector<T>& data_, const Vector<size_t>& scatter_index, const MPI_Comm& comm, size_t loc_size){
+    int ScatterReverse(Vector<T>& data_, const Vector<size_t>& scatter_index_, const MPI_Comm& comm, size_t loc_size){
       typedef SortPair<size_t,size_t> Pair_t;
 
       int npes, rank;
@@ -787,19 +763,91 @@ namespace par{
       long long send_size=0;
       long long recv_size=0;
       {
-        send_size=scatter_index.Dim();
         recv_size=loc_size;
-
-        long long glb_size[3]={0,0};
-        long long loc_size[3]={(long long)(data_.Dim()*sizeof(T)), send_size, recv_size};
+        long long glb_size[3]={0,0,0};
+        long long loc_size[3]={data_.Dim()*sizeof(T), scatter_index_.Dim(),recv_size};
         MPI_Allreduce(&loc_size, &glb_size, 3, par::Mpi_datatype<long long>::value(), par::Mpi_datatype<long long>::sum(), comm);
         if(glb_size[0]==0 || glb_size[1]==0) return 0; //Nothing to be done.
-        data_dim=glb_size[0]/glb_size[1];
-        assert(glb_size[0]==data_dim*glb_size[1]);
 
-        if(glb_size[1]!=glb_size[2]){
-          recv_size=(((rank+1)*glb_size[1])/npesLong)-
-                    (( rank   *glb_size[1])/npesLong);
+        assert(glb_size[0]%glb_size[1]==0);
+        data_dim=glb_size[0]/glb_size[1];
+
+        assert(loc_size[0]%data_dim==0);
+        send_size=loc_size[0]/data_dim;
+
+        if(glb_size[0]!=glb_size[2]*data_dim){
+          recv_size=(((rank+1)*(glb_size[0]/data_dim))/npesLong)-
+                    (( rank   *(glb_size[0]/data_dim))/npesLong);
+        }
+      }
+
+      Vector<size_t> scatter_index;
+      {
+        long long glb_rank[2]={0,0};
+        long long glb_size[3]={0,0};
+        long long loc_size[2]={data_.Dim()*sizeof(T)/data_dim, scatter_index_.Dim()};
+        MPI_Scan(&loc_size, &glb_rank, 2, par::Mpi_datatype<long long>::value(), par::Mpi_datatype<long long>::sum(), comm);
+        MPI_Allreduce(&loc_size, &glb_size, 2, par::Mpi_datatype<long long>::value(), par::Mpi_datatype<long long>::sum(), comm);
+        assert(glb_size[0]==glb_size[1]);
+        glb_rank[0]-=loc_size[0];
+        glb_rank[1]-=loc_size[1];
+
+        Matrix<long long> glb_scan(2,npesLong+1);
+        MPI_Allgather(&glb_rank[0], 1, par::Mpi_datatype<long long>::value(),
+                       glb_scan[0], 1, par::Mpi_datatype<long long>::value(), comm);
+        MPI_Allgather(&glb_rank[1], 1, par::Mpi_datatype<long long>::value(),
+                       glb_scan[1], 1, par::Mpi_datatype<long long>::value(), comm);
+        glb_scan[0][npesLong]=glb_size[0];
+        glb_scan[1][npesLong]=glb_size[1];
+
+        if(loc_size[0]!=loc_size[1] || glb_rank[0]!=glb_rank[1]){ // Repartition scatter_index
+          scatter_index.ReInit(loc_size[0]);
+
+          Vector<int> send_dsp(npesLong+1);
+          Vector<int> recv_dsp(npesLong+1);
+          #pragma omp parallel for
+          for(size_t i=0;i<=npesLong;i++){
+            send_dsp[i]=std::min(std::max(glb_scan[0][i],glb_rank[1]),glb_rank[1]+loc_size[1])-glb_rank[1];
+            recv_dsp[i]=std::min(std::max(glb_scan[1][i],glb_rank[0]),glb_rank[0]+loc_size[0])-glb_rank[0];
+          }
+
+          size_t commCnt=0;
+          Vector<int> send_cnt(npesLong+0);
+          Vector<int> recv_cnt(npesLong+0);
+          #pragma omp parallel for reduction(+:commCnt)
+          for(size_t i=0;i<npesLong;i++){
+            send_cnt[i]=send_dsp[i+1]-send_dsp[i];
+            recv_cnt[i]=recv_dsp[i+1]-recv_dsp[i];
+            if(send_cnt[i] && i!=rank) commCnt++;
+            if(recv_cnt[i] && i!=rank) commCnt++;
+          }
+
+          pvfmm::Vector<MPI_Request> requests(commCnt);
+          pvfmm::Vector<MPI_Status> statuses(commCnt);
+
+          commCnt=0;
+          for(int i=0;i<npesLong;i++){ // post all receives
+            if(recv_cnt[i] && i!=rank){
+              MPI_Irecv(&scatter_index[0]+recv_dsp[i], recv_cnt[i], par::Mpi_datatype<size_t>::value(), i, 1,
+                  comm, &requests[commCnt]);
+              commCnt++;
+            }
+          }
+          for(int i=0;i<npesLong;i++){ // send data
+            if(send_cnt[i] && i!=rank){
+              MPI_Issend(&scatter_index_[0]+send_dsp[i], send_cnt[i], par::Mpi_datatype<size_t>::value(), i, 1,
+                  comm, &requests[commCnt]);
+              commCnt++;
+            }
+          }
+          assert(send_cnt[rank]==recv_cnt[rank]);
+          if(send_cnt[rank]){
+            memcpy(&scatter_index[0]+recv_dsp[rank], &scatter_index_[0]+send_dsp[rank], send_cnt[rank]*sizeof(size_t));
+          }
+          if(commCnt) MPI_Waitall(commCnt, &requests[0], &statuses[0]);
+
+        }else{
+          scatter_index.ReInit(scatter_index_.Dim(), &scatter_index_[0],false);
         }
       }
 

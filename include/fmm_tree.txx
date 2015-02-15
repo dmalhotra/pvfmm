@@ -193,21 +193,21 @@ void FMM_Tree<FMM_Mat_t>::ClearFMMData() {
     Matrix<Real_t>* mat;
 
     mat=setup_data[0+MAX_DEPTH*1]. input_data;
-    if(mat!=NULL){
+    if(mat && mat->Dim(0)*mat->Dim(1)){
       size_t a=(mat->Dim(0)*mat->Dim(1)*(j+0))/omp_p;
       size_t b=(mat->Dim(0)*mat->Dim(1)*(j+1))/omp_p;
       memset(&(*mat)[0][a],0,(b-a)*sizeof(Real_t));
     }
 
     mat=setup_data[0+MAX_DEPTH*2].output_data;
-    if(mat!=NULL){
+    if(mat && mat->Dim(0)*mat->Dim(1)){
       size_t a=(mat->Dim(0)*mat->Dim(1)*(j+0))/omp_p;
       size_t b=(mat->Dim(0)*mat->Dim(1)*(j+1))/omp_p;
       memset(&(*mat)[0][a],0,(b-a)*sizeof(Real_t));
     }
 
     mat=setup_data[0+MAX_DEPTH*0].output_data;
-    if(mat!=NULL){
+    if(mat && mat->Dim(0)*mat->Dim(1)){
       size_t a=(mat->Dim(0)*mat->Dim(1)*(j+0))/omp_p;
       size_t b=(mat->Dim(0)*mat->Dim(1)*(j+1))/omp_p;
       memset(&(*mat)[0][a],0,(b-a)*sizeof(Real_t));
