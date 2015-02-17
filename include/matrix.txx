@@ -119,8 +119,14 @@ void Matrix<T>::Swap(Matrix<T>& M){
 
 template <class T>
 void Matrix<T>::ReInit(size_t dim1, size_t dim2, T* data_, bool own_data_){
-  Matrix<T> tmp(dim1,dim2,data_,own_data_);
-  this->Swap(tmp);
+  if(own_data_ && own_data && dim[0]*dim[1]>=dim1*dim2){
+    if(dim[0]*dim[1]!=dim1*dim2) FreeDevice(false);
+    dim[0]=dim1; dim[1]=dim2;
+    if(data_) mem::memcopy(data_ptr,data_,dim[0]*dim[1]*sizeof(T));
+  }else{
+    Matrix<T> tmp(dim1,dim2,data_,own_data_);
+    this->Swap(tmp);
+  }
 }
 
 template <class T>
@@ -202,56 +208,26 @@ size_t Matrix<T>::Dim(size_t i) const{
 
 template <class T>
 void Matrix<T>::Resize(size_t i, size_t j){
-  if(dim[0]==i && dim[1]==j) return;
-  FreeDevice(false);
-  if(own_data){
-    if(data_ptr!=NULL){
-      mem::aligned_delete(data_ptr);
-#if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
-      Profile::Add_MEM(-dim[0]*dim[1]*sizeof(T));
-#endif
-
-    }
-  }
-  dim[0]=i;
-  dim[1]=j;
-  if(own_data){
-    if(dim[0]*dim[1]>0){
-      data_ptr=mem::aligned_new<T>(dim[0]*dim[1]);
-#if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
-      Profile::Add_MEM(dim[0]*dim[1]*sizeof(T));
-#endif
-    }else
-      data_ptr=NULL;
-  }
+  if(dim[0]*dim[1]!=i*j) FreeDevice(false);
+  if(dim[0]*dim[1]>=i*j){
+    dim[0]=i; dim[1]=j;
+  }else ReInit(i,j);
 }
 
 template <class T>
 void Matrix<T>::SetZero(){
-  if(dim[0]*dim[1]>0)
+  if(dim[0]*dim[1])
     memset(data_ptr,0,dim[0]*dim[1]*sizeof(T));
 }
 
 template <class T>
 Matrix<T>& Matrix<T>::operator=(const Matrix<T>& M){
   if(this!=&M){
-    FreeDevice(false);
-    if(own_data && dim[0]*dim[1]!=M.dim[0]*M.dim[1]){
-      if(data_ptr!=NULL){
-        mem::aligned_delete(data_ptr); data_ptr=NULL;
-#if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
-        Profile::Add_MEM(-dim[0]*dim[1]*sizeof(T));
-#endif
-      }
-      if(M.dim[0]*M.dim[1]>0){
-        data_ptr=mem::aligned_new<T>(M.dim[0]*M.dim[1]);
-#if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
-        Profile::Add_MEM(M.dim[0]*M.dim[1]*sizeof(T));
-#endif
-      }
+    if(dim[0]*dim[1]!=M.dim[0]*M.dim[1]) FreeDevice(false);
+    if(dim[0]*dim[1]<M.dim[0]*M.dim[1]){
+      ReInit(M.dim[0],M.dim[1]);
     }
-    dim[0]=M.dim[0];
-    dim[1]=M.dim[1];
+    dim[0]=M.dim[0]; dim[1]=M.dim[1];
     mem::memcopy(data_ptr,M.data_ptr,dim[0]*dim[1]*sizeof(T));
   }
   return *this;

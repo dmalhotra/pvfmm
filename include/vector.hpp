@@ -70,7 +70,7 @@ class Vector{
 
   size_t Capacity() const;
 
-  void Resize(size_t dim_, bool fit_size=false);
+  void Resize(size_t dim_);
 
   void SetZero();
 

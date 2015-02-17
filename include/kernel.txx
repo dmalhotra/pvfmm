@@ -66,38 +66,64 @@ void Kernel<T>::Initialize(bool verbose) const{
   T eps=1.0;
   while(eps+(T)1.0>1.0) eps*=0.5;
 
-  if(ker_dim[0]*ker_dim[1]>0){ // Determine scal
+  T scal=1.0;
+  if(ker_dim[0]*ker_dim[1]>0){ // Determine scaling
     Matrix<T> M_scal(ker_dim[0],ker_dim[1]);
     size_t N=1024;
     T eps_=N*eps;
 
     T src_coord[3]={0,0,0};
     std::vector<T> trg_coord1(N*COORD_DIM);
-    std::vector<T> trg_coord2(N*COORD_DIM);
-    for(size_t i=0;i<N;i++){
-      T x,y,z,r;
-      do{
-        x=(drand48()-0.5);
-        y=(drand48()-0.5);
-        z=(drand48()-0.5);
-        r=sqrt(x*x+y*y+z*z);
-      }while(r<0.25);
-      trg_coord1[i*COORD_DIM+0]=x;
-      trg_coord1[i*COORD_DIM+1]=y;
-      trg_coord1[i*COORD_DIM+2]=z;
+    Matrix<T> M1(N,ker_dim[0]*ker_dim[1]);
+    while(true){
+      T abs_sum=0;
+      for(size_t i=0;i<N/2;i++){
+        T x,y,z,r;
+        do{
+          x=(drand48()-0.5);
+          y=(drand48()-0.5);
+          z=(drand48()-0.5);
+          r=sqrt(x*x+y*y+z*z);
+        }while(r<0.25);
+        trg_coord1[i*COORD_DIM+0]=x*scal;
+        trg_coord1[i*COORD_DIM+1]=y*scal;
+        trg_coord1[i*COORD_DIM+2]=z*scal;
+      }
+      for(size_t i=N/2;i<N;i++){
+        T x,y,z,r;
+        do{
+          x=(drand48()-0.5);
+          y=(drand48()-0.5);
+          z=(drand48()-0.5);
+          r=sqrt(x*x+y*y+z*z);
+        }while(r<0.25);
+        trg_coord1[i*COORD_DIM+0]=x*1.0/scal;
+        trg_coord1[i*COORD_DIM+1]=y*1.0/scal;
+        trg_coord1[i*COORD_DIM+2]=z*1.0/scal;
+      }
+      for(size_t i=0;i<N;i++){
+        BuildMatrix(&src_coord [          0], 1,
+                    &trg_coord1[i*COORD_DIM], 1, &(M1[i][0]));
+        for(size_t j=0;j<ker_dim[0]*ker_dim[1];j++){
+          abs_sum+=fabs(M1[i][j]);
+        }
+      }
+      if(abs_sum>sqrt(eps) || scal<eps) break;
+      scal=scal*0.5;
     }
+
+    std::vector<T> trg_coord2(N*COORD_DIM);
+    Matrix<T> M2(N,ker_dim[0]*ker_dim[1]);
     for(size_t i=0;i<N*COORD_DIM;i++){
       trg_coord2[i]=trg_coord1[i]*0.5;
     }
-
-    T max_val=0;
-    Matrix<T> M1(N,ker_dim[0]*ker_dim[1]);
-    Matrix<T> M2(N,ker_dim[0]*ker_dim[1]);
     for(size_t i=0;i<N;i++){
       BuildMatrix(&src_coord [          0], 1,
-                  &trg_coord1[i*COORD_DIM], 1, &(M1[i][0]));
-      BuildMatrix(&src_coord [          0], 1,
                   &trg_coord2[i*COORD_DIM], 1, &(M2[i][0]));
+    }
+
+    T max_val=0;
+    for(size_t i=0;i<N;i++){
       for(size_t j=0;j<ker_dim[0]*ker_dim[1];j++){
         max_val=std::max<T>(max_val,M1[i][j]);
         max_val=std::max<T>(max_val,M2[i][j]);
@@ -170,7 +196,7 @@ void Kernel<T>::Initialize(bool verbose) const{
     T src_coord[3]={0,0,0};
     std::vector<T> trg_coord1(N*COORD_DIM);
     std::vector<T> trg_coord2(N*COORD_DIM);
-    for(size_t i=0;i<N;i++){
+    for(size_t i=0;i<N/2;i++){
       T x,y,z,r;
       do{
         x=(drand48()-0.5);
@@ -178,9 +204,21 @@ void Kernel<T>::Initialize(bool verbose) const{
         z=(drand48()-0.5);
         r=sqrt(x*x+y*y+z*z);
       }while(r<0.25);
-      trg_coord1[i*COORD_DIM+0]=x;
-      trg_coord1[i*COORD_DIM+1]=y;
-      trg_coord1[i*COORD_DIM+2]=z;
+      trg_coord1[i*COORD_DIM+0]=x*scal;
+      trg_coord1[i*COORD_DIM+1]=y*scal;
+      trg_coord1[i*COORD_DIM+2]=z*scal;
+    }
+    for(size_t i=N/2;i<N;i++){
+      T x,y,z,r;
+      do{
+        x=(drand48()-0.5);
+        y=(drand48()-0.5);
+        z=(drand48()-0.5);
+        r=sqrt(x*x+y*y+z*z);
+      }while(r<0.25);
+      trg_coord1[i*COORD_DIM+0]=x*1.0/scal;
+      trg_coord1[i*COORD_DIM+1]=y*1.0/scal;
+      trg_coord1[i*COORD_DIM+2]=z*1.0/scal;
     }
 
     for(size_t p_type=0;p_type<C_Perm;p_type++){ // For each symmetry transform

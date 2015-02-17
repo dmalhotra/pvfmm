@@ -124,8 +124,13 @@ void Vector<T>::Swap(Vector<T>& v1){
 
 template <class T>
 void Vector<T>::ReInit(size_t dim_, T* data_, bool own_data_){
-  Vector<T> tmp(dim_,data_,own_data_);
-  this->Swap(tmp);
+  if(own_data_ && own_data && dim_<=capacity){
+    if(dim!=dim_) FreeDevice(false); dim=dim_;
+    if(data_) mem::memcopy(data_ptr,data_,dim*sizeof(T));
+  }else{
+    Vector<T> tmp(dim_,data_,own_data_);
+    this->Swap(tmp);
+  }
 }
 
 template <class T>
@@ -178,31 +183,10 @@ inline size_t Vector<T>::Capacity() const{
 }
 
 template <class T>
-void Vector<T>::Resize(size_t dim_,bool fit_size){
-  ASSERT_WITH_MSG(own_data || capacity>=dim_, "Resizing array beyond capacity when own_data=false.");
+void Vector<T>::Resize(size_t dim_){
   if(dim!=dim_) FreeDevice(false);
-
-  if((capacity>dim_ && !fit_size) || capacity==dim_ || !own_data){
-    dim=dim_;
-    return;
-  }
-
-  {
-    if(data_ptr!=NULL){
-      mem::aligned_delete(data_ptr); data_ptr=NULL;
-#if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
-      Profile::Add_MEM(-capacity*sizeof(T));
-#endif
-    }
-    capacity=dim_;
-    if(capacity>0){
-      data_ptr=mem::aligned_new<T>(capacity);
-#if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
-      Profile::Add_MEM(capacity*sizeof(T));
-#endif
-    }
-  }
-  dim=dim_;
+  if(capacity>=dim_) dim=dim_;
+  else ReInit(dim_);
 }
 
 template <class T>
@@ -213,26 +197,9 @@ void Vector<T>::SetZero(){
 
 template <class T>
 Vector<T>& Vector<T>::operator=(const Vector<T>& V){
-  ASSERT_WITH_MSG(own_data || capacity>=V.dim, "Resizing array beyond capacity when own_data=false.");
-
   if(this!=&V){
-    FreeDevice(false);
-    if(own_data && capacity<V.dim){
-      if(data_ptr!=NULL){
-        mem::aligned_delete(data_ptr); data_ptr=NULL;
-#if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
-        Profile::Add_MEM(-capacity*sizeof(T));
-#endif
-      }
-      capacity=V.dim;
-      if(capacity>0){
-        data_ptr=mem::aligned_new<T>(capacity);
-#if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
-        Profile::Add_MEM(capacity*sizeof(T));
-#endif
-      }
-    }
-    dim=V.dim;
+    if(dim!=V.dim) FreeDevice(false);
+    if(capacity<V.dim) ReInit(V.dim); dim=V.dim;
     mem::memcopy(data_ptr,V.data_ptr,dim*sizeof(T));
   }
   return *this;
@@ -240,26 +207,9 @@ Vector<T>& Vector<T>::operator=(const Vector<T>& V){
 
 template <class T>
 Vector<T>& Vector<T>::operator=(const std::vector<T>& V){
-  ASSERT_WITH_MSG(own_data || capacity>=V.size(), "Resizing array beyond capacity when own_data=false.");
-
   {
-    FreeDevice(false);
-    if(own_data && capacity<V.size()){
-      if(data_ptr!=NULL){
-        mem::aligned_delete(data_ptr); data_ptr=NULL;
-#if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
-        Profile::Add_MEM(-capacity*sizeof(T));
-#endif
-      }
-      capacity=V.size();
-      if(capacity>0){
-        data_ptr=mem::aligned_new<T>(capacity);
-#if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
-        Profile::Add_MEM(capacity*sizeof(T));
-#endif
-      }
-    }
-    dim=V.size();
+    if(dim!=V.size()) FreeDevice(false);
+    if(capacity<V.size()) ReInit(V.size()); dim=V.size();
     mem::memcopy(data_ptr,&V[0],dim*sizeof(T));
   }
   return *this;

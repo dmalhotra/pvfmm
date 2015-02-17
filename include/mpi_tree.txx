@@ -2241,8 +2241,11 @@ void MPI_Tree<TreeNode>::Write2File(const char* fname, int lod){
   {
     // Extract filename from path.
     std::stringstream vtupath;
-    vtupath<<'/'<<fname<<'\0';
-    char *fname_ = (char*)strrchr(vtupath.str().c_str(), '/') + 1;
+    vtupath<<'/'<<fname;
+    std::string pathname = vtupath.str();
+    unsigned found = pathname.find_last_of("/\\");
+    std::string fname_ = pathname.substr(found+1);
+    //char *fname_ = (char*)strrchr(vtupath.str().c_str(), '/') + 1;
     //std::string fname_ = boost::filesystem::path(fname).filename().string().
     for(int i=0;i<np;i++) pvtufile<<"      <Piece Source=\""<<fname_<<std::setfill('0')<<std::setw(6)<<i<<".vtu\"/>\n";
   }
