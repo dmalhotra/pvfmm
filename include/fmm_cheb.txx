@@ -219,14 +219,14 @@ Permutation<Real_t> cheb_perm(size_t q, size_t p_indx, const Permutation<Real_t>
   int dof=ker_perm.Dim();
 
   int coeff_cnt=((q+1)*(q+2)*(q+3))/6;
-  int n3=(int)pow((Real_t)(q+1),dim);
+  int n3=pvfmm::pow<unsigned int>(q+1,dim);
 
   Permutation<Real_t> P0(n3*dof);
   if(scal_exp && p_indx==Scaling){ // Set level-by-level scaling
     assert(dof==scal_exp->Dim());
     Vector<Real_t> scal(scal_exp->Dim());
     for(size_t i=0;i<scal.Dim();i++){
-      scal[i]=pow(2.0,(*scal_exp)[i]);
+      scal[i]=pvfmm::pow<Real_t>(2.0,(*scal_exp)[i]);
     }
     for(int j=0;j<dof;j++){
       for(int i=0;i<n3;i++){
@@ -325,7 +325,7 @@ Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_Type t
         Permutation<Real_t> ker_perm0=this->kernel->k_s2m->perm_vec[C_Perm+p_indx];
         Permutation<Real_t> ker_perm1=this->kernel->k_m2m->perm_vec[C_Perm+p_indx];
         assert(ker_perm0.Dim()==ker_perm1.Dim());
-        if(ker_perm0.Dim()>0 && fabs(ker_perm0.scal[0]-ker_perm1.scal[0])>eps){
+        if(ker_perm0.Dim()>0 && pvfmm::fabs<Real_t>(ker_perm0.scal[0]-ker_perm1.scal[0])>eps){
           for(size_t i=0;i<ker_perm0.Dim();i++){
             ker_perm0.scal[i]*=-1.0;
           }
@@ -334,8 +334,8 @@ Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_Type t
           }
         }
         for(size_t i=0;i<ker_perm0.Dim();i++){
-          assert(    (ker_perm0.perm[i]-ker_perm1.perm[i])== 0);
-          assert(fabs(ker_perm0.scal[i]-ker_perm1.scal[i])<eps);
+          assert(                   (ker_perm0.perm[i]-ker_perm1.perm[i])== 0);
+          assert(pvfmm::fabs<Real_t>(ker_perm0.scal[i]-ker_perm1.scal[i])<eps);
         }
 
         Real_t s=0;
@@ -346,7 +346,7 @@ Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_Type t
         if(scal_exp0.Dim()>0){
           s=(scal_exp0[0]-scal_exp1[0]);
           for(size_t i=1;i<scal_exp0.Dim();i++){
-            assert(fabs(s-(scal_exp0[i]-scal_exp1[i]))<eps);
+            assert(pvfmm::fabs<Real_t>(s-(scal_exp0[i]-scal_exp1[i]))<eps);
             // In general this is not necessary, but to allow this, we must
             // also change src_scal accordingly.
           }
@@ -371,7 +371,7 @@ Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_Type t
         Permutation<Real_t> ker_perm0=this->kernel->k_l2t->perm_vec[0     +p_indx];
         Permutation<Real_t> ker_perm1=this->kernel->k_l2l->perm_vec[0     +p_indx];
         assert(ker_perm0.Dim()==ker_perm1.Dim());
-        if(ker_perm0.Dim()>0 && fabs(ker_perm0.scal[0]-ker_perm1.scal[0])>eps){
+        if(ker_perm0.Dim()>0 && pvfmm::fabs<Real_t>(ker_perm0.scal[0]-ker_perm1.scal[0])>eps){
           for(size_t i=0;i<ker_perm0.Dim();i++){
             ker_perm0.scal[i]*=-1.0;
           }
@@ -380,8 +380,8 @@ Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_Type t
           }
         }
         for(size_t i=0;i<ker_perm0.Dim();i++){
-          assert(    (ker_perm0.perm[i]-ker_perm1.perm[i])== 0);
-          assert(fabs(ker_perm0.scal[i]-ker_perm1.scal[i])<eps);
+          assert(                   (ker_perm0.perm[i]-ker_perm1.perm[i])== 0);
+          assert(pvfmm::fabs<Real_t>(ker_perm0.scal[i]-ker_perm1.scal[i])<eps);
         }
 
         Real_t s=0;
@@ -392,7 +392,7 @@ Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_Type t
         if(scal_exp0.Dim()>0){
           s=(scal_exp0[0]-scal_exp1[0]);
           for(size_t i=1;i<scal_exp0.Dim();i++){
-            assert(fabs(s-(scal_exp0[i]-scal_exp1[i]))<eps);
+            assert(pvfmm::fabs<Real_t>(s-(scal_exp0[i]-scal_exp1[i]))<eps);
             // In general this is not necessary, but to allow this, we must
             // also change trg_scal accordingly.
           }
@@ -519,7 +519,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
     case S2U_Type:
     {
       if(this->MultipoleOrder()==0) break;
-      Real_t r=pow(0.5,level);
+      Real_t r=pvfmm::pow<Real_t>(0.5,level);
       Real_t c[3]={0,0,0};
 
       // Coord of upward check surface
@@ -579,7 +579,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
     case U0_Type:
     {
       // Coord of target points
-      Real_t s=pow(0.5,level);
+      Real_t s=pvfmm::pow<Real_t>(0.5,level);
       int* coord=this->interac_list.RelativeCoord(type,mat_indx);
       Real_t coord_diff[3]={(Real_t)((coord[0]-1)*s*0.5),(Real_t)((coord[1]-1.0)*s*0.5),(Real_t)((coord[2]-1.0)*s*0.5)};
       std::vector<Real_t>& rel_trg_coord = this->mat->RelativeTrgCoord();
@@ -629,7 +629,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
     case U1_Type:
     {
       // Coord of target points
-      Real_t s=pow(0.5,level);
+      Real_t s=pvfmm::pow<Real_t>(0.5,level);
       int* coord=this->interac_list.RelativeCoord(type,mat_indx);
       Real_t coord_diff[3]={coord[0]*s,coord[1]*s,coord[2]*s};
       std::vector<Real_t>& rel_trg_coord = this->mat->RelativeTrgCoord();
@@ -679,7 +679,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
     case U2_Type:
     {
       // Coord of target points
-      Real_t s=pow(0.5,level);
+      Real_t s=pvfmm::pow<Real_t>(0.5,level);
       int* coord=this->interac_list.RelativeCoord(type,mat_indx);
       Real_t coord_diff[3]={(Real_t)((coord[0]+1)*s*0.25),(Real_t)((coord[1]+1)*s*0.25),(Real_t)((coord[2]+1)*s*0.25)};
       std::vector<Real_t>& rel_trg_coord = this->mat->RelativeTrgCoord();
@@ -750,7 +750,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
     {
       if(this->MultipoleOrder()==0) break;
       // Coord of target points
-      Real_t s=pow(0.5,level-1);
+      Real_t s=pvfmm::pow<Real_t>(0.5,level-1);
       int* coord=this->interac_list.RelativeCoord(type,mat_indx);
       Real_t c[3]={-(Real_t)((coord[0]-1)*s*0.25),-(Real_t)((coord[1]-1)*s*0.25),-(Real_t)((coord[2]-1)*s*0.25)};
       std::vector<Real_t> trg_coord=d_check_surf(this->MultipoleOrder(),c,level);
@@ -1079,7 +1079,7 @@ void FMM_Cheb<FMMNode>::PostProcessing(std::vector<FMMNode_t*>& nodes){
       //Sample local expansion at target points.
       if(trg_cnt>0 && cheb_out.Dim()>0){
         Real_t* c=nodes[i]->Coord();
-        Real_t scale=pow(2.0,nodes[i]->Depth()+1);
+        Real_t scale=pvfmm::pow<Real_t>(2.0,nodes[i]->Depth()+1);
         std::vector<Real_t> rel_coord(COORD_DIM*trg_cnt);
         for(size_t j=0;j<trg_cnt;j++) for(int k=0;k<COORD_DIM;k++)
           rel_coord[j*COORD_DIM+k]=(trg_coord[j*COORD_DIM+k]-c[k])*scale-1.0;

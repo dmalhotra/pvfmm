@@ -31,8 +31,8 @@ typedef FMM_Tree<ChebFMM>            ChebFMM_Tree;
 typedef ChebFMM_Node::NodeData       ChebFMM_Data;
 typedef ChebFMM_Node::Function_t<double> ChebFn;
 
-ChebFMM_Tree* ChebFMM_CreateTree(int cheb_deg, int data_dim, ChebFn fn_ptr, std::vector<double>& trg_coord, MPI_Comm& comm,
-                                 double tol=1e-6, int max_pts=100, BoundaryType bndry=FreeSpace, int init_depth=0){
+inline ChebFMM_Tree* ChebFMM_CreateTree(int cheb_deg, int data_dim, ChebFn fn_ptr, std::vector<double>& trg_coord, MPI_Comm& comm,
+                                        double tol=1e-6, int max_pts=100, BoundaryType bndry=FreeSpace, int init_depth=0){
   int np, myrank;
   MPI_Comm_size(comm, &np);
   MPI_Comm_rank(comm, &myrank);
@@ -50,9 +50,9 @@ ChebFMM_Tree* ChebFMM_CreateTree(int cheb_deg, int data_dim, ChebFn fn_ptr, std:
 
   { // Set points for initial tree.
     std::vector<double> coord;
-    size_t N=pow(8.0,init_depth);
+    size_t N=pvfmm::pow<unsigned int>(8,init_depth);
     N=(N<np?np:N)*max_pts;
-    size_t NN=ceil(pow((double)N,1.0/3.0));
+    size_t NN=ceil(pvfmm::pow<double>(N,1.0/3.0));
     size_t N_total=NN*NN*NN;
     size_t start= myrank   *N_total/np;
     size_t end  =(myrank+1)*N_total/np;
@@ -73,7 +73,7 @@ ChebFMM_Tree* ChebFMM_CreateTree(int cheb_deg, int data_dim, ChebFn fn_ptr, std:
   return tree;
 }
 
-void ChebFMM_Evaluate(ChebFMM_Tree* tree, std::vector<double>& trg_val, size_t loc_size=0){
+inline void ChebFMM_Evaluate(ChebFMM_Tree* tree, std::vector<double>& trg_val, size_t loc_size=0){
   tree->RunFMM();
   Vector<double> trg_value;
   Vector<size_t> trg_scatter;
@@ -104,10 +104,10 @@ typedef FMM_Pts<PtFMM_Node>         PtFMM;
 typedef FMM_Tree<PtFMM>             PtFMM_Tree;
 typedef PtFMM_Node::NodeData        PtFMM_Data;
 
-PtFMM_Tree* PtFMM_CreateTree(std::vector<double>&  src_coord, std::vector<double>&  src_value,
-                             std::vector<double>& surf_coord, std::vector<double>& surf_value,
-                             std::vector<double>& trg_coord, MPI_Comm& comm, int max_pts=100,
-                             BoundaryType bndry=FreeSpace, int init_depth=0){
+inline PtFMM_Tree* PtFMM_CreateTree(std::vector<double>&  src_coord, std::vector<double>&  src_value,
+                                    std::vector<double>& surf_coord, std::vector<double>& surf_value,
+                                    std::vector<double>& trg_coord, MPI_Comm& comm, int max_pts=100,
+                                    BoundaryType bndry=FreeSpace, int init_depth=0){
   int np, myrank;
   MPI_Comm_size(comm, &np);
   MPI_Comm_rank(comm, &myrank);
@@ -135,15 +135,15 @@ PtFMM_Tree* PtFMM_CreateTree(std::vector<double>&  src_coord, std::vector<double
   return tree;
 }
 
-PtFMM_Tree* PtFMM_CreateTree(std::vector<double>&  src_coord, std::vector<double>&  src_value,
-                             std::vector<double>& trg_coord, MPI_Comm& comm, int max_pts=100,
-                             BoundaryType bndry=FreeSpace, int init_depth=0){
+inline PtFMM_Tree* PtFMM_CreateTree(std::vector<double>&  src_coord, std::vector<double>&  src_value,
+                                    std::vector<double>& trg_coord, MPI_Comm& comm, int max_pts=100,
+                                    BoundaryType bndry=FreeSpace, int init_depth=0){
   std::vector<double> surf_coord;
   std::vector<double> surf_value;
   return PtFMM_CreateTree(src_coord, src_value, surf_coord,surf_value, trg_coord, comm, max_pts, bndry, init_depth);
 }
 
-void PtFMM_Evaluate(PtFMM_Tree* tree, std::vector<double>& trg_val, size_t loc_size=0, std::vector<double>* src_val=NULL, std::vector<double>* surf_val=NULL){
+inline void PtFMM_Evaluate(PtFMM_Tree* tree, std::vector<double>& trg_val, size_t loc_size=0, std::vector<double>* src_val=NULL, std::vector<double>* surf_val=NULL){
   if(src_val){
     std::vector<size_t> src_scatter_;
     std::vector<PtFMM_Node*>& nodes=tree->GetNodeList();

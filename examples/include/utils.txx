@@ -131,9 +131,9 @@ void CheckChebOutput(FMMTree_t* mytree, typename TestFn<typename FMMTree_t::Real
   }
 
   int cheb_deg=nodes[0]->ChebDeg();
-  std::vector<Real_t> cheb_nds=pvfmm::cheb_nodes<Real_t>(cheb_deg/3+1, 1);
+  std::vector<Real_t> cheb_nds=pvfmm::cheb_nodes<Real_t>(cheb_deg+1, 1);
   for(size_t i=0;i<cheb_nds.size();i++) cheb_nds[i]=2.0*cheb_nds[i]-1.0;
-  std::vector<Real_t> cheb_pts=pvfmm::cheb_nodes<Real_t>(cheb_deg/3+1, COORD_DIM);
+  std::vector<Real_t> cheb_pts=pvfmm::cheb_nodes<Real_t>(cheb_deg+1, COORD_DIM);
   int n_pts=cheb_pts.size()/COORD_DIM;
   int omp_p=omp_get_max_threads();
 
@@ -172,7 +172,7 @@ void CheckChebOutput(FMMTree_t* mytree, typename TestFn<typename FMMTree_t::Real
         err_avg[k]+=err_avg[tid*dof*fn_dof+k];
     MPI_Allreduce(&err_avg[0], &glb_err_avg[0], dof*fn_dof, pvfmm::par::Mpi_datatype<Real_t>::value(), pvfmm::par::Mpi_datatype<Real_t>::sum(), c1);
   }
-  { // Write error to file.
+  if(0){ // Write error to file.
     int nn_x=1;
     int nn_y=201;
     int nn_z=201;
@@ -213,11 +213,11 @@ void CheckChebOutput(FMMTree_t* mytree, typename TestFn<typename FMMTree_t::Real
     MPI_Reduce(&M_out    [0][0], &M_global    [0][0], nn_x*nn_y*nn_z*fn_dof*dof, pvfmm::par::Mpi_datatype<Real_t>::value(), pvfmm::par::Mpi_datatype<Real_t>::sum(), 0, c1);
     MPI_Reduce(&M_out_err[0][0], &M_global_err[0][0], nn_x*nn_y*nn_z*fn_dof*dof, pvfmm::par::Mpi_datatype<Real_t>::value(), pvfmm::par::Mpi_datatype<Real_t>::sum(), 0, c1);
 
-    //std::string fname;
-    //fname=std::string("result/"    )+t_name+std::string(".mat");
-    //if(!myrank) M_global    .Write(fname.c_str());
-    //fname=std::string("result/err_")+t_name+std::string(".mat");
-    //if(!myrank) M_global_err.Write(fname.c_str());
+    std::string fname;
+    fname=std::string("result/"    )+t_name+std::string(".mat");
+    if(!myrank) M_global    .Write(fname.c_str());
+    fname=std::string("result/err_")+t_name+std::string(".mat");
+    if(!myrank) M_global_err.Write(fname.c_str());
   }
   std::vector<Real_t> max    (omp_p,0), l2    (omp_p,0);
   std::vector<Real_t> max_err(omp_p,0), l2_err(omp_p,0);

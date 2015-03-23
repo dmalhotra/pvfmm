@@ -36,16 +36,16 @@ template <class T>
 inline void cheb_poly(int d, const T* in, int n, T* out){
   if(d==0){
     for(int i=0;i<n;i++)
-      out[i]=(fabs(in[i])<=1?1.0:0);
+      out[i]=(pvfmm::fabs<T>(in[i])<=1?1.0:0);
   }else if(d==1){
     for(int i=0;i<n;i++){
-      out[i]=(fabs(in[i])<=1?1.0:0);
-      out[i+n]=(fabs(in[i])<=1?in[i]:0);
+      out[i]=(pvfmm::fabs<T>(in[i])<=1?1.0:0);
+      out[i+n]=(pvfmm::fabs<T>(in[i])<=1?in[i]:0);
     }
   }else{
     for(int j=0;j<n;j++){
-      T x=(fabs(in[j])<=1?in[j]:0);
-      T y0=(fabs(in[j])<=1?1.0:0);
+      T x=(pvfmm::fabs<T>(in[j])<=1?in[j]:0);
+      T y0=(pvfmm::fabs<T>(in[j])<=1?1.0:0);
       out[j]=y0;
       out[j+n]=x;
 
@@ -74,7 +74,7 @@ T cheb_err(T* cheb_coeff, int deg, int dof){
   for(int i=0;i<=deg;i++)
   for(int j=0;i+j<=deg;j++)
   for(int k=0;i+j+k<=deg;k++){
-    if(i+j+k==deg) err+=fabs(cheb_coeff[indx]);
+    if(i+j+k==deg) err+=pvfmm::fabs<T>(cheb_coeff[indx]);
     indx++;
   }
   return err;
@@ -108,7 +108,7 @@ T cheb_approx(T* fn_v, int cheb_deg, int dof, T* out, mem::MemoryManager* mem_mg
     if(precomp [d].Dim(0)==0 && precomp [d].Dim(1)==0){
       std::vector<Y> x(d);
       for(int i=0;i<d;i++)
-        x[i]=-cos((i+(T)0.5)*const_pi<T>()/d);
+        x[i]=-pvfmm::cos<Y>((i+(T)0.5)*const_pi<T>()/d);
 
       std::vector<Y> p(d*d);
       cheb_poly(cheb_deg,&x[0],d,&p[0]);
@@ -201,16 +201,16 @@ template <class T>
 inline void legn_poly(int d, T* in, int n, T* out){
   if(d==0){
     for(int i=0;i<n;i++)
-      out[i]=(fabs(in[i])<=1?1.0:0);
+      out[i]=(pvfmm::fabs<T>(in[i])<=1?1.0:0);
   }else if(d==1){
     for(int i=0;i<n;i++){
-      out[i]=(fabs(in[i])<=1?1.0:0);
-      out[i+n]=(fabs(in[i])<=1?in[i]:0);
+      out[i]=(pvfmm::fabs<T>(in[i])<=1?1.0:0);
+      out[i+n]=(pvfmm::fabs<T>(in[i])<=1?in[i]:0);
     }
   }else{
     for(int j=0;j<n;j++){
-      T x=(fabs(in[j])<=1?in[j]:0);
-      T y0=(fabs(in[j])<=1?1.0:0);
+      T x=(pvfmm::fabs<T>(in[j])<=1?in[j]:0);
+      T y0=(pvfmm::fabs<T>(in[j])<=1?1.0:0);
       out[j]=y0;
       out[j+n]=x;
 
@@ -238,7 +238,7 @@ void gll_quadrature(int deg, T* x_, T* w){//*
 
   Vector<T> x(d,x_,false);
   for(int i=0;i<d;i++)
-    x[i]=-cos((const_pi<T>()*i)/N);
+    x[i]=-pvfmm::cos<T>((const_pi<T>()*i)/N);
   Matrix<T> P(d,d); P.SetZero();
 
   T err=1;
@@ -255,7 +255,7 @@ void gll_quadrature(int deg, T* x_, T* w){//*
     err=0;
     for(int i=0;i<d;i++){
       T dx=-( x[i]*P[i][N]-P[i][N-1] )/( d*P[i][N] );
-      err=(err<fabs(dx)?fabs(dx):err);
+      err=(err<pvfmm::fabs<T>(dx)?pvfmm::fabs<T>(dx):err);
       x[i]=xold[i]+dx;
     }
   }
@@ -283,7 +283,7 @@ T gll2cheb(T* fn_v, int deg, int dof, T* out){//*
 
       std::vector<Y> x(d); //Cheb nodes.
       for(int i=0;i<d;i++)
-        x[i]=-cos((i+(T)0.5)*const_pi<Y>()/d);
+        x[i]=-pvfmm::cos<Y>((i+(T)0.5)*const_pi<Y>()/d);
 
       Vector<T> w(d);
       Vector<T> x_legn(d); // GLL nodes.
@@ -352,13 +352,13 @@ T gll2cheb(T* fn_v, int deg, int dof, T* out){//*
     for(int i=0;i<d;i++)
     for(int j=0;i+j<d;j++)
     for(int k=0;i+j+k<d;k++){
-      sum+=fabs(fn_v3[k+(j+i*d)*d]);
+      sum+=pvfmm::fabs<T>(fn_v3[k+(j+i*d)*d]);
     }
     for(int i=0;i<d;i++)
     for(int j=0;i+j<d;j++)
     for(int k=0;i+j+k<d;k++){
       out[indx]=fn_v3[k+(j+i*d)*d];
-      //if(fabs(out[indx])<eps*sum) out[indx]=0;
+      //if(pvfmm::fabs<T>(out[indx])<eps*sum) out[indx]=0;
       indx++;
     }
   }
@@ -374,7 +374,7 @@ T cheb_approx(T (*fn)(T,T,T), int cheb_deg, T* coord, T s, std::vector<T>& out){
   int d=cheb_deg+1;
   std::vector<T> x(d);
   for(int i=0;i<d;i++)
-    x[i]=cos((i+(T)0.5)*const_pi<T>()/d);
+    x[i]=pvfmm::cos<T>((i+(T)0.5)*const_pi<T>()/d);
 
   std::vector<T> p;
   cheb_poly(cheb_deg,&x[0],d,&p[0]);
@@ -609,7 +609,7 @@ inline void cheb_eval(int cheb_deg, T* coord, T* coeff0,T* buff){
 template <class T>
 void points2cheb(int deg, T* coord, T* val, int n, int dim, T* node_coord, T node_size, Vector<T>& cheb_coeff){
   if(n==0) return;
-  int deg_=((int)(pow((T)n*6,1.0/3.0)+0.5))/2;
+  int deg_=((int)(pvfmm::pow<T>(n*6,1.0/3.0)+0.5))/2;
   deg_=(deg_>deg?deg:deg_);
   deg_=(deg_>0?deg_:1);
   int deg3=((deg_+1)*(deg_+2)*(deg_+3))/6;
@@ -676,8 +676,8 @@ void quad_rule(int n, T* x, T* w){
 
   { //Chebyshev quadrature nodes and weights
     for(int i=0;i<n;i++){
-      x_[i]=-cos((T)(2.0*i+1.0)/(2.0*n)*const_pi<T>());
-      w_[i]=0;//sqrt(1.0-x_[i]*x_[i])*const_pi<T>()/n;
+      x_[i]=-pvfmm::cos<T>((T)(2.0*i+1.0)/(2.0*n)*const_pi<T>());
+      w_[i]=0;//pvfmm::sqrt<T>(1.0-x_[i]*x_[i])*const_pi<T>()/n;
     }
     Matrix<T> M(n,n);
     cheb_poly(n-1, &x_[0], n, &M[0][0]);
@@ -725,7 +725,7 @@ void quad_rule(int n, T* x, T* w){
     //    for(size_t i=1;i<n;i+=2) w_sample[i]=0.0;
 
     //    err=0;
-    //    for(size_t i=0;i<n;i++) err+=fabs(w_sample[i]-w_prev[i]);
+    //    for(size_t i=0;i<n;i++) err+=pvfmm::fabs<T>(w_sample[i]-w_prev[i]);
     //  }
     //}
 
@@ -744,45 +744,6 @@ void quad_rule(int n, T* x, T* w){
     //  x_[i]=(2.0*i+1.0)/(1.0*n)-1.0;
     //  w_[i]=2.0/n;
     //}
-  }
-
-  #pragma omp critical (QUAD_RULE)
-  { // Set x_lst, w_lst
-    x_lst[n]=x_;
-    w_lst[n]=w_;
-  }
-  quad_rule(n, x, w);
-}
-
-template <>
-void quad_rule<double>(int n, double* x, double* w){
-  static std::vector<Vector<double> > x_lst(10000);
-  static std::vector<Vector<double> > w_lst(10000);
-  assert(n<10000);
-
-  bool done=false;
-  #pragma omp critical (QUAD_RULE)
-  if(x_lst[n].Dim()>0){
-    Vector<double>& x_=x_lst[n];
-    Vector<double>& w_=w_lst[n];
-    for(int i=0;i<n;i++){
-      x[i]=x_[i];
-      w[i]=w_[i];
-    }
-    done=true;
-  }
-  if(done) return;
-
-  Vector<double> x_(n);
-  Vector<double> w_(n);
-
-  { //Gauss-Legendre quadrature nodes and weights
-    double alpha=0.0;
-    double beta=0.0;
-    double a=-1.0;
-    double b= 1.0;
-    int kind = 1;
-    cgqf ( n, kind, (double)alpha, (double)beta, (double)a, (double)b, &x_[0], &w_[0] );
   }
 
   #pragma omp critical (QUAD_RULE)
@@ -812,11 +773,11 @@ std::vector<T> integ_pyramid(int m, T* s, T r, int nx, const Kernel<T>& kernel, 
   std::vector<T> x_;
   { //  Build stack along X-axis.
     x_.push_back(s[0]);
-    x_.push_back(fabs(1.0-s[0])+s[0]);
-    x_.push_back(fabs(1.0-s[1])+s[0]);
-    x_.push_back(fabs(1.0+s[1])+s[0]);
-    x_.push_back(fabs(1.0-s[2])+s[0]);
-    x_.push_back(fabs(1.0+s[2])+s[0]);
+    x_.push_back(pvfmm::fabs<T>(1.0-s[0])+s[0]);
+    x_.push_back(pvfmm::fabs<T>(1.0-s[1])+s[0]);
+    x_.push_back(pvfmm::fabs<T>(1.0+s[1])+s[0]);
+    x_.push_back(pvfmm::fabs<T>(1.0-s[2])+s[0]);
+    x_.push_back(pvfmm::fabs<T>(1.0+s[2])+s[0]);
     std::sort(x_.begin(),x_.end());
     for(int i=0;i<x_.size();i++){
       if(x_[i]<-1.0) x_[i]=-1.0;
@@ -824,11 +785,11 @@ std::vector<T> integ_pyramid(int m, T* s, T r, int nx, const Kernel<T>& kernel, 
     }
 
     std::vector<T> x_new;
-    T x_jump=fabs(1.0-s[0]);
-    if(fabs(1.0-s[1])>eps) x_jump=std::min(x_jump,(T)fabs(1.0-s[1]));
-    if(fabs(1.0+s[1])>eps) x_jump=std::min(x_jump,(T)fabs(1.0+s[1]));
-    if(fabs(1.0-s[2])>eps) x_jump=std::min(x_jump,(T)fabs(1.0-s[2]));
-    if(fabs(1.0+s[2])>eps) x_jump=std::min(x_jump,(T)fabs(1.0+s[2]));
+    T x_jump=pvfmm::fabs<T>(1.0-s[0]);
+    if(pvfmm::fabs<T>(1.0-s[1])>eps) x_jump=std::min(x_jump,(T)pvfmm::fabs<T>(1.0-s[1]));
+    if(pvfmm::fabs<T>(1.0+s[1])>eps) x_jump=std::min(x_jump,(T)pvfmm::fabs<T>(1.0+s[1]));
+    if(pvfmm::fabs<T>(1.0-s[2])>eps) x_jump=std::min(x_jump,(T)pvfmm::fabs<T>(1.0-s[2]));
+    if(pvfmm::fabs<T>(1.0+s[2])>eps) x_jump=std::min(x_jump,(T)pvfmm::fabs<T>(1.0+s[2]));
     for(int k=0; k<x_.size()-1; k++){
       T x0=x_[k];
       T x1=x_[k+1];
@@ -1103,8 +1064,8 @@ std::vector<T> cheb_integ(int m, T* s_, T r_, const Kernel<T>& kernel){
     U_=integ<T>(m+1,s,r,n,kernel);
     err=0;
     for(int i=0;i<(m+1)*(m+1)*(m+1)*k_dim;i++)
-      if(fabs(U[i]-U_[i])>err)
-        err=fabs(U[i]-U_[i]);
+      if(pvfmm::fabs<T>(U[i]-U_[i])>err)
+        err=pvfmm::fabs<T>(U[i]-U_[i]);
     U=U_;
   }
 
@@ -1127,16 +1088,16 @@ std::vector<T> cheb_integ(int m, T* s_, T r_, const Kernel<T>& kernel){
 
 template <class T>
 std::vector<T> cheb_nodes(int deg, int dim){
-  int d=deg+1;
+  unsigned int d=deg+1;
   std::vector<T> x(d);
   for(int i=0;i<d;i++)
-    x[i]=-cos((i+(T)0.5)*const_pi<T>()/d)*0.5+0.5;
+    x[i]=-pvfmm::cos<T>((i+(T)0.5)*const_pi<T>()/d)*0.5+0.5;
   if(dim==1) return x;
 
-  int n1=(int)(pow((T)d,dim)+0.5);
+  unsigned int n1=pvfmm::pow<unsigned int>(d,dim);
   std::vector<T> y(n1*dim);
   for(int i=0;i<dim;i++){
-    int n2=(int)(pow((T)d,i)+0.5);
+    unsigned int n2=pvfmm::pow<unsigned int>(d,i);
     for(int j=0;j<n1;j++){
       y[j*dim+i]=x[(j/n2)%d];
     }
@@ -1169,7 +1130,7 @@ void cheb_diff(const Vector<T>& A, int deg, int diff_dim, Vector<T>& B, mem::Mem
   T* buff1=buff+buff_size*0;
   T* buff2=buff+buff_size*1;
 
-  size_t n1=(size_t)(pow((T)d,diff_dim)+0.5);
+  size_t n1=pvfmm::pow<unsigned int>(d,diff_dim);
   size_t n2=A.Dim()/(n1*d);
 
   for(size_t k=0;k<n2;k++){ // Rearrange A to make diff_dim the last array dimension
@@ -1205,7 +1166,7 @@ void cheb_grad(const Vector<T>& A, int deg, Vector<T>& B, mem::MemoryManager* me
   size_t dim=3;
   size_t d=(size_t)deg+1;
   size_t n_coeff =(d*(d+1)*(d+2))/6;
-  size_t n_coeff_=(size_t)(pow((T)d,dim)+0.5);
+  size_t n_coeff_=pvfmm::pow<unsigned int>(d,dim);
   size_t dof=A.Dim()/n_coeff;
 
   // Create work buffers
@@ -1255,7 +1216,7 @@ template <class T>
 void cheb_div(T* A_, int deg, T* B_){
   int dim=3;
   int d=deg+1;
-  int n1 =(int)(pow((T)d,dim)+0.5);
+  int n1 =pvfmm::pow<unsigned int>(d,dim);
   Vector<T> A(n1*dim); A.SetZero();
   Vector<T> B(n1    ); B.SetZero();
 
@@ -1294,7 +1255,7 @@ template <class T>
 void cheb_curl(T* A_, int deg, T* B_){
   int dim=3;
   int d=deg+1;
-  int n1 =(int)(pow((T)d,dim)+0.5);
+  int n1 =pvfmm::pow<unsigned int>(d,dim);
   Vector<T> A(n1*dim); A.SetZero();
   Vector<T> B(n1*dim); B.SetZero();
 
@@ -1343,7 +1304,7 @@ template <class T>
 void cheb_laplacian(T* A, int deg, T* B){
   int dim=3;
   int d=deg+1;
-  int n1=(int)(pow((T)d,dim)+0.5);
+  int n1=pvfmm::pow<unsigned int>(d,dim);
 
   T* C1=mem::aligned_new<T>(n1);
   T* C2=mem::aligned_new<T>(n1);
@@ -1369,8 +1330,8 @@ void cheb_laplacian(T* A, int deg, T* B){
 template <class T>
 void cheb_img(T* A, T* B, int deg, int dir, bool neg_){
   int d=deg+1;
-  int n1=(int)(pow((T)d,3-dir)+0.5);
-  int n2=(int)(pow((T)d,  dir)+0.5);
+  int n1=pvfmm::pow<unsigned int>(d,3-dir);
+  int n2=pvfmm::pow<unsigned int>(d,  dir);
   int indx;
   T sgn,neg;
   neg=(T)(neg_?-1.0:1.0);

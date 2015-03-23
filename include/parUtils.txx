@@ -438,7 +438,7 @@ namespace par{
 
           totSize_new=(myrank<=(npes-1)/2?*split_disp:totSize-*split_disp);
           //double err=(((double)*split_disp)/(totSize/2))-1.0;
-          //if(fabs(err)<0.01 || npes<=16) break;
+          //if(pvfmm::fabs<double>(err)<0.01 || npes<=16) break;
           //else if(!myrank) std::cout<<err<<'\n';
         }
 

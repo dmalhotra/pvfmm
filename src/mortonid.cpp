@@ -14,8 +14,8 @@ namespace pvfmm{
 
 void MortonId::NbrList(std::vector<MortonId>& nbrs, uint8_t level, int periodic) const{
   nbrs.clear();
-  static int dim=3;
-  static int nbr_cnt=(int)(pow(3.0,dim)+0.5);
+  static unsigned int dim=3;
+  static unsigned int nbr_cnt=pvfmm::pow<unsigned int>(3,dim);
   static UINT_T maxCoord=(((UINT_T)1)<<(MAX_DEPTH));
 
   UINT_T mask=maxCoord-(((UINT_T)1)<<(MAX_DEPTH-level));

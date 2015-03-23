@@ -83,7 +83,7 @@ void Kernel<T>::Initialize(bool verbose) const{
           x=(drand48()-0.5);
           y=(drand48()-0.5);
           z=(drand48()-0.5);
-          r=sqrt(x*x+y*y+z*z);
+          r=pvfmm::sqrt<T>(x*x+y*y+z*z);
         }while(r<0.25);
         trg_coord1[i*COORD_DIM+0]=x*scal;
         trg_coord1[i*COORD_DIM+1]=y*scal;
@@ -95,7 +95,7 @@ void Kernel<T>::Initialize(bool verbose) const{
           x=(drand48()-0.5);
           y=(drand48()-0.5);
           z=(drand48()-0.5);
-          r=sqrt(x*x+y*y+z*z);
+          r=pvfmm::sqrt<T>(x*x+y*y+z*z);
         }while(r<0.25);
         trg_coord1[i*COORD_DIM+0]=x*1.0/scal;
         trg_coord1[i*COORD_DIM+1]=y*1.0/scal;
@@ -105,10 +105,10 @@ void Kernel<T>::Initialize(bool verbose) const{
         BuildMatrix(&src_coord [          0], 1,
                     &trg_coord1[i*COORD_DIM], 1, &(M1[i][0]));
         for(size_t j=0;j<ker_dim[0]*ker_dim[1];j++){
-          abs_sum+=fabs(M1[i][j]);
+          abs_sum+=pvfmm::fabs<T>(M1[i][j]);
         }
       }
-      if(abs_sum>sqrt(eps) || scal<eps) break;
+      if(abs_sum>pvfmm::sqrt<T>(eps) || scal<eps) break;
       scal=scal*0.5;
     }
 
@@ -139,8 +139,8 @@ void Kernel<T>::Initialize(bool verbose) const{
       if(dot11>max_val*max_val*eps_ &&
          dot22>max_val*max_val*eps_ ){
         T s=dot12/dot11;
-        M_scal[0][i]=log(s)/log(2.0);
-        T err=sqrt(0.5*(dot22/dot11)/(s*s)-0.5);
+        M_scal[0][i]=pvfmm::log<T>(s)/pvfmm::log<T>(2.0);
+        T err=pvfmm::sqrt<T>(0.5*(dot22/dot11)/(s*s)-0.5);
         if(err>eps_){
           scale_invar=false;
           M_scal[0][i]=0.0;
@@ -177,7 +177,7 @@ void Kernel<T>::Initialize(bool verbose) const{
       for(size_t i0=0;i0<ker_dim[0];i0++)
       for(size_t i1=0;i1<ker_dim[1];i1++){
         if(M_scal[i0][i1]>=0){
-          if(fabs(src_scal[i0]+trg_scal[i1]-M_scal[i0][i1])>eps_){
+          if(pvfmm::fabs<T>(src_scal[i0]+trg_scal[i1]-M_scal[i0][i1])>eps_){
             scale_invar=false;
           }
         }
@@ -202,7 +202,7 @@ void Kernel<T>::Initialize(bool verbose) const{
         x=(drand48()-0.5);
         y=(drand48()-0.5);
         z=(drand48()-0.5);
-        r=sqrt(x*x+y*y+z*z);
+        r=pvfmm::sqrt<T>(x*x+y*y+z*z);
       }while(r<0.25);
       trg_coord1[i*COORD_DIM+0]=x*scal;
       trg_coord1[i*COORD_DIM+1]=y*scal;
@@ -214,7 +214,7 @@ void Kernel<T>::Initialize(bool verbose) const{
         x=(drand48()-0.5);
         y=(drand48()-0.5);
         z=(drand48()-0.5);
-        r=sqrt(x*x+y*y+z*z);
+        r=pvfmm::sqrt<T>(x*x+y*y+z*z);
       }while(r<0.25);
       trg_coord1[i*COORD_DIM+0]=x*1.0/scal;
       trg_coord1[i*COORD_DIM+1]=y*1.0/scal;
@@ -292,8 +292,8 @@ void Kernel<T>::Initialize(bool verbose) const{
             dot22[i][j]+=M2[k][i]*M2[k][j];
           }
           for(size_t i=0;i<ker_dim[0]*ker_dim[1];i++){
-            norm1[i]=sqrt(dot11[i][i]);
-            norm2[i]=sqrt(dot22[i][i]);
+            norm1[i]=pvfmm::sqrt<T>(dot11[i][i]);
+            norm2[i]=pvfmm::sqrt<T>(dot22[i][i]);
           }
           for(size_t i=0;i<ker_dim[0]*ker_dim[1];i++)
           for(size_t j=0;j<ker_dim[0]*ker_dim[1];j++){
@@ -309,10 +309,10 @@ void Kernel<T>::Initialize(bool verbose) const{
         for(size_t i=0;i<ker_dim[0]*ker_dim[1];i++){
           if(norm1[i]>eps_ && M11[0][i]==0){
             for(size_t j=0;j<ker_dim[0]*ker_dim[1];j++){
-              if(fabs(norm1[i]-norm1[j])<eps_ && fabs(fabs(dot11[i][j])-1.0)<eps_){
+              if(pvfmm::fabs<T>(norm1[i]-norm1[j])<eps_ && pvfmm::fabs<T>(pvfmm::fabs<T>(dot11[i][j])-1.0)<eps_){
                 M11[0][j]=(dot11[i][j]>0?flag:-flag);
               }
-              if(fabs(norm1[i]-norm2[j])<eps_ && fabs(fabs(dot12[i][j])-1.0)<eps_){
+              if(pvfmm::fabs<T>(norm1[i]-norm2[j])<eps_ && pvfmm::fabs<T>(pvfmm::fabs<T>(dot12[i][j])-1.0)<eps_){
                 M22[0][j]=(dot12[i][j]>0?flag:-flag);
               }
             }
@@ -576,8 +576,8 @@ void Kernel<T>::Initialize(bool verbose) const{
       std::cout<<"Scaling Matrix :\n";
       Matrix<T> Src(ker_dim[0],1);
       Matrix<T> Trg(1,ker_dim[1]);
-      for(size_t i=0;i<ker_dim[0];i++) Src[i][0]=pow(2.0,src_scal[i]);
-      for(size_t i=0;i<ker_dim[1];i++) Trg[0][i]=pow(2.0,trg_scal[i]);
+      for(size_t i=0;i<ker_dim[0];i++) Src[i][0]=pvfmm::pow<T>(2.0,src_scal[i]);
+      for(size_t i=0;i<ker_dim[1];i++) Trg[0][i]=pvfmm::pow<T>(2.0,trg_scal[i]);
       std::cout<<Src*Trg;
     }
     if(ker_dim[0]*ker_dim[1]>0){ // Accuracy of multipole expansion
@@ -625,11 +625,11 @@ void Kernel<T>::Initialize(bool verbose) const{
             x=(drand48()-0.5);
             y=(drand48()-0.5);
             z=(drand48()-0.5);
-            r=sqrt(x*x+y*y+z*z);
+            r=pvfmm::sqrt<T>(x*x+y*y+z*z);
           }while(r==0.0);
-          trg_coord.push_back(x/r*sqrt((T)COORD_DIM)*rad);
-          trg_coord.push_back(y/r*sqrt((T)COORD_DIM)*rad);
-          trg_coord.push_back(z/r*sqrt((T)COORD_DIM)*rad);
+          trg_coord.push_back(x/r*pvfmm::sqrt<T>((T)COORD_DIM)*rad);
+          trg_coord.push_back(y/r*pvfmm::sqrt<T>((T)COORD_DIM)*rad);
+          trg_coord.push_back(z/r*pvfmm::sqrt<T>((T)COORD_DIM)*rad);
         }
 
         Matrix<T> M_s2c(n_src*ker_dim[0],n_check*ker_dim[1]);
@@ -646,7 +646,7 @@ void Kernel<T>::Initialize(bool verbose) const{
           T eps=1, max_S=0;
           while(eps*(T)0.5+(T)1.0>1.0) eps*=0.5;
           for(size_t i=0;i<std::min(S.Dim(0),S.Dim(1));i++){
-            if(fabs(S[i][i])>max_S) max_S=fabs(S[i][i]);
+            if(pvfmm::fabs<T>(S[i][i])>max_S) max_S=pvfmm::fabs<T>(S[i][i]);
           }
           for(size_t i=0;i<S.Dim(0);i++) S[i][i]=(S[i][i]>eps*max_S*4?1.0/S[i][i]:0.0);
           M_c2e0=V.Transpose()*S;
@@ -665,8 +665,8 @@ void Kernel<T>::Initialize(bool verbose) const{
         T max_error=0, max_value=0;
         for(size_t i=0;i<M.Dim(0);i++)
         for(size_t j=0;j<M.Dim(1);j++){
-          max_error=std::max<T>(max_error,fabs(M    [i][j]));
-          max_value=std::max<T>(max_value,fabs(M_s2t[i][j]));
+          max_error=std::max<T>(max_error,pvfmm::fabs<T>(M    [i][j]));
+          max_value=std::max<T>(max_value,pvfmm::fabs<T>(M_s2t[i][j]));
         }
 
         std::cout<<(double)(max_error/max_value)<<' ';
@@ -1183,12 +1183,12 @@ template<class T> const Kernel<T>& LaplaceKernel<T>::gradient(){
   return grad_ker;
 }
 
-template<> const Kernel<double>& LaplaceKernel<double>::potential(){
+template<> inline const Kernel<double>& LaplaceKernel<double>::potential(){
   typedef double T;
   static Kernel<T> potn_ker=BuildKernel<T, laplace_poten<T,2>, laplace_dbl_poten<T,2> >("laplace"     , 3, std::pair<int,int>(1,1));
   return potn_ker;
 }
-template<> const Kernel<double>& LaplaceKernel<double>::gradient(){
+template<> inline const Kernel<double>& LaplaceKernel<double>::gradient(){
   typedef double T;
   static Kernel<T> potn_ker=BuildKernel<T, laplace_poten<T,2>, laplace_dbl_poten<T,2> >("laplace"     , 3, std::pair<int,int>(1,1));
   static Kernel<T> grad_ker=BuildKernel<T, laplace_grad <T,2>                         >("laplace_grad", 3, std::pair<int,int>(1,3),
@@ -1345,7 +1345,7 @@ void stokes_sym_dip(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_
         T R = (dR[0]*dR[0]+dR[1]*dR[1]+dR[2]*dR[2]);
         if (R!=0){
           T invR2=1.0/R;
-          T invR=sqrt(invR2);
+          T invR=pvfmm::sqrt<T>(invR2);
           T invR3=invR2*invR;
 
           T* f=&v_src[(s*dof+i)*6+0];
@@ -1384,7 +1384,7 @@ void stokes_press(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_c
         T R = (dR[0]*dR[0]+dR[1]*dR[1]+dR[2]*dR[2]);
         if (R!=0){
           T invR2=1.0/R;
-          T invR=sqrt(invR2);
+          T invR=pvfmm::sqrt<T>(invR2);
           T invR3=invR2*invR;
           T v_src[3]={v_src_[(s*dof+i)*3  ],
                       v_src_[(s*dof+i)*3+1],
@@ -1419,7 +1419,7 @@ void stokes_stress(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_
         T R = (dR[0]*dR[0]+dR[1]*dR[1]+dR[2]*dR[2]);
         if (R!=0){
           T invR2=1.0/R;
-          T invR=sqrt(invR2);
+          T invR=pvfmm::sqrt<T>(invR2);
           T invR3=invR2*invR;
           T invR5=invR3*invR2;
           T v_src[3]={v_src_[(s*dof+i)*3  ],
@@ -1466,7 +1466,7 @@ void stokes_grad(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cn
         T R = (dR[0]*dR[0]+dR[1]*dR[1]+dR[2]*dR[2]);
         if (R!=0){
           T invR2=1.0/R;
-          T invR=sqrt(invR2);
+          T invR=pvfmm::sqrt<T>(invR2);
           T invR3=invR2*invR;
           T v_src[3]={v_src_[(s*dof+i)*3  ],
                       v_src_[(s*dof+i)*3+1],
@@ -1618,7 +1618,7 @@ namespace
         double y = ty[i] - sy[j];
         double z = tz[i] - sz[j];
         double r2 = x*x + y*y + z*z;
-        double r = sqrt(r2);
+        double r = pvfmm::sqrt<T>(r2);
         double invdr;
         if (r == 0)
           invdr = 0;
@@ -1793,7 +1793,7 @@ namespace
         double y = ty[i] - sy[j];
         double z = tz[i] - sz[j];
         double r2 = x*x + y*y + z*z;
-        double r = sqrt(r2);
+        double r = pvfmm::sqrt<T>(r2);
         double invdr;
         if (r == 0)
           invdr = 0;
@@ -1982,7 +1982,7 @@ namespace
         double y = ty[i] - sy[j];
         double z = tz[i] - sz[j];
         double r2 = x*x + y*y + z*z;
-        double r = sqrt(r2);
+        double r = pvfmm::sqrt<T>(r2);
         double invdr;
         if (r == 0)
           invdr = 0;
@@ -2102,7 +2102,7 @@ namespace
 }
 
 template <>
-void stokes_press<double>(double* r_src, int src_cnt, double* v_src_, int dof, double* r_trg, int trg_cnt, double* k_out, mem::MemoryManager* mem_mgr){
+inline void stokes_press<double>(double* r_src, int src_cnt, double* v_src_, int dof, double* r_trg, int trg_cnt, double* k_out, mem::MemoryManager* mem_mgr){
   Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(17*dof));
 
   stokesPressureSSEShuffle(src_cnt, trg_cnt, r_src, r_trg, v_src_, k_out, mem_mgr);
@@ -2110,14 +2110,14 @@ void stokes_press<double>(double* r_src, int src_cnt, double* v_src_, int dof, d
 }
 
 template <>
-void stokes_stress<double>(double* r_src, int src_cnt, double* v_src_, int dof, double* r_trg, int trg_cnt, double* k_out, mem::MemoryManager* mem_mgr){
+inline void stokes_stress<double>(double* r_src, int src_cnt, double* v_src_, int dof, double* r_trg, int trg_cnt, double* k_out, mem::MemoryManager* mem_mgr){
   Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(45*dof));
 
   stokesStressSSEShuffle(src_cnt, trg_cnt, r_src, r_trg, v_src_, k_out, mem_mgr);
 }
 
 template <>
-void stokes_grad<double>(double* r_src, int src_cnt, double* v_src_, int dof, double* r_trg, int trg_cnt, double* k_out, mem::MemoryManager* mem_mgr){
+inline void stokes_grad<double>(double* r_src, int src_cnt, double* v_src_, int dof, double* r_trg, int trg_cnt, double* k_out, mem::MemoryManager* mem_mgr){
   Profile::Add_FLOP((long long)trg_cnt*(long long)src_cnt*(89*dof));
 
   const double mu=1.0;
@@ -2143,7 +2143,7 @@ template<class T> const Kernel<T>& StokesKernel<T>::vel_grad(){
   return ker;
 }
 
-template<> const Kernel<double>& StokesKernel<double>::velocity(){
+template<> inline const Kernel<double>& StokesKernel<double>::velocity(){
   typedef double T;
   static Kernel<T> ker=BuildKernel<T, stokes_vel<T,2>, stokes_sym_dip>("stokes_vel"   , 3, std::pair<int,int>(3,3));
   return ker;
@@ -2273,7 +2273,7 @@ template<class T> const Kernel<T>& BiotSavartKernel<T>::potential(){
   static Kernel<T> ker=BuildKernel<T, biot_savart<T,1> >("biot_savart", 3, std::pair<int,int>(3,3));
   return ker;
 }
-template<> const Kernel<double>& BiotSavartKernel<double>::potential(){
+template<> inline const Kernel<double>& BiotSavartKernel<double>::potential(){
   typedef double T;
   static Kernel<T> ker=BuildKernel<T, biot_savart<T,2> >("biot_savart", 3, std::pair<int,int>(3,3));
   return ker;
@@ -2406,7 +2406,7 @@ template<class T> const Kernel<T>& HelmholtzKernel<T>::potential(){
   static Kernel<T> ker=BuildKernel<T, helmholtz_poten<T,1> >("helmholtz"     , 3, std::pair<int,int>(2,2));
   return ker;
 }
-template<> const Kernel<double>& HelmholtzKernel<double>::potential(){
+template<> inline const Kernel<double>& HelmholtzKernel<double>::potential(){
   typedef double T;
   static Kernel<T> ker=BuildKernel<T, helmholtz_poten<T,3> >("helmholtz"     , 3, std::pair<int,int>(2,2));
   return ker;

@@ -26,7 +26,7 @@ std::ostream& operator<<(std::ostream& output, const Matrix<T>& M){
   for(size_t i=0;i<M.Dim(0);i++){
     for(size_t j=0;j<M.Dim(1);j++){
       float f=((float)M(i,j));
-      if(fabs(f)<1e-25) f=0;
+      if(pvfmm::fabs<T>(f)<1e-25) f=0;
       output<<std::setw(10)<<((double)f)<<' ';
     }
     output<<";\n";
@@ -491,7 +491,7 @@ Matrix<T> Matrix<T>::pinv(T eps){
   if(eps<0){
     eps=1.0;
     while(eps+(T)1.0>1.0) eps*=0.5;
-    eps=sqrt(eps);
+    eps=pvfmm::sqrt<T>(eps);
   }
   Matrix<T> M_r(dim[1],dim[0]);
   mat::pinv(data_ptr,dim[0],dim[1],eps,M_r.data_ptr);

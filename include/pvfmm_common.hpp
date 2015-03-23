@@ -16,9 +16,9 @@
 #endif
 
 //Disable assert checks.
-//#ifndef NDEBUG
-//#define NDEBUG
-//#endif
+#ifndef NDEBUG
+#define NDEBUG
+#endif
 
 //Enable profiling
 #define __PROFILE__ 5
@@ -59,18 +59,6 @@
 
 #include <stacktrace.h>
 
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(push,target(mic))
-#endif
-template <class T>
-inline T const_pi(){return 3.1415926535897932384626433832795028841;}
-
-template <class T>
-inline T const_e (){return 2.7182818284590452353602874713526624977;}
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(pop)
-#endif
-
-#include <quad_utils.hpp>
+#include <math_utils.hpp>
 
 #endif //_PVFMM_COMMON_HPP_

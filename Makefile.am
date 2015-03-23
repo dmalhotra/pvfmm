@@ -72,7 +72,7 @@ lib_libfmm_a_HEADERS = \
 									include/parUtils.h \
 									include/precomp_mat.hpp \
 									include/profile.hpp \
-									include/quad_utils.hpp \
+									include/math_utils.hpp \
 									include/stacktrace.h \
 									include/tree.hpp \
 									include/tree_node.hpp \
@@ -95,7 +95,6 @@ lib_libfmm_a_HEADERS = \
 									include/ompUtils.txx \
 									include/parUtils.txx \
 									include/precomp_mat.txx \
-									include/quad_utils.txx \
 									include/tree.txx \
 									include/vector.txx
 
@@ -105,10 +104,12 @@ lib_libfmm_a_HEADERS = \
 # the sources to add to the library and to add to the source distribution
 lib_libpvfmm_a_SOURCES = \
 									$(lib_libpvfmm_a_HEADERS) \
+									src/cheb_utils.cpp \
 									src/device_wrapper.cpp \
 									src/fmm_gll.cpp \
 									src/legendre_rule.cpp \
 									src/mat_utils.cpp \
+									src/math_utils.cpp \
 									src/mem_mgr.cpp \
 									src/mortonid.cpp \
 									src/profile.cpp \

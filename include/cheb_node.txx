@@ -39,8 +39,8 @@ void Cheb_Node<Real_t>::Initialize(TreeNode* parent_, int path2node_, TreeNode::
   //Compute Chebyshev approximation.
   if(this->IsLeaf() && !this->IsGhost()){
     if(!input_fn.IsEmpty() && data_dof>0){
-      Real_t s=pow(0.5,this->Depth());
-      int n1=(int)(pow((Real_t)(cheb_deg+1),this->Dim())+0.5);
+      Real_t s=pvfmm::pow<Real_t>(0.5,this->Depth());
+      int n1=pvfmm::pow<unsigned int>(cheb_deg+1,this->Dim());
       std::vector<Real_t> coord=cheb_nodes<Real_t>(cheb_deg,this->Dim());
       for(int i=0;i<n1;i++){
         coord[i*3+0]=coord[i*3+0]*s+this->Coord()[0];
@@ -103,7 +103,7 @@ bool Cheb_Node<Real_t>::SubdivCond(){
     std::vector<Real_t> x=cheb_nodes<Real_t>(cheb_deg,1);
     std::vector<Real_t> y=x;
     std::vector<Real_t> z=x;
-    Real_t s=pow(0.5,this->Depth());
+    Real_t s=pvfmm::pow<Real_t>(0.5,this->Depth());
     Real_t* coord=this->Coord();
     for(size_t i=0;i<x.size();i++){
       x[i]=x[i]*s+coord[0];
@@ -132,7 +132,7 @@ void Cheb_Node<Real_t>::Subdivide() {
   std::vector<Real_t> y(cheb_deg+1);
   std::vector<Real_t> z(cheb_deg+1);
   Vector<Real_t> cheb_node=cheb_nodes<Real_t>(cheb_deg,1);
-  Vector<Real_t> val((size_t)pow(cheb_deg+1,this->Dim())*data_dof);
+  Vector<Real_t> val(pvfmm::pow<unsigned int>(cheb_deg+1,this->Dim())*data_dof);
   Vector<Real_t> child_cheb_coeff[8];
   int n=(1UL<<this->Dim());
   for(int i=0;i<n;i++){
@@ -145,7 +145,7 @@ void Cheb_Node<Real_t>::Subdivide() {
       z[j]=cheb_node[j]+coord[2];
     }
     cheb_eval(cheb_coeff, cheb_deg, x, y, z, val);
-    assert(val.Dim()==pow(cheb_deg+1,this->Dim())*data_dof);
+    assert(val.Dim()==pvfmm::pow<unsigned int>(cheb_deg+1,this->Dim())*data_dof);
     child_cheb_coeff[i].Resize(data_dof*((cheb_deg+1)*(cheb_deg+2)*(cheb_deg+3))/6);
     cheb_approx<Real_t,Real_t>(&val[0],cheb_deg,data_dof,&(child_cheb_coeff[i][0]));
 
@@ -166,7 +166,7 @@ void Cheb_Node<Real_t>::Truncate() {
   std::vector<Real_t> y=cheb_node;
   std::vector<Real_t> z=cheb_node;
   std::vector<Real_t> val((cheb_deg+1)*(cheb_deg+1)*(cheb_deg+1)*data_dof);
-  Real_t s=pow(0.5,this->Depth());
+  Real_t s=pvfmm::pow<Real_t>(0.5,this->Depth());
   Real_t* coord=this->Coord();
   for(size_t i=0;i<x.size();i++){
     x[i]=x[i]*s+coord[0];
@@ -225,7 +225,7 @@ void Cheb_Node<Real_t>::VTU_Data(VTUData_t& vtu_data, std::vector<Node_t*>& node
 
       size_t point_cnt=coord.size()/COORD_DIM;
       Real_t* c=n->Coord();
-      Real_t s=pow(0.5,n->Depth());
+      Real_t s=pvfmm::pow<Real_t>(0.5,n->Depth());
       for(int i0=0;i0<gridpt_cnt;i0++)
       for(int i1=0;i1<gridpt_cnt;i1++)
       for(int i2=0;i2<gridpt_cnt;i2++){
@@ -272,7 +272,7 @@ template <class Real_t>
 void Cheb_Node<Real_t>::Gradient(){
   int dim=3;//this->Dim();
   if(this->IsLeaf() && ChebData().Dim()>0){
-    Real_t scale=pow(2,this->depth);
+    Real_t scale=pvfmm::pow<Real_t>(2,this->depth);
     for(size_t i=0;i<ChebData().Dim();i++)
       ChebData()[i]*=scale;
 
@@ -294,7 +294,7 @@ void Cheb_Node<Real_t>::Divergence(){
       cheb_div(&(ChebData()[n3*i]),cheb_deg,&coeff[n3*(i/dim)]);
     ChebData().Swap(coeff);
 
-    Real_t scale=pow(2,this->depth);
+    Real_t scale=pvfmm::pow<Real_t>(2,this->depth);
     for(size_t i=0;i<ChebData().Dim();i++)
       ChebData()[i]*=scale;
   }
@@ -312,7 +312,7 @@ void Cheb_Node<Real_t>::Curl(){
       cheb_curl(&(ChebData()[n3*i]),cheb_deg,&coeff[n3*i]);
     ChebData().Swap(coeff);
 
-    Real_t scale=pow(2,this->depth);
+    Real_t scale=pvfmm::pow<Real_t>(2,this->depth);
     for(size_t i=0;i<ChebData().Dim();i++)
       ChebData()[i]*=scale;
   }
@@ -321,7 +321,7 @@ void Cheb_Node<Real_t>::Curl(){
 template <class Real_t>
 void Cheb_Node<Real_t>::read_val(std::vector<Real_t> x,std::vector<Real_t> y, std::vector<Real_t> z, int nx, int ny, int nz, Real_t* val, bool show_ghost/*=true*/){
   if(cheb_deg<0) return;
-  Real_t s=0.5*pow(0.5,this->Depth());
+  Real_t s=0.5*pvfmm::pow<Real_t>(0.5,this->Depth());
   Real_t s_inv=1/s;
   if(this->IsLeaf()){
     if(cheb_coeff.Dim()!=(size_t)((cheb_deg+1)*(cheb_deg+2)*(cheb_deg+3))/6*data_dof

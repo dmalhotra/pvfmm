@@ -68,7 +68,7 @@ inline T sub_intrin(const T& a, const T& b){
 
 template <class T>
 inline T rinv_approx_intrin(const T& r2){
-  if(r2!=0) return 1.0/sqrt(r2);
+  if(r2!=0) return 1.0/pvfmm::sqrt<T>(r2);
   return 0;
 }
 
@@ -79,18 +79,18 @@ inline void rinv_newton_intrin(T& rinv, const T& r2, const Real_t& nwtn_const){
 
 template <class T>
 inline T rinv_single_intrin(const T& r2){
-  if(r2!=0) return 1.0/sqrt(r2);
+  if(r2!=0) return 1.0/pvfmm::sqrt<T>(r2);
   return 0;
 }
 
 template <class T>
 inline T sin_intrin(const T& t){
-  return sin(t);
+  return pvfmm::sin<T>(t);
 }
 
 template <class T>
 inline T cos_intrin(const T& t){
-  return cos(t);
+  return pvfmm::cos<T>(t);
 }
 
 
@@ -261,25 +261,25 @@ inline __m128d cos_intrin(const __m128d& t){
 template <>
 inline __m128 sin_intrin(const __m128& t_){
   union{float e[4];__m128 d;} t; store_intrin(t.e, t_);
-  return _mm_set_ps(sin(t.e[3]),sin(t.e[2]),sin(t.e[1]),sin(t.e[0]));
+  return _mm_set_ps(pvfmm::sin<float>(t.e[3]),pvfmm::sin<float>(t.e[2]),pvfmm::sin<float>(t.e[1]),pvfmm::sin<float>(t.e[0]));
 }
 
 template <>
 inline __m128 cos_intrin(const __m128& t_){
   union{float e[4];__m128 d;} t; store_intrin(t.e, t_);
-  return _mm_set_ps(cos(t.e[3]),cos(t.e[2]),cos(t.e[1]),cos(t.e[0]));
+  return _mm_set_ps(pvfmm::cos<float>(t.e[3]),pvfmm::cos<float>(t.e[2]),pvfmm::cos<float>(t.e[1]),pvfmm::cos<float>(t.e[0]));
 }
 
 template <>
 inline __m128d sin_intrin(const __m128d& t_){
   union{double e[2];__m128d d;} t; store_intrin(t.e, t_);
-  return _mm_set_pd(sin(t.e[1]),sin(t.e[0]));
+  return _mm_set_pd(pvfmm::sin<double>(t.e[1]),pvfmm::sin<double>(t.e[0]));
 }
 
 template <>
 inline __m128d cos_intrin(const __m128d& t_){
   union{double e[2];__m128d d;} t; store_intrin(t.e, t_);
-  return _mm_set_pd(cos(t.e[1]),cos(t.e[0]));
+  return _mm_set_pd(pvfmm::cos<double>(t.e[1]),pvfmm::cos<double>(t.e[0]));
 }
 #endif
 #endif
@@ -453,25 +453,25 @@ inline __m256d cos_intrin(const __m256d& t){
 template <>
 inline __m256 sin_intrin(const __m256& t_){
   union{float e[8];__m256 d;} t; store_intrin(t.e, t_);//t.d=t_;
-  return _mm256_set_ps(sin(t.e[7]),sin(t.e[6]),sin(t.e[5]),sin(t.e[4]),sin(t.e[3]),sin(t.e[2]),sin(t.e[1]),sin(t.e[0]));
+  return _mm256_set_ps(pvfmm::sin<float>(t.e[7]),pvfmm::sin<float>(t.e[6]),pvfmm::sin<float>(t.e[5]),pvfmm::sin<float>(t.e[4]),pvfmm::sin<float>(t.e[3]),pvfmm::sin<float>(t.e[2]),pvfmm::sin<float>(t.e[1]),pvfmm::sin<float>(t.e[0]));
 }
 
 template <>
 inline __m256 cos_intrin(const __m256& t_){
   union{float e[8];__m256 d;} t; store_intrin(t.e, t_);//t.d=t_;
-  return _mm256_set_ps(cos(t.e[7]),cos(t.e[6]),cos(t.e[5]),cos(t.e[4]),cos(t.e[3]),cos(t.e[2]),cos(t.e[1]),cos(t.e[0]));
+  return _mm256_set_ps(pvfmm::cos<float>(t.e[7]),pvfmm::cos<float>(t.e[6]),pvfmm::cos<float>(t.e[5]),pvfmm::cos<float>(t.e[4]),pvfmm::cos<float>(t.e[3]),pvfmm::cos<float>(t.e[2]),pvfmm::cos<float>(t.e[1]),pvfmm::cos<float>(t.e[0]));
 }
 
 template <>
 inline __m256d sin_intrin(const __m256d& t_){
   union{double e[4];__m256d d;} t; store_intrin(t.e, t_);//t.d=t_;
-  return _mm256_set_pd(sin(t.e[3]),sin(t.e[2]),sin(t.e[1]),sin(t.e[0]));
+  return _mm256_set_pd(pvfmm::sin<double>(t.e[3]),pvfmm::sin<double>(t.e[2]),pvfmm::sin<double>(t.e[1]),pvfmm::sin<double>(t.e[0]));
 }
 
 template <>
 inline __m256d cos_intrin(const __m256d& t_){
   union{double e[4];__m256d d;} t; store_intrin(t.e, t_);//t.d=t_;
-  return _mm256_set_pd(cos(t.e[3]),cos(t.e[2]),cos(t.e[1]),cos(t.e[0]));
+  return _mm256_set_pd(pvfmm::cos<double>(t.e[3]),pvfmm::cos<double>(t.e[2]),pvfmm::cos<double>(t.e[1]),pvfmm::cos<double>(t.e[0]));
 }
 #endif
 #endif
