@@ -765,7 +765,7 @@ namespace par{
       {
         recv_size=loc_size;
         long long glb_size[3]={0,0,0};
-        long long loc_size[3]={data_.Dim()*sizeof(T), scatter_index_.Dim(),recv_size};
+        long long loc_size[3]={(long long)(data_.Dim()*sizeof(T)), (long long)scatter_index_.Dim(),recv_size};
         MPI_Allreduce(&loc_size, &glb_size, 3, par::Mpi_datatype<long long>::value(), par::Mpi_datatype<long long>::sum(), comm);
         if(glb_size[0]==0 || glb_size[1]==0) return 0; //Nothing to be done.
 
@@ -785,7 +785,7 @@ namespace par{
       {
         long long glb_rank[2]={0,0};
         long long glb_size[3]={0,0};
-        long long loc_size[2]={data_.Dim()*sizeof(T)/data_dim, scatter_index_.Dim()};
+        long long loc_size[2]={(long long)(data_.Dim()*sizeof(T)/data_dim), (long long)scatter_index_.Dim()};
         MPI_Scan(&loc_size, &glb_rank, 2, par::Mpi_datatype<long long>::value(), par::Mpi_datatype<long long>::sum(), comm);
         MPI_Allreduce(&loc_size, &glb_size, 2, par::Mpi_datatype<long long>::value(), par::Mpi_datatype<long long>::sum(), comm);
         assert(glb_size[0]==glb_size[1]);

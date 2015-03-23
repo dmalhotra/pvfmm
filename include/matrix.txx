@@ -178,7 +178,7 @@ void Matrix<T>::Write(const char* fname){
     std::cout<<"Unable to open file for writing:"<<fname<<'\n';
     return;
   }
-  uint32_t dim_[2]={dim[0],dim[1]};
+  uint32_t dim_[2]={(uint32_t)dim[0],(uint32_t)dim[1]};
   fwrite(dim_,sizeof(uint32_t),2,f1);
   fwrite(data_ptr,sizeof(T),dim[0]*dim[1],f1);
   fclose(f1);

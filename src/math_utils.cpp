@@ -14,11 +14,13 @@
 #include <vector>
 #include <math_utils.hpp>
 
+namespace pvfmm{
 template <>
-unsigned int pvfmm::pow(const unsigned int b, const unsigned int e){
+unsigned int pow(const unsigned int b, const unsigned int e){
   unsigned int r=1;
   for(unsigned int i=0;i<e;i++) r*=b;
   return r;
+}
 }
 
 
