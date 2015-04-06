@@ -80,6 +80,9 @@ class MemoryManager{
 
     static void test();
 
+    // Check all free memory equals init_mem_val
+    void Check() const;
+
   private:
 
     // Private constructor
@@ -87,9 +90,6 @@ class MemoryManager{
 
     // Private copy constructor
     MemoryManager(const MemoryManager& m);
-
-    // Check all free memory equals init_mem_val
-    void Check() const;
 
     /**
      * \brief Node structure for a doubly linked list, representing free and

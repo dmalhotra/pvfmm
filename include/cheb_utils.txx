@@ -1046,7 +1046,7 @@ std::vector<T> cheb_integ(int m, T* s_, T r_, const Kernel<T>& kernel){
   T r=r_;
   T s[3]={s_[0],s_[1],s_[2]};
 
-  int n=m+1;
+  int n=m+2;
   T err=1.0;
   int k_dim=kernel.ker_dim[0]*kernel.ker_dim[1];
   std::vector<T> U=integ<T>(m+1,s,r,n,kernel);

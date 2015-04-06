@@ -67,18 +67,18 @@ inline T sub_intrin(const T& a, const T& b){
 }
 
 template <class T>
-inline T rinv_approx_intrin(const T& r2){
+inline T rsqrt_approx_intrin(const T& r2){
   if(r2!=0) return 1.0/pvfmm::sqrt<T>(r2);
   return 0;
 }
 
 template <class T, class Real_t>
-inline void rinv_newton_intrin(T& rinv, const T& r2, const Real_t& nwtn_const){
+inline void rsqrt_newton_intrin(T& rinv, const T& r2, const Real_t& nwtn_const){
   rinv=rinv*(nwtn_const-r2*rinv*rinv);
 }
 
 template <class T>
-inline T rinv_single_intrin(const T& r2){
+inline T rsqrt_single_intrin(const T& r2){
   if(r2!=0) return 1.0/pvfmm::sqrt<T>(r2);
   return 0;
 }
@@ -177,7 +177,7 @@ inline __m128d sub_intrin(const __m128d& a, const __m128d& b){
 }
 
 template <>
-inline __m128 rinv_approx_intrin(const __m128& r2){
+inline __m128 rsqrt_approx_intrin(const __m128& r2){
   #define VEC_INTRIN          __m128
   #define RSQRT_INTRIN(a)     _mm_rsqrt_ps(a)
   #define CMPEQ_INTRIN(a,b)   _mm_cmpeq_ps(a,b)
@@ -193,16 +193,16 @@ inline __m128 rinv_approx_intrin(const __m128& r2){
 }
 
 template <>
-inline __m128d rinv_approx_intrin(const __m128d& r2){
+inline __m128d rsqrt_approx_intrin(const __m128d& r2){
   #define PD2PS(a) _mm_cvtpd_ps(a)
   #define PS2PD(a) _mm_cvtps_pd(a)
-  return PS2PD(rinv_approx_intrin(PD2PS(r2)));
+  return PS2PD(rsqrt_approx_intrin(PD2PS(r2)));
   #undef PD2PS
   #undef PS2PD
 }
 
 template <>
-inline void rinv_newton_intrin(__m128& rinv, const __m128& r2, const float& nwtn_const){
+inline void rsqrt_newton_intrin(__m128& rinv, const __m128& r2, const float& nwtn_const){
   #define VEC_INTRIN       __m128
   // Newton iteration: rinv = 0.5 rinv_approx ( 3 - r2 rinv_approx^2 )
   // We do not compute the product with 0.5 and this needs to be adjusted later
@@ -211,7 +211,7 @@ inline void rinv_newton_intrin(__m128& rinv, const __m128& r2, const float& nwtn
 }
 
 template <>
-inline void rinv_newton_intrin(__m128d& rinv, const __m128d& r2, const double& nwtn_const){
+inline void rsqrt_newton_intrin(__m128d& rinv, const __m128d& r2, const double& nwtn_const){
   #define VEC_INTRIN       __m128d
   // Newton iteration: rinv = 0.5 rinv_approx ( 3 - r2 rinv_approx^2 )
   // We do not compute the product with 0.5 and this needs to be adjusted later
@@ -220,19 +220,19 @@ inline void rinv_newton_intrin(__m128d& rinv, const __m128d& r2, const double& n
 }
 
 template <>
-inline __m128 rinv_single_intrin(const __m128& r2){
+inline __m128 rsqrt_single_intrin(const __m128& r2){
   #define VEC_INTRIN __m128
-  VEC_INTRIN rinv=rinv_approx_intrin(r2);
-  rinv_newton_intrin(rinv,r2,(float)3.0);
+  VEC_INTRIN rinv=rsqrt_approx_intrin(r2);
+  rsqrt_newton_intrin(rinv,r2,(float)3.0);
   return rinv;
   #undef VEC_INTRIN
 }
 
 template <>
-inline __m128d rinv_single_intrin(const __m128d& r2){
+inline __m128d rsqrt_single_intrin(const __m128d& r2){
   #define PD2PS(a) _mm_cvtpd_ps(a)
   #define PS2PD(a) _mm_cvtps_pd(a)
-  return PS2PD(rinv_single_intrin(PD2PS(r2)));
+  return PS2PD(rsqrt_single_intrin(PD2PS(r2)));
   #undef PD2PS
   #undef PS2PD
 }
@@ -368,7 +368,7 @@ inline __m256d sub_intrin(const __m256d& a, const __m256d& b){
 }
 
 template <>
-inline __m256 rinv_approx_intrin(const __m256& r2){
+inline __m256 rsqrt_approx_intrin(const __m256& r2){
   #define VEC_INTRIN          __m256
   #define RSQRT_INTRIN(a)     _mm256_rsqrt_ps(a)
   #define CMPEQ_INTRIN(a,b)   _mm256_insertf128_ps(_mm256_castps128_ps256(_mm_cmpeq_ps(_mm256_extractf128_ps(a,0),_mm256_extractf128_ps(b,0))),\
@@ -385,16 +385,16 @@ inline __m256 rinv_approx_intrin(const __m256& r2){
 }
 
 template <>
-inline __m256d rinv_approx_intrin(const __m256d& r2){
+inline __m256d rsqrt_approx_intrin(const __m256d& r2){
   #define PD2PS(a) _mm256_cvtpd_ps(a)
   #define PS2PD(a) _mm256_cvtps_pd(a)
-  return PS2PD(rinv_approx_intrin(PD2PS(r2)));
+  return PS2PD(rsqrt_approx_intrin(PD2PS(r2)));
   #undef PD2PS
   #undef PS2PD
 }
 
 template <>
-inline void rinv_newton_intrin(__m256& rinv, const __m256& r2, const float& nwtn_const){
+inline void rsqrt_newton_intrin(__m256& rinv, const __m256& r2, const float& nwtn_const){
   #define VEC_INTRIN       __m256
   // Newton iteration: rinv = 0.5 rinv_approx ( 3 - r2 rinv_approx^2 )
   // We do not compute the product with 0.5 and this needs to be adjusted later
@@ -403,7 +403,7 @@ inline void rinv_newton_intrin(__m256& rinv, const __m256& r2, const float& nwtn
 }
 
 template <>
-inline void rinv_newton_intrin(__m256d& rinv, const __m256d& r2, const double& nwtn_const){
+inline void rsqrt_newton_intrin(__m256d& rinv, const __m256d& r2, const double& nwtn_const){
   #define VEC_INTRIN       __m256d
   // Newton iteration: rinv = 0.5 rinv_approx ( 3 - r2 rinv_approx^2 )
   // We do not compute the product with 0.5 and this needs to be adjusted later
@@ -412,19 +412,19 @@ inline void rinv_newton_intrin(__m256d& rinv, const __m256d& r2, const double& n
 }
 
 template <>
-inline __m256 rinv_single_intrin(const __m256& r2){
+inline __m256 rsqrt_single_intrin(const __m256& r2){
   #define VEC_INTRIN __m256
-  VEC_INTRIN rinv=rinv_approx_intrin(r2);
-  rinv_newton_intrin(rinv,r2,(float)3.0);
+  VEC_INTRIN rinv=rsqrt_approx_intrin(r2);
+  rsqrt_newton_intrin(rinv,r2,(float)3.0);
   return rinv;
   #undef VEC_INTRIN
 }
 
 template <>
-inline __m256d rinv_single_intrin(const __m256d& r2){
+inline __m256d rsqrt_single_intrin(const __m256d& r2){
   #define PD2PS(a) _mm256_cvtpd_ps(a)
   #define PS2PD(a) _mm256_cvtps_pd(a)
-  return PS2PD(rinv_single_intrin(PD2PS(r2)));
+  return PS2PD(rsqrt_single_intrin(PD2PS(r2)));
   #undef PD2PS
   #undef PS2PD
 }
@@ -479,7 +479,7 @@ inline __m256d cos_intrin(const __m256d& t_){
 
 
 template <class VEC, class Real_t>
-inline VEC rinv_intrin0(VEC r2){
+inline VEC rsqrt_intrin0(VEC r2){
   #define NWTN0 0
   #define NWTN1 0
   #define NWTN2 0
@@ -492,19 +492,19 @@ inline VEC rinv_intrin0(VEC r2){
 
   VEC rinv;
   #if NWTN0
-  rinv=rinv_single_intrin(r2);
+  rinv=rsqrt_single_intrin(r2);
   #else
-  rinv=rinv_approx_intrin(r2);
+  rinv=rsqrt_approx_intrin(r2);
   #endif
 
   #if NWTN1
-  rinv_newton_intrin(rinv,r2,const_nwtn1);
+  rsqrt_newton_intrin(rinv,r2,const_nwtn1);
   #endif
   #if NWTN2
-  rinv_newton_intrin(rinv,r2,const_nwtn2);
+  rsqrt_newton_intrin(rinv,r2,const_nwtn2);
   #endif
   #if NWTN3
-  rinv_newton_intrin(rinv,r2,const_nwtn3);
+  rsqrt_newton_intrin(rinv,r2,const_nwtn3);
   #endif
 
   return rinv;
@@ -516,7 +516,7 @@ inline VEC rinv_intrin0(VEC r2){
 }
 
 template <class VEC, class Real_t>
-inline VEC rinv_intrin1(VEC r2){
+inline VEC rsqrt_intrin1(VEC r2){
   #define NWTN0 0
   #define NWTN1 1
   #define NWTN2 0
@@ -529,19 +529,19 @@ inline VEC rinv_intrin1(VEC r2){
 
   VEC rinv;
   #if NWTN0
-  rinv=rinv_single_intrin(r2);
+  rinv=rsqrt_single_intrin(r2);
   #else
-  rinv=rinv_approx_intrin(r2);
+  rinv=rsqrt_approx_intrin(r2);
   #endif
 
   #if NWTN1
-  rinv_newton_intrin(rinv,r2,const_nwtn1);
+  rsqrt_newton_intrin(rinv,r2,const_nwtn1);
   #endif
   #if NWTN2
-  rinv_newton_intrin(rinv,r2,const_nwtn2);
+  rsqrt_newton_intrin(rinv,r2,const_nwtn2);
   #endif
   #if NWTN3
-  rinv_newton_intrin(rinv,r2,const_nwtn3);
+  rsqrt_newton_intrin(rinv,r2,const_nwtn3);
   #endif
 
   return rinv;
@@ -553,7 +553,7 @@ inline VEC rinv_intrin1(VEC r2){
 }
 
 template <class VEC, class Real_t>
-inline VEC rinv_intrin2(VEC r2){
+inline VEC rsqrt_intrin2(VEC r2){
   #define NWTN0 0
   #define NWTN1 1
   #define NWTN2 1
@@ -566,19 +566,19 @@ inline VEC rinv_intrin2(VEC r2){
 
   VEC rinv;
   #if NWTN0
-  rinv=rinv_single_intrin(r2);
+  rinv=rsqrt_single_intrin(r2);
   #else
-  rinv=rinv_approx_intrin(r2);
+  rinv=rsqrt_approx_intrin(r2);
   #endif
 
   #if NWTN1
-  rinv_newton_intrin(rinv,r2,const_nwtn1);
+  rsqrt_newton_intrin(rinv,r2,const_nwtn1);
   #endif
   #if NWTN2
-  rinv_newton_intrin(rinv,r2,const_nwtn2);
+  rsqrt_newton_intrin(rinv,r2,const_nwtn2);
   #endif
   #if NWTN3
-  rinv_newton_intrin(rinv,r2,const_nwtn3);
+  rsqrt_newton_intrin(rinv,r2,const_nwtn3);
   #endif
 
   return rinv;
@@ -590,7 +590,7 @@ inline VEC rinv_intrin2(VEC r2){
 }
 
 template <class VEC, class Real_t>
-inline VEC rinv_intrin3(VEC r2){
+inline VEC rsqrt_intrin3(VEC r2){
   #define NWTN0 0
   #define NWTN1 1
   #define NWTN2 1
@@ -603,19 +603,19 @@ inline VEC rinv_intrin3(VEC r2){
 
   VEC rinv;
   #if NWTN0
-  rinv=rinv_single_intrin(r2);
+  rinv=rsqrt_single_intrin(r2);
   #else
-  rinv=rinv_approx_intrin(r2);
+  rinv=rsqrt_approx_intrin(r2);
   #endif
 
   #if NWTN1
-  rinv_newton_intrin(rinv,r2,const_nwtn1);
+  rsqrt_newton_intrin(rinv,r2,const_nwtn1);
   #endif
   #if NWTN2
-  rinv_newton_intrin(rinv,r2,const_nwtn2);
+  rsqrt_newton_intrin(rinv,r2,const_nwtn2);
   #endif
   #if NWTN3
-  rinv_newton_intrin(rinv,r2,const_nwtn3);
+  rsqrt_newton_intrin(rinv,r2,const_nwtn3);
   #endif
 
   return rinv;

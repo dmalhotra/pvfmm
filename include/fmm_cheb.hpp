@@ -103,7 +103,7 @@ class FMM_Cheb: public FMM_Pts<FMMNode>{
   virtual void U_ListSetup(SetupData<Real_t>& setup_data, FMMTree_t* tree, std::vector<Matrix<Real_t> >& node_data, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device);
   virtual void U_List     (SetupData<Real_t>& setup_data, bool device=false);
 
-  virtual void PostProcessing(std::vector<FMMNode_t*>& nodes);
+  virtual void PostProcessing(FMMTree_t* tree, std::vector<FMMNode_t*>& nodes, BoundaryType bndry=FreeSpace);
 
   /**
    * \brief For each node, copy FMM output from FMM_Data to the node.

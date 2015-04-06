@@ -726,7 +726,8 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
   #endif
 
   Profile::Tic("PostProc",this->Comm(),false,5);
-  fmm_mat->PostProcessing(leaf_nodes);
+  typedef typename FMM_Mat_t::FMMTree_t MatTree_t;
+  fmm_mat->PostProcessing((MatTree_t*)this, leaf_nodes, bndry);
   Profile::Toc();
 }
 

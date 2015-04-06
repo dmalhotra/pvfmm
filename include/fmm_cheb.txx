@@ -1057,7 +1057,7 @@ void FMM_Cheb<FMMNode>::Down2Target     (SetupData<Real_t>& setup_data, bool dev
 }
 
 template <class FMMNode>
-void FMM_Cheb<FMMNode>::PostProcessing(std::vector<FMMNode_t*>& nodes){
+void FMM_Cheb<FMMNode>::PostProcessing(FMMTree_t* tree, std::vector<FMMNode_t*>& nodes, BoundaryType bndry){
   size_t n=nodes.size();
   #pragma omp parallel
   {
@@ -1066,27 +1066,27 @@ void FMM_Cheb<FMMNode>::PostProcessing(std::vector<FMMNode_t*>& nodes){
     size_t a=(pid*n)/omp_p;
     size_t b=((pid+1)*n)/omp_p;
 
-    //For each node, compute interaction from point sources.
+    std::vector<Real_t> tmp_vec; // pre-allocate
     for(size_t i=a;i<b;i++){
       Vector<Real_t>& trg_coord=nodes[i]->trg_coord;
       Vector<Real_t>& trg_value=nodes[i]->trg_value;
       Vector<Real_t>& cheb_out =((FMMData*)nodes[i]->FMMData())->cheb_out;
 
-      //Initialize target potential.
+      //Evaluate potential at target points.
       size_t trg_cnt=trg_coord.Dim()/COORD_DIM;
-      //trg_value.assign(trg_cnt*dof*this->kernel->ker_dim[1],0);
-
-      //Sample local expansion at target points.
       if(trg_cnt>0 && cheb_out.Dim()>0){
         Real_t* c=nodes[i]->Coord();
         Real_t scale=pvfmm::pow<Real_t>(2.0,nodes[i]->Depth()+1);
-        std::vector<Real_t> rel_coord(COORD_DIM*trg_cnt);
+        std::vector<Real_t>& rel_coord=tmp_vec;
+        rel_coord.resize(COORD_DIM*trg_cnt);
         for(size_t j=0;j<trg_cnt;j++) for(int k=0;k<COORD_DIM;k++)
           rel_coord[j*COORD_DIM+k]=(trg_coord[j*COORD_DIM+k]-c[k])*scale-1.0;
         cheb_eval(cheb_out, cheb_deg, rel_coord, trg_value);
       }
     }
   }
+
+  FMM_Pts<FMMNode>::PostProcessing(tree,nodes,bndry);
 }
 
 }//end namespace

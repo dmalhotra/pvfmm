@@ -16,6 +16,7 @@
 #include <matrix.hpp>
 #include <precomp_mat.hpp>
 #include <intrin_wrapper.hpp>
+#include <cheb_utils.hpp>
 
 namespace pvfmm{
 
@@ -43,6 +44,7 @@ Kernel<T>::Kernel(Ker_t poten, Ker_t dbl_poten, const char* name, int dim_, std:
   k_m2t=NULL;
   k_l2l=NULL;
   k_l2t=NULL;
+  vol_poten=NULL;
 
   scale_invar=true;
   src_scal.Resize(ker_dim[0]); src_scal.SetZero();
@@ -581,7 +583,7 @@ void Kernel<T>::Initialize(bool verbose) const{
       std::cout<<Src*Trg;
     }
     if(ker_dim[0]*ker_dim[1]>0){ // Accuracy of multipole expansion
-      std::cout<<"Error          : ";
+      std::cout<<"Multipole Error: ";
       for(T rad=1.0; rad>1.0e-2; rad*=0.5){
         int m=8; // multipole order
 
@@ -612,8 +614,8 @@ void Kernel<T>::Initialize(bool verbose) const{
         size_t n_equiv=equiv_surf.size()/COORD_DIM;
         size_t n_check=equiv_surf.size()/COORD_DIM;
 
-        size_t n_src=m;
-        size_t n_trg=m;
+        size_t n_src=m*m;
+        size_t n_trg=m*m;
         std::vector<T> src_coord;
         std::vector<T> trg_coord;
         for(size_t i=0;i<n_src*COORD_DIM;i++){
@@ -627,9 +629,9 @@ void Kernel<T>::Initialize(bool verbose) const{
             z=(drand48()-0.5);
             r=pvfmm::sqrt<T>(x*x+y*y+z*z);
           }while(r==0.0);
-          trg_coord.push_back(x/r*pvfmm::sqrt<T>((T)COORD_DIM)*rad);
-          trg_coord.push_back(y/r*pvfmm::sqrt<T>((T)COORD_DIM)*rad);
-          trg_coord.push_back(z/r*pvfmm::sqrt<T>((T)COORD_DIM)*rad);
+          trg_coord.push_back(x/r*pvfmm::sqrt<T>((T)COORD_DIM)*rad*(1.0+drand48()));
+          trg_coord.push_back(y/r*pvfmm::sqrt<T>((T)COORD_DIM)*rad*(1.0+drand48()));
+          trg_coord.push_back(z/r*pvfmm::sqrt<T>((T)COORD_DIM)*rad*(1.0+drand48()));
         }
 
         Matrix<T> M_s2c(n_src*ker_dim[0],n_check*ker_dim[1]);
@@ -673,6 +675,199 @@ void Kernel<T>::Initialize(bool verbose) const{
         if(scale_invar) break;
       }
       std::cout<<"\n";
+    }
+    if(ker_dim[0]*ker_dim[1]>0){ // Accuracy of local expansion
+      std::cout<<"Local-exp Error: ";
+      for(T rad=1.0; rad>1.0e-2; rad*=0.5){
+        int m=8; // multipole order
+
+        std::vector<T> equiv_surf;
+        std::vector<T> check_surf;
+        for(int i0=0;i0<m;i0++){
+          for(int i1=0;i1<m;i1++){
+            for(int i2=0;i2<m;i2++){
+              if(i0==  0 || i1==  0 || i2==  0 ||
+                 i0==m-1 || i1==m-1 || i2==m-1){
+
+                // Range: [-1/3,1/3]^3
+                T x=((T)2*i0-(m-1))/(m-1)/3;
+                T y=((T)2*i1-(m-1))/(m-1)/3;
+                T z=((T)2*i2-(m-1))/(m-1)/3;
+
+                equiv_surf.push_back(x*RAD1*rad);
+                equiv_surf.push_back(y*RAD1*rad);
+                equiv_surf.push_back(z*RAD1*rad);
+
+                check_surf.push_back(x*RAD0*rad);
+                check_surf.push_back(y*RAD0*rad);
+                check_surf.push_back(z*RAD0*rad);
+              }
+            }
+          }
+        }
+        size_t n_equiv=equiv_surf.size()/COORD_DIM;
+        size_t n_check=equiv_surf.size()/COORD_DIM;
+
+        size_t n_src=m*m;
+        size_t n_trg=m*m;
+        std::vector<T> src_coord;
+        std::vector<T> trg_coord;
+        for(size_t i=0;i<n_trg*COORD_DIM;i++){
+          trg_coord.push_back((2*drand48()-1)/3*rad);
+        }
+        for(size_t i=0;i<n_src;i++){
+          T x,y,z,r;
+          do{
+            x=(drand48()-0.5);
+            y=(drand48()-0.5);
+            z=(drand48()-0.5);
+            r=pvfmm::sqrt<T>(x*x+y*y+z*z);
+          }while(r==0.0);
+          src_coord.push_back(x/r*pvfmm::sqrt<T>((T)COORD_DIM)*rad*(1.0+drand48()));
+          src_coord.push_back(y/r*pvfmm::sqrt<T>((T)COORD_DIM)*rad*(1.0+drand48()));
+          src_coord.push_back(z/r*pvfmm::sqrt<T>((T)COORD_DIM)*rad*(1.0+drand48()));
+        }
+
+        Matrix<T> M_s2c(n_src*ker_dim[0],n_check*ker_dim[1]);
+        BuildMatrix( &src_coord[0], n_src,
+                    &check_surf[0], n_check, &(M_s2c[0][0]));
+
+        Matrix<T> M_e2c(n_equiv*ker_dim[0],n_check*ker_dim[1]);
+        BuildMatrix(&equiv_surf[0], n_equiv,
+                    &check_surf[0], n_check, &(M_e2c[0][0]));
+        Matrix<T> M_c2e0, M_c2e1;
+        {
+          Matrix<T> U,S,V;
+          M_e2c.SVD(U,S,V);
+          T eps=1, max_S=0;
+          while(eps*(T)0.5+(T)1.0>1.0) eps*=0.5;
+          for(size_t i=0;i<std::min(S.Dim(0),S.Dim(1));i++){
+            if(pvfmm::fabs<T>(S[i][i])>max_S) max_S=pvfmm::fabs<T>(S[i][i]);
+          }
+          for(size_t i=0;i<S.Dim(0);i++) S[i][i]=(S[i][i]>eps*max_S*4?1.0/S[i][i]:0.0);
+          M_c2e0=V.Transpose()*S;
+          M_c2e1=U.Transpose();
+        }
+
+        Matrix<T> M_e2t(n_equiv*ker_dim[0],n_trg*ker_dim[1]);
+        BuildMatrix(&equiv_surf[0], n_equiv,
+                     &trg_coord[0], n_trg  , &(M_e2t[0][0]));
+
+        Matrix<T> M_s2t(n_src*ker_dim[0],n_trg*ker_dim[1]);
+        BuildMatrix( &src_coord[0], n_src,
+                     &trg_coord[0], n_trg  , &(M_s2t[0][0]));
+
+        Matrix<T> M=(M_s2c*M_c2e0)*(M_c2e1*M_e2t)-M_s2t;
+        T max_error=0, max_value=0;
+        for(size_t i=0;i<M.Dim(0);i++)
+        for(size_t j=0;j<M.Dim(1);j++){
+          max_error=std::max<T>(max_error,pvfmm::fabs<T>(M    [i][j]));
+          max_value=std::max<T>(max_value,pvfmm::fabs<T>(M_s2t[i][j]));
+        }
+
+        std::cout<<(double)(max_error/max_value)<<' ';
+        if(scale_invar) break;
+      }
+      std::cout<<"\n";
+    }
+    if(vol_poten && ker_dim[0]*ker_dim[1]>0){ // Check if the volume potential is consistent with integral of kernel.
+      int m=8; // multipole order
+      std::vector<T> equiv_surf;
+      std::vector<T> check_surf;
+      std::vector<T> trg_coord;
+      for(size_t i=0;i<m*COORD_DIM;i++){
+        trg_coord.push_back(drand48()+1.0);
+      }
+      for(int i0=0;i0<m;i0++){
+        for(int i1=0;i1<m;i1++){
+          for(int i2=0;i2<m;i2++){
+            if(i0==  0 || i1==  0 || i2==  0 ||
+               i0==m-1 || i1==m-1 || i2==m-1){
+
+              // Range: [-1/2,1/2]^3
+              T x=((T)2*i0-(m-1))/(m-1)/2;
+              T y=((T)2*i1-(m-1))/(m-1)/2;
+              T z=((T)2*i2-(m-1))/(m-1)/2;
+
+              equiv_surf.push_back(x*RAD1+1.5);
+              equiv_surf.push_back(y*RAD1+1.5);
+              equiv_surf.push_back(z*RAD1+1.5);
+
+              check_surf.push_back(x*RAD0+1.5);
+              check_surf.push_back(y*RAD0+1.5);
+              check_surf.push_back(z*RAD0+1.5);
+            }
+          }
+        }
+      }
+      size_t n_equiv=equiv_surf.size()/COORD_DIM;
+      size_t n_check=equiv_surf.size()/COORD_DIM;
+      size_t n_trg  =trg_coord .size()/COORD_DIM;
+
+      Matrix<T> M_local, M_analytic;
+      Matrix<T> T_local, T_analytic;
+      { // Compute local expansions M_local, T_local
+        Matrix<T> M_near(ker_dim[0],n_check*ker_dim[1]);
+        Matrix<T> T_near(ker_dim[0],n_trg  *ker_dim[1]);
+        #pragma omp parallel for schedule(dynamic)
+        for(size_t i=0;i<n_check;i++){ // Compute near-interaction for operator M_near
+          std::vector<T> M_=cheb_integ<T>(0, &check_surf[i*3], 3.0, *this);
+          for(size_t j=0; j<ker_dim[0]; j++)
+            for(int k=0; k<ker_dim[1]; k++)
+              M_near[j][i*ker_dim[1]+k] = M_[j+k*ker_dim[0]];
+        }
+        #pragma omp parallel for schedule(dynamic)
+        for(size_t i=0;i<n_trg;i++){ // Compute near-interaction for targets T_near
+          std::vector<T> M_=cheb_integ<T>(0, &trg_coord[i*3], 3.0, *this);
+          for(size_t j=0; j<ker_dim[0]; j++)
+            for(int k=0; k<ker_dim[1]; k++)
+              T_near[j][i*ker_dim[1]+k] = M_[j+k*ker_dim[0]];
+        }
+
+        { // M_local = M_analytic - M_near
+          M_analytic.ReInit(ker_dim[0],n_check*ker_dim[1]); M_analytic.SetZero();
+          vol_poten(&check_surf[0],n_check,&M_analytic[0][0]);
+          M_local=M_analytic-M_near;
+        }
+        { // T_local = T_analytic - T_near
+          T_analytic.ReInit(ker_dim[0],n_trg  *ker_dim[1]); T_analytic.SetZero();
+          vol_poten(&trg_coord[0],n_trg,&T_analytic[0][0]);
+          T_local=T_analytic-T_near;
+        }
+      }
+
+      Matrix<T> T_err;
+      { // Now we should be able to compute T_local from M_local
+        Matrix<T> M_e2c(n_equiv*ker_dim[0],n_check*ker_dim[1]);
+        BuildMatrix(&equiv_surf[0], n_equiv,
+                    &check_surf[0], n_check, &(M_e2c[0][0]));
+
+        Matrix<T> M_e2t(n_equiv*ker_dim[0],n_trg  *ker_dim[1]);
+        BuildMatrix(&equiv_surf[0], n_equiv,
+                    &trg_coord [0], n_trg  , &(M_e2t[0][0]));
+
+        Matrix<T> M_c2e0, M_c2e1;
+        {
+          Matrix<T> U,S,V;
+          M_e2c.SVD(U,S,V);
+          T eps=1, max_S=0;
+          while(eps*(T)0.5+(T)1.0>1.0) eps*=0.5;
+          for(size_t i=0;i<std::min(S.Dim(0),S.Dim(1));i++){
+            if(pvfmm::fabs<T>(S[i][i])>max_S) max_S=pvfmm::fabs<T>(S[i][i]);
+          }
+          for(size_t i=0;i<S.Dim(0);i++) S[i][i]=(S[i][i]>eps*max_S*4?1.0/S[i][i]:0.0);
+          M_c2e0=V.Transpose()*S;
+          M_c2e1=U.Transpose();
+        }
+
+        T_err=(M_local*M_c2e0)*(M_c2e1*M_e2t)-T_local;
+      }
+      { // Print relative error
+        T err_sum=0, analytic_sum=0;
+        for(size_t i=0;i<T_err     .Dim(0)*T_err     .Dim(1);i++)      err_sum+=pvfmm::fabs<T>(T_err     [0][i]);
+        for(size_t i=0;i<T_analytic.Dim(0)*T_analytic.Dim(1);i++) analytic_sum+=pvfmm::fabs<T>(T_analytic[0][i]);
+        std::cout<<"Volume Error   : "<<err_sum/analytic_sum<<"\n";
+      }
     }
     std::cout<<"\n";
   }
@@ -849,17 +1044,17 @@ void generic_kernel(Real_t* r_src, int src_cnt, Real_t* v_src, int dof, Real_t* 
  * \brief Green's function for the Poisson's equation. Kernel tensor
  * dimension = 1x1.
  */
-template <class Real_t, class Vec_t=Real_t, Vec_t (*RINV_INTRIN)(Vec_t)=rinv_intrin0<Vec_t> >
+template <class Real_t, class Vec_t=Real_t, Vec_t (*RSQRT_INTRIN)(Vec_t)=rsqrt_intrin0<Vec_t> >
 void laplace_poten_uKernel(Matrix<Real_t>& src_coord, Matrix<Real_t>& src_value, Matrix<Real_t>& trg_coord, Matrix<Real_t>& trg_value){
   #define SRC_BLK 1000
   size_t VecLen=sizeof(Vec_t)/sizeof(Real_t);
 
   //// Number of newton iterations
   size_t NWTN_ITER=0;
-  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin0<Vec_t,Real_t>) NWTN_ITER=0;
-  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin1<Vec_t,Real_t>) NWTN_ITER=1;
-  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin2<Vec_t,Real_t>) NWTN_ITER=2;
-  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin3<Vec_t,Real_t>) NWTN_ITER=3;
+  if(RSQRT_INTRIN==(Vec_t (*)(Vec_t))rsqrt_intrin0<Vec_t,Real_t>) NWTN_ITER=0;
+  if(RSQRT_INTRIN==(Vec_t (*)(Vec_t))rsqrt_intrin1<Vec_t,Real_t>) NWTN_ITER=1;
+  if(RSQRT_INTRIN==(Vec_t (*)(Vec_t))rsqrt_intrin2<Vec_t,Real_t>) NWTN_ITER=2;
+  if(RSQRT_INTRIN==(Vec_t (*)(Vec_t))rsqrt_intrin3<Vec_t,Real_t>) NWTN_ITER=3;
 
   Real_t nwtn_scal=1; // scaling factor for newton iterations
   for(int i=0;i<NWTN_ITER;i++){
@@ -887,7 +1082,7 @@ void laplace_poten_uKernel(Matrix<Real_t>& src_coord, Matrix<Real_t>& src_value,
         r2=add_intrin(r2,mul_intrin(dy,dy));
         r2=add_intrin(r2,mul_intrin(dz,dz));
 
-        Vec_t rinv=RINV_INTRIN(r2);
+        Vec_t rinv=RSQRT_INTRIN(r2);
         tv=add_intrin(tv,mul_intrin(rinv,sv));
       }
       Vec_t oofp=set_intrin<Vec_t,Real_t>(OOFP);
@@ -907,7 +1102,7 @@ void laplace_poten_uKernel(Matrix<Real_t>& src_coord, Matrix<Real_t>& src_value,
 template <class T, int newton_iter=0>
 void laplace_poten(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* v_trg, mem::MemoryManager* mem_mgr){
   #define LAP_KER_NWTN(nwtn) if(newton_iter==nwtn) \
-        generic_kernel<Real_t, 1, 1, laplace_poten_uKernel<Real_t,Vec_t, rinv_intrin##nwtn<Vec_t,Real_t> > > \
+        generic_kernel<Real_t, 1, 1, laplace_poten_uKernel<Real_t,Vec_t, rsqrt_intrin##nwtn<Vec_t,Real_t> > > \
             ((Real_t*)r_src, src_cnt, (Real_t*)v_src, dof, (Real_t*)r_trg, trg_cnt, (Real_t*)v_trg, mem_mgr)
   #define LAPLACE_KERNEL LAP_KER_NWTN(0); LAP_KER_NWTN(1); LAP_KER_NWTN(2); LAP_KER_NWTN(3);
 
@@ -948,19 +1143,28 @@ void laplace_poten(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_c
   #undef LAPLACE_KERNEL
 }
 
+template <class Real_t>
+void laplace_vol_poten(const Real_t* coord, int n, Real_t* out){
+  for(int i=0;i<n;i++){
+    const Real_t* c=&coord[i*COORD_DIM];
+    Real_t r_2=c[0]*c[0]+c[1]*c[1]+c[2]*c[2];
+    out[i]=-r_2/6;
+  }
+}
+
 
 // Laplace double layer potential.
-template <class Real_t, class Vec_t=Real_t, Vec_t (*RINV_INTRIN)(Vec_t)=rinv_intrin0<Vec_t> >
+template <class Real_t, class Vec_t=Real_t, Vec_t (*RSQRT_INTRIN)(Vec_t)=rsqrt_intrin0<Vec_t> >
 void laplace_dbl_uKernel(Matrix<Real_t>& src_coord, Matrix<Real_t>& src_value, Matrix<Real_t>& trg_coord, Matrix<Real_t>& trg_value){
   #define SRC_BLK 500
   size_t VecLen=sizeof(Vec_t)/sizeof(Real_t);
 
   //// Number of newton iterations
   size_t NWTN_ITER=0;
-  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin0<Vec_t,Real_t>) NWTN_ITER=0;
-  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin1<Vec_t,Real_t>) NWTN_ITER=1;
-  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin2<Vec_t,Real_t>) NWTN_ITER=2;
-  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin3<Vec_t,Real_t>) NWTN_ITER=3;
+  if(RSQRT_INTRIN==(Vec_t (*)(Vec_t))rsqrt_intrin0<Vec_t,Real_t>) NWTN_ITER=0;
+  if(RSQRT_INTRIN==(Vec_t (*)(Vec_t))rsqrt_intrin1<Vec_t,Real_t>) NWTN_ITER=1;
+  if(RSQRT_INTRIN==(Vec_t (*)(Vec_t))rsqrt_intrin2<Vec_t,Real_t>) NWTN_ITER=2;
+  if(RSQRT_INTRIN==(Vec_t (*)(Vec_t))rsqrt_intrin3<Vec_t,Real_t>) NWTN_ITER=3;
 
   Real_t nwtn_scal=1; // scaling factor for newton iterations
   for(int i=0;i<NWTN_ITER;i++){
@@ -991,7 +1195,7 @@ void laplace_dbl_uKernel(Matrix<Real_t>& src_coord, Matrix<Real_t>& src_value, M
         r2=add_intrin(r2,mul_intrin(dy,dy));
         r2=add_intrin(r2,mul_intrin(dz,dz));
 
-        Vec_t rinv=RINV_INTRIN(r2);
+        Vec_t rinv=RSQRT_INTRIN(r2);
         Vec_t r3inv=mul_intrin(mul_intrin(rinv,rinv),rinv);
 
         Vec_t rdotn=            mul_intrin(sn0,dx);
@@ -1018,7 +1222,7 @@ void laplace_dbl_uKernel(Matrix<Real_t>& src_coord, Matrix<Real_t>& src_value, M
 template <class T, int newton_iter=0>
 void laplace_dbl_poten(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* v_trg, mem::MemoryManager* mem_mgr){
   #define LAP_KER_NWTN(nwtn) if(newton_iter==nwtn) \
-        generic_kernel<Real_t, 4, 1, laplace_dbl_uKernel<Real_t,Vec_t, rinv_intrin##nwtn<Vec_t,Real_t> > > \
+        generic_kernel<Real_t, 4, 1, laplace_dbl_uKernel<Real_t,Vec_t, rsqrt_intrin##nwtn<Vec_t,Real_t> > > \
             ((Real_t*)r_src, src_cnt, (Real_t*)v_src, dof, (Real_t*)r_trg, trg_cnt, (Real_t*)v_trg, mem_mgr)
   #define LAPLACE_KERNEL LAP_KER_NWTN(0); LAP_KER_NWTN(1); LAP_KER_NWTN(2); LAP_KER_NWTN(3);
 
@@ -1061,17 +1265,17 @@ void laplace_dbl_poten(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int t
 
 
 // Laplace grdient kernel.
-template <class Real_t, class Vec_t=Real_t, Vec_t (*RINV_INTRIN)(Vec_t)=rinv_intrin0<Vec_t> >
+template <class Real_t, class Vec_t=Real_t, Vec_t (*RSQRT_INTRIN)(Vec_t)=rsqrt_intrin0<Vec_t> >
 void laplace_grad_uKernel(Matrix<Real_t>& src_coord, Matrix<Real_t>& src_value, Matrix<Real_t>& trg_coord, Matrix<Real_t>& trg_value){
   #define SRC_BLK 500
   size_t VecLen=sizeof(Vec_t)/sizeof(Real_t);
 
   //// Number of newton iterations
   size_t NWTN_ITER=0;
-  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin0<Vec_t,Real_t>) NWTN_ITER=0;
-  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin1<Vec_t,Real_t>) NWTN_ITER=1;
-  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin2<Vec_t,Real_t>) NWTN_ITER=2;
-  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin3<Vec_t,Real_t>) NWTN_ITER=3;
+  if(RSQRT_INTRIN==(Vec_t (*)(Vec_t))rsqrt_intrin0<Vec_t,Real_t>) NWTN_ITER=0;
+  if(RSQRT_INTRIN==(Vec_t (*)(Vec_t))rsqrt_intrin1<Vec_t,Real_t>) NWTN_ITER=1;
+  if(RSQRT_INTRIN==(Vec_t (*)(Vec_t))rsqrt_intrin2<Vec_t,Real_t>) NWTN_ITER=2;
+  if(RSQRT_INTRIN==(Vec_t (*)(Vec_t))rsqrt_intrin3<Vec_t,Real_t>) NWTN_ITER=3;
 
   Real_t nwtn_scal=1; // scaling factor for newton iterations
   for(int i=0;i<NWTN_ITER;i++){
@@ -1101,7 +1305,7 @@ void laplace_grad_uKernel(Matrix<Real_t>& src_coord, Matrix<Real_t>& src_value, 
         r2=add_intrin(r2,mul_intrin(dy,dy));
         r2=add_intrin(r2,mul_intrin(dz,dz));
 
-        Vec_t rinv=RINV_INTRIN(r2);
+        Vec_t rinv=RSQRT_INTRIN(r2);
         Vec_t r3inv=mul_intrin(mul_intrin(rinv,rinv),rinv);
 
         sv=mul_intrin(sv,r3inv);
@@ -1130,7 +1334,7 @@ void laplace_grad_uKernel(Matrix<Real_t>& src_coord, Matrix<Real_t>& src_value, 
 template <class T, int newton_iter=0>
 void laplace_grad(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* v_trg, mem::MemoryManager* mem_mgr){
   #define LAP_KER_NWTN(nwtn) if(newton_iter==nwtn) \
-        generic_kernel<Real_t, 1, 3, laplace_grad_uKernel<Real_t,Vec_t, rinv_intrin##nwtn<Vec_t,Real_t> > > \
+        generic_kernel<Real_t, 1, 3, laplace_grad_uKernel<Real_t,Vec_t, rsqrt_intrin##nwtn<Vec_t,Real_t> > > \
             ((Real_t*)r_src, src_cnt, (Real_t*)v_src, dof, (Real_t*)r_trg, trg_cnt, (Real_t*)v_trg, mem_mgr)
   #define LAPLACE_KERNEL LAP_KER_NWTN(0); LAP_KER_NWTN(1); LAP_KER_NWTN(2); LAP_KER_NWTN(3);
 
@@ -1173,7 +1377,8 @@ void laplace_grad(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cn
 
 
 template<class T> const Kernel<T>& LaplaceKernel<T>::potential(){
-  static Kernel<T> potn_ker=BuildKernel<T, laplace_poten<T,1>, laplace_dbl_poten<T,1> >("laplace"     , 3, std::pair<int,int>(1,1));
+  static Kernel<T> potn_ker=BuildKernel<T, laplace_poten<T,1>, laplace_dbl_poten<T,1> >("laplace"     , 3, std::pair<int,int>(1,1),
+      NULL,NULL,NULL, NULL,NULL,NULL, NULL,NULL, &laplace_vol_poten<T>);
   return potn_ker;
 }
 template<class T> const Kernel<T>& LaplaceKernel<T>::gradient(){
@@ -1185,7 +1390,8 @@ template<class T> const Kernel<T>& LaplaceKernel<T>::gradient(){
 
 template<> inline const Kernel<double>& LaplaceKernel<double>::potential(){
   typedef double T;
-  static Kernel<T> potn_ker=BuildKernel<T, laplace_poten<T,2>, laplace_dbl_poten<T,2> >("laplace"     , 3, std::pair<int,int>(1,1));
+  static Kernel<T> potn_ker=BuildKernel<T, laplace_poten<T,2>, laplace_dbl_poten<T,2> >("laplace"     , 3, std::pair<int,int>(1,1),
+      NULL,NULL,NULL, NULL,NULL,NULL, NULL,NULL, &laplace_vol_poten<double>);
   return potn_ker;
 }
 template<> inline const Kernel<double>& LaplaceKernel<double>::gradient(){
@@ -1205,17 +1411,17 @@ template<> inline const Kernel<double>& LaplaceKernel<double>::gradient(){
  * \brief Green's function for the Stokes's equation. Kernel tensor
  * dimension = 3x3.
  */
-template <class Real_t, class Vec_t=Real_t, Vec_t (*RINV_INTRIN)(Vec_t)=rinv_intrin0<Vec_t> >
+template <class Real_t, class Vec_t=Real_t, Vec_t (*RSQRT_INTRIN)(Vec_t)=rsqrt_intrin0<Vec_t> >
 void stokes_vel_uKernel(Matrix<Real_t>& src_coord, Matrix<Real_t>& src_value, Matrix<Real_t>& trg_coord, Matrix<Real_t>& trg_value){
   #define SRC_BLK 500
   size_t VecLen=sizeof(Vec_t)/sizeof(Real_t);
 
   //// Number of newton iterations
   size_t NWTN_ITER=0;
-  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin0<Vec_t,Real_t>) NWTN_ITER=0;
-  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin1<Vec_t,Real_t>) NWTN_ITER=1;
-  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin2<Vec_t,Real_t>) NWTN_ITER=2;
-  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin3<Vec_t,Real_t>) NWTN_ITER=3;
+  if(RSQRT_INTRIN==(Vec_t (*)(Vec_t))rsqrt_intrin0<Vec_t,Real_t>) NWTN_ITER=0;
+  if(RSQRT_INTRIN==(Vec_t (*)(Vec_t))rsqrt_intrin1<Vec_t,Real_t>) NWTN_ITER=1;
+  if(RSQRT_INTRIN==(Vec_t (*)(Vec_t))rsqrt_intrin2<Vec_t,Real_t>) NWTN_ITER=2;
+  if(RSQRT_INTRIN==(Vec_t (*)(Vec_t))rsqrt_intrin3<Vec_t,Real_t>) NWTN_ITER=3;
 
   Real_t nwtn_scal=1; // scaling factor for newton iterations
   for(int i=0;i<NWTN_ITER;i++){
@@ -1250,7 +1456,7 @@ void stokes_vel_uKernel(Matrix<Real_t>& src_coord, Matrix<Real_t>& src_value, Ma
         r2=add_intrin(r2,mul_intrin(dy,dy));
         r2=add_intrin(r2,mul_intrin(dz,dz));
 
-        Vec_t rinv=RINV_INTRIN(r2);
+        Vec_t rinv=RSQRT_INTRIN(r2);
         Vec_t rinv2=mul_intrin(mul_intrin(rinv,rinv),inv_nwrn_scal2);
 
         Vec_t inner_prod=                mul_intrin(svx,dx) ;
@@ -1285,7 +1491,7 @@ void stokes_vel_uKernel(Matrix<Real_t>& src_coord, Matrix<Real_t>& src_value, Ma
 template <class T, int newton_iter=0>
 void stokes_vel(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* v_trg, mem::MemoryManager* mem_mgr){
   #define STK_KER_NWTN(nwtn) if(newton_iter==nwtn) \
-        generic_kernel<Real_t, 3, 3, stokes_vel_uKernel<Real_t,Vec_t, rinv_intrin##nwtn<Vec_t,Real_t> > > \
+        generic_kernel<Real_t, 3, 3, stokes_vel_uKernel<Real_t,Vec_t, rsqrt_intrin##nwtn<Vec_t,Real_t> > > \
             ((Real_t*)r_src, src_cnt, (Real_t*)v_src, dof, (Real_t*)r_trg, trg_cnt, (Real_t*)v_trg, mem_mgr)
   #define STOKES_KERNEL STK_KER_NWTN(0); STK_KER_NWTN(1); STK_KER_NWTN(2); STK_KER_NWTN(3);
 
@@ -1324,6 +1530,19 @@ void stokes_vel(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt,
 
   #undef STK_KER_NWTN
   #undef STOKES_KERNEL
+}
+
+template <class Real_t>
+void stokes_vol_poten(const Real_t* coord, int n, Real_t* out){
+  for(int i=0;i<n;i++){
+    const Real_t* c=&coord[i*COORD_DIM];
+    Real_t rx_2=c[1]*c[1]+c[2]*c[2];
+    Real_t ry_2=c[0]*c[0]+c[2]*c[2];
+    Real_t rz_2=c[0]*c[0]+c[1]*c[1];
+    out[n*3*0+i*3+0]=-rx_2/6; out[n*3*0+i*3+1]=      0; out[n*3*0+i*3+2]=      0;
+    out[n*3*1+i*3+0]=      0; out[n*3*1+i*3+1]=-ry_2/6; out[n*3*1+i*3+2]=      0;
+    out[n*3*2+i*3+0]=      0; out[n*3*2+i*3+1]=      0; out[n*3*2+i*3+2]=-rz_2/6;
+  }
 }
 
 
@@ -2127,7 +2346,8 @@ inline void stokes_grad<double>(double* r_src, int src_cnt, double* v_src_, int 
 #endif
 
 template<class T> const Kernel<T>& StokesKernel<T>::velocity(){
-  static Kernel<T> ker=BuildKernel<T, stokes_vel<T,1>, stokes_sym_dip>("stokes_vel"   , 3, std::pair<int,int>(3,3));
+  static Kernel<T> ker=BuildKernel<T, stokes_vel<T,1>, stokes_sym_dip>("stokes_vel"   , 3, std::pair<int,int>(3,3),
+      NULL,NULL,NULL, NULL,NULL,NULL, NULL,NULL, &stokes_vol_poten<T>);
   return ker;
 }
 template<class T> const Kernel<T>& StokesKernel<T>::pressure(){
@@ -2145,7 +2365,8 @@ template<class T> const Kernel<T>& StokesKernel<T>::vel_grad(){
 
 template<> inline const Kernel<double>& StokesKernel<double>::velocity(){
   typedef double T;
-  static Kernel<T> ker=BuildKernel<T, stokes_vel<T,2>, stokes_sym_dip>("stokes_vel"   , 3, std::pair<int,int>(3,3));
+  static Kernel<T> ker=BuildKernel<T, stokes_vel<T,2>, stokes_sym_dip>("stokes_vel"   , 3, std::pair<int,int>(3,3),
+      NULL,NULL,NULL, NULL,NULL,NULL, NULL,NULL, &stokes_vol_poten<double>);
   return ker;
 }
 
@@ -2154,17 +2375,17 @@ template<> inline const Kernel<double>& StokesKernel<double>::velocity(){
 ////////                  BIOT-SAVART KERNEL                            ////////
 ////////////////////////////////////////////////////////////////////////////////
 
-template <class Real_t, class Vec_t=Real_t, Vec_t (*RINV_INTRIN)(Vec_t)=rinv_intrin0<Vec_t> >
+template <class Real_t, class Vec_t=Real_t, Vec_t (*RSQRT_INTRIN)(Vec_t)=rsqrt_intrin0<Vec_t> >
 void biot_savart_uKernel(Matrix<Real_t>& src_coord, Matrix<Real_t>& src_value, Matrix<Real_t>& trg_coord, Matrix<Real_t>& trg_value){
   #define SRC_BLK 500
   size_t VecLen=sizeof(Vec_t)/sizeof(Real_t);
 
   //// Number of newton iterations
   size_t NWTN_ITER=0;
-  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin0<Vec_t,Real_t>) NWTN_ITER=0;
-  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin1<Vec_t,Real_t>) NWTN_ITER=1;
-  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin2<Vec_t,Real_t>) NWTN_ITER=2;
-  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin3<Vec_t,Real_t>) NWTN_ITER=3;
+  if(RSQRT_INTRIN==(Vec_t (*)(Vec_t))rsqrt_intrin0<Vec_t,Real_t>) NWTN_ITER=0;
+  if(RSQRT_INTRIN==(Vec_t (*)(Vec_t))rsqrt_intrin1<Vec_t,Real_t>) NWTN_ITER=1;
+  if(RSQRT_INTRIN==(Vec_t (*)(Vec_t))rsqrt_intrin2<Vec_t,Real_t>) NWTN_ITER=2;
+  if(RSQRT_INTRIN==(Vec_t (*)(Vec_t))rsqrt_intrin3<Vec_t,Real_t>) NWTN_ITER=3;
 
   Real_t nwtn_scal=1; // scaling factor for newton iterations
   for(int i=0;i<NWTN_ITER;i++){
@@ -2198,7 +2419,7 @@ void biot_savart_uKernel(Matrix<Real_t>& src_coord, Matrix<Real_t>& src_value, M
         r2=add_intrin(r2,mul_intrin(dy,dy));
         r2=add_intrin(r2,mul_intrin(dz,dz));
 
-        Vec_t rinv=RINV_INTRIN(r2);
+        Vec_t rinv=RSQRT_INTRIN(r2);
         Vec_t rinv3=mul_intrin(mul_intrin(rinv,rinv),rinv);
 
         tvx=sub_intrin(tvx,mul_intrin(rinv3,sub_intrin(mul_intrin(svy,dz),mul_intrin(svz,dy))));
@@ -2228,7 +2449,7 @@ void biot_savart_uKernel(Matrix<Real_t>& src_coord, Matrix<Real_t>& src_value, M
 template <class T, int newton_iter=0>
 void biot_savart(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* v_trg, mem::MemoryManager* mem_mgr){
   #define BS_KER_NWTN(nwtn) if(newton_iter==nwtn) \
-        generic_kernel<Real_t, 3, 3, biot_savart_uKernel<Real_t,Vec_t, rinv_intrin##nwtn<Vec_t,Real_t> > > \
+        generic_kernel<Real_t, 3, 3, biot_savart_uKernel<Real_t,Vec_t, rsqrt_intrin##nwtn<Vec_t,Real_t> > > \
             ((Real_t*)r_src, src_cnt, (Real_t*)v_src, dof, (Real_t*)r_trg, trg_cnt, (Real_t*)v_trg, mem_mgr)
   #define BIOTSAVART_KERNEL BS_KER_NWTN(0); BS_KER_NWTN(1); BS_KER_NWTN(2); BS_KER_NWTN(3);
 
@@ -2288,7 +2509,7 @@ template<> inline const Kernel<double>& BiotSavartKernel<double>::potential(){
  * \brief Green's function for the Helmholtz's equation. Kernel tensor
  * dimension = 2x2.
  */
-template <class Real_t, class Vec_t=Real_t, Vec_t (*RINV_INTRIN)(Vec_t)=rinv_intrin0<Vec_t> >
+template <class Real_t, class Vec_t=Real_t, Vec_t (*RSQRT_INTRIN)(Vec_t)=rsqrt_intrin0<Vec_t> >
 void helmholtz_poten_uKernel(Matrix<Real_t>& src_coord, Matrix<Real_t>& src_value, Matrix<Real_t>& trg_coord, Matrix<Real_t>& trg_value){
 
   #define SRC_BLK 500
@@ -2296,10 +2517,10 @@ void helmholtz_poten_uKernel(Matrix<Real_t>& src_coord, Matrix<Real_t>& src_valu
 
   //// Number of newton iterations
   size_t NWTN_ITER=0;
-  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin0<Vec_t,Real_t>) NWTN_ITER=0;
-  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin1<Vec_t,Real_t>) NWTN_ITER=1;
-  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin2<Vec_t,Real_t>) NWTN_ITER=2;
-  if(RINV_INTRIN==(Vec_t (*)(Vec_t))rinv_intrin3<Vec_t,Real_t>) NWTN_ITER=3;
+  if(RSQRT_INTRIN==(Vec_t (*)(Vec_t))rsqrt_intrin0<Vec_t,Real_t>) NWTN_ITER=0;
+  if(RSQRT_INTRIN==(Vec_t (*)(Vec_t))rsqrt_intrin1<Vec_t,Real_t>) NWTN_ITER=1;
+  if(RSQRT_INTRIN==(Vec_t (*)(Vec_t))rsqrt_intrin2<Vec_t,Real_t>) NWTN_ITER=2;
+  if(RSQRT_INTRIN==(Vec_t (*)(Vec_t))rsqrt_intrin3<Vec_t,Real_t>) NWTN_ITER=3;
 
   Real_t nwtn_scal=1; // scaling factor for newton iterations
   for(int i=0;i<NWTN_ITER;i++){
@@ -2331,7 +2552,7 @@ void helmholtz_poten_uKernel(Matrix<Real_t>& src_coord, Matrix<Real_t>& src_valu
         Vec_t r2=        mul_intrin(dx,dx) ;
         r2=add_intrin(r2,mul_intrin(dy,dy));
         r2=add_intrin(r2,mul_intrin(dz,dz));
-        Vec_t rinv=RINV_INTRIN(r2);
+        Vec_t rinv=RSQRT_INTRIN(r2);
 
         Vec_t mu_r=mul_intrin(mu,mul_intrin(r2,rinv));
         Vec_t G0=mul_intrin(cos_intrin(mu_r),rinv);
@@ -2361,7 +2582,7 @@ void helmholtz_poten_uKernel(Matrix<Real_t>& src_coord, Matrix<Real_t>& src_valu
 template <class T, int newton_iter=0>
 void helmholtz_poten(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* v_trg, mem::MemoryManager* mem_mgr){
   #define HELM_KER_NWTN(nwtn) if(newton_iter==nwtn) \
-        generic_kernel<Real_t, 2, 2, helmholtz_poten_uKernel<Real_t,Vec_t, rinv_intrin##nwtn<Vec_t,Real_t> > > \
+        generic_kernel<Real_t, 2, 2, helmholtz_poten_uKernel<Real_t,Vec_t, rsqrt_intrin##nwtn<Vec_t,Real_t> > > \
             ((Real_t*)r_src, src_cnt, (Real_t*)v_src, dof, (Real_t*)r_trg, trg_cnt, (Real_t*)v_trg, mem_mgr)
   #define HELMHOLTZ_KERNEL HELM_KER_NWTN(0); HELM_KER_NWTN(1); HELM_KER_NWTN(2); HELM_KER_NWTN(3);
 

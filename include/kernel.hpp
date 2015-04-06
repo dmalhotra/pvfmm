@@ -36,6 +36,15 @@ struct Kernel{
                         T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr);
 
   /**
+   * \brief Volume potential solution for a constant density f
+   * \param[in] coord Coordinates of target points.
+   * \param[in] n Number of target points.
+   * \param[out] out Elements of a matrix M of size (ker_dim0 x n*ker_dim1),
+   * such that fxM gives the target potential.
+   */
+  typedef void (*VolPoten)(const T* coord, int n, T* out);
+
+  /**
    * \brief Constructor.
    */
   Kernel(Ker_t poten, Ker_t dbl_poten, const char* name, int dim_, std::pair<int,int> k_dim,
@@ -83,6 +92,7 @@ struct Kernel{
   mutable const Kernel<T>* k_m2t;
   mutable const Kernel<T>* k_l2l;
   mutable const Kernel<T>* k_l2t;
+  mutable VolPoten vol_poten;
 
   private:
 
@@ -95,7 +105,7 @@ template<typename T, void (*A)(T*, int, T*, int, T*, int, T*, mem::MemoryManager
 Kernel<T> BuildKernel(const char* name, int dim, std::pair<int,int> k_dim,
     const Kernel<T>* k_s2m=NULL, const Kernel<T>* k_s2l=NULL, const Kernel<T>* k_s2t=NULL,
     const Kernel<T>* k_m2m=NULL, const Kernel<T>* k_m2l=NULL, const Kernel<T>* k_m2t=NULL,
-    const Kernel<T>* k_l2l=NULL, const Kernel<T>* k_l2t=NULL){
+    const Kernel<T>* k_l2l=NULL, const Kernel<T>* k_l2t=NULL, typename Kernel<T>::VolPoten vol_poten=NULL){
   size_t dev_ker_poten      ;
   size_t dev_dbl_layer_poten;
   #ifdef __INTEL_OFFLOAD
@@ -117,6 +127,7 @@ Kernel<T> BuildKernel(const char* name, int dim, std::pair<int,int> k_dim,
   K.k_m2t=k_m2t;
   K.k_l2l=k_l2l;
   K.k_l2t=k_l2t;
+  K.vol_poten=vol_poten;
 
   return K;
 }
@@ -125,7 +136,7 @@ template<typename T, void (*A)(T*, int, T*, int, T*, int, T*, mem::MemoryManager
 Kernel<T> BuildKernel(const char* name, int dim, std::pair<int,int> k_dim,
     const Kernel<T>* k_s2m=NULL, const Kernel<T>* k_s2l=NULL, const Kernel<T>* k_s2t=NULL,
     const Kernel<T>* k_m2m=NULL, const Kernel<T>* k_m2l=NULL, const Kernel<T>* k_m2t=NULL,
-    const Kernel<T>* k_l2l=NULL, const Kernel<T>* k_l2t=NULL){
+    const Kernel<T>* k_l2l=NULL, const Kernel<T>* k_l2t=NULL, typename Kernel<T>::VolPoten vol_poten=NULL){
   size_t dev_ker_poten      ;
   #ifdef __INTEL_OFFLOAD
   #pragma offload target(mic:0)
@@ -145,6 +156,7 @@ Kernel<T> BuildKernel(const char* name, int dim, std::pair<int,int> k_dim,
   K.k_m2t=k_m2t;
   K.k_l2l=k_l2l;
   K.k_l2t=k_l2t;
+  K.vol_poten=vol_poten;
 
   return K;
 }

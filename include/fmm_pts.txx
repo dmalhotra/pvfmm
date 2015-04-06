@@ -34,6 +34,7 @@
 #endif
 
 #include <profile.hpp>
+#include <cheb_utils.hpp>
 
 namespace pvfmm{
 
@@ -781,23 +782,54 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
       if(!this->ScaleInvar() || MultipoleOrder()==0) break;
       if(kernel->k_m2l->ker_dim[0]!=kernel->k_m2m->ker_dim[0]) break;
       if(kernel->k_m2l->ker_dim[1]!=kernel->k_l2l->ker_dim[1]) break;
-      const int* ker_dim=kernel->k_m2l->ker_dim;
+      int ker_dim[2]={kernel->k_m2l->ker_dim[0],kernel->k_m2l->ker_dim[1]};
       size_t mat_cnt_m2m=interac_list.ListCount(U2U_Type);
       size_t n_surf=(6*(MultipoleOrder()-1)*(MultipoleOrder()-1)+2);  //Total number of points.
+
       if((M.Dim(0)!=n_surf*ker_dim[0] || M.Dim(1)!=n_surf*ker_dim[1]) && level==0){
         Matrix<Real_t> M_m2m[BC_LEVELS+1];
         Matrix<Real_t> M_m2l[BC_LEVELS+1];
         Matrix<Real_t> M_l2l[BC_LEVELS+1];
         Matrix<Real_t> M_equiv_zero_avg(n_surf*ker_dim[0],n_surf*ker_dim[0]);
         Matrix<Real_t> M_check_zero_avg(n_surf*ker_dim[1],n_surf*ker_dim[1]);
-        { // Set average multipole charge to zero. (improves stability for large BC_LEVELS)
+        { // Set average multipole charge to zero (projection for non-zero total source density)
+          Matrix<Real_t> M_s2c;
+          { // Compute M_s2c
+            int ker_dim[2]={kernel->k_m2m->ker_dim[0],kernel->k_m2m->ker_dim[1]};
+            M_s2c.ReInit(ker_dim[0],n_surf*ker_dim[1]);
+            std::vector<Real_t> uc_coord;
+            { // Coord of upward check surface
+              Real_t c[3]={0,0,0};
+              uc_coord=u_check_surf(MultipoleOrder(),c,0);
+            }
+            #pragma omp parallel for schedule(dynamic)
+            for(size_t i=0;i<n_surf;i++){
+              std::vector<Real_t> M_=cheb_integ<Real_t>(0, &uc_coord[i*3], 1.0, *kernel->k_m2m);
+              for(size_t j=0; j<ker_dim[0]; j++)
+                for(int k=0; k<ker_dim[1]; k++)
+                  M_s2c[j][i*ker_dim[1]+k] = M_[j+k*ker_dim[0]];
+            }
+          }
+
+          Matrix<Real_t>& M_c2e0 = Precomp(level, UC2UE0_Type, 0);
+          Matrix<Real_t>& M_c2e1 = Precomp(level, UC2UE1_Type, 0);
+          Matrix<Real_t> M_s2e=(M_s2c*M_c2e0)*M_c2e1;
+          for(size_t i=0;i<M_s2e.Dim(0);i++){ // Normalize each row to 1
+            Real_t s=0;
+            for(size_t j=0;j<M_s2e.Dim(1);j++) s+=M_s2e[i][j];
+            s=1.0/s;
+            for(size_t j=0;j<M_s2e.Dim(1);j++) M_s2e[i][j]*=s;
+          }
+
+          assert(M_equiv_zero_avg.Dim(0)==M_s2e.Dim(1));
+          assert(M_equiv_zero_avg.Dim(1)==M_s2e.Dim(1));
           M_equiv_zero_avg.SetZero();
           for(size_t i=0;i<n_surf*ker_dim[0];i++)
-            M_equiv_zero_avg[i][i]+=1;
+            M_equiv_zero_avg[i][i]=1;
           for(size_t i=0;i<n_surf;i++)
-            for(size_t j=0;j<n_surf;j++)
-              for(size_t k=0;k<ker_dim[0];k++)
-                M_equiv_zero_avg[i*ker_dim[0]+k][j*ker_dim[0]+k]-=1.0/n_surf;
+            for(size_t k=0;k<ker_dim[0];k++)
+              for(size_t j=0;j<n_surf*ker_dim[0];j++)
+                M_equiv_zero_avg[i*ker_dim[0]+k][j]-=M_s2e[k][j];
         }
         { // Set average check potential to zero. (improves stability for large BC_LEVELS)
           M_check_zero_avg.SetZero();
@@ -871,12 +903,50 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
           if(level==-BC_LEVELS) M = M_m2l[-level];
           else                  M = M_equiv_zero_avg * (M_m2l[-level] + M_m2m[-level]*M*M_l2l[-level]) * M_check_zero_avg;
         }
-        { // ax+by+cz+d correction.
+        if(kernel->k_m2l->vol_poten){ // Correction for far-field of analytical volume potential
+          Matrix<Real_t> M_far;
+          { // Compute M_far
+            // kernel->k_m2l->vol_poten  is the analtical particular solution for uniform source density=1
+            // We already corrected far-field above with M_equiv_zero_avg, so we don't need the far field of the analytical solutions.
+            // We take the analytical solution and subtract the near interaction (3x3x3 boxes) from it to get the far-field
+            // Then, we add the far-field correction for the analytical solution to be subtracted later.
+
+            std::vector<Real_t> dc_coord;
+            { // Coord of upward check surface
+              Real_t c[3]={1.0,1.0,1.0};
+              dc_coord=d_check_surf(MultipoleOrder(),c,0);
+            }
+            Matrix<Real_t> M_near(ker_dim[0],n_surf*ker_dim[1]);
+            #pragma omp parallel for schedule(dynamic)
+            for(size_t i=0;i<n_surf;i++){ // Compute near-interaction part
+              std::vector<Real_t> M_=cheb_integ<Real_t>(0, &dc_coord[i*3], 3.0, *kernel->k_m2l);
+              for(size_t j=0; j<ker_dim[0]; j++)
+                for(int k=0; k<ker_dim[1]; k++)
+                  M_near[j][i*ker_dim[1]+k] = M_[j+k*ker_dim[0]];
+            }
+            { // M_far = M_analytic - M_near
+              Matrix<Real_t> M_analytic(ker_dim[0],n_surf*ker_dim[1]); M_analytic.SetZero();
+              kernel->k_m2l->vol_poten(&dc_coord[0],n_surf,&M_analytic[0][0]);
+              M_far=M_analytic-M_near;
+            }
+          }
+          { // Add far-field corection to M
+            for(size_t i=0;i<n_surf;i++)
+              for(size_t k=0;k<ker_dim[0];k++)
+                for(size_t j=0;j<n_surf*ker_dim[1];j++)
+                  M[i*ker_dim[0]+k][j]+=M_far[k][j];
+          }
+        }
+        { // a + bx + cy + dz + exy + fxz + gyz  correction.
           std::vector<Real_t> corner_pts;
           corner_pts.push_back(0); corner_pts.push_back(0); corner_pts.push_back(0);
           corner_pts.push_back(1); corner_pts.push_back(0); corner_pts.push_back(0);
           corner_pts.push_back(0); corner_pts.push_back(1); corner_pts.push_back(0);
           corner_pts.push_back(0); corner_pts.push_back(0); corner_pts.push_back(1);
+          corner_pts.push_back(0); corner_pts.push_back(1); corner_pts.push_back(1);
+          corner_pts.push_back(1); corner_pts.push_back(0); corner_pts.push_back(1);
+          corner_pts.push_back(1); corner_pts.push_back(1); corner_pts.push_back(0);
+          corner_pts.push_back(1); corner_pts.push_back(1); corner_pts.push_back(1);
           size_t n_corner=corner_pts.size()/COORD_DIM;
 
           // Coord of downward equivalent surface
@@ -895,7 +965,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
               Matrix<Real_t>& M_dc2de1 = Precomp(0, DC2DE1_Type, 0);
               M_err=(M*M_dc2de0)*(M_dc2de1*M_e2pt);
             }
-            for(size_t k=0;k<4;k++){ // Error from colleagues of root.
+            for(size_t k=0;k<n_corner;k++){ // Error from colleagues of root.
               for(int j0=-1;j0<=1;j0++)
               for(int j1=-1;j1<=1;j1++)
               for(int j2=-1;j2<=1;j2++){
@@ -912,16 +982,29 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
                 }
               }
             }
+            if(kernel->k_m2l->vol_poten){ // Error from analytical volume potential
+              Matrix<Real_t> M_analytic(ker_dim[0],n_corner*ker_dim[1]); M_analytic.SetZero();
+              kernel->k_m2l->vol_poten(&corner_pts[0],n_corner,&M_analytic[0][0]);
+              for(size_t j=0;j<n_surf;j++)
+              for(size_t k=0;k<ker_dim[0];k++)
+              for(size_t i=0;i<M_err.Dim(1);i++){
+                M_err[j*ker_dim[0]+k][i]-=M_analytic[k][i];
+              }
+            }
           }
 
           Matrix<Real_t> M_grad(M_err.Dim(0),n_surf*ker_dim[1]);
           for(size_t i=0;i<M_err.Dim(0);i++)
           for(size_t k=0;k<ker_dim[1];k++)
           for(size_t j=0;j<n_surf;j++){
-            M_grad[i][j*ker_dim[1]+k]=(M_err[i][0*ker_dim[1]+k]                         )*1.0                         +
-                                      (M_err[i][1*ker_dim[1]+k]-M_err[i][0*ker_dim[1]+k])*dn_check_surf[j*COORD_DIM+0]+
-                                      (M_err[i][2*ker_dim[1]+k]-M_err[i][0*ker_dim[1]+k])*dn_check_surf[j*COORD_DIM+1]+
-                                      (M_err[i][3*ker_dim[1]+k]-M_err[i][0*ker_dim[1]+k])*dn_check_surf[j*COORD_DIM+2];
+            M_grad[i][j*ker_dim[1]+k]=  M_err[i][0*ker_dim[1]+k]
+                                      +(M_err[i][1*ker_dim[1]+k]-M_err[i][0*ker_dim[1]+k])*dn_check_surf[j*COORD_DIM+0]
+                                      +(M_err[i][2*ker_dim[1]+k]-M_err[i][0*ker_dim[1]+k])*dn_check_surf[j*COORD_DIM+1]
+                                      +(M_err[i][3*ker_dim[1]+k]-M_err[i][0*ker_dim[1]+k])*dn_check_surf[j*COORD_DIM+2]
+                                      +(M_err[i][4*ker_dim[1]+k]+M_err[i][0*ker_dim[1]+k]-M_err[i][2*ker_dim[1]+k]-M_err[i][3*ker_dim[1]+k])*dn_check_surf[j*COORD_DIM+1]*dn_check_surf[j*COORD_DIM+2]
+                                      +(M_err[i][5*ker_dim[1]+k]+M_err[i][0*ker_dim[1]+k]-M_err[i][1*ker_dim[1]+k]-M_err[i][3*ker_dim[1]+k])*dn_check_surf[j*COORD_DIM+2]*dn_check_surf[j*COORD_DIM+0]
+                                      +(M_err[i][6*ker_dim[1]+k]+M_err[i][0*ker_dim[1]+k]-M_err[i][1*ker_dim[1]+k]-M_err[i][2*ker_dim[1]+k])*dn_check_surf[j*COORD_DIM+0]*dn_check_surf[j*COORD_DIM+1]
+                                      +(M_err[i][7*ker_dim[1]+k]+M_err[i][1*ker_dim[1]+k]+M_err[i][2*ker_dim[1]+k]+M_err[i][3*ker_dim[1]+k]-M_err[i][0*ker_dim[1]+k]-M_err[i][4*ker_dim[1]+k]-M_err[i][5*ker_dim[1]+k]-M_err[i][6*ker_dim[1]+k])*dn_check_surf[j*COORD_DIM+0]*dn_check_surf[j*COORD_DIM+1]*dn_check_surf[j*COORD_DIM+2];
           }
           M-=M_grad;
         }
@@ -965,6 +1048,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
           }
         }
       }
+
       break;
     }
     default:
@@ -2372,8 +2456,8 @@ void FMM_Pts<FMMNode>::PeriodicBC(FMMNode* node){
   Vector<Real_t>& dnward_equiv=node->FMMData()->dnward_equiv;
   assert(upward_equiv.Dim()==M.Dim(0)*dof);
   assert(dnward_equiv.Dim()==M.Dim(1)*dof);
-  Matrix<Real_t> d_equiv(dof,M.Dim(0),&dnward_equiv[0],false);
-  Matrix<Real_t> u_equiv(dof,M.Dim(1),&upward_equiv[0],false);
+  Matrix<Real_t> d_equiv(dof,M.Dim(1),&dnward_equiv[0],false);
+  Matrix<Real_t> u_equiv(dof,M.Dim(0),&upward_equiv[0],false);
   Matrix<Real_t>::GEMM(d_equiv,u_equiv,M);
 }
 
@@ -5434,7 +5518,36 @@ void FMM_Pts<FMMNode>::Down2Target(SetupData<Real_t>&  setup_data, bool device){
 
 
 template <class FMMNode>
-void FMM_Pts<FMMNode>::PostProcessing(std::vector<FMMNode_t*>& nodes){
+void FMM_Pts<FMMNode>::PostProcessing(FMMTree_t* tree, std::vector<FMMNode_t*>& nodes, BoundaryType bndry){
+  if(kernel->k_m2l->vol_poten && bndry==Periodic){ // Add analytical near-field to target potential
+    const Kernel<Real_t>& k_m2t=*kernel->k_m2t;
+    int ker_dim[2]={k_m2t.ker_dim[0],k_m2t.ker_dim[1]};
+
+    Vector<Real_t>& up_equiv=((FMMData*)tree->RootNode()->FMMData())->upward_equiv;
+    Matrix<Real_t> avg_density(1,ker_dim[0]); avg_density.SetZero();
+    for(size_t i0=0;i0<up_equiv.Dim();i0+=ker_dim[0]){
+      for(size_t i1=0;i1<ker_dim[0];i1++){
+        avg_density[0][i1]+=up_equiv[i0+i1];
+      }
+    }
+
+    int omp_p=omp_get_max_threads();
+    std::vector<Matrix<Real_t> > M_tmp(omp_p);
+    #pragma omp parallel for
+    for(size_t i=0;i<nodes.size();i++)
+    if(nodes[i]->IsLeaf() && !nodes[i]->IsGhost()){
+      Vector<Real_t>& trg_coord=nodes[i]->trg_coord;
+      Vector<Real_t>& trg_value=nodes[i]->trg_value;
+      size_t n_trg=trg_coord.Dim()/COORD_DIM;
+
+      Matrix<Real_t>& M_vol=M_tmp[omp_get_thread_num()];
+      M_vol.ReInit(ker_dim[0],n_trg*ker_dim[1]); M_vol.SetZero();
+      k_m2t.vol_poten(&trg_coord[0],n_trg,&M_vol[0][0]);
+
+      Matrix<Real_t> M_trg(1,n_trg*ker_dim[1],&trg_value[0],false);
+      M_trg-=avg_density*M_vol;
+    }
+  }
 }
 
 

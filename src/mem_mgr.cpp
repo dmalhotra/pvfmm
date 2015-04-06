@@ -12,6 +12,7 @@
 #include <omp.h>
 #include <iostream>
 #include <cassert>
+#include <cmath>
 
 namespace pvfmm{
 namespace mem{
