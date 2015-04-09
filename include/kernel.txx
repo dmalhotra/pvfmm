@@ -147,7 +147,7 @@ void Kernel<T>::Initialize(bool verbose) const{
           scale_invar=false;
           M_scal[0][i]=0.0;
         }
-        assert(M_scal[0][i]>=0.0); // Kernel function must decay
+        //assert(M_scal[0][i]>=0.0); // Kernel function must decay
       }else M_scal[0][i]=-1;
     }
 
@@ -162,7 +162,7 @@ void Kernel<T>::Initialize(bool verbose) const{
       for(size_t i0=0;i0<ker_dim[0];i0++)
       for(size_t i1=0;i1<ker_dim[1];i1++){
         size_t j=i0*ker_dim[1]+i1;
-        if(b[j][0]>=0){
+        if(fabs(b[j][0])>=0){
           M[j][ 0+        i0]=1;
           M[j][i1+ker_dim[0]]=1;
         }
