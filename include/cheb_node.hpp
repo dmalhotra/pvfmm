@@ -19,39 +19,46 @@
 
 namespace pvfmm{
 
+template<class Real_t>
+class FunctionInterface{
+ public:
+  virtual void operator()(const Real_t* coord, int n, Real_t* out)=0;
+};
+
 /**
- * \brief
+ * \brief Tree node class for volume data.
  */
 template <class Real_t>
 class Cheb_Node: public MPI_Node<Real_t>{
 
- public:
-
-  template<class T>
   class Function_t{
-
-    typedef void (*fn_ptr)(const T* coord, int n, T* out);
+    typedef void (*FnPtr_t)(const Real_t* coord, int n, Real_t* out);
 
     public:
 
-    Function_t(): fn_(NULL){}
+    Function_t(): fn_ptr_(NULL), fn_(NULL){}
 
-    Function_t(fn_ptr fn): fn_(fn){}
+    Function_t(FnPtr_t fn_ptr): fn_ptr_(fn_ptr), fn_(NULL){}
 
-    virtual ~Function_t(){}
+    Function_t(FunctionInterface<Real_t>* fn): fn_ptr_(NULL), fn_(fn){}
 
-    virtual void operator()(const T* coord, int n, T* out){
-      fn_(coord, n, out);
+    void operator()(const Real_t* coord, int n, Real_t* out){
+      if(fn_ptr_) fn_ptr_(coord, n, out);
+      else if(fn_) (*fn_)(coord, n, out);
+      else assert(false);
     }
 
-    virtual bool IsEmpty(){
-      return (fn_==NULL);
+    bool IsEmpty(){
+      return (fn_ptr_==NULL && fn_==NULL);
     }
 
     private:
 
-    fn_ptr fn_;
+    FnPtr_t fn_ptr_;
+    FunctionInterface<Real_t>* fn_;
   };
+
+ public:
 
   /**
    * \brief Base class for node data. Contains initialization data for the node.
@@ -63,7 +70,7 @@ class Cheb_Node: public MPI_Node<Real_t>{
      Vector<Real_t> cheb_coord; //Chebyshev point samples.
      Vector<Real_t> cheb_value;
 
-     Function_t<Real_t> input_fn; // Function pointer.
+     Function_t input_fn; // Function pointer.
      int data_dof;    // Dimension of Chebyshev data.
      int cheb_deg;    // Chebyshev degree
      Real_t tol;      // Tolerance for adaptive refinement.
@@ -72,7 +79,7 @@ class Cheb_Node: public MPI_Node<Real_t>{
   /**
    * \brief Initialize pointers to NULL.
    */
-  Cheb_Node(): MPI_Node<Real_t>(), input_fn(NULL), cheb_deg(0){}
+  Cheb_Node(): MPI_Node<Real_t>(), cheb_deg(0){}
 
   /**
    * \brief Virtual destructor.
@@ -194,7 +201,7 @@ class Cheb_Node: public MPI_Node<Real_t>{
    */
   void Curl();
 
-  Function_t<Real_t> input_fn;
+  Function_t input_fn;
   Vector<Real_t> cheb_coord;   //coordinates of points
   Vector<Real_t> cheb_value;   //value at points
   Vector<size_t> cheb_scatter; //scatter index mapping original data.
