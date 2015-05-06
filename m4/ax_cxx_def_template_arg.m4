@@ -11,6 +11,7 @@
 m4_define([_AX_CXX_DEF_TEMPLATE_ARG_testbody], [[
   template <int T=0>
   int test(){ return T;};
+  int test_default(){return test();};
 ]])
 
 AC_DEFUN([AX_CXX_DEF_TEMPLATE_ARG], [dnl
