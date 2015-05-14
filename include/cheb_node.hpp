@@ -31,6 +31,8 @@ class FunctionInterface{
 template <class Real_t>
 class Cheb_Node: public MPI_Node<Real_t>{
 
+ public:
+
   class Function_t{
     typedef void (*FnPtr_t)(const Real_t* coord, int n, Real_t* out);
 
@@ -57,8 +59,6 @@ class Cheb_Node: public MPI_Node<Real_t>{
     FnPtr_t fn_ptr_;
     FunctionInterface<Real_t>* fn_;
   };
-
- public:
 
   /**
    * \brief Base class for node data. Contains initialization data for the node.
