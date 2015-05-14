@@ -67,6 +67,24 @@ inline T sub_intrin(const T& a, const T& b){
 }
 
 template <class T>
+inline T cmplt_intrin(const T& a, const T& b){
+  T r=0;
+  uint8_t* r_=reinterpret_cast<uint8_t*>(&r);
+  if(a<b) for(size_t i=0;i<sizeof(T);i++) r_[i] = ~(uint8_t)0;
+  return r;
+}
+
+template <class T>
+inline T and_intrin(const T& a, const T& b){
+  T r=0;
+  const uint8_t* a_=reinterpret_cast<const uint8_t*>(&a);
+  const uint8_t* b_=reinterpret_cast<const uint8_t*>(&b);
+  uint8_t*       r_=reinterpret_cast<      uint8_t*>(&r);
+  for(size_t i=0;i<sizeof(T);i++) r_[i] = a_[i] & b_[i];
+  return r;
+}
+
+template <class T>
 inline T rsqrt_approx_intrin(const T& r2){
   if(r2!=0) return 1.0/pvfmm::sqrt<T>(r2);
   return 0;
@@ -81,6 +99,18 @@ template <class T>
 inline T rsqrt_single_intrin(const T& r2){
   if(r2!=0) return 1.0/pvfmm::sqrt<T>(r2);
   return 0;
+}
+
+template <class T>
+inline T max_intrin(const T& a, const T& b){
+  if(a>b) return a;
+  else return b;
+}
+
+template <class T>
+inline T min_intrin(const T& a, const T& b){
+  if(a>b) return b;
+  else return a;
 }
 
 template <class T>
@@ -177,6 +207,26 @@ inline __m128d sub_intrin(const __m128d& a, const __m128d& b){
 }
 
 template <>
+inline __m128 cmplt_intrin(const __m128& a, const __m128& b){
+  return _mm_cmplt_ps(a,b);
+}
+
+template <>
+inline __m128d cmplt_intrin(const __m128d& a, const __m128d& b){
+  return _mm_cmplt_pd(a,b);
+}
+
+template <>
+inline __m128 and_intrin(const __m128& a, const __m128& b){
+  return _mm_and_ps(a,b);
+}
+
+template <>
+inline __m128d and_intrin(const __m128d& a, const __m128d& b){
+  return _mm_and_pd(a,b);
+}
+
+template <>
 inline __m128 rsqrt_approx_intrin(const __m128& r2){
   #define VEC_INTRIN          __m128
   #define RSQRT_INTRIN(a)     _mm_rsqrt_ps(a)
@@ -235,6 +285,26 @@ inline __m128d rsqrt_single_intrin(const __m128d& r2){
   return PS2PD(rsqrt_single_intrin(PD2PS(r2)));
   #undef PD2PS
   #undef PS2PD
+}
+
+template <>
+inline __m128 max_intrin(const __m128& a, const __m128& b){
+  return _mm_max_ps(a,b);
+}
+
+template <>
+inline __m128d max_intrin(const __m128d& a, const __m128d& b){
+  return _mm_max_pd(a,b);
+}
+
+template <>
+inline __m128 min_intrin(const __m128& a, const __m128& b){
+  return _mm_min_ps(a,b);
+}
+
+template <>
+inline __m128d min_intrin(const __m128d& a, const __m128d& b){
+  return _mm_min_pd(a,b);
 }
 
 #ifdef PVFMM_HAVE_INTEL_SVML
@@ -368,11 +438,30 @@ inline __m256d sub_intrin(const __m256d& a, const __m256d& b){
 }
 
 template <>
+inline __m256 cmplt_intrin(const __m256& a, const __m256& b){
+  return _mm256_cmp_ps(a,b,_CMP_LT_OS);
+}
+
+template <>
+inline __m256d cmplt_intrin(const __m256d& a, const __m256d& b){
+  return _mm256_cmp_pd(a,b,_CMP_LT_OS);
+}
+
+template <>
+inline __m256 and_intrin(const __m256& a, const __m256& b){
+  return _mm256_and_ps(a,b);
+}
+
+template <>
+inline __m256d and_intrin(const __m256d& a, const __m256d& b){
+  return _mm256_and_pd(a,b);
+}
+
+template <>
 inline __m256 rsqrt_approx_intrin(const __m256& r2){
   #define VEC_INTRIN          __m256
   #define RSQRT_INTRIN(a)     _mm256_rsqrt_ps(a)
-  #define CMPEQ_INTRIN(a,b)   _mm256_insertf128_ps(_mm256_castps128_ps256(_mm_cmpeq_ps(_mm256_extractf128_ps(a,0),_mm256_extractf128_ps(b,0))),\
-                                                                    (_mm_cmpeq_ps(_mm256_extractf128_ps(a,1),_mm256_extractf128_ps(b,1))), 1)
+  #define CMPEQ_INTRIN(a,b)   _mm256_cmp_ps(a,b,_CMP_EQ_OS)
   #define ANDNOT_INTRIN(a,b)  _mm256_andnot_ps(a,b)
 
   // Approx inverse square root which returns zero for r2=0
@@ -427,6 +516,26 @@ inline __m256d rsqrt_single_intrin(const __m256d& r2){
   return PS2PD(rsqrt_single_intrin(PD2PS(r2)));
   #undef PD2PS
   #undef PS2PD
+}
+
+template <>
+inline __m256 max_intrin(const __m256& a, const __m256& b){
+  return _mm256_max_ps(a,b);
+}
+
+template <>
+inline __m256d max_intrin(const __m256d& a, const __m256d& b){
+  return _mm256_max_pd(a,b);
+}
+
+template <>
+inline __m256 min_intrin(const __m256& a, const __m256& b){
+  return _mm256_min_ps(a,b);
+}
+
+template <>
+inline __m256d min_intrin(const __m256d& a, const __m256d& b){
+  return _mm256_min_pd(a,b);
 }
 
 #ifdef PVFMM_HAVE_INTEL_SVML
