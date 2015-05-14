@@ -1,5 +1,5 @@
 /**
- * \file mat_utils.txx
+ * \file utils.txx
  * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 1-1-2013
  */
