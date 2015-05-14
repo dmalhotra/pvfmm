@@ -72,9 +72,9 @@ class MemoryManager{
 
     static inline MemHead* GetMemHead(void* p);
 
-    inline void* malloc(const size_t n_elem=1, const size_t type_size=sizeof(char)) const;
+    void* malloc(const size_t n_elem=1, const size_t type_size=sizeof(char)) const;
 
-    inline void free(void* p) const;
+    void free(void* p) const;
 
     void print() const;
 
