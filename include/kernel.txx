@@ -1078,7 +1078,7 @@ void laplace_poten_uKernel(Matrix<Real_t>& src_coord, Matrix<Real_t>& src_value,
         Vec_t dz=sub_intrin(tz,bcast_intrin<Vec_t>(&src_coord[2][s]));
         Vec_t sv=              bcast_intrin<Vec_t>(&src_value[0][s]) ;
 
-        Vec_t r2=   mul_intrin(dx,dx) ;
+        Vec_t r2=        mul_intrin(dx,dx) ;
         r2=add_intrin(r2,mul_intrin(dy,dy));
         r2=add_intrin(r2,mul_intrin(dz,dz));
 
@@ -1428,7 +1428,7 @@ void stokes_vel_uKernel(Matrix<Real_t>& src_coord, Matrix<Real_t>& src_value, Ma
     nwtn_scal=2*nwtn_scal*nwtn_scal*nwtn_scal;
   }
   const Real_t OOEP = 1.0/(8*nwtn_scal*const_pi<Real_t>());
-  Vec_t inv_nwrn_scal2=set_intrin<Vec_t,Real_t>(1.0/(nwtn_scal*nwtn_scal));
+  Vec_t inv_nwtn_scal2=set_intrin<Vec_t,Real_t>(1.0/(nwtn_scal*nwtn_scal));
 
   size_t src_cnt_=src_coord.Dim(1);
   size_t trg_cnt_=trg_coord.Dim(1);
@@ -1457,7 +1457,7 @@ void stokes_vel_uKernel(Matrix<Real_t>& src_coord, Matrix<Real_t>& src_value, Ma
         r2=add_intrin(r2,mul_intrin(dz,dz));
 
         Vec_t rinv=RSQRT_INTRIN(r2);
-        Vec_t rinv2=mul_intrin(mul_intrin(rinv,rinv),inv_nwrn_scal2);
+        Vec_t rinv2=mul_intrin(mul_intrin(rinv,rinv),inv_nwtn_scal2);
 
         Vec_t inner_prod=                mul_intrin(svx,dx) ;
         inner_prod=add_intrin(inner_prod,mul_intrin(svy,dy));
