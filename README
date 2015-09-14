@@ -59,3 +59,18 @@ USING PvFMM
      the configure option '--with-precomp-dir=DIR' to set the default
      path for precomputed data.
 
+
+Acknowledgment
+==============
+
+   This software has been developed as part of the work supported by,
+   * US National Institutes of Health/10042242
+   * US Department of Energy/DE-SC0010518
+   * US Department of Energy/DE-SC0009286
+   * US National Science Foundation/CCF-1337393
+   * US Air Force Office for Scientific Research /FA9550-12-10484
+
+   The authors would also like to thank ORNL/OLCF and TACC for providing
+   access to computing resources for the development, testing and
+   benchmarking of this software.
+
