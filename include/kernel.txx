@@ -124,13 +124,6 @@ void Kernel<T>::Initialize(bool verbose) const{
                   &trg_coord2[i*COORD_DIM], 1, &(M2[i][0]));
     }
 
-    T max_val=0;
-    for(size_t i=0;i<N;i++){
-      for(size_t j=0;j<ker_dim[0]*ker_dim[1];j++){
-        max_val=std::max<T>(max_val,M1[i][j]);
-        max_val=std::max<T>(max_val,M2[i][j]);
-      }
-    }
     for(size_t i=0;i<ker_dim[0]*ker_dim[1];i++){
       T dot11=0, dot12=0, dot22=0;
       for(size_t j=0;j<N;j++){
@@ -138,8 +131,9 @@ void Kernel<T>::Initialize(bool verbose) const{
         dot12+=M1[j][i]*M2[j][i];
         dot22+=M2[j][i]*M2[j][i];
       }
-      if(dot11>max_val*max_val*eps_ &&
-         dot22>max_val*max_val*eps_ ){
+      T max_val=std::max<T>(dot11,dot22);
+      if(dot11>max_val*eps &&
+         dot22>max_val*eps ){
         T s=dot12/dot11;
         M_scal[0][i]=pvfmm::log<T>(s)/pvfmm::log<T>(2.0);
         T err=pvfmm::sqrt<T>(0.5*(dot22/dot11)/(s*s)-0.5);
@@ -148,7 +142,13 @@ void Kernel<T>::Initialize(bool verbose) const{
           M_scal[0][i]=0.0;
         }
         //assert(M_scal[0][i]>=0.0); // Kernel function must decay
-      }else M_scal[0][i]=-1;
+      }else if(dot11>max_val*eps ||
+               dot22>max_val*eps ){
+        scale_invar=false;
+        M_scal[0][i]=0.0;
+      }else{
+        M_scal[0][i]=-1;
+      }
     }
 
     src_scal.Resize(ker_dim[0]); src_scal.SetZero();
