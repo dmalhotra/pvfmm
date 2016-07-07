@@ -175,6 +175,16 @@ void MPI_Node<T>::Subdivide(){
         vec.ReInit(0);
       }
     }
+  }else{
+    std::vector<Vector<Real_t>*> pt_coord;
+    std::vector<Vector<Real_t>*> pt_value;
+    std::vector<Vector<size_t>*> pt_scatter;
+    this->NodeDataVec(pt_coord, pt_value, pt_scatter);
+    for(size_t j=0;j<pt_coord.size();j++){
+      if(pt_coord[j]) pt_coord[j]->ReInit(0);
+      if(pt_value[j]) pt_value[j]->ReInit(0);
+      if(pt_scatter[j]) pt_scatter[j]->ReInit(0);
+    }
   }
 };
 

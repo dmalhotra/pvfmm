@@ -1191,7 +1191,7 @@ void MPI_Tree<TreeNode>::SetColleagues(BoundaryType bndry, Node_t* node){
       }
       idx++;
     }
-    /*/
+    / */
     Node_t* parent_node;
     Node_t* tmp_node1;
     Node_t* tmp_node2;
