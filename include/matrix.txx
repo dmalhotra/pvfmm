@@ -121,6 +121,9 @@ template <class T>
 void Matrix<T>::ReInit(size_t dim1, size_t dim2, T* data_, bool own_data_){
   if(own_data_ && own_data && dim[0]*dim[1]>=dim1*dim2){
     if(dim[0]*dim[1]!=dim1*dim2) FreeDevice(false);
+#if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
+    Profile::Add_MEM((dim1*dim2-dim[0]*dim[1])*sizeof(T));
+#endif
     dim[0]=dim1; dim[1]=dim2;
     if(data_) mem::memcopy(data_ptr,data_,dim[0]*dim[1]*sizeof(T));
   }else{
@@ -208,10 +211,7 @@ size_t Matrix<T>::Dim(size_t i) const{
 
 template <class T>
 void Matrix<T>::Resize(size_t i, size_t j){
-  if(dim[0]*dim[1]!=i*j) FreeDevice(false);
-  if(dim[0]*dim[1]>=i*j){
-    dim[0]=i; dim[1]=j;
-  }else ReInit(i,j);
+  ReInit(i,j);
 }
 
 template <class T>
