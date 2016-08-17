@@ -633,8 +633,10 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
       Profile::Tic("Device2Host:LocExp",this->Comm(),false,5);
       if(setup_data[0+MAX_DEPTH*2].output_data!=NULL){
         Matrix<Real_t>& output_data=*setup_data[0+MAX_DEPTH*2].output_data;
-        assert(fmm_mat->staging_buffer.Dim()*sizeof(Real_t)>=output_data.Dim(0)*output_data.Dim(1));
-        output_data.Device2Host((Real_t*)&fmm_mat->staging_buffer[0]);
+        if(fmm_mat->staging_buffer.Dim()){
+          assert(fmm_mat->staging_buffer.Dim()*sizeof(Real_t)>=output_data.Dim(0)*output_data.Dim(1));
+          output_data.Device2Host((Real_t*)&fmm_mat->staging_buffer[0]);
+        }
       }
       Profile::Toc();
     }
@@ -675,12 +677,14 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
     Real_t* dev_ptr=(Real_t*)&fmm_mat->staging_buffer[0];
     Matrix<Real_t>& output_data=*setup_data[0+MAX_DEPTH*2].output_data;
     size_t n=output_data.Dim(0)*output_data.Dim(1);
-    Real_t* host_ptr=output_data[0];
-    output_data.Device2HostWait();
+    if(fmm_mat->staging_buffer.Dim()){
+      Real_t* host_ptr=output_data[0];
+      output_data.Device2HostWait();
 
-    #pragma omp parallel for
-    for(size_t i=0;i<n;i++){
-      host_ptr[i]+=dev_ptr[i];
+      #pragma omp parallel for
+      for(size_t i=0;i<n;i++){
+        host_ptr[i]+=dev_ptr[i];
+      }
     }
   }
   Profile::Toc();
@@ -688,8 +692,10 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
   Profile::Tic("Device2Host:Trg",this->Comm(),false,5);
   if(device) if(setup_data[0+MAX_DEPTH*0].output_data!=NULL){ // Device2Host: Target
     Matrix<Real_t>& output_data=*setup_data[0+MAX_DEPTH*0].output_data;
-    assert(fmm_mat->staging_buffer.Dim()>=sizeof(Real_t)*output_data.Dim(0)*output_data.Dim(1));
-    output_data.Device2Host((Real_t*)&fmm_mat->staging_buffer[0]);
+    if(fmm_mat->staging_buffer.Dim()){
+      assert(fmm_mat->staging_buffer.Dim()>=sizeof(Real_t)*output_data.Dim(0)*output_data.Dim(1));
+      output_data.Device2Host((Real_t*)&fmm_mat->staging_buffer[0]);
+    }
   }
   Profile::Toc();
   #endif
@@ -714,12 +720,14 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
     Real_t* dev_ptr=(Real_t*)&fmm_mat->staging_buffer[0];
     Matrix<Real_t>& output_data=*setup_data[0+MAX_DEPTH*0].output_data;
     size_t n=output_data.Dim(0)*output_data.Dim(1);
-    Real_t* host_ptr=output_data[0];
-    output_data.Device2HostWait();
+    if(fmm_mat->staging_buffer.Dim()){
+      Real_t* host_ptr=output_data[0];
+      output_data.Device2HostWait();
 
-    #pragma omp parallel for
-    for(size_t i=0;i<n;i++){
-      host_ptr[i]+=dev_ptr[i];
+      #pragma omp parallel for
+      for(size_t i=0;i<n;i++){
+        host_ptr[i]+=dev_ptr[i];
+      }
     }
   }
   Profile::Toc();
