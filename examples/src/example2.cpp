@@ -28,7 +28,7 @@ void fn_output(const double* coord, int n, double* out){
 void fmm_test(size_t N, int mult_order, int cheb_deg, double tol, MPI_Comm comm){
 
   // Set kernel.
-  const pvfmm::Kernel<double>& kernel_fn=pvfmm::LaplaceKernel<double>::gradient();
+  const pvfmm::Kernel<double>& kernel_fn=pvfmm::LaplaceKernel<double>::potential();
 
   // Construct tree.
   size_t max_pts=100;
