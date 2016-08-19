@@ -922,6 +922,7 @@ void Kernel<T>::BuildMatrix(T* r_src, int src_cnt,
                  T* r_trg, int trg_cnt, T* k_out) const{
   int dim=3; //Only supporting 3D
   memset(k_out, 0, src_cnt*ker_dim[0]*trg_cnt*ker_dim[1]*sizeof(T));
+  #pragma omp parallel for
   for(int i=0;i<src_cnt;i++) //TODO Optimize this.
     for(int j=0;j<ker_dim[0];j++){
       std::vector<T> v_src(ker_dim[0],0);

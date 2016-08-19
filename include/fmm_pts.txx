@@ -454,8 +454,8 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
       if(M0.Dim(0)==0 || M0.Dim(1)==0) return M_;
 
       for(size_t i=0;i<Perm_Count;i++) this->PrecompPerm(type, (Perm_Type) i);
-      Permutation<Real_t>& Pr = this->interac_list.Perm_R(level, type, mat_indx);
-      Permutation<Real_t>& Pc = this->interac_list.Perm_C(level, type, mat_indx);
+      Permutation<Real_t>& Pr = this->interac_list.Perm_R(abs(level), type, mat_indx);
+      Permutation<Real_t>& Pc = this->interac_list.Perm_C(abs(level), type, mat_indx);
       if(Pr.Dim()>0 && Pc.Dim()>0 && M0.Dim(0)>0 && M0.Dim(1)>0) return M_;
     }
   }
@@ -843,18 +843,24 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
         for(int level=0; level>=-BC_LEVELS; level--){
           { // Compute M_l2l
             this->Precomp(level, D2D_Type, 0);
-            Permutation<Real_t>& Pr = this->interac_list.Perm_R(level, D2D_Type, 0);
-            Permutation<Real_t>& Pc = this->interac_list.Perm_C(level, D2D_Type, 0);
+            Permutation<Real_t> Pr = this->interac_list.Perm_R(abs(level), D2D_Type, 0);
+            Permutation<Real_t> Pc = this->interac_list.Perm_C(abs(level), D2D_Type, 0);
+            { // Invert scaling because level<0
+              for(long i=0;i<Pr.Dim();i++) Pr.scal[i]=1.0/Pr.scal[i];
+              for(long i=0;i<Pc.Dim();i++) Pc.scal[i]=1.0/Pc.scal[i];
+            }
             M_l2l[-level] = M_check_zero_avg * Pr * this->Precomp(level, D2D_Type, this->interac_list.InteracClass(D2D_Type, 0)) * Pc * M_check_zero_avg;
             assert(M_l2l[-level].Dim(0)>0 && M_l2l[-level].Dim(1)>0);
           }
 
           // Compute M_m2m
           for(size_t mat_indx=0; mat_indx<mat_cnt_m2m; mat_indx++){
-            this->Precomp(level, U2U_Type, mat_indx);
-            Permutation<Real_t>& Pr = this->interac_list.Perm_R(level, U2U_Type, mat_indx);
-            Permutation<Real_t>& Pc = this->interac_list.Perm_C(level, U2U_Type, mat_indx);
-            Matrix<Real_t> M = Pr * this->Precomp(level, U2U_Type, this->interac_list.InteracClass(U2U_Type, mat_indx)) * Pc;
+            this->Precomp(level-1, U2U_Type, mat_indx);
+            Permutation<Real_t> Pr = this->interac_list.Perm_R(abs(level-1), U2U_Type, mat_indx);
+            Permutation<Real_t> Pc = this->interac_list.Perm_C(abs(level-1), U2U_Type, mat_indx);
+            for(long i=0;i<Pr.Dim();i++) Pr.scal[i]=1.0/Pr.scal[i];
+            for(long i=0;i<Pc.Dim();i++) Pc.scal[i]=1.0/Pc.scal[i];
+            Matrix<Real_t> M = Pr * this->Precomp(level-1, U2U_Type, this->interac_list.InteracClass(U2U_Type, mat_indx)) * Pc;
             assert(M.Dim(0)>0 && M.Dim(1)>0);
 
             if(mat_indx==0) M_m2m[-level] = M_equiv_zero_avg*M*M_equiv_zero_avg;
@@ -1113,8 +1119,8 @@ void FMM_Pts<FMMNode>::PrecompAll(Mat_Type type, int level){
     //#pragma omp parallel for //lets use fine grained parallelism
     for(size_t mat_indx=0;mat_indx<mat_cnt;mat_indx++){
       Matrix<Real_t>& M0=interac_list.ClassMat(level,(Mat_Type)type,mat_indx);
-      Permutation<Real_t>& pr=interac_list.Perm_R(level, (Mat_Type)type, mat_indx);
-      Permutation<Real_t>& pc=interac_list.Perm_C(level, (Mat_Type)type, mat_indx);
+      Permutation<Real_t>& pr=interac_list.Perm_R(abs(level), (Mat_Type)type, mat_indx);
+      Permutation<Real_t>& pc=interac_list.Perm_C(abs(level), (Mat_Type)type, mat_indx);
       if(pr.Dim()!=M0.Dim(0) || pc.Dim()!=M0.Dim(1)) Precomp(level, (Mat_Type)type, mat_indx);
     }
   }

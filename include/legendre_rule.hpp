@@ -1,5 +1,5 @@
 
-# include <cstring>
+# include <string>
 
 #ifndef _LEGENDRE_RULE_HPP_
 #define _LEGENDRE_RULE_HPP_
