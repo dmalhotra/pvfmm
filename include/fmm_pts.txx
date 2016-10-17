@@ -787,6 +787,11 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
       size_t n_surf=(6*(MultipoleOrder()-1)*(MultipoleOrder()-1)+2);  //Total number of points.
 
       if((M.Dim(0)!=n_surf*ker_dim[0] || M.Dim(1)!=n_surf*ker_dim[1]) && level==0){
+        if(BC_LEVELS==0){ // Set M=0 and break;
+          M.ReInit(n_surf*ker_dim[0],n_surf*ker_dim[1]);
+          M.SetZero();
+          break;
+        }
         Matrix<Real_t> M_m2m[BC_LEVELS+1];
         Matrix<Real_t> M_m2l[BC_LEVELS+1];
         Matrix<Real_t> M_l2l[BC_LEVELS+1];
@@ -1169,10 +1174,16 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& n
       }
       for(int i=0;i<=MAX_DEPTH;i++){
         for(size_t j=0;j<node_lst_[i].size();j++){
-          if(node_lst_[i][j]->pt_cnt[0])
-          for(size_t k=0;k<chld_cnt;k++){
-            FMMNode_t* node=(FMMNode_t*)node_lst_[i][j]->Child(k);
-            node_lst.push_back(node);
+          if(node_lst_[i][j]->pt_cnt[0]){
+            for(size_t k=0;k<chld_cnt;k++){
+              FMMNode_t* node=(FMMNode_t*)node_lst_[i][j]->Child(k);
+              node_lst.push_back(node);
+            }
+          }else{
+            for(size_t k=0;k<chld_cnt;k++){
+              FMMNode_t* node=(FMMNode_t*)node_lst_[i][j]->Child(k);
+              node->FMMData()->upward_equiv.ReInit(0);
+            }
           }
         }
       }
@@ -1221,10 +1232,16 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& n
       }
       for(int i=0;i<=MAX_DEPTH;i++){
         for(size_t j=0;j<node_lst_[i].size();j++){
-          if(node_lst_[i][j]->pt_cnt[1])
-          for(size_t k=0;k<chld_cnt;k++){
-            FMMNode_t* node=(FMMNode_t*)node_lst_[i][j]->Child(k);
-            node_lst.push_back(node);
+          if(node_lst_[i][j]->pt_cnt[1]){
+            for(size_t k=0;k<chld_cnt;k++){
+              FMMNode_t* node=(FMMNode_t*)node_lst_[i][j]->Child(k);
+              node_lst.push_back(node);
+            }
+          }else{
+            for(size_t k=0;k<chld_cnt;k++){
+              FMMNode_t* node=(FMMNode_t*)node_lst_[i][j]->Child(k);
+              node->FMMData()->dnward_equiv.ReInit(0);
+            }
           }
         }
       }
@@ -5525,7 +5542,7 @@ void FMM_Pts<FMMNode>::Down2Target(SetupData<Real_t>&  setup_data, bool device){
 
 template <class FMMNode>
 void FMM_Pts<FMMNode>::PostProcessing(FMMTree_t* tree, std::vector<FMMNode_t*>& nodes, BoundaryType bndry){
-  if(kernel->k_m2l->vol_poten && bndry==Periodic){ // Add analytical near-field to target potential
+  if(kernel->k_m2l->vol_poten && bndry==Periodic && BC_LEVELS>0){ // Add analytical near-field to target potential
     const Kernel<Real_t>& k_m2t=*kernel->k_m2t;
     int ker_dim[2]={k_m2t.ker_dim[0],k_m2t.ker_dim[1]};
 
