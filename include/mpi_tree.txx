@@ -1136,8 +1136,11 @@ void MPI_Tree<TreeNode>::SetColleagues(BoundaryType bndry, Node_t* node){
     Node_t* curr_node=this->PreorderFirst();
     if(curr_node!=NULL){
       if(bndry==Periodic){
-        for(int i=0;i<n1;i++)
-          curr_node->SetColleague(curr_node,i);
+        for(long i0=-1;i0<=1;i0++)
+        for(long i1=-1;i1<=1;i1++)
+        for(long i2=-1;i2<=1;i2++){
+          curr_node->SetColleague(curr_node,3*(3*(i0+1)+(i1+1))+(i2+1));
+        }
       }else{
         curr_node->SetColleague(curr_node,(n1-1)/2);
       }
