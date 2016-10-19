@@ -24,7 +24,7 @@
 #include <mem_mgr.hpp>
 #include <mpi_node.hpp>
 #include <profile.hpp>
-
+PeriodicType periodicType;
 namespace pvfmm{
 
 /**
@@ -1137,7 +1137,6 @@ void MPI_Tree<TreeNode>::SetColleagues(BoundaryType bndry, Node_t* node){
     if(curr_node!=NULL){
       if(bndry==Periodic){
 
-    	  extern PeriodicType periodicType;
           int xlow,xhigh,ylow,yhigh,zlow,zhigh;
           switch(periodicType){
           case PeriodicType::NONE :
@@ -1154,21 +1153,21 @@ void MPI_Tree<TreeNode>::SetColleagues(BoundaryType bndry, Node_t* node){
         	  zlow=0;zhigh=0;
         	  break;
           case PeriodicType::PY :
-        	  xlow=0;yhigh=0;
-        	  ylow=-1;xhigh=+1;
+        	  xlow=0;xhigh=0;
+        	  ylow=-1;yhigh=+1;
         	  zlow=0;zhigh=0;
         	  break;
           case PeriodicType::PZ :
-        	  xlow=0;yhigh=0;
-        	  ylow=0;zhigh=0;
-        	  zlow=-1;xhigh=+1;
+        	  xlow=0;xhigh=0;
+        	  ylow=0;yhigh=0;
+        	  zlow=-1;zhigh=+1;
         	  break;
           }
 
         for(long i0=xlow;i0<=xhigh;i0++)
         for(long i1=ylow;i1<=yhigh;i1++)
         for(long i2=zlow;i2<=zhigh;i2++){
-          curr_node->SetColleague(curr_node,3*(3*(i0+1)+(i1+1))+(i2+1));
+          curr_node->SetColleague(curr_node,3*(3*(i2+1)+(i1+1))+(i0+1));
         }
       }else{
         curr_node->SetColleague(curr_node,(n1-1)/2);

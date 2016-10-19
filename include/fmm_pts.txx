@@ -262,7 +262,6 @@ void FMM_Pts<FMMNode>::Initialize(int mult_order, const MPI_Comm& comm_, const K
     else if(sizeof(Real_t)==4) st<<"_f";
     else st<<"_t"<<sizeof(Real_t);
     {
-    	extern PeriodicType periodicType;
         switch(periodicType){
         case PeriodicType::NONE :
         	st<<"PNONE";
@@ -812,7 +811,6 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
           Real_t dc_coord[3]={0,0,0};
           std::vector<Real_t> trg_coord=d_check_surf(MultipoleOrder(), dc_coord, 0);
 
-          extern PeriodicType periodicType;
           int xlow,xhigh,ylow,yhigh,zlow,zhigh;
           switch(periodicType){
           case PeriodicType::NONE :
