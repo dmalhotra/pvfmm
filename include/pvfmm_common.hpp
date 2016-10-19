@@ -30,6 +30,16 @@
 
 #define BC_LEVELS 2
 
+enum PeriodicType{
+	NONE,
+	PXYZ,
+	PX,
+	PY,
+	PZ
+};
+
+PeriodicType periodicType=NONE;
+
 #define RAD0 1.05 //Radius of upward equivalent (downward check) surface.
 #define RAD1 2.95 //Radius of downward equivalent (upward check) surface.
 

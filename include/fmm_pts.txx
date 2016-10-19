@@ -261,6 +261,26 @@ void FMM_Pts<FMMNode>::Initialize(int mult_order, const MPI_Comm& comm_, const K
     if(sizeof(Real_t)==8) st<<"";
     else if(sizeof(Real_t)==4) st<<"_f";
     else st<<"_t"<<sizeof(Real_t);
+    {
+    	extern PeriodicType periodicType;
+        switch(periodicType){
+        case PeriodicType::NONE :
+        	st<<"PNONE";
+      	  break;
+        case PeriodicType::PXYZ :
+        	st<<"PXYZ";
+      	  break;
+        case PeriodicType::PX :
+        	st<<"PX";
+      	  break;
+        case PeriodicType::PY :
+        	st<<"PY";
+      	  break;
+        case PeriodicType::PZ :
+        	st<<"PZ";
+      	  break;
+        }
+    }
     st<<".data";
     this->mat_fname=st.str();
     save_precomp=true;
@@ -792,9 +812,37 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
           Real_t dc_coord[3]={0,0,0};
           std::vector<Real_t> trg_coord=d_check_surf(MultipoleOrder(), dc_coord, 0);
 
-          for(int x0=-BC_LEVELS-1;x0<=BC_LEVELS+1;x0++)
-          for(int x1=-BC_LEVELS-1;x1<=BC_LEVELS+1;x1++)
-          for(int x2=-BC_LEVELS-1;x2<=BC_LEVELS+1;x2++)
+          extern PeriodicType periodicType;
+          int xlow,xhigh,ylow,yhigh,zlow,zhigh;
+          switch(periodicType){
+          case PeriodicType::NONE :
+        	  xlow=0;xhigh=0;ylow=0;yhigh=0;zlow=0;zhigh=0;
+        	  break;
+          case PeriodicType::PXYZ :
+        	  xlow=-BC_LEVELS-1;xhigh=BC_LEVELS+1;
+        	  ylow=-BC_LEVELS-1;yhigh=BC_LEVELS+1;
+        	  zlow=-BC_LEVELS-1;zhigh=BC_LEVELS+1;
+        	  break;
+          case PeriodicType::PX :
+        	  xlow=-BC_LEVELS-1;xhigh=BC_LEVELS+1;
+        	  ylow=0;yhigh=0;
+        	  zlow=0;zhigh=0;
+        	  break;
+          case PeriodicType::PY :
+        	  xlow=0;xhigh=0;
+        	  ylow=-BC_LEVELS-1;yhigh=BC_LEVELS+1;
+        	  zlow=0;zhigh=0;
+        	  break;
+          case PeriodicType::PZ :
+        	  xlow=0;xhigh=0;
+        	  ylow=0;yhigh=0;
+        	  zlow=-BC_LEVELS-1;zhigh=BC_LEVELS+1;
+        	  break;
+          }
+
+          for(int x0=xlow;x0<=xhigh;x0++)
+          for(int x1=ylow;x1<=yhigh;x1++)
+          for(int x2=zlow;x2<=zhigh;x2++)
           if(abs(x0)>1 || abs(x1)>1 || abs(x2)>1){
             Real_t ue_coord[3]={(Real_t)x0, (Real_t)x1, (Real_t)x2};
             std::vector<Real_t> src_coord=u_equiv_surf(MultipoleOrder(), ue_coord, 0);
