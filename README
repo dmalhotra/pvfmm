@@ -1,4 +1,19 @@
 
+This new_BC branch is forked from the original pvfmm code by dmalhotra to give minimal support for 1D and 3D periodicity.
+
+It is implemented in a quick and dirty way. To choose periodicity, define a global variable 
+PeriodicType periodicType
+in one .cpp file and set it to one of the following enum values:
+NONE,PXYZ,PX,PY,PZ
+
+-------------------------------------------------------------------------
+My thanks go to dmalhotra for providing patches and instructions to his code.
+
+
+
+Below is the original pvfmm readme file
+-------------------------------------------------------------------------
+
                     PvFMM README File
                     *****************
 
