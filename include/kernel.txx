@@ -134,6 +134,7 @@ void Kernel<T>::Initialize(bool verbose) const{
       max_val=std::max<T>(max_val,dot11);
       max_val=std::max<T>(max_val,dot22);
     }
+    if(scale_invar)
     for(size_t i=0;i<ker_dim[0]*ker_dim[1];i++){
       T dot11=0, dot12=0, dot22=0;
       for(size_t j=0;j<N;j++){
