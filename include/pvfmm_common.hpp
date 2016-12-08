@@ -28,7 +28,7 @@
 
 #define MAX_DEPTH 15
 
-#define BC_LEVELS 2
+#define BC_LEVELS 1
 
 enum PeriodicType{
 	NONE,
@@ -39,6 +39,8 @@ enum PeriodicType{
 };
 
 extern PeriodicType periodicType;
+
+#define STOKESREGDELTA (0.005)
 
 #define RAD0 1.05 //Radius of upward equivalent (downward check) surface.
 #define RAD1 2.95 //Radius of downward equivalent (upward check) surface.

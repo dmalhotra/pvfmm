@@ -1456,18 +1456,33 @@ void stokes_vel_uKernel(Matrix<Real_t>& src_coord, Matrix<Real_t>& src_value, Ma
         Vec_t r2=        mul_intrin(dx,dx) ;
         r2=add_intrin(r2,mul_intrin(dy,dy));
         r2=add_intrin(r2,mul_intrin(dz,dz));
+        Vec_t stkReg=set_intrin<Vec_t,Real_t>(STOKESREGDELTA);
+        Vec_t r2reg=add_intrin(r2,mul_intrin(stkReg,stkReg)); // regularization.
 
         Vec_t rinv=RSQRT_INTRIN(r2);
+        Vec_t rinvreg=RSQRT_INTRIN(r2reg);
+
+        // condition: rinvreg should be zero if r2 is zero (source overlap with target)
+        Vec_t eps;
+		if(sizeof(Real_t)<5){
+			eps	= set_intrin<Vec_t,Real_t>(1e-6); // single precision
+		}else{
+			eps	= set_intrin<Vec_t,Real_t>(1e-13);
+		}
+		Vec_t mask = cmplt_intrin(eps,r2); // mask = (eps < r2)? 0xfffffffffff : 0
+        rinvreg=and_intrin(mask,rinvreg);
+
         Vec_t rinv2=mul_intrin(mul_intrin(rinv,rinv),inv_nwtn_scal2);
+        Vec_t rinvreg2=mul_intrin(mul_intrin(rinvreg,rinvreg),inv_nwtn_scal2);
 
         Vec_t inner_prod=                mul_intrin(svx,dx) ;
         inner_prod=add_intrin(inner_prod,mul_intrin(svy,dy));
         inner_prod=add_intrin(inner_prod,mul_intrin(svz,dz));
-        inner_prod=mul_intrin(inner_prod,rinv2);
+        inner_prod=mul_intrin(inner_prod,rinvreg2);
 
-        tvx=add_intrin(tvx,mul_intrin(rinv,add_intrin(svx,mul_intrin(dx,inner_prod))));
-        tvy=add_intrin(tvy,mul_intrin(rinv,add_intrin(svy,mul_intrin(dy,inner_prod))));
-        tvz=add_intrin(tvz,mul_intrin(rinv,add_intrin(svz,mul_intrin(dz,inner_prod))));
+        tvx=add_intrin(tvx,mul_intrin(rinvreg,add_intrin(svx,mul_intrin(dx,inner_prod))));
+        tvy=add_intrin(tvy,mul_intrin(rinvreg,add_intrin(svy,mul_intrin(dy,inner_prod))));
+        tvz=add_intrin(tvz,mul_intrin(rinvreg,add_intrin(svz,mul_intrin(dz,inner_prod))));
       }
       Vec_t ooep=set_intrin<Vec_t,Real_t>(OOEP);
 
@@ -1721,7 +1736,7 @@ void stokes_grad(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cn
     }
   }
 }
-
+/*MIC code is not modified for regularization*/
 #ifndef __MIC__
 #ifdef USE_SSE
 namespace
