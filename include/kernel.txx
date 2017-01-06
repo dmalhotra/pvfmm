@@ -547,6 +547,22 @@ void Kernel<T>::Initialize(bool verbose) const{
               break;
             }
           }
+          { // Check if permutation is symmetric
+            Permutation<long long> P1_=P1.Transpose();
+            Permutation<long long> P2_=P2.Transpose();
+            for(size_t i=0;i<P1.Dim();i++){
+              if(P1_.perm[i]!=P1.perm[i] || P1_.scal[i]!=P1.scal[i]){
+                done=false;
+                break;
+              }
+            }
+            for(size_t i=0;i<P2.Dim();i++){
+              if(P2_.perm[i]!=P2.perm[i] || P2_.scal[i]!=P2.scal[i]){
+                done=false;
+                break;
+              }
+            }
+          }
           if(done){
             P1_=Permutation<T>(P1.Dim());
             P2_=Permutation<T>(P2.Dim());
@@ -561,11 +577,12 @@ void Kernel<T>::Initialize(bool verbose) const{
             break;
           }
         }
+        assert(P1_.Dim() && P2_.Dim());
       }
 
       //std::cout<<P1_<<'\n';
       //std::cout<<P2_<<'\n';
-      perm_vec[p_type       ]=P1_.Transpose();
+      perm_vec[p_type       ]=P1_;
       perm_vec[p_type+C_Perm]=P2_;
     }
 
