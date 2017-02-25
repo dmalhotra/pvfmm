@@ -1,20 +1,5 @@
 # PVFMM [![Build Status](https://travis-ci.org/dmalhotra/pvfmm.svg?branch=develop)](https://travis-ci.org/dmalhotra/pvfmm)
 
-### new_BC branch
-This new_BC branch is forked by Wen Yan from the original pvfmm code to support for 1D, 2D and 3D periodicity in 3D space.
-
-It is implemented in a quick and dirty way. To choose periodicity, define a global variable 
-extern PeriodicType pvfmm::periodicType
-in one .h or .cpp file and set it to one of the following enum values:
-NONE,PX,PXY,PXYZ
-
-to use this package, refer to the repo https://github.com/wenyan4work/PeriodicFMM
-
-update: modified to remove fortran compiler dependence and make it work with clang-openmp/llvm. Specify BLAS/LAPACK directly through CXXFLAGS and LDFLAGS.
-
-
-My thanks go to Dhairya Malhotra for providing patches and instructions to his code.
-Below is the original pvfmm readme file.
 
 ### What is PVFMM?
 

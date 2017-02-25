@@ -57,12 +57,6 @@ is an example:
 
      ./configure MPICXX="CC"
 
-   In particular, in this branch the Fortran compiler dependence has 
-been removed. The --with-blas-lib and --with-lapack-lib options are 
-not necessary. Instead, supply blas/lapack linkage manually through
-CXXFLAGS/LDFLAGS. Or if using SDL linkage from MKL, use '-lmkl_rt'
-for FFTW3, BLAS, and LAPACK 
-
 
 Installation Names
 ==================
@@ -112,16 +106,6 @@ are given below:
 `GCC-4.9 on OS X Yosemite'
      ./configure CXXFLAGS="-Wa,-q -fabi-version=6 -mavx" --with-fftw="$FFTW_DIR"
 
-`CLANG/LLVM 4 from homebrew(with openmp) + OpenMPI 2.1.1 + MKL on macOS 10.12.5'    
-     ./configure CXXFLAGS="-DNDEBUG -std=c++11 -O3 -march=native -DFFTW3_MKL" --with-fftw-include="$MKLROOT/include/fftw" --with-fftw-lib="-lmkl_rt" --with-openmp-flag="fopenmp"
-
-`gcc4.8 + OpenMPI 1.10 + MKL on CentOS 7'
-     ./configure CXXFLAGS="-DNDEBUG -std=c++11 -O3 -march=native -DFFTW3_MKL -fabi-version=0" --with-fftw-include="$MKLROOT/include/fftw" --with-fftw-lib="-lmkl_rt"
-
-`Intel compiler 2017 + Intel MPI + MKL'
-     ./configure MPICXX=mpicxx --prefix=/mnt/xfs1/home/wyan/clusterLocal --with-openmp-flag='qopenmp' CXXFLAGS=" -qno-offload -xHost -DNDEBUG -std=c++11 -I$MKLROOT/include -DFFTW3_MKL" --with-fftw-include="$MKLROOT/include/fftw" --with-fftw-lib="-lmkl_rt"
-
-
 
 `configure' Invocation
 ======================
@@ -141,6 +125,9 @@ operates.
 
 `CC=<C-compiler>'
      Specify the C compiler and relevant flags.
+
+`F77=<Fortran-compiler>'
+     Specify the Fortran compiler and relevant flags.
 
 `NVCCFLAGS=<nvcc flags>'
      Additional flags (eg: NVCCFLAGS="-arch=compute_30 -code=sm_30")

@@ -5,8 +5,6 @@
 #include <pvfmm.hpp>
 #include <utils.hpp>
 
-extern pvfmm::PeriodicType pvfmm::periodicType;
-
 //Input function
 void fn_input(const double* coord, int n, double* out){
   double a=-160;
@@ -101,3 +99,4 @@ with Laplace kernel, using the PvFMM library.\n");
   MPI_Finalize();
   return 0;
 }
+

@@ -9,8 +9,10 @@ AC_CONFIG_SRCDIR([src/tree_node.cpp])
 AM_CONFIG_HEADER([config.h])               # prep config.h from config.h.in
 AX_PREFIX_CONFIG_H([include/pvfmm_config.h]) # prep include/pvfmm_config.h from it..
 
+
 # Set language to C++
 AC_LANG([C++])
+
 
 # Checks for programs.
 AX_PROG_CXX_MPI(,[CXX=$MPICXX],[])
@@ -18,6 +20,7 @@ AX_MPI([CXX=$MPICXX; CC=$MPICC; CFLAGS=$CFLAGS],
        [AC_MSG_ERROR([Cannot find mpicxx. Make sure that MPI is installed and location of compiler is in PATH.])])
 AX_COMPILER_VENDOR
 AC_PROG_AWK
+AC_PROG_F77
 AC_PROG_INSTALL
 AC_PROG_MKDIR_P
 AC_PROG_LN_S
@@ -64,6 +67,8 @@ DX_INIT_DOXYGEN($PACKAGE_NAME, Doxyfile, doc/doxygen)
 
 
 AX_CXX_DEF_TEMPLATE_ARG
+
+CHECK_QUAD_PRECISION
 
 # Check for math libs
 AC_CHECK_LIB([m],[cos])
@@ -141,6 +146,42 @@ AC_CHECK_FFTW
 AC_CHECK_FFTWF
 
 
+#Check for BLAS LAPACK
+#AM_CONDITIONAL(BLAS_EQ_MKL, test "$BLAS" = "MKL")
+#AM_CONDITIONAL(BLAS_EQ_GSL, test "$BLAS" = "GSL")
+#if (test -r $PETSC_DIR/$PETSC_ARCH/conf/petscvariables) ; then
+# PETSC_BLASLAPACK_LIB=`grep "BLASLAPACK_LIB" $PETSC_DIR/$PETSC_ARCH/conf/petscvariables | sed -e 's/.*BLASLAPACK_LIB = //'`
+# if test "x$PETSC_BLASLAPACK_LIB" != x ; then
+#   if test "x$with_blas" != "x" -a "$with_blas" != "$PETSC_BLASLAPACK_LIB" ; then
+#     AC_MSG_WARN([BLAS flags specified by --with-blas appear to disagree with PETSc BLAS/LAPACK flags; using PETSc settings])
+#   fi
+#   if test "x$with_lapack" != "x" -a "$with_lapack" != "$PETSC_BLASLAPACK_LIB" ; then
+#     AC_MSG_WARN([LAPACK flags specified by --with-lapack appear to disagree with PETSc BLAS/LAPACK flags; using PETSc settings])
+#   fi
+#   echo "using PETSc BLAS/LAPACK library flags: $PETSC_BLASLAPACK_LIB"
+#   with_blas="$PETSC_BLASLAPACK_LIB"
+#   with_lapack=""
+# fi
+# PETSC_BLASLAPACK_INCLUDE=`grep "BLASLAPACK_INCLUDE" $PETSC_DIR/$PETSC_ARCH/conf/petscvariables | sed -e 's/.*BLASLAPACK_INCLUDE = //'`
+# if test "x$PETSC_BLASLAPACK_INCLUDE" != x ; then
+#   CPPFLAGS="${PETSC_BLASLAPACK_INCLUDE} $CPPFLAGS"
+# fi
+#fi
+CFLAGS_save=$CFLAGS
+CXXFLAGS_save=$CXXFLAGS
+CFLAGS=""
+CXXFLAGS=""
+AX_BLAS(acx_blas_ok=yes, AC_MSG_ERROR([Cannot find BLAS library.
+                    Please specify the location of the library using: --with-blas=LIB]))
+AX_LAPACK(acx_lapack_ok=yes, AC_MSG_ERROR([Cannot find LAPACK library.
+                    Please specify the location of the library using: --with-lapack=LIB]))
+CFLAGS=$CFLAGS_save
+CXXFLAGS=$CXXFLAGS_save
+AC_SUBST(LAPACK_LIBS)
+AC_SUBST(BLAS_LIBS)
+AC_SUBST(FLIBS)
+
+
 # Checks for header files.
 AC_CHECK_HEADERS([stdint.h cstdlib cstddef])
 
@@ -180,6 +221,8 @@ $PACKAGE-$VERSION library configuration:
 ------------------------------------------------------------------------------
 
 External libs:
+  - BLAS ........... : ${acx_blas_ok}
+  - LAPACK ......... : ${acx_lapack_ok}
   - FFTW ........... : ${acx_fftw_ok}
 
 Compiler/linker flags/libs/defs:
@@ -187,6 +230,7 @@ Compiler/linker flags/libs/defs:
   - CXXFLAGS ....... : ${CXXFLAGS}
   - LDFLAGS ........ : ${LDFLAGS}
   - LIBS ........... : ${LIBS}
+    - BLAS ......... : ${BLAS_LIBS}
     - FFTW ......... : ${FFTW_LIB} ${FFTWF_LIB}
     - X11 .......... : ${X_LIBS}
 

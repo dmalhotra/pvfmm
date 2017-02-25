@@ -5,8 +5,6 @@
 #include <pvfmm.hpp>
 #include <utils.hpp>
 
-extern pvfmm::PeriodicType pvfmm::periodicType;
-
 typedef std::vector<double> vec;
 
 void nbody(vec& sl_coord, vec& sl_den,
@@ -170,3 +168,4 @@ with Laplace Gradient kernel, using the PvFMM library.\n");
   MPI_Finalize();
   return 0;
 }
+
