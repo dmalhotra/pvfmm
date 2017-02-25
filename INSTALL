@@ -1,8 +1,8 @@
 Installation Instructions
 *************************
 
-   This file describes how to compile and install PvFMM.  To install
-PvFMM you will need atleast: MPI C++ compiler, BLAS and FFTW3 libraries.
+   This file describes how to compile and install PVFMM.  To install
+PVFMM you will need at least: MPI C++ compiler, BLAS and FFTW3 libraries.
 The following section describes the installation steps.
 
 
@@ -158,8 +158,8 @@ operates.
      `PVFMM_DIR' environment variable if defined, or the current
      directory at execution.
 
-`CXXFLAGS=-DUSE_SSE'
-     To use SSE optimized imlementation of kernel functions.
+`CXXFLAGS=-msse4' or 'CXXFLAGS=-mavx'
+     To use SSE or AVX optimized implementation of kernel functions.
 
 `configure' also accepts some other, not widely useful, options.  Run
 `configure --help' for more details.
