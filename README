@@ -1,10 +1,10 @@
 
-This new_BC branch is forked from the original pvfmm code by dmalhotra to give minimal support for 1D and 3D periodicity.
+This new_BC branch is forked from the original pvfmm code by dmalhotra to give minimal support for 1D, 2D and 3D periodicity.
 
 It is implemented in a quick and dirty way. To choose periodicity, define a global variable 
 PeriodicType periodicType
 in one .cpp file and set it to one of the following enum values:
-NONE,PXYZ,PX,PY,PZ
+NONE,PXYZ,PZ,PXY
 
 New feature: the stokes velocity kernel is optionally regularized by the macro #define STOKESREGDELTA (0.005)
 when set to zero, the velocity kernel is not regularized. The precomputed matrix must be updated if this value is changed.

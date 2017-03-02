@@ -1149,20 +1149,15 @@ void MPI_Tree<TreeNode>::SetColleagues(BoundaryType bndry, Node_t* node){
         	  ylow=-1;yhigh=+1;
         	  zlow=-1;zhigh=+1;
         	  break;
-          case PeriodicType::PX :
-        	  xlow=-1;xhigh=+1;
-        	  ylow=0;yhigh=0;
-        	  zlow=0;zhigh=0;
-        	  break;
-          case PeriodicType::PY :
-        	  xlow=0;xhigh=0;
-        	  ylow=-1;yhigh=+1;
-        	  zlow=0;zhigh=0;
-        	  break;
           case PeriodicType::PZ :
         	  xlow=0;xhigh=0;
         	  ylow=0;yhigh=0;
         	  zlow=-1;zhigh=+1;
+        	  break;
+          case PeriodicType::PXY :
+        	  xlow=-1;xhigh=+1;
+        	  ylow=-1;yhigh=+1;
+        	  zlow=0;zhigh=0;
         	  break;
           }
 

@@ -269,14 +269,11 @@ void FMM_Pts<FMMNode>::Initialize(int mult_order, const MPI_Comm& comm_, const K
         case PeriodicType::PXYZ :
         	st<<"PXYZ";
       	  break;
-        case PeriodicType::PX :
-        	st<<"PX";
-      	  break;
-        case PeriodicType::PY :
-        	st<<"PY";
-      	  break;
         case PeriodicType::PZ :
         	st<<"PZ";
+      	  break;
+        case PeriodicType::PXY :
+        	st<<"PXY";
       	  break;
         }
     }
@@ -821,20 +818,15 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
         	  ylow=-BC_LEVELS-1;yhigh=BC_LEVELS+1;
         	  zlow=-BC_LEVELS-1;zhigh=BC_LEVELS+1;
         	  break;
-          case PeriodicType::PX :
-        	  xlow=-BC_LEVELS-1;xhigh=BC_LEVELS+1;
-        	  ylow=0;yhigh=0;
-        	  zlow=0;zhigh=0;
-        	  break;
-          case PeriodicType::PY :
-        	  xlow=0;xhigh=0;
-        	  ylow=-BC_LEVELS-1;yhigh=BC_LEVELS+1;
-        	  zlow=0;zhigh=0;
-        	  break;
           case PeriodicType::PZ :
         	  xlow=0;xhigh=0;
         	  ylow=0;yhigh=0;
         	  zlow=-BC_LEVELS-1;zhigh=BC_LEVELS+1;
+        	  break;
+          case PeriodicType::PXY :
+        	  xlow=-BC_LEVELS-1;xhigh=BC_LEVELS+1;
+        	  ylow=-BC_LEVELS-1;yhigh=BC_LEVELS+1;
+        	  zlow=0;zhigh=0;
         	  break;
           }
 

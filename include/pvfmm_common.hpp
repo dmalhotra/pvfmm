@@ -33,9 +33,8 @@
 enum PeriodicType{
 	NONE,
 	PXYZ,
-	PX,
-	PY,
-	PZ
+	PZ,
+	PXY
 };
 
 extern PeriodicType periodicType;
