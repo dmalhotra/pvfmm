@@ -1280,8 +1280,8 @@ void cheb_curl(T* A_, int deg, T* B_){
       Vector<T> A2(n1,&A[n1*j2],false);
       Vector<T> B1(n1,MC1[0],false);
       Vector<T> B2(n1,MC2[0],false);
-      cheb_diff(A1,deg,j2,B2);
-      cheb_diff(A1,deg,j1,B2);
+      cheb_diff(A1,deg,j2,B1);
+      cheb_diff(A2,deg,j1,B2);
     }
     MB=MC2;
     MB-=MC1;

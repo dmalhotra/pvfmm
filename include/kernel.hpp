@@ -105,7 +105,7 @@ template<typename T, void (*A)(T*, int, T*, int, T*, int, T*, mem::MemoryManager
 Kernel<T> BuildKernel(const char* name, int dim, std::pair<int,int> k_dim,
     const Kernel<T>* k_s2m=NULL, const Kernel<T>* k_s2l=NULL, const Kernel<T>* k_s2t=NULL,
     const Kernel<T>* k_m2m=NULL, const Kernel<T>* k_m2l=NULL, const Kernel<T>* k_m2t=NULL,
-    const Kernel<T>* k_l2l=NULL, const Kernel<T>* k_l2t=NULL, typename Kernel<T>::VolPoten vol_poten=NULL){
+    const Kernel<T>* k_l2l=NULL, const Kernel<T>* k_l2t=NULL, typename Kernel<T>::VolPoten vol_poten=NULL, bool scale_invar_=true){
   size_t dev_ker_poten      ;
   size_t dev_dbl_layer_poten;
   #ifdef __INTEL_OFFLOAD
@@ -128,6 +128,7 @@ Kernel<T> BuildKernel(const char* name, int dim, std::pair<int,int> k_dim,
   K.k_l2l=k_l2l;
   K.k_l2t=k_l2t;
   K.vol_poten=vol_poten;
+  K.scale_invar=scale_invar_;
 
   return K;
 }
@@ -136,7 +137,7 @@ template<typename T, void (*A)(T*, int, T*, int, T*, int, T*, mem::MemoryManager
 Kernel<T> BuildKernel(const char* name, int dim, std::pair<int,int> k_dim,
     const Kernel<T>* k_s2m=NULL, const Kernel<T>* k_s2l=NULL, const Kernel<T>* k_s2t=NULL,
     const Kernel<T>* k_m2m=NULL, const Kernel<T>* k_m2l=NULL, const Kernel<T>* k_m2t=NULL,
-    const Kernel<T>* k_l2l=NULL, const Kernel<T>* k_l2t=NULL, typename Kernel<T>::VolPoten vol_poten=NULL){
+    const Kernel<T>* k_l2l=NULL, const Kernel<T>* k_l2t=NULL, typename Kernel<T>::VolPoten vol_poten=NULL, bool scale_invar_=true){
   size_t dev_ker_poten      ;
   #ifdef __INTEL_OFFLOAD
   #pragma offload target(mic:0)
@@ -157,6 +158,7 @@ Kernel<T> BuildKernel(const char* name, int dim, std::pair<int,int> k_dim,
   K.k_l2l=k_l2l;
   K.k_l2t=k_l2t;
   K.vol_poten=vol_poten;
+  K.scale_invar=scale_invar_;
 
   return K;
 }

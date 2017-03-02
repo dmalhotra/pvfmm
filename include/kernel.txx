@@ -124,6 +124,17 @@ void Kernel<T>::Initialize(bool verbose) const{
                   &trg_coord2[i*COORD_DIM], 1, &(M2[i][0]));
     }
 
+    T max_val=0;
+    for(size_t i=0;i<ker_dim[0]*ker_dim[1];i++){
+      T dot11=0, dot22=0;
+      for(size_t j=0;j<N;j++){
+        dot11+=M1[j][i]*M1[j][i];
+        dot22+=M2[j][i]*M2[j][i];
+      }
+      max_val=std::max<T>(max_val,dot11);
+      max_val=std::max<T>(max_val,dot22);
+    }
+    if(scale_invar)
     for(size_t i=0;i<ker_dim[0]*ker_dim[1];i++){
       T dot11=0, dot12=0, dot22=0;
       for(size_t j=0;j<N;j++){
@@ -131,7 +142,6 @@ void Kernel<T>::Initialize(bool verbose) const{
         dot12+=M1[j][i]*M2[j][i];
         dot22+=M2[j][i]*M2[j][i];
       }
-      T max_val=std::max<T>(dot11,dot22);
       if(dot11>max_val*eps &&
          dot22>max_val*eps ){
         T s=dot12/dot11;
@@ -162,7 +172,7 @@ void Kernel<T>::Initialize(bool verbose) const{
       for(size_t i0=0;i0<ker_dim[0];i0++)
       for(size_t i1=0;i1<ker_dim[1];i1++){
         size_t j=i0*ker_dim[1]+i1;
-        if(fabs(b[j][0])>=0){
+        if(b[j][0]>0){
           M[j][ 0+        i0]=1;
           M[j][i1+ker_dim[0]]=1;
         }
@@ -537,6 +547,22 @@ void Kernel<T>::Initialize(bool verbose) const{
               break;
             }
           }
+          { // Check if permutation is symmetric
+            Permutation<long long> P1_=P1.Transpose();
+            Permutation<long long> P2_=P2.Transpose();
+            for(size_t i=0;i<P1.Dim();i++){
+              if(P1_.perm[i]!=P1.perm[i] || P1_.scal[i]!=P1.scal[i]){
+                done=false;
+                break;
+              }
+            }
+            for(size_t i=0;i<P2.Dim();i++){
+              if(P2_.perm[i]!=P2.perm[i] || P2_.scal[i]!=P2.scal[i]){
+                done=false;
+                break;
+              }
+            }
+          }
           if(done){
             P1_=Permutation<T>(P1.Dim());
             P2_=Permutation<T>(P2.Dim());
@@ -551,11 +577,12 @@ void Kernel<T>::Initialize(bool verbose) const{
             break;
           }
         }
+        assert(P1_.Dim() && P2_.Dim());
       }
 
       //std::cout<<P1_<<'\n';
       //std::cout<<P2_<<'\n';
-      perm_vec[p_type       ]=P1_.Transpose();
+      perm_vec[p_type       ]=P1_;
       perm_vec[p_type+C_Perm]=P2_;
     }
 
@@ -1738,7 +1765,7 @@ void stokes_grad(T* r_src, int src_cnt, T* v_src_, int dof, T* r_trg, int trg_cn
 }
 /*MIC code is not modified for regularization*/
 #ifndef __MIC__
-#ifdef USE_SSE
+#if defined __SSE3__
 namespace
 {
 #define IDEAL_ALIGNMENT 16
@@ -1853,7 +1880,7 @@ namespace
         double y = ty[i] - sy[j];
         double z = tz[i] - sz[j];
         double r2 = x*x + y*y + z*z;
-        double r = pvfmm::sqrt<T>(r2);
+        double r = pvfmm::sqrt<double>(r2);
         double invdr;
         if (r == 0)
           invdr = 0;
@@ -2028,7 +2055,7 @@ namespace
         double y = ty[i] - sy[j];
         double z = tz[i] - sz[j];
         double r2 = x*x + y*y + z*z;
-        double r = pvfmm::sqrt<T>(r2);
+        double r = pvfmm::sqrt<double>(r2);
         double invdr;
         if (r == 0)
           invdr = 0;
@@ -2217,7 +2244,7 @@ namespace
         double y = ty[i] - sy[j];
         double z = tz[i] - sz[j];
         double r2 = x*x + y*y + z*z;
-        double r = pvfmm::sqrt<T>(r2);
+        double r = pvfmm::sqrt<double>(r2);
         double invdr;
         if (r == 0)
           invdr = 0;
@@ -2438,9 +2465,9 @@ void biot_savart_uKernel(Matrix<Real_t>& src_coord, Matrix<Real_t>& src_value, M
         Vec_t rinv=RSQRT_INTRIN(r2);
         Vec_t rinv3=mul_intrin(mul_intrin(rinv,rinv),rinv);
 
-        tvx=sub_intrin(tvx,mul_intrin(rinv3,sub_intrin(mul_intrin(svy,dz),mul_intrin(svz,dy))));
-        tvy=sub_intrin(tvy,mul_intrin(rinv3,sub_intrin(mul_intrin(svz,dx),mul_intrin(svx,dz))));
-        tvz=sub_intrin(tvz,mul_intrin(rinv3,sub_intrin(mul_intrin(svx,dy),mul_intrin(svy,dx))));
+        tvx=add_intrin(tvx,mul_intrin(rinv3,sub_intrin(mul_intrin(svy,dz),mul_intrin(svz,dy))));
+        tvy=add_intrin(tvy,mul_intrin(rinv3,sub_intrin(mul_intrin(svz,dx),mul_intrin(svx,dz))));
+        tvz=add_intrin(tvz,mul_intrin(rinv3,sub_intrin(mul_intrin(svx,dy),mul_intrin(svy,dx))));
       }
       Vec_t oofp=set_intrin<Vec_t,Real_t>(OOFP);
 

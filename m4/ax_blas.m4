@@ -138,9 +138,11 @@ fi
 # BLAS in Intel MKL library?
 # New MKL link flag
 if test $ax_blas_ok = no; then
-	AC_CHECK_LIB(, $sgemm,
-		[ax_blas_ok=yes;BLAS_LIBS="-mkl"],,
-		[-mkl])
+	save_LIBS="$LIBS"; LIBS="$LIBS -mkl"
+	AC_MSG_CHECKING([for $sgemm in -mkl])
+	AC_TRY_LINK_FUNC($sgemm, [ax_blas_ok=yes;BLAS_LIBS="-mkl"])
+	AC_MSG_RESULT($ax_blas_ok)
+	LIBS="$save_LIBS"
 fi
 if test $ax_blas_ok = no; then
 	# MKL for gfortran
