@@ -40,7 +40,7 @@ enum PeriodicType{
 
 extern PeriodicType periodicType;
 
-#define STOKESREGDELTA (0.005)
+#define STOKESREGDELTA (0)
 
 #define RAD0 1.05 //Radius of upward equivalent (downward check) surface.
 #define RAD1 2.95 //Radius of downward equivalent (upward check) surface.
