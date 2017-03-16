@@ -254,7 +254,8 @@ namespace mat{
       iter++;
 
       T S_max=0.0;
-      for(size_t i=0;i<dim[1];i++) S_max=(S_max>S(i,i)?S_max:S(i,i));
+      for (size_t i = 0; i < dim[1]; i++) S_max = (S_max > pvfmm::fabs<T>(S(i, i)) ? S_max : pvfmm::fabs<T>(S(i, i)));
+      for (size_t i = 0; i < dim[1] - 1; i++) S_max = (S_max > pvfmm::fabs<T>(S(i, i + 1)) ? S_max : pvfmm::fabs<T>(S(i, i + 1)));
 
       //while(k0<dim[1]-1 && pvfmm::fabs<T>(S(k0,k0+1))<=eps*(pvfmm::fabs<T>(S(k0,k0))+pvfmm::fabs<T>(S(k0+1,k0+1)))) k0++;
       while(k0<dim[1]-1 && pvfmm::fabs<T>(S(k0,k0+1))<=eps*S_max) k0++;
@@ -266,7 +267,7 @@ namespace mat{
 
       T alpha=0;
       T beta=0;
-      if (n - k0 == 2 && S(k0, k0) == 0 && S(k0 + 1, k0 + 1) == 0) { // Compute mu
+      if (n - k0 == 2 && pvfmm::fabs<T>(S(k0, k0)) < eps * S_max && pvfmm::fabs<T>(S(k0 + 1, k0 + 1)) < eps * S_max) { // Compute mu
         alpha=0;
         beta=1;
       } else {
