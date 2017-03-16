@@ -106,6 +106,7 @@ namespace mat{
   template <class T>
   static void GivensL(T* S_, const size_t dim[2], size_t m, T a, T b){
     T r=pvfmm::sqrt<T>(a*a+b*b);
+    if (r == 0) return;
     T c=a/r;
     T s=-b/r;
 
@@ -124,6 +125,7 @@ namespace mat{
   template <class T>
   static void GivensR(T* S_, const size_t dim[2], size_t m, T a, T b){
     T r=pvfmm::sqrt<T>(a*a+b*b);
+    if (r == 0) return;
     T c=a/r;
     T s=-b/r;
 
@@ -163,6 +165,7 @@ namespace mat{
 
           T alpha=pvfmm::sqrt<T>(1+x1*x_inv_norm);
           T beta=x_inv_norm/alpha;
+          if (x_inv_norm == 0) alpha = 0; // nothing to do
 
           house_vec[i]=-alpha;
           for(size_t j=i+1;j<dim[0];j++){
@@ -207,6 +210,7 @@ namespace mat{
 
           T alpha=pvfmm::sqrt<T>(1+x1*x_inv_norm);
           T beta=x_inv_norm/alpha;
+          if (x_inv_norm == 0) alpha = 0; // nothing to do
 
           house_vec[i+1]=-alpha;
           for(size_t j=i+2;j<dim[1];j++){
@@ -262,7 +266,10 @@ namespace mat{
 
       T alpha=0;
       T beta=0;
-      { // Compute mu
+      if (n - k0 == 2 && S(k0, k0) == 0 && S(k0 + 1, k0 + 1) == 0) { // Compute mu
+        alpha=0;
+        beta=1;
+      } else {
         T C[2][2];
         C[0][0]=S(n-2,n-2)*S(n-2,n-2);
         if(n-k0>2) C[0][0]+=S(n-3,n-2)*S(n-3,n-2);
