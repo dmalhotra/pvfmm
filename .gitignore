@@ -32,4 +32,4 @@ libtool
 .cproject
 .project
 .settings/
-
+.vscode/
