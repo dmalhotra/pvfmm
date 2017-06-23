@@ -28,7 +28,7 @@ inline void print_stacktrace(FILE *out = stderr, int skip=1){
   for(int i = skip; i < addrlen; i++) {
     // Get command
     char cmd[10240];
-    sprintf(cmd, "addr2line -f -C -i -e  %s  %016p", fname, addrlist[i]);
+    sprintf(cmd, "addr2line -f -C -i -e  %s  %16p", fname, addrlist[i]);
 
     // Execute command
     FILE* pipe = popen(cmd, "r");
@@ -45,7 +45,7 @@ inline void print_stacktrace(FILE *out = stderr, int skip=1){
     if(buffer0[0]!='?'){
       fprintf(out, "[%d] %s: %s\n", i-skip, buffer1, buffer0);
     }else{
-      fprintf(out, "[%d] %016p: %s\n", i-skip, addrlist[i], symbollist[i]);
+      fprintf(out, "[%d] %16p: %s\n", i-skip, addrlist[i], symbollist[i]);
     }
   }
   fprintf( stderr, "\n");

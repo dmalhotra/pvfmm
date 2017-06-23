@@ -365,7 +365,8 @@ namespace mat{
   inline void svd(char *JOBU, char *JOBVT, int *M, int *N, T *A, int *LDA,
       T *S, T *U, int *LDU, T *VT, int *LDVT, T *WORK, int *LWORK,
       int *INFO){
-    const size_t dim[2]={std::max(*N,*M), std::min(*N,*M)};
+    const size_t dim[2]={std::max(static_cast<size_t>(std::abs(*N)),static_cast<size_t>(std::abs(*M))),
+                         std::min(static_cast<size_t>(std::abs(*N)),static_cast<size_t>(std::abs(*M)))};
     T* U_=mem::aligned_new<T>(dim[0]*dim[0]); memset(U_, 0, dim[0]*dim[0]*sizeof(T));
     T* V_=mem::aligned_new<T>(dim[1]*dim[1]); memset(V_, 0, dim[1]*dim[1]*sizeof(T));
     T* S_=mem::aligned_new<T>(dim[0]*dim[1]);
@@ -428,7 +429,9 @@ namespace mat{
     mem::aligned_delete<T>(V_);
 
     if(0){ // Verify
-      const size_t dim[2]={std::max(*N,*M), std::min(*N,*M)};
+      // const size_t dim[2]={std::max(*N,*M), std::min(*N,*M)};
+      const size_t dim[2]={std::max(static_cast<size_t>(std::abs(*N)),static_cast<size_t>(std::abs(*M))),
+                         std::min(static_cast<size_t>(std::abs(*N)),static_cast<size_t>(std::abs(*M)))};
       const size_t lda=*LDA;
       const size_t ldu=*LDU;
       const size_t ldv=*LDVT;
