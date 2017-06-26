@@ -847,7 +847,7 @@ namespace par{
           if(commCnt) MPI_Waitall(commCnt, &requests[0], &statuses[0]);
 
         }else{
-          scatter_index.ReInit(scatter_index_.Dim(), &scatter_index_[0],false);
+          scatter_index.ReInit(scatter_index_.Dim(), (size_t*)scatter_index_.Begin(),false);
         }
       }
 

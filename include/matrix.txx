@@ -220,6 +220,16 @@ void Matrix<T>::SetZero(){
     memset(data_ptr,0,dim[0]*dim[1]*sizeof(T));
 }
 
+template <class ValueType>
+ValueType* Matrix<ValueType>::Begin(){
+  return data_ptr;
+}
+
+template <class ValueType>
+const ValueType* Matrix<ValueType>::Begin() const{
+  return data_ptr;
+}
+
 template <class T>
 Matrix<T>& Matrix<T>::operator=(const Matrix<T>& M){
   if(this!=&M){
@@ -278,13 +288,19 @@ Matrix<T> Matrix<T>::operator-(const Matrix<T>& M2){
 }
 
 template <class T>
-inline T& Matrix<T>::operator()(size_t i,size_t j) const{
+inline const T& Matrix<T>::operator()(size_t i,size_t j) const{
   assert(i<dim[0] && j<dim[1]);
   return data_ptr[i*dim[1]+j];
 }
 
 template <class T>
-inline T* Matrix<T>::operator[](size_t i) const{
+inline T* Matrix<T>::operator[](size_t i){
+  assert(i<dim[0]);
+  return &data_ptr[i*dim[1]];
+}
+
+template <class T>
+inline const T* Matrix<T>::operator[](size_t i) const{
   assert(i<dim[0]);
   return &data_ptr[i*dim[1]];
 }

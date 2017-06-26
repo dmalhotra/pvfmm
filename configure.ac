@@ -15,7 +15,7 @@ AC_LANG([C++])
 
 # Checks for programs.
 AX_PROG_CXX_MPI(,[CXX=$MPICXX],[])
-AX_MPI([CXX=$MPICXX; CC=$MPICXX; CFLAGS=$CXXFLAGS],
+AX_MPI([CXX=$MPICXX; CC=$MPICC; CFLAGS=$CFLAGS],
        [AC_MSG_ERROR([Cannot find mpicxx. Make sure that MPI is installed and location of compiler is in PATH.])])
 AX_COMPILER_VENDOR
 AC_PROG_AWK
