@@ -80,6 +80,10 @@ class Matrix{
 
   void SetZero();
 
+  T* Begin();
+
+  const T* Begin() const;
+
   Matrix<T>& operator=(const Matrix<T>& M);
 
   Matrix<T>& operator+=(const Matrix<T>& M);
@@ -90,9 +94,11 @@ class Matrix{
 
   Matrix<T> operator-(const Matrix<T>& M2);
 
-  T& operator()(size_t i,size_t j) const;
+  const T& operator()(size_t i,size_t j) const;
 
-  T* operator[](size_t i) const;
+  T* operator[](size_t i);
+
+  const T* operator[](size_t i) const;
 
   Matrix<T> operator*(const Matrix<T>& M);
 

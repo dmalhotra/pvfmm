@@ -195,6 +195,16 @@ void Vector<T>::SetZero(){
     memset(data_ptr,0,dim*sizeof(T));
 }
 
+template <class ValueType>
+ValueType* Vector<ValueType>::Begin(){
+  return data_ptr;
+}
+
+template <class ValueType>
+const ValueType* Vector<ValueType>::Begin() const{
+  return data_ptr;
+}
+
 template <class T>
 Vector<T>& Vector<T>::operator=(const Vector<T>& V){
   if(this!=&V){
@@ -216,7 +226,13 @@ Vector<T>& Vector<T>::operator=(const std::vector<T>& V){
 }
 
 template <class T>
-inline T& Vector<T>::operator[](size_t j) const{
+inline T& Vector<T>::operator[](size_t j){
+  assert(dim>0?j<dim:j==0); //TODO Change to (j<dim)
+  return data_ptr[j];
+}
+
+template <class T>
+inline const T& Vector<T>::operator[](size_t j) const{
   assert(dim>0?j<dim:j==0); //TODO Change to (j<dim)
   return data_ptr[j];
 }

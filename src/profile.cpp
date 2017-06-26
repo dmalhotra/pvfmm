@@ -203,7 +203,7 @@ void Profile::print(const MPI_Comm* comm_){
         std::string s0=out_stack.top();out_stack.pop();
         std::string s1=out_stack.top();out_stack.pop();
         std::stringstream ss(std::stringstream::in | std::stringstream::out);
-        ss<<setiosflags(std::ios::fixed)<<std::setprecision(4)<<std::setiosflags(std::ios::left);
+        ss<<std::setiosflags(std::ios::fixed)<<std::setprecision(4)<<std::setiosflags(std::ios::left);
 
         for(size_t j=0;j<level-1;j++){
           size_t l=i+1;
