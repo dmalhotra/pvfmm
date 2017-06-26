@@ -65,20 +65,19 @@ MemoryManager::~MemoryManager(){
   }
   
   // omp_destroy_lock(&omp_lock);
-  // comment out to workaround a segfault with clang-omp/llvm-4
-  // The internal of openmp destroy_lock is just resetting an integer
-  // from OPENMP standard 3.1
-  // struct __omp_lock
-  // {
-  //   int lock;
-  // };
-  // void omp_destroy_lock(omp_lock_t *arg)
-  // {
-  //   struct __omp_lock *lock = (struct __omp_lock *)arg;
-  //   lock->lock = INIT;
-  // } 
-  // so comment out destroy_lock should not be a problem. 
+  // comment out to workaround a segfault with clang-omp/llvm-4 during object destruction
+  // This is probably related to the following comment in clang's implementation of omp_destroy_lock:
+
   // TODO: waiting for furture clang/llvm updates about this function
+  /* ------------------------------------------------------------------------ */
+  /* test and set locks */
+  // For the non-nested locks, we can only assume that the first 4 bytes were
+  // allocated, since gcc only allocates 4 bytes for omp_lock_t, and the Intel
+  // compiler only allocates a 4 byte pointer on IA-32 architecture.  On
+  // Windows* OS on Intel(R) 64, we can assume that all 8 bytes were allocated.
+  //
+  // gcc reserves >= 8 bytes for nested locks, so we can assume that the
+  // entire 8 bytes were allocated for nested locks on all 64-bit platforms.
 
   { // Check out-of-bounds write
     #ifndef NDEBUG
