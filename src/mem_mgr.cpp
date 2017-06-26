@@ -63,7 +63,22 @@ MemoryManager::~MemoryManager(){
       node_stack.size()!=node_buff.size()-2){
     std::cout<<"\nWarning: memory leak detected.\n";
   }
-  omp_destroy_lock(&omp_lock);
+  
+  // omp_destroy_lock(&omp_lock);
+  // comment out to workaround a segfault with clang-omp/llvm-4
+  // The internal of openmp destroy_lock is just resetting an integer
+  // from OPENMP standard 3.1
+  // struct __omp_lock
+  // {
+  //   int lock;
+  // };
+  // void omp_destroy_lock(omp_lock_t *arg)
+  // {
+  //   struct __omp_lock *lock = (struct __omp_lock *)arg;
+  //   lock->lock = INIT;
+  // } 
+  // so comment out destroy_lock should not be a problem. 
+  // TODO: waiting for furture clang/llvm updates about this function
 
   { // Check out-of-bounds write
     #ifndef NDEBUG
