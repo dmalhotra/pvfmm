@@ -11,6 +11,7 @@ when set to zero, the velocity kernel is not regularized. The precomputed matrix
 
 Only the stokes_ukernel is changed. Other kernels and the kernels on MIC are not modified.
 
+update: modified to remove fortran compiler dependence and make it work with clang-openmp/llvm
 
 -------------------------------------------------------------------------
 My thanks go to dmalhotra for providing patches and instructions to his code.
