@@ -9,7 +9,7 @@
 /configure
 /include/pvfmm_config.h
 /configure.scan
-
+examples/Ex1
 /MakeVariables
 /Makefile
 /autom4te.cache/
