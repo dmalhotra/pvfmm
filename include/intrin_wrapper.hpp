@@ -138,12 +138,12 @@ inline __m128d zero_intrin(){
 
 template <>
 inline __m128 set_intrin(const float& a){
-  return _mm_set_ps1(a);
+  return _mm_set1_ps(a);
 }
 
 template <>
 inline __m128d set_intrin(const double& a){
-  return _mm_set_pd1(a);
+  return _mm_set1_pd(a);
 }
 
 template <>
@@ -158,12 +158,12 @@ inline __m128d load_intrin(double const* a){
 
 template <>
 inline __m128 bcast_intrin(float const* a){
-  return _mm_set_ps1(a[0]);
+  return _mm_set1_ps(a[0]);
 }
 
 template <>
 inline __m128d bcast_intrin(double const* a){
-  return _mm_load_pd1(a);
+  return _mm_load1_pd(a);
 }
 
 template <>
@@ -369,12 +369,12 @@ inline __m256d zero_intrin(){
 
 template <>
 inline __m256 set_intrin(const float& a){
-  return _mm256_set_ps(a,a,a,a,a,a,a,a);
+  return _mm256_set1_ps(a);
 }
 
 template <>
 inline __m256d set_intrin(const double& a){
-  return _mm256_set_pd(a,a,a,a);
+  return _mm256_set1_pd(a);
 }
 
 template <>
