@@ -80,11 +80,12 @@ class Vector{
 
   T& operator[](size_t j) const;
 
+  T* data_ptr;
+
   private:
 
   size_t dim;
   size_t capacity;
-  T* data_ptr;
   bool own_data;
   Device dev;
 };

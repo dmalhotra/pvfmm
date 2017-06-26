@@ -1271,7 +1271,10 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& n
 
       #pragma omp parallel for
       for(size_t i=0;i<n_vec;i++){
-        if(&(*vec_lst[i])[0]){
+        // if(&(*vec_lst[i])[0]){
+        if((*vec_lst[i]).data_ptr != NULL){
+           // workaround to supress a warning : 
+           // reference cannot be bound to dereferenced null pointer in well-defined C++ code
           mem::memcopy(((Real_t*)&dev_buffer[0])+vec_disp[i],&(*vec_lst[i])[0],vec_size[i]*sizeof(Real_t));
         }
       }
