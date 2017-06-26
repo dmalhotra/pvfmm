@@ -10,12 +10,10 @@
 #endif
 #ifdef __SSE2__
 #include <emmintrin.h>
-
 // #ifdef __clang__ // alternative function names for clang
 // #define _mm_set_pd1 _mm_set1_pd
 // #define _mm_store_pd1 _mm_store1_pd
 // #endif
-
 #endif
 #ifdef __SSE3__
 #include <pmmintrin.h>
