@@ -1414,11 +1414,11 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& n
       if(!n_vec) continue;
       if(buff.Dim(0)*buff.Dim(1)>0){
         bool init_buff=false;
-        Real_t* buff_start=&buff[0][0];
-        Real_t* buff_end=&buff[0][0]+buff.Dim(0)*buff.Dim(1);
+        Real_t* buff_start=buff.Begin();
+        Real_t* buff_end=buff.Begin()+buff.Dim(0)*buff.Dim(1);
         #pragma omp parallel for reduction(||:init_buff)
         for(size_t i=0;i<n_vec;i++){
-          if(vec_lst[i]->Dim() && (&(*vec_lst[i])[0]<buff_start || &(*vec_lst[i])[0]>=buff_end)){
+          if(vec_lst[i]->Dim() && (vec_lst[i]->Begin()<buff_start || vec_lst[i]->Begin()>=buff_end)){
             init_buff=true;
           }
         }
@@ -1447,8 +1447,8 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& n
 
       #pragma omp parallel for
       for(size_t i=0;i<n_vec;i++){
-        if(&(*vec_lst[i])[0]){
-          mem::memcopy(((Real_t*)&dev_buffer[0])+vec_disp[i],&(*vec_lst[i])[0],vec_size[i]*sizeof(Real_t));
+        if(vec_lst[i]->Begin()){
+          mem::memcopy(((Real_t*)dev_buffer.Begin())+vec_disp[i],vec_lst[i]->Begin(),vec_size[i]*sizeof(Real_t));
         }
       }
     }
@@ -1462,13 +1462,13 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& n
       for(size_t tid=0;tid<omp_p;tid++){
         size_t a=(buff_size*(tid+0))/omp_p;
         size_t b=(buff_size*(tid+1))/omp_p;
-        mem::memcopy(&buff[0][0]+a,((Real_t*)&dev_buffer[0])+a,(b-a)*sizeof(Real_t));
+        mem::memcopy(buff.Begin()+a,((Real_t*)dev_buffer.Begin())+a,(b-a)*sizeof(Real_t));
       }
     }
 
     #pragma omp parallel for
     for(size_t i=0;i<n_vec;i++){ // ReInit vectors
-      vec_lst[i]->ReInit(vec_size[i],&buff[0][0]+vec_disp[i],false);
+      vec_lst[i]->ReInit(vec_size[i],buff.Begin()+vec_disp[i],false);
     }
   }
 }
@@ -1557,7 +1557,7 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
         for(size_t i=0;i<n_out;i++){
           if(!((FMMNode*)nodes_out[i])->IsGhost() && (level==-1 || ((FMMNode*)nodes_out[i])->Depth()==level)){
             Vector<FMMNode*>& lst=((FMMNode*)nodes_out[i])->interac_list[interac_type];
-            mem::memcopy(&trg_interac_list[i][0], &lst[0], lst.Dim()*sizeof(FMMNode*));
+            mem::memcopy(trg_interac_list[i], lst.Begin(), lst.Dim()*sizeof(FMMNode*));
             assert(lst.Dim()==mat_cnt);
           }
         }
@@ -1640,7 +1640,7 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
                 input_perm .push_back(precomp_data_offset[j][1+4*depth+0]); // prem
                 input_perm .push_back(precomp_data_offset[j][1+4*depth+1]); // scal
                 input_perm .push_back(interac_dsp[trg_node->node_id][j]*vec_size*sizeof(Real_t)); // trg_ptr
-                input_perm .push_back((size_t)(& input_vector[i][0][0]- input_data[0])); // src_ptr
+                input_perm .push_back((size_t)(input_vector[i]->Begin()- input_data[0])); // src_ptr
                 assert(input_vector[i]->Dim()==vec_size);
               }
             }
@@ -1657,7 +1657,7 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
                 output_perm.push_back(precomp_data_offset[j][1+4*depth+2]); // prem
                 output_perm.push_back(precomp_data_offset[j][1+4*depth+3]); // scal
                 output_perm.push_back(interac_dsp[               i ][j]*vec_size*sizeof(Real_t)); // src_ptr
-                output_perm.push_back((size_t)(&output_vector[i][0][0]-output_data[0])); // trg_ptr
+                output_perm.push_back((size_t)(output_vector[i]->Begin()-output_data[0])); // trg_ptr
                 assert(output_vector[i]->Dim()==vec_size);
               }
             }
@@ -1677,18 +1677,18 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
       if(interac_data.Dim(0)*interac_data.Dim(1)<sizeof(size_t)){
         data_size+=sizeof(size_t);
         interac_data.ReInit(1,data_size);
-        ((size_t*)&interac_data[0][0])[0]=sizeof(size_t);
+        ((size_t*)interac_data.Begin())[0]=sizeof(size_t);
       }else{
-        size_t pts_data_size=*((size_t*)&interac_data[0][0]);
+        size_t pts_data_size=*((size_t*)interac_data.Begin());
         assert(interac_data.Dim(0)*interac_data.Dim(1)>=pts_data_size);
         data_size+=pts_data_size;
         if(data_size>interac_data.Dim(0)*interac_data.Dim(1)){ //Resize and copy interac_data.
           Matrix< char> pts_interac_data=interac_data;
           interac_data.ReInit(1,data_size);
-          mem::memcopy(&interac_data[0][0],&pts_interac_data[0][0],pts_data_size);
+          mem::memcopy(interac_data.Begin(),pts_interac_data.Begin(),pts_data_size);
         }
       }
-      char* data_ptr=&interac_data[0][0];
+      char* data_ptr=interac_data.Begin();
       data_ptr+=((size_t*)data_ptr)[0];
 
       ((size_t*)data_ptr)[0]=data_size; data_ptr+=sizeof(size_t);
@@ -1709,7 +1709,7 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
       data_ptr+=interac_mat.size()*sizeof(size_t);
 
       ((size_t*)data_ptr)[0]= input_perm.size(); data_ptr+=sizeof(size_t);
-      mem::memcopy(data_ptr, & input_perm[0],  input_perm.size()*sizeof(size_t));
+      mem::memcopy(data_ptr,  &input_perm[0],  input_perm.size()*sizeof(size_t));
       data_ptr+= input_perm.size()*sizeof(size_t);
 
       ((size_t*)data_ptr)[0]=output_perm.size(); data_ptr+=sizeof(size_t);

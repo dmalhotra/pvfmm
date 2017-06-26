@@ -74,11 +74,17 @@ class Vector{
 
   void SetZero();
 
+  T* Begin();
+
+  const T* Begin() const;
+
   Vector& operator=(const Vector& V);
 
   Vector& operator=(const std::vector<T>& V);
 
-  T& operator[](size_t j) const;
+  T& operator[](size_t j);
+
+  const T& operator[](size_t j) const;
 
   private:
 

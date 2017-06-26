@@ -1134,7 +1134,7 @@ void cheb_diff(const Vector<T>& A, int deg, int diff_dim, Vector<T>& B, mem::Mem
   size_t n2=A.Dim()/(n1*d);
 
   for(size_t k=0;k<n2;k++){ // Rearrange A to make diff_dim the last array dimension
-    Matrix<T> Mi(d,       n1,    &A[d*n1*k],false);
+    Matrix<T> Mi(d,       n1,(T*)&A[d*n1*k],false);
     Matrix<T> Mo(d,A.Dim()/d,&buff1[  n1*k],false);
     for(size_t i=0;i< d;i++)
     for(size_t j=0;j<n1;j++){

@@ -17,6 +17,7 @@ m4_define([_AX_CXX_DEF_TEMPLATE_ARG_testbody], [[
 AC_DEFUN([AX_CXX_DEF_TEMPLATE_ARG], [dnl
 
   AC_LANG_PUSH([C++])dnl
+  AC_LANG_WERROR([on])
   ac_success=no
   AC_CACHE_CHECK(whether $CXX supports default template arguments by default,
   ax_cv_cxx_compile_template,
@@ -46,6 +47,7 @@ AC_DEFUN([AX_CXX_DEF_TEMPLATE_ARG], [dnl
     done
   fi
 
+  AC_LANG_WERROR([on])
   AC_LANG_POP([C++])
   if test x$ac_success = xno; then
     AC_MSG_ERROR([*** Compiler does not support default template arguments in function templates.
