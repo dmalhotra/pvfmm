@@ -64,9 +64,11 @@ MemoryManager::~MemoryManager(){
     std::cout<<"\nWarning: memory leak detected.\n";
   }
   
-  // omp_destroy_lock(&omp_lock);
+  omp_destroy_lock(&omp_lock);
   // comment out to workaround a segfault with clang-omp/llvm-4 during object destruction
   // This is probably related to the following comment in clang's implementation of omp_destroy_lock:
+  // It is also related to this bug in intel's openmp runtime:
+  // (https://software.intel.com/en-us/forums/intel-c-compiler/topic/291343)
 
   // TODO: waiting for furture clang/llvm updates about this function
   /* ------------------------------------------------------------------------ */
