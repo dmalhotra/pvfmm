@@ -32,9 +32,9 @@ ifeq ($(INTEL_OFFLOAD_OK),yes)
 
 $(BINDIR)/%: $(OBJDIR)/%.o
 	-@$(MKDIRS) $(dir $@)
-	$(CXX) -no-offload         $^       $(LDLIBS) -o $@
-	$(CXX)                     $^_async $(LDLIBS) -o $@_async
-	$(CXX) -D__DEVICE_SYNC__=1 $^_mic   $(LDLIBS) -o $@_mic
+	$(CXX) $(CXXFLAGS) -no-offload         $^       $(LDLIBS) -o $@
+	$(CXX) $(CXXFLAGS)                     $^_async $(LDLIBS) -o $@_async
+	$(CXX) $(CXxFLAGS) -D__DEVICE_SYNC__=1 $^_mic   $(LDLIBS) -o $@_mic
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
 	-@$(MKDIRS) $(dir $@)
@@ -46,7 +46,7 @@ else
 
 $(BINDIR)/%: $(OBJDIR)/%.o
 	-@$(MKDIRS) $(dir $@)
-	$(CXX) $^ $(LDLIBS) -o $@
+	$(CXX) $(CXXFLAGS) $^ $(LDLIBS) -o $@
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
 	-@$(MKDIRS) $(dir $@)
