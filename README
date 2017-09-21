@@ -6,11 +6,6 @@ PeriodicType periodicType
 in one .cpp file and set it to one of the following enum values:
 NONE,PXYZ,PZ,PXY
 
-New feature: the stokes velocity kernel is optionally regularized by the macro #define STOKESREGDELTA (0.005)
-when set to zero, the velocity kernel is not regularized. The precomputed matrix must be updated if this value is changed.
-
-Only the stokes_ukernel is changed. Other kernels and the kernels on MIC are not modified.
-
 update: modified to remove fortran compiler dependence and make it work with clang-openmp/llvm
 
 -------------------------------------------------------------------------
