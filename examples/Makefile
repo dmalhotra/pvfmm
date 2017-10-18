@@ -47,6 +47,7 @@ else
 $(BINDIR)/%: $(OBJDIR)/%.o
 	-@$(MKDIRS) $(dir $@)
 	$(CXX) $(CXXFLAGS) $^ $(LDLIBS) -o $@
+#	$(CXX) $^ $(LDLIBS) -o $@
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
 	-@$(MKDIRS) $(dir $@)
