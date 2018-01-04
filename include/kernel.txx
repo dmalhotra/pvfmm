@@ -1567,9 +1567,9 @@ void stokes_vol_poten(const Real_t* coord, int n, Real_t* out){
     Real_t rx_2=c[1]*c[1]+c[2]*c[2];
     Real_t ry_2=c[0]*c[0]+c[2]*c[2];
     Real_t rz_2=c[0]*c[0]+c[1]*c[1];
-    out[n*3*0+i*3+0]=-rx_2/6; out[n*3*0+i*3+1]=      0; out[n*3*0+i*3+2]=      0;
-    out[n*3*1+i*3+0]=      0; out[n*3*1+i*3+1]=-ry_2/6; out[n*3*1+i*3+2]=      0;
-    out[n*3*2+i*3+0]=      0; out[n*3*2+i*3+1]=      0; out[n*3*2+i*3+2]=-rz_2/6;
+    out[(0*n+i)*3+0]=-rx_2/4; out[(0*n+i)*3+1]=      0; out[(0*n+i)*3+2]=      0;
+    out[(1*n+i)*3+0]=      0; out[(1*n+i)*3+1]=-ry_2/4; out[(1*n+i)*3+2]=      0;
+    out[(2*n+i)*3+0]=      0; out[(2*n+i)*3+1]=      0; out[(2*n+i)*3+2]=-rz_2/4;
   }
 }
 
