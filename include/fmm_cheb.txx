@@ -1058,6 +1058,62 @@ void FMM_Cheb<FMMNode>::Down2Target     (SetupData<Real_t>& setup_data, bool dev
 
 template <class FMMNode>
 void FMM_Cheb<FMMNode>::PostProcessing(FMMTree_t* tree, std::vector<FMMNode_t*>& nodes, BoundaryType bndry){
+  if(this->kernel->k_m2l->vol_poten && bndry==Periodic && BC_LEVELS>0){ // Add analytical near-field to target potential
+    const Kernel<Real_t>& k_m2t=*this->kernel->k_m2t;
+    int ker_dim[2]={k_m2t.ker_dim[0],k_m2t.ker_dim[1]};
+
+    Vector<Real_t>& up_equiv=((FMMData*)tree->RootNode()->FMMData())->upward_equiv;
+    Matrix<Real_t> avg_density(1,ker_dim[0]); avg_density.SetZero();
+    for(size_t i0=0;i0<up_equiv.Dim();i0+=ker_dim[0]){
+      for(size_t i1=0;i1<ker_dim[0];i1++){
+        avg_density[0][i1]+=up_equiv[i0+i1];
+      }
+    }
+
+    std::vector<Real_t> node_pts0=cheb_nodes<Real_t>(cheb_deg, COORD_DIM);
+    int Ncoeff=((cheb_deg+1)*(cheb_deg+2)*(cheb_deg+3))/6;
+    int Npts=node_pts0.size()/COORD_DIM;
+    size_t n=nodes.size();
+    #pragma omp parallel
+    { // Add volume potential
+      int omp_p=omp_get_num_threads();
+      int pid=omp_get_thread_num();
+      size_t a=((pid+0)*n)/omp_p;
+      size_t b=((pid+1)*n)/omp_p;
+
+      Vector<Real_t> node_pts(Npts * COORD_DIM);
+      Vector<Real_t> M_vol(Npts * ker_dim[0] * ker_dim[1]);
+      Vector<Real_t> vol_poten_coeff(Ncoeff * ker_dim[1]);
+      Vector<Real_t> vol_poten(Npts * ker_dim[1]);
+      for(size_t i=a;i<b;i++){
+        Vector<Real_t>& cheb_out =((FMMData*)nodes[i]->FMMData())->cheb_out;
+        if(cheb_out.Dim()>0){
+          Real_t* c = nodes[i]->Coord();
+          Real_t s = pvfmm::pow<Real_t>(0.5,nodes[i]->Depth());
+          for(size_t j=0;j<Npts;j++){
+            for(size_t k=0;k<COORD_DIM;k++){
+              node_pts[j*COORD_DIM+k] = c[k] + node_pts0[j*COORD_DIM+k] * s;
+            }
+          }
+
+          vol_poten.SetZero();
+          k_m2t.vol_poten(&node_pts[0],Npts,&M_vol[0]);
+          for(int j=0;j<Npts;j++){
+            for(int k0=0;k0<ker_dim[0];k0++){
+              for(int k1=0;k1<ker_dim[1];k1++){
+                vol_poten[k1 * Npts + j] += M_vol[(k0 * Npts + j) * ker_dim[1] + k1] * avg_density[0][k0];
+              }
+            }
+          }
+
+          assert(cheb_out.Dim() == vol_poten_coeff.Dim());
+          cheb_approx<Real_t, Real_t>(&vol_poten[0], cheb_deg, ker_dim[1], &vol_poten_coeff[0]);
+          for(int j=0;j<vol_poten_coeff.Dim();j++) cheb_out[j]-=vol_poten_coeff[j];
+        }
+      }
+    }
+  }
+
   size_t n=nodes.size();
   #pragma omp parallel
   {

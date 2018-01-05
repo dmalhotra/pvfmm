@@ -163,10 +163,16 @@ AC_CHECK_FFTWF
 #    CPPFLAGS="${PETSC_BLASLAPACK_INCLUDE} $CPPFLAGS"
 #  fi
 #fi
+CFLAGS_save=$CFLAGS
+CXXFLAGS_save=$CXXFLAGS
+CFLAGS=""
+CXXFLAGS=""
 AX_BLAS(acx_blas_ok=yes, AC_MSG_ERROR([Cannot find BLAS library.
                     Please specify the location of the library using: --with-blas=LIB]))
 AX_LAPACK(acx_lapack_ok=yes, AC_MSG_ERROR([Cannot find LAPACK library.
                     Please specify the location of the library using: --with-lapack=LIB]))
+CFLAGS=$CFLAGS_save
+CXXFLAGS=$CXXFLAGS_save
 AC_SUBST(LAPACK_LIBS)
 AC_SUBST(BLAS_LIBS)
 AC_SUBST(FLIBS)
