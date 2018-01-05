@@ -31,14 +31,14 @@ T cheb_approx(T* fn_v, int d, int dof, T* out, mem::MemoryManager* mem_mgr=NULL)
 
 /**
  * \brief Evaluates polynomial values from input coefficients at points on
- * a regular grid defined by in_x, in_y, in_z the values in the input vector.
+ * a regular grid defined by in_x, in_y, in_z vectors.
  */
 template <class T>
 void cheb_eval(const Vector<T>& coeff_, int cheb_deg, const std::vector<T>& in_x, const std::vector<T>& in_y, const std::vector<T>& in_z, Vector<T>& out, mem::MemoryManager* mem_mgr=NULL);
 
 /**
- * \brief Evaluates polynomial values from input coefficients at points on
- * a regular grid defined by the values in the input vector.
+ * \brief Evaluates polynomial values from input coefficients at points
+ * defined by the values in the coord vector.
  */
 template <class T>
 void cheb_eval(Vector<T>& coeff_, int cheb_deg, std::vector<T>& coord, Vector<T>& out);
