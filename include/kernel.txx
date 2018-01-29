@@ -32,6 +32,8 @@ Kernel<T>::Kernel(Ker_t poten, Ker_t dbl_poten, const char* name, int dim_, std:
   ker_poten=poten;
   dbl_layer_poten=dbl_poten;
   ker_name=std::string(name);
+  // compatibility with internally defined kernels
+  surf_dim=COORD_DIM+ker_dim[0];
 
   dev_ker_poten=dev_poten;
   dev_dbl_layer_poten=dev_dbl_poten;

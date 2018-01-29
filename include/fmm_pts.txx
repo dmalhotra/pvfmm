@@ -1112,7 +1112,8 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& n
   {// 4. src_val
     int indx=4;
     int src_dof=kernel->ker_dim[0];
-    int surf_dof=COORD_DIM+src_dof;
+    int surf_dof=kernel->surf_dim;
+    // int surf_dof=COORD_DIM+src_dof;
 
     std::vector< FMMNode* > node_lst;
     for(size_t i=0;i<node.size();i++){// Construct node_lst
