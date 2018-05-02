@@ -5,7 +5,7 @@
 #include <pvfmm.hpp>
 #include <utils.hpp>
 
-PeriodicType periodicType = PeriodicType::NONE;
+extern pvfmm::PeriodicType pvfmm::periodicType;
 
 // Input function
 void fn_input(const double *coord, int n, double *out) {

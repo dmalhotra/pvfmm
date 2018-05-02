@@ -25,8 +25,6 @@
 #include <mpi_node.hpp>
 #include <profile.hpp>
 
-//PeriodicType periodicType;
-
 namespace pvfmm{
 
 /**

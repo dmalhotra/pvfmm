@@ -12,7 +12,7 @@
 #include <profile.hpp>
 #include <utils.hpp>
 
-PeriodicType periodicType = PeriodicType::NONE;
+extern pvfmm::PeriodicType pvfmm::periodicType;
 //////////////////////////////////////////////////////////////////////////////
 // Test1: Laplace problem, Smooth Gaussian, Periodic Boundary
 ///////////////////////////////////////////////////////////////////////////////
@@ -262,7 +262,7 @@ void fmm_test(int test_case, size_t N, size_t M, bool unif, int mult_order,
     mykernel = &pvfmm::LaplaceKernel<Real_t>::potential();
     // mykernel_grad=&pvfmm::LaplaceKernel<Real_t>::gradient();
     bndry = pvfmm::Periodic;
-    periodicType = PeriodicType::PXYZ;
+    pvfmm::periodicType = pvfmm::PeriodicType::PXYZ;
     break;
   case 2:
     fn_input_ = fn_input_t2<Real_t>;

@@ -15,6 +15,7 @@
 #include <cmath>
 
 namespace pvfmm{
+  PeriodicType periodicType=PeriodicType::NONE;
 namespace mem{
 
 MemoryManager::MemoryManager(size_t N){

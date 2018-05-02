@@ -7,7 +7,7 @@
 
 typedef std::vector<double> vec;
 
-PeriodicType periodicType = PeriodicType::NONE;
+extern pvfmm::PeriodicType pvfmm::periodicType;
 
 void nbody(vec &src_coord, vec &src_value, vec &surf_coord, vec &surf_value,
            vec &trg_coord, vec &trg_value,

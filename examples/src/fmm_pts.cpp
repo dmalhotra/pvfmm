@@ -11,7 +11,7 @@
 #include <profile.hpp>
 #include <utils.hpp>
 
-PeriodicType periodicType = PeriodicType::NONE;
+extern pvfmm::PeriodicType pvfmm::periodicType;
 
 template <class Real_t>
 void fmm_test(int ker, size_t N, size_t M, Real_t b, int dist, int mult_order,
@@ -89,7 +89,7 @@ void fmm_test(int ker, size_t N, size_t M, Real_t b, int dist, int mult_order,
     std::cout << "BoundaryType: "
               << (bndry == pvfmm::Periodic ? "Periodic" : "FreeSpace") << '\n';
     if (bndry == pvfmm::Periodic) {
-      periodicType = PeriodicType::PXYZ;
+      pvfmm::periodicType = pvfmm::PeriodicType::PXYZ;
     }
   }
 
