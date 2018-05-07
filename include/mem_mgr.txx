@@ -39,8 +39,8 @@ PVFMMDefinePOD(double*);
 
 
 MemoryManager::MemHead* MemoryManager::GetMemHead(void* p){
-  static uintptr_t alignment=MEM_ALIGN-1;
-  static uintptr_t header_size=(uintptr_t)(sizeof(MemoryManager::MemHead)+alignment) & ~(uintptr_t)alignment;
+  static constexpr uintptr_t alignment=MEM_ALIGN-1;
+  static constexpr uintptr_t header_size=(uintptr_t)(sizeof(MemoryManager::MemHead)+alignment) & ~(uintptr_t)alignment;
   return (MemHead*)(((char*)p)-header_size);
 }
 

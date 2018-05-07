@@ -15,6 +15,7 @@
 #include <vector>
 #include <stack>
 #include <map>
+#include <mutex>
 
 #include <pvfmm_common.hpp>
 
@@ -47,7 +48,7 @@ class MemoryManager{
 
   public:
 
-    static const char init_mem_val=42;
+    static constexpr char init_mem_val=42;
 
     /**
      * \brief Header data for each memory block.
@@ -122,7 +123,7 @@ class MemoryManager{
     mutable std::vector<MemNode> node_buff;         // storage for MemNode objects, this can only grow.
     mutable std::stack<size_t> node_stack;          // stack of available free MemNodes from node_buff.
     mutable std::multimap<size_t, size_t> free_map; // pair (MemNode.size, MemNode_id) for all free MemNodes.
-    mutable omp_lock_t omp_lock;                    // openmp lock to prevent concurrent changes.
+    mutable std::mutex mutex_lock;
 };
 
 /** A global MemoryManager object. This is the default for aligned_new and
@@ -131,8 +132,8 @@ extern MemoryManager glbMemMgr;
 
 
 inline uintptr_t align_ptr(uintptr_t ptr){
-  static uintptr_t     ALIGN_MINUS_ONE=MEM_ALIGN-1;
-  static uintptr_t NOT_ALIGN_MINUS_ONE=~ALIGN_MINUS_ONE;
+  static constexpr uintptr_t     ALIGN_MINUS_ONE=MEM_ALIGN-1;
+  static constexpr uintptr_t NOT_ALIGN_MINUS_ONE=~ALIGN_MINUS_ONE;
   return ((ptr+ALIGN_MINUS_ONE) & NOT_ALIGN_MINUS_ONE);
 }
 
