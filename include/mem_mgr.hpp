@@ -156,7 +156,7 @@ inline void aligned_delete(T* A, const MemoryManager* mem_mgr=&glbMemMgr);
  * \brief Wrapper to memcpy. Also checks if source and destination pointers are
  * the same.
  */
-inline void * memcopy(void * destination, const void * source, size_t num);
+template <class ValueType> inline ValueType* copy(ValueType* destination, const ValueType* source, size_t num);
 
 }//end namespace
 }//end namespace

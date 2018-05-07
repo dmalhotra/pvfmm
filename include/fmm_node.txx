@@ -132,7 +132,7 @@ PackedData FMM_Node<Node>::Pack(bool ghost, void* buff_ptr, size_t offset){
 
   // Copy multipole data.
   ((size_t*)data_ptr)[0]=p2.length; data_ptr+=sizeof(size_t);
-  mem::memcopy(data_ptr,p2.data,p2.length);
+  mem::copy<char>(data_ptr,(char*)p2.data,p2.length);
 
   return p0;
 }

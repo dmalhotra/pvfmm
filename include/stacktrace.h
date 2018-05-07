@@ -4,6 +4,9 @@
 #include <stdlib.h>
 #include <execinfo.h>
 #include <cxxabi.h>
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
+#endif
 
 #ifndef _PVFMM_STACKTRACE_H_
 #define _PVFMM_STACKTRACE_H_
@@ -21,14 +24,23 @@ inline void print_stacktrace(FILE *out = stderr, int skip=1){
 
   // Get filename
   char fname[10240];
+#ifdef __APPLE__
+  uint32_t size = sizeof(fname);
+  _NSGetExecutablePath(fname, &size);
+#elif __linux__
   size_t fname_len = ::readlink("/proc/self/exe", fname, sizeof(fname)-1);
   fname[fname_len]='\0';
+#endif
 
   // Print
   for(int i = skip; i < addrlen; i++) {
     // Get command
     char cmd[10240];
-    sprintf(cmd, "addr2line -f -C -i -e  %s  %p", fname, addrlist[i]);
+#ifdef __APPLE__
+    sprintf(cmd, "atos -o %s %p 2> /dev/null", fname, addrlist[i]); // on mac
+#elif __linux__
+    sprintf(cmd, "addr2line -f -C -i -e  %s  %p 2> /dev/null", fname, addrlist[i]);
+#endif
 
     // Execute command
     FILE* pipe = popen(cmd, "r");
@@ -42,7 +54,7 @@ inline void print_stacktrace(FILE *out = stderr, int skip=1){
     pclose(pipe);
 
     // Print output
-    if(buffer0[0]!='?'){
+    if(buffer0[0]!='?' && buffer0[0]!='\0'){
       fprintf(out, "[%d] %s: %s\n", i-skip, buffer1, buffer0);
     }else{
       fprintf(out, "[%d] %p: %s\n", i-skip, addrlist[i], symbollist[i]);
