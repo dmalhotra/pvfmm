@@ -52,7 +52,6 @@ lib_libfmm_a_HEADERS = \
 									include/dtypes.h \
 									include/fft_wrapper.hpp \
 									include/fmm_cheb.hpp \
-									include/fmm_gll.hpp \
 									include/fmm_node.hpp \
 									include/fmm_pts.hpp \
 									include/fmm_pts_gpu.hpp \
@@ -106,13 +105,13 @@ lib_libpvfmm_a_SOURCES = \
 									$(lib_libpvfmm_a_HEADERS) \
 									src/cheb_utils.cpp \
 									src/device_wrapper.cpp \
-									src/fmm_gll.cpp \
 									src/legendre_rule.cpp \
 									src/mat_utils.cpp \
 									src/math_utils.cpp \
 									src/mem_mgr.cpp \
 									src/mortonid.cpp \
 									src/profile.cpp \
+									src/pvfmm-wrapper.cpp \
 									src/tree_node.cpp
 
 if NVCC_OK
