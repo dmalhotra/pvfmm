@@ -6,6 +6,7 @@
 
 void BiotSavart(const double* src_X, const double* src_V, long Ns, const double* trg_X, double* trg_V, long Nt) { // Direct evaluation
   double oofp = 1 / (4 * M_PI);
+  #pragma omp parallel for schedule(static)
   for (long t = 0; t < Nt; t++) {
     trg_V[t*3+0] = 0;
     trg_V[t*3+1] = 0;
@@ -28,8 +29,8 @@ void BiotSavart(const double* src_X, const double* src_V, long Ns, const double*
 
 void test_FMM(void* ctx) { // Compare FMM and direct evaluation results
   int kdim[2] = {3,3};
-  int64_t Ns = 20000;
-  int64_t Nt = 20000;
+  long Ns = 20000;
+  long Nt = 20000;
 
   // Initialize target coordinates
   double* trg_X  = (double*)malloc(Nt *       3 * sizeof(double));
@@ -45,7 +46,7 @@ void test_FMM(void* ctx) { // Compare FMM and direct evaluation results
 
   // FMM evaluation
   double tt;
-  int32_t setup = 1;
+  int setup = 1;
   tt = -omp_get_wtime();
   PVFMMEvalD(src_X, src_V, NULL, Ns, trg_X, trg_V, Nt, ctx, setup);
   printf("FMM evaluation time (with setup) : %f\n", tt + omp_get_wtime());
@@ -81,9 +82,9 @@ int main(int argc, char** argv) {
   void* ctx;
   { // Create FMM context
     double box_size = -1;
-    int32_t points_per_box = 1000;
-    int32_t multipole_order = 10;
-    int32_t kernel = PVFMMBiotSavartPotential;
+    int points_per_box = 1000;
+    int multipole_order = 10;
+    PVFMMKernel kernel = PVFMMBiotSavartPotential;
     ctx = PVFMMCreateContextD(box_size, points_per_box, multipole_order, kernel, MPI_COMM_WORLD);
   }
 

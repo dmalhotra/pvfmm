@@ -38,6 +38,7 @@ subroutine BiotSavart(Xs, Vs, Ns, Xt, Vt, Nt)
   real*8 :: oofp, X(3), rinv, rinv3
 
   oofp = 1/(16*atan(1.0))
+  !$omp parallel do
   do t = 0, Nt-1
     Vt(t*3+1) = 0
     Vt(t*3+2) = 0
@@ -69,14 +70,15 @@ subroutine test(fmm_ctx, Ns, Nt)
   double precision :: omp_get_wtime, tt
   type (c_ptr) :: fmm_ctx
   integer*4 :: setup
+  real*4 :: rand
 
   call srand(0)
   do i=1, Ns*3
-    Xs(i) = rand()
-    Vs(i) = rand()
+    Xs(i) = rand(0)
+    Vs(i) = rand(0)
   enddo
   do i=1, Nt*3
-    Xt(i) = rand()
+    Xt(i) = rand(0)
   enddo
 
   setup = 1
