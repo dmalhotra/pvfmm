@@ -84,7 +84,7 @@ int main(int argc, char** argv) {
     double box_size = -1;
     int points_per_box = 1000;
     int multipole_order = 10;
-    PVFMMKernel kernel = PVFMMBiotSavartPotential;
+    enum PVFMMKernel kernel = PVFMMBiotSavartPotential;
     ctx = PVFMMCreateContextD(box_size, points_per_box, multipole_order, kernel, MPI_COMM_WORLD);
   }
 
