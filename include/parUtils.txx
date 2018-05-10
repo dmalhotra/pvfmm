@@ -835,7 +835,7 @@ namespace par{
           }
           for(int i=0;i<npesLong;i++){ // send data
             if(send_cnt[i] && i!=rank){
-              MPI_Issend(&scatter_index_[0]+send_dsp[i], send_cnt[i], par::Mpi_datatype<size_t>::value(), i, 1,
+              MPI_Issend((void*)(&scatter_index_[0]+send_dsp[i]), send_cnt[i], par::Mpi_datatype<size_t>::value(), i, 1,
                   comm, &requests[commCnt]);
               commCnt++;
             }

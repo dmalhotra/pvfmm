@@ -130,7 +130,7 @@ inline int points2Octree(const Vector<MortonId>& pt_mid, Vector<MortonId>& nodes
     }
     if(recv_size>0){// Resize pt_sorted.
       Vector<MortonId> pt_sorted_(pt_cnt+recv_size);
-      mem::memcopy(&pt_sorted_[0], &pt_sorted[0], pt_cnt*sizeof(MortonId));
+      mem::copy<MortonId>(&pt_sorted_[0], &pt_sorted[0], pt_cnt);
       pt_sorted.Swap(pt_sorted_);
     }
     {// Exchange data.
@@ -581,7 +581,7 @@ void MPI_Tree<TreeNode>::RedistNodes(MortonId* loc_min) {
     size_t a=( p   *leaf_cnt)/omp_p;
     size_t b=((p+1)*leaf_cnt)/omp_p;
     for(size_t i=a;i<b;i++)
-      mem::memcopy(data_ptr[i], data[i].data, data[i].length);
+      mem::copy<char>(data_ptr[i], (char*)data[i].data, data[i].length);
   }
 
   par::Mpi_Alltoallv_sparse<char>(&send_buff[0], &send_size[0], &sdisp[0],
@@ -1446,7 +1446,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Hypercube(BoundaryType bndry){
         if( node_flag0[i]){ // Copy data to send buffer.
           char* data_ptr=(char*)&send_buff_vec[send_length];
           ((size_t*)data_ptr)[0]=p.length; data_ptr+=sizeof(size_t);
-          //mem::memcopy(data_ptr,p.data,p.length);
+          //mem::copy<char>(data_ptr,p.data,p.length);
           mem_size.push_back(p.length);
           srctrg_ptr.push_back(p.data);
           srctrg_ptr.push_back(data_ptr);
@@ -1465,7 +1465,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Hypercube(BoundaryType bndry){
         size_t i0=((k+0)*mem_size.size())/omp_p;
         size_t i1=((k+1)*mem_size.size())/omp_p;
         for(size_t i=i0;i<i1;i++){
-          mem::memcopy(srctrg_ptr[2*i+1],srctrg_ptr[2*i+0],mem_size[i]);
+          mem::copy<char>((char*)srctrg_ptr[2*i+1],(char*)srctrg_ptr[2*i+0],mem_size[i]);
         }
       }
     }
@@ -1504,7 +1504,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Hypercube(BoundaryType bndry){
           p1.data=*mem_set.begin();
           mem_set.erase(mem_set.begin());
         }
-        //mem::memcopy(p1.data,p0.data,p0.length);
+        //mem::copy<char>(p1.data,p0.data,p0.length);
         mem_size.push_back(p0.length);
         srctrg_ptr.push_back(p0.data);
         srctrg_ptr.push_back(p1.data);
@@ -1515,7 +1515,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Hypercube(BoundaryType bndry){
         size_t i0=((k+0)*mem_size.size())/omp_p;
         size_t i1=((k+1)*mem_size.size())/omp_p;
         for(size_t i=i0;i<i1;i++){
-          mem::memcopy(srctrg_ptr[2*i+1],srctrg_ptr[2*i+0],mem_size[i]);
+          mem::copy<char>((char*)srctrg_ptr[2*i+1],(char*)srctrg_ptr[2*i+0],mem_size[i]);
         }
       }
     }
@@ -1682,7 +1682,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
         new_comm_data=comm_data;
 
         new_comm_data.pkd_length=sizeof(CommData)+p0.length;
-        mem::memcopy(((char*)shared_data[i])+sizeof(CommData),buff,p0.length);
+        mem::copy<char>(((char*)shared_data[i])+sizeof(CommData),buff,p0.length);
       }
       this->memgr.free(buff);
     }
@@ -1714,7 +1714,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
     #pragma omp parallel for
     for(size_t i=0;i<pid_node_pair.size();i++){
       size_t shrd_idx=pid_node_pair[i].data;
-      mem::memcopy(&send_buff[disp[i]], shared_data[shrd_idx], size[i]);
+      mem::copy<char>(&send_buff[disp[i]], (char*)shared_data[shrd_idx], size[i]);
     }
 
     // Compute send_size, send_disp.
@@ -1892,7 +1892,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
         for(size_t j=0;j<comm_data.usr_cnt;j++){
           if(comm_data.usr_mid[j]==shrd_mid[d]){
             char* data_ptr=(char*)this->memgr.malloc(comm_data.pkd_length);
-            mem::memcopy(data_ptr, &comm_data, comm_data.pkd_length);
+            mem::copy<char>(data_ptr, (char*)&comm_data, comm_data.pkd_length);
             shrd_data.push_back(data_ptr);
             break;
           }
@@ -1937,7 +1937,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
         #pragma omp parallel for
         for(size_t i=0;i<send_data.size();i++){
           CommData& comm_data=*(CommData*)send_data[i];
-          mem::memcopy(&send_buff[send_disp[i]], &comm_data, comm_data.pkd_length);
+          mem::copy<char>(&send_buff[send_disp[i]], (char*)&comm_data, comm_data.pkd_length);
         }
       }
 
@@ -2096,7 +2096,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
           for(size_t j=0;j<comm_data.usr_cnt;j++){
             if(comm_data.usr_mid[j]==shrd_mid[d]){
               char* data_ptr=(char*)this->memgr.malloc(comm_data.pkd_length);
-              mem::memcopy(data_ptr, &comm_data, comm_data.pkd_length);
+              mem::copy<char>(data_ptr, (char*)&comm_data, comm_data.pkd_length);
               shrd_data.push_back(data_ptr);
               break;
             }

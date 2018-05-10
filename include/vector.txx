@@ -46,7 +46,7 @@ Vector<T>::Vector(size_t dim_, T* data_, bool own_data_){
 #if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
       Profile::Add_MEM(capacity*sizeof(T));
 #endif
-      if(data_!=NULL) mem::memcopy(data_ptr,data_,dim*sizeof(T));
+      if(data_!=NULL) mem::copy<T>(data_ptr,data_,dim);
     }else data_ptr=NULL;
   }else
     data_ptr=data_;
@@ -63,7 +63,7 @@ Vector<T>::Vector(const Vector<T>& V){
 #if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
     Profile::Add_MEM(capacity*sizeof(T));
 #endif
-    mem::memcopy(data_ptr,V.data_ptr,dim*sizeof(T));
+    mem::copy<T>(data_ptr,V.data_ptr,dim);
   }else
     data_ptr=NULL;
   dev.dev_ptr=(uintptr_t)NULL;
@@ -79,7 +79,7 @@ Vector<T>::Vector(const std::vector<T>& V){
 #if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
     Profile::Add_MEM(capacity*sizeof(T));
 #endif
-    mem::memcopy(data_ptr,&V[0],dim*sizeof(T));
+    mem::copy<T>(data_ptr,&V[0],dim);
   }else
     data_ptr=NULL;
   dev.dev_ptr=(uintptr_t)NULL;
@@ -126,7 +126,7 @@ template <class T>
 void Vector<T>::ReInit(size_t dim_, T* data_, bool own_data_){
   if(own_data_ && own_data && dim_<=capacity){
     if(dim!=dim_) FreeDevice(false); dim=dim_;
-    if(data_) mem::memcopy(data_ptr,data_,dim*sizeof(T));
+    if(data_) mem::copy<T>(data_ptr,data_,dim);
   }else{
     Vector<T> tmp(dim_,data_,own_data_);
     this->Swap(tmp);
@@ -210,7 +210,7 @@ Vector<T>& Vector<T>::operator=(const Vector<T>& V){
   if(this!=&V){
     if(dim!=V.dim) FreeDevice(false);
     if(capacity<V.dim) ReInit(V.dim); dim=V.dim;
-    mem::memcopy(data_ptr,V.data_ptr,dim*sizeof(T));
+    mem::copy<T>(data_ptr,V.data_ptr,dim);
   }
   return *this;
 }
@@ -220,7 +220,7 @@ Vector<T>& Vector<T>::operator=(const std::vector<T>& V){
   {
     if(dim!=V.size()) FreeDevice(false);
     if(capacity<V.size()) ReInit(V.size()); dim=V.size();
-    mem::memcopy(data_ptr,&V[0],dim*sizeof(T));
+    mem::copy<T>(data_ptr,&V[0],dim);
   }
   return *this;
 }

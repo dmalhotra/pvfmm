@@ -39,8 +39,8 @@ PVFMMDefinePOD(double*);
 
 
 MemoryManager::MemHead* MemoryManager::GetMemHead(void* p){
-  static uintptr_t alignment=MEM_ALIGN-1;
-  static uintptr_t header_size=(uintptr_t)(sizeof(MemoryManager::MemHead)+alignment) & ~(uintptr_t)alignment;
+  static constexpr uintptr_t alignment=MEM_ALIGN-1;
+  static constexpr uintptr_t header_size=(uintptr_t)(sizeof(MemoryManager::MemHead)+alignment) & ~(uintptr_t)alignment;
   return (MemHead*)(((char*)p)-header_size);
 }
 
@@ -127,9 +127,15 @@ void aligned_delete(T* A, const MemoryManager* mem_mgr){
   mem_mgr->free(A);
 }
 
-void* memcopy( void * destination, const void * source, size_t num){
-  if(destination==source || num==0) return destination;
-  return memcpy ( destination, source, num );
+template <class ValueType> ValueType* copy(ValueType* destination, const ValueType* source, size_t num){
+  if (destination != source && num) {
+    if (TypeTraits<ValueType>::IsPOD()) {
+      memcpy(destination, source, num * sizeof(ValueType));
+    } else {
+      for (size_t i = 0; i < num; i++) destination[i] = source[i];
+    }
+  }
+  return destination;
 }
 
 }//end namespace
