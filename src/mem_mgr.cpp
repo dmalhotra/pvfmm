@@ -53,8 +53,6 @@ MemoryManager::MemoryManager(size_t N){
   n.next=0;
   n.mem_ptr=&buff[0];
   n.it=free_map.insert(std::make_pair(N,n_indx));
-
-  omp_init_lock(&omp_lock);
 }
 
 MemoryManager::~MemoryManager(){
@@ -64,23 +62,6 @@ MemoryManager::~MemoryManager(){
       node_stack.size()!=node_buff.size()-2){
     std::cout<<"\nWarning: memory leak detected.\n";
   }
-  
-  omp_destroy_lock(&omp_lock);
-  // comment out to workaround a segfault with clang-omp/llvm-4 during object destruction
-  // This is probably related to the following comment in clang's implementation of omp_destroy_lock:
-  // It is also related to this bug in intel's openmp runtime:
-  // (https://software.intel.com/en-us/forums/intel-c-compiler/topic/291343)
-
-  // TODO: waiting for furture clang/llvm updates about this function
-  /* ------------------------------------------------------------------------ */
-  /* test and set locks */
-  // For the non-nested locks, we can only assume that the first 4 bytes were
-  // allocated, since gcc only allocates 4 bytes for omp_lock_t, and the Intel
-  // compiler only allocates a 4 byte pointer on IA-32 architecture.  On
-  // Windows* OS on Intel(R) 64, we can assume that all 8 bytes were allocated.
-  //
-  // gcc reserves >= 8 bytes for nested locks, so we can assume that the
-  // entire 8 bytes were allocated for nested locks on all 64-bit platforms.
 
   { // Check out-of-bounds write
     #ifndef NDEBUG
@@ -98,14 +79,14 @@ MemoryManager::~MemoryManager(){
 
 void* MemoryManager::malloc(const size_t n_elem, const size_t type_size) const{
   if(!n_elem) return NULL;
-  static uintptr_t alignment=MEM_ALIGN-1;
-  static uintptr_t header_size=(uintptr_t)(sizeof(MemHead)+alignment) & ~(uintptr_t)alignment;
+  static constexpr uintptr_t alignment=MEM_ALIGN-1;
+  static constexpr uintptr_t header_size=(uintptr_t)(sizeof(MemHead)+alignment) & ~(uintptr_t)alignment;
 
   size_t size=n_elem*type_size+header_size;
   size=(uintptr_t)(size+alignment) & ~(uintptr_t)alignment;
   char* base=NULL;
 
-  omp_set_lock(&omp_lock);
+  mutex_lock.lock();
   std::multimap<size_t, size_t>::iterator it=free_map.lower_bound(size);
   size_t n_indx=(it!=free_map.end()?it->second:0);
   if(n_indx){ // Allocate from buff
@@ -138,7 +119,7 @@ void* MemoryManager::malloc(const size_t n_elem, const size_t type_size) const{
     free_map.erase(it);
     base = n.mem_ptr;
   }
-  omp_unset_lock(&omp_lock);
+  mutex_lock.unlock();
   if(!base){ // Use system malloc
     size+=2+alignment;
     char* p = (char*)DeviceWrapper::host_malloc(size);
@@ -177,8 +158,8 @@ void* MemoryManager::malloc(const size_t n_elem, const size_t type_size) const{
 
 void MemoryManager::free(void* p) const{
   if(!p) return;
-  static uintptr_t alignment=MEM_ALIGN-1;
-  static uintptr_t header_size=(uintptr_t)(sizeof(MemHead)+alignment) & ~(uintptr_t)alignment;
+  static constexpr uintptr_t alignment=MEM_ALIGN-1;
+  static constexpr uintptr_t header_size=(uintptr_t)(sizeof(MemHead)+alignment) & ~(uintptr_t)alignment;
 
   char* base=(char*)((char*)p-header_size);
   MemHead* mem_head=(MemHead*)base;
@@ -208,7 +189,7 @@ void MemoryManager::free(void* p) const{
     #endif
   }
 
-  omp_set_lock(&omp_lock);
+  mutex_lock.lock();
   MemNode& n=node_buff[n_indx-1];
   assert(!n.free && n.size>0 && n.mem_ptr==base);
   if(n.prev!=0 && node_buff[n.prev-1].free){
@@ -238,12 +219,12 @@ void MemoryManager::free(void* p) const{
   }
   n.free=true; // Insert n to free_map
   n.it=free_map.insert(std::make_pair(n.size,n_indx));
-  omp_unset_lock(&omp_lock);
+  mutex_lock.unlock();
 }
 
 void MemoryManager::print() const{
   if(!buff_size) return;
-  omp_set_lock(&omp_lock);
+  mutex_lock.lock();
 
   size_t size=0;
   size_t largest_size=0;
@@ -263,7 +244,7 @@ void MemoryManager::print() const{
   std::cout<<"|  allocated="<<round(size*1000.0/buff_size)/10<<"%";
   std::cout<<"  largest_free="<<round(largest_size*1000.0/buff_size)/10<<"%\n";
 
-  omp_unset_lock(&omp_lock);
+  mutex_lock.unlock();
 }
 
 void MemoryManager::test(){
@@ -308,7 +289,7 @@ void MemoryManager::test(){
 void MemoryManager::Check() const{
   #ifndef NDEBUG
   //print();
-  omp_set_lock(&omp_lock);
+  mutex_lock.lock();
   MemNode* curr_node=&node_buff[n_dummy_indx-1];
   while(curr_node->next){
     if(curr_node->free){
@@ -320,7 +301,7 @@ void MemoryManager::Check() const{
     }
     curr_node=&node_buff[curr_node->next-1];
   }
-  omp_unset_lock(&omp_lock);
+  mutex_lock.unlock();
   #endif
 }
 

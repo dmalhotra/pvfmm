@@ -226,7 +226,7 @@ void MPI_Node<T>::Truncate(){
         for(size_t i=0;i<nchld;i++){
           Vector<Real_t>& chld_vec=*chld_pt_coord[i][j];
           if(chld_vec.Dim()>0){
-            mem::memcopy(&vec[vec_size],&chld_vec[0],chld_vec.Dim()*sizeof(Real_t));
+            mem::copy<Real_t>(&vec[vec_size],&chld_vec[0],chld_vec.Dim());
             vec_size+=chld_vec.Dim();
           }
         }
@@ -244,7 +244,7 @@ void MPI_Node<T>::Truncate(){
         for(size_t i=0;i<nchld;i++){
           Vector<Real_t>& chld_vec=*chld_pt_value[i][j];
           if(chld_vec.Dim()>0){
-            mem::memcopy(&vec[vec_size],&chld_vec[0],chld_vec.Dim()*sizeof(Real_t));
+            mem::copy<Real_t>(&vec[vec_size],&chld_vec[0],chld_vec.Dim());
             vec_size+=chld_vec.Dim();
           }
         }
@@ -262,7 +262,7 @@ void MPI_Node<T>::Truncate(){
         for(size_t i=0;i<nchld;i++){
           Vector<size_t>& chld_vec=*chld_pt_scatter[i][j];
           if(chld_vec.Dim()>0){
-            mem::memcopy(&vec[vec_size],&chld_vec[0],chld_vec.Dim()*sizeof(Real_t));
+            mem::copy<size_t>(&vec[vec_size],&chld_vec[0],chld_vec.Dim());
             vec_size+=chld_vec.Dim();
           }
         }
@@ -318,7 +318,7 @@ PackedData MPI_Node<T>::Pack(bool ghost, void* buff_ptr, size_t offset){
       Vector<Real_t>& vec=*pt_coord[j];
       ((size_t*)data_ptr)[0]=vec.Dim(); data_ptr+=sizeof(size_t);
       if(vec.Dim()>0 && data_ptr!=(char*)&vec[0])
-        mem::memcopy(data_ptr, &vec[0], sizeof(Real_t)*vec.Dim());
+        mem::copy<Real_t>((Real_t*)data_ptr, &vec[0], vec.Dim());
       data_ptr+=vec.Dim()*sizeof(Real_t);
     }else{
       ((size_t*)data_ptr)[0]=0; data_ptr+=sizeof(size_t);
@@ -327,7 +327,7 @@ PackedData MPI_Node<T>::Pack(bool ghost, void* buff_ptr, size_t offset){
       Vector<Real_t>& vec=*pt_value[j];
       ((size_t*)data_ptr)[0]=vec.Dim(); data_ptr+=sizeof(size_t);
       if(vec.Dim()>0 && data_ptr!=(char*)&vec[0])
-        mem::memcopy(data_ptr, &vec[0], sizeof(Real_t)*vec.Dim());
+        mem::copy<Real_t>((Real_t*)data_ptr, &vec[0], vec.Dim());
       data_ptr+=vec.Dim()*sizeof(Real_t);
     }else{
       ((size_t*)data_ptr)[0]=0; data_ptr+=sizeof(size_t);
@@ -336,7 +336,7 @@ PackedData MPI_Node<T>::Pack(bool ghost, void* buff_ptr, size_t offset){
       Vector<size_t>& vec=*pt_scatter[j];
       ((size_t*)data_ptr)[0]=vec.Dim(); data_ptr+=sizeof(size_t);
       if(vec.Dim()>0 && data_ptr!=(char*)&vec[0])
-        mem::memcopy(data_ptr, &vec[0], sizeof(size_t)*vec.Dim());
+        mem::copy<size_t>((size_t*)data_ptr, &vec[0], vec.Dim());
       data_ptr+=vec.Dim()*sizeof(size_t);
     }else{
       ((size_t*)data_ptr)[0]=0; data_ptr+=sizeof(size_t);

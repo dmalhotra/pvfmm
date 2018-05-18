@@ -1,0 +1,26 @@
+language: cpp
+sudo: false
+
+matrix:
+  include:
+
+    - os: linux
+      compiler: gcc
+      addons:
+        apt:
+          packages:
+            - g++
+            - gfortran
+            - openmpi-bin
+            - libopenmpi-dev
+            - libblas-dev
+            - liblapack-dev
+            - libfftw3-dev
+
+script:
+  - ./autogen.sh
+  - ./configure
+  - make -j
+
+notifications:
+email: true

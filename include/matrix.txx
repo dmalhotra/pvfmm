@@ -55,7 +55,7 @@ Matrix<T>::Matrix(size_t dim1, size_t dim2, T* data_, bool own_data_){
 #if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
       Profile::Add_MEM(dim[0]*dim[1]*sizeof(T));
 #endif
-      if(data_!=NULL) mem::memcopy(data_ptr,data_,dim[0]*dim[1]*sizeof(T));
+      if(data_!=NULL) mem::copy<T>(data_ptr,data_,dim[0]*dim[1]);
     }else data_ptr=NULL;
   }else
     data_ptr=data_;
@@ -72,7 +72,7 @@ Matrix<T>::Matrix(const Matrix<T>& M){
 #if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
     Profile::Add_MEM(dim[0]*dim[1]*sizeof(T));
 #endif
-    mem::memcopy(data_ptr,M.data_ptr,dim[0]*dim[1]*sizeof(T));
+    mem::copy<T>(data_ptr,M.data_ptr,dim[0]*dim[1]);
   }else
     data_ptr=NULL;
   dev.dev_ptr=(uintptr_t)NULL;
@@ -125,7 +125,7 @@ void Matrix<T>::ReInit(size_t dim1, size_t dim2, T* data_, bool own_data_){
     Profile::Add_MEM((dim1*dim2-dim[0]*dim[1])*sizeof(T));
 #endif
     dim[0]=dim1; dim[1]=dim2;
-    if(data_) mem::memcopy(data_ptr,data_,dim[0]*dim[1]*sizeof(T));
+    if(data_) mem::copy<T>(data_ptr,data_,dim[0]*dim[1]);
   }else{
     Matrix<T> tmp(dim1,dim2,data_,own_data_);
     this->Swap(tmp);
@@ -238,7 +238,7 @@ Matrix<T>& Matrix<T>::operator=(const Matrix<T>& M){
       ReInit(M.dim[0],M.dim[1]);
     }
     dim[0]=M.dim[0]; dim[1]=M.dim[1];
-    mem::memcopy(data_ptr,M.data_ptr,dim[0]*dim[1]*sizeof(T));
+    mem::copy<T>(data_ptr,M.data_ptr,dim[0]*dim[1]);
   }
   return *this;
 }

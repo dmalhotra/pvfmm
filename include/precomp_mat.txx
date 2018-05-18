@@ -145,7 +145,7 @@ size_t PrecompMat<T>::CompactData(int level, Mat_Type type, Matrix<char>& comp_d
       for(int tid=0;tid<omp_p;tid++){ // Copy data.
         size_t a=(offset*(tid+0))/omp_p;
         size_t b=(offset*(tid+1))/omp_p;
-        mem::memcopy(comp_data[0]+a, old_data[0]+a, b-a);
+        mem::copy<char>(comp_data[0]+a, old_data[0]+a, b-a);
       }
     }
   }
@@ -192,7 +192,7 @@ size_t PrecompMat<T>::CompactData(int level, Mat_Type type, Matrix<char>& comp_d
       if(M.Dim(0)>0 && M.Dim(1)>0){
         size_t a=(M.Dim(0)*M.Dim(1)* tid   )/omp_p;
         size_t b=(M.Dim(0)*M.Dim(1)*(tid+1))/omp_p;
-        mem::memcopy(comp_data[0]+offset_indx[j][0]+a*sizeof(T), &M[0][a], (b-a)*sizeof(T));
+        mem::copy<T>((T*)(comp_data[0]+offset_indx[j][0])+a, &M[0][a], (b-a));
       }
 
       for(size_t l=l0;l<l1;l++){
@@ -201,14 +201,14 @@ size_t PrecompMat<T>::CompactData(int level, Mat_Type type, Matrix<char>& comp_d
         if(Pr.Dim()>0){
           size_t a=(Pr.Dim()* tid   )/omp_p;
           size_t b=(Pr.Dim()*(tid+1))/omp_p;
-          mem::memcopy(comp_data[0]+offset_indx[j][1+4*(l-l0)+0]+a*sizeof(PERM_INT_T), &Pr.perm[a], (b-a)*sizeof(PERM_INT_T));
-          mem::memcopy(comp_data[0]+offset_indx[j][1+4*(l-l0)+1]+a*sizeof(         T), &Pr.scal[a], (b-a)*sizeof(         T));
+          mem::copy<PERM_INT_T>((PERM_INT_T*)(comp_data[0]+offset_indx[j][1+4*(l-l0)+0])+a, &Pr.perm[a], (b-a));
+          mem::copy<         T>((         T*)(comp_data[0]+offset_indx[j][1+4*(l-l0)+1])+a, &Pr.scal[a], (b-a));
         }
         if(Pc.Dim()>0){
           size_t a=(Pc.Dim()* tid   )/omp_p;
           size_t b=(Pc.Dim()*(tid+1))/omp_p;
-          mem::memcopy(comp_data[0]+offset_indx[j][1+4*(l-l0)+2]+a*sizeof(PERM_INT_T), &Pc.perm[a], (b-a)*sizeof(PERM_INT_T));
-          mem::memcopy(comp_data[0]+offset_indx[j][1+4*(l-l0)+3]+a*sizeof(         T), &Pc.scal[a], (b-a)*sizeof(         T));
+          mem::copy<PERM_INT_T>((PERM_INT_T*)(comp_data[0]+offset_indx[j][1+4*(l-l0)+2])+a, &Pc.perm[a], (b-a));
+          mem::copy<         T>((         T*)(comp_data[0]+offset_indx[j][1+4*(l-l0)+3])+a, &Pc.scal[a], (b-a));
         }
       }
     }
@@ -336,7 +336,7 @@ void PrecompMat<T>::LoadFile(const char* fname, MPI_Comm comm){
         n2=*(int*)f_ptr; f_ptr+=sizeof(int);
         if(n1*n2>0){
           M.Resize(n1,n2);
-          mem::memcopy(&M[0][0], f_ptr, sizeof(T)*n1*n2); f_ptr+=sizeof(T)*n1*n2;
+          mem::copy<T>(&M[0][0], (T*)f_ptr, n1*n2); f_ptr+=sizeof(T)*n1*n2;
         }
       }
     }

@@ -8,6 +8,8 @@ ifndef CXXFLAGS_PVFMM
 $(error Cannot find file: MakeVariables)
 endif
 
+# FC=$(FC_PVFMM) # TODO: for now, FC must be provided by user
+# CC=$(CC_PVFMM) # TODO: for now, CC must be provided by user
 CXX=$(CXX_PVFMM)
 CXXFLAGS=$(CXXFLAGS_PVFMM)
 LDLIBS=$(LDLIBS_PVFMM)
@@ -28,30 +30,27 @@ TARGET_BIN = \
 
 all : $(TARGET_BIN)
 
+$(BINDIR)/%: $(SRCDIR)/%.f90
+	-@$(MKDIRS) $(dir $@)
+	$(FC) $(CXXFLAGS) -I$(INCDIR) $^ $(LDLIBS) -o $@
+
+$(BINDIR)/%: $(SRCDIR)/%.c
+	-@$(MKDIRS) $(dir $@)
+	$(CC) $(CXXFLAGS) -I$(INCDIR) $^ $(LDLIBS) -o $@
+
 ifeq ($(INTEL_OFFLOAD_OK),yes)
 
-$(BINDIR)/%: $(OBJDIR)/%.o
+$(BINDIR)/%: $(SRCDIR)/%.cpp
 	-@$(MKDIRS) $(dir $@)
-	$(CXX) $(CXXFLAGS) -no-offload         $^       $(LDLIBS) -o $@
-	$(CXX) $(CXXFLAGS)                     $^_async $(LDLIBS) -o $@_async
-	$(CXX) $(CXxFLAGS) -D__DEVICE_SYNC__=1 $^_mic   $(LDLIBS) -o $@_mic
-
-$(OBJDIR)/%.o: $(SRCDIR)/%.cpp
-	-@$(MKDIRS) $(dir $@)
-	$(CXX) $(CXXFLAGS) -no-offload         -I$(INCDIR) -c $^ -o $@
-	$(CXX) $(CXXFLAGS)                     -I$(INCDIR) -c $^ -o $@_async
-	$(CXX) $(CXXFLAGS) -D__DEVICE_SYNC__=1 -I$(INCDIR) -c $^ -o $@_mic
+	$(CXX) $(CXXFLAGS) -no-offload         -I$(INCDIR) $^ $(LDLIBS) -o $@
+	$(CXX) $(CXXFLAGS)                     -I$(INCDIR) $^ $(LDLIBS) -o $@_async
+	$(CXX) $(CXXFLAGS) -D__DEVICE_SYNC__=1 -I$(INCDIR) $^ $(LDLIBS) -o $@_mic
 
 else
 
-$(BINDIR)/%: $(OBJDIR)/%.o
+$(BINDIR)/%: $(SRCDIR)/%.cpp
 	-@$(MKDIRS) $(dir $@)
-	$(CXX) $(CXXFLAGS) $^ $(LDLIBS) -o $@
-#	$(CXX) $^ $(LDLIBS) -o $@
-
-$(OBJDIR)/%.o: $(SRCDIR)/%.cpp
-	-@$(MKDIRS) $(dir $@)
-	$(CXX) $(CXXFLAGS) -I$(INCDIR) -c $^ -o $@
+	$(CXX) $(CXXFLAGS) -I$(INCDIR) $^ $(LDLIBS) -o $@
 
 endif
 

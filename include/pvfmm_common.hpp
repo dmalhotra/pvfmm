@@ -24,7 +24,7 @@
 #define __PROFILE__ 5
 
 //Verbose
-#define __VERBOSE__
+//#define __VERBOSE__
 
 #define MAX_DEPTH 15
 

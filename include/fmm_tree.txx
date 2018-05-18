@@ -438,7 +438,7 @@ void FMM_Tree<FMM_Mat_t>::MultipoleReduceBcast() {
       ((size_t*)buff_iter)[0]=send_data[s_iter].length;
       buff_iter+=sizeof(size_t);
 
-      mem::memcopy((void*)buff_iter,send_data[s_iter].data,send_data[s_iter].length);
+      mem::copy<char>((char*)buff_iter,(char*)send_data[s_iter].data,send_data[s_iter].length);
       buff_iter+=send_data[s_iter].length;
 
       s_iter++;
