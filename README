@@ -4,7 +4,7 @@ This new_BC branch is forked from the original pvfmm code by dmalhotra to give m
 It is implemented in a quick and dirty way. To choose periodicity, define a global variable 
 extern PeriodicType pvfmm::periodicType
 in one .h or .cpp file and set it to one of the following enum values:
-NONE,PXYZ,PZ,PXY
+NONE,PX,PXY,PXYZ
 Read line 92 of examples/src/fmm_pts.cpp for an example.
 
 update: modified to remove fortran compiler dependence and make it work with clang-openmp/llvm
