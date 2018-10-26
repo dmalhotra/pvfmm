@@ -114,6 +114,7 @@ if $USE_OPENMP; then
       ;;
       intel)
       CHECK_OPENMP(-openmp)
+      CHECK_OPENMP(-qopenmp)
       ;;
       pgi)
       CHECK_OPENMP(-mp)
@@ -135,7 +136,9 @@ fi
 AC_LANG_WERROR([off])
 
 # Check for Intel Xeon Phi
-CHECK_INTEL_OFFLOAD
+#CHECK_INTEL_OFFLOAD
+DISABLE_INTEL_OFFLOAD(-no-offload)
+DISABLE_INTEL_OFFLOAD(-qno-offload)
 
 # Check for FFTW
 AC_CHECK_FFTW
