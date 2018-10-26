@@ -33,11 +33,11 @@ void fmm_test(size_t N, int mult_order, int cheb_deg, double tol, MPI_Comm comm)
   // Construct tree.
   size_t max_pts=100;
   std::vector<double> trg_coord=point_distrib<double>(RandUnif,N,comm);
-  pvfmm::ChebFMM_Tree* tree=ChebFMM_CreateTree(cheb_deg, kernel_fn.ker_dim[0], fn_input,
-                                              trg_coord, comm, tol, max_pts, pvfmm::FreeSpace);
+  auto* tree=ChebFMM_CreateTree(cheb_deg, kernel_fn.ker_dim[0], fn_input,
+                                trg_coord, comm, tol, max_pts, pvfmm::FreeSpace);
 
   // Load matrices.
-  pvfmm::ChebFMM matrices;
+  pvfmm::ChebFMM<double> matrices;
   matrices.Initialize(mult_order, cheb_deg, comm, &kernel_fn);
 
   // FMM Setup
