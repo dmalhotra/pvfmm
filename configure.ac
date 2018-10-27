@@ -1,5 +1,5 @@
 AC_PREREQ([2.61])
-AC_INIT([PvFMM],[1.0.0],[dmalhotra@ices.utexas.edu])
+AC_INIT([PVFMM],[1.0.0],[contact@pvfmm.org])
 
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([build-aux])
