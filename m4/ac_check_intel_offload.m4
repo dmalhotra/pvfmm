@@ -1,4 +1,29 @@
 
+AC_DEFUN([DISABLE_INTEL_OFFLOAD], [
+    AC_LANG_WERROR([on])
+    AC_MSG_CHECKING([Intel no-offload (with $1)])
+
+    XCFLAGS="$CFLAGS"
+    XCXXFLAGS="$CXXFLAGS"
+    CFLAGS="$CFLAGS $1"
+    CXXFLAGS="$CXXFLAGS $1"
+
+    AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+        ]], [[
+            #ifdef __INTEL_OFFLOAD
+            #pragma offload target(mic:0)
+            #endif
+        ]])],cv_no_offload=yes, cv_no_offload=no)
+
+    AC_MSG_RESULT($cv_no_offload)
+
+    if test "$cv_no_offload" = no; then
+        CFLAGS="$XCFLAGS"
+        CXXFLAGS="$XCXXFLAGS"
+    fi
+    AC_LANG_WERROR([off])
+])
+
 AC_DEFUN([CHECK_INTEL_OFFLOAD], [
     ## Check for support of offload pragma and -no-offload flag. If
     ## found define HAVE_INTEL_OFFLOAD_PRAGMA, HAVE_INTEL_NOFFLOAD_FLAG and

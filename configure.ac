@@ -1,5 +1,5 @@
 AC_PREREQ([2.61])
-AC_INIT([PvFMM],[1.0.0],[dmalhotra@ices.utexas.edu])
+AC_INIT([PVFMM],[1.0.0],[contact@pvfmm.org])
 
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([build-aux])
@@ -114,6 +114,7 @@ if $USE_OPENMP; then
       ;;
       intel)
       CHECK_OPENMP(-openmp)
+      CHECK_OPENMP(-qopenmp)
       ;;
       pgi)
       CHECK_OPENMP(-mp)
@@ -135,7 +136,9 @@ fi
 AC_LANG_WERROR([off])
 
 # Check for Intel Xeon Phi
-CHECK_INTEL_OFFLOAD
+#CHECK_INTEL_OFFLOAD
+DISABLE_INTEL_OFFLOAD(-no-offload)
+DISABLE_INTEL_OFFLOAD(-qno-offload)
 
 # Check for FFTW
 AC_CHECK_FFTW

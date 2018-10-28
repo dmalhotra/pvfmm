@@ -1,12 +1,7 @@
-
-                    PVFMM README File
-                    *****************
-
-PVFMM Version 1.0.0 is the latest release (January 2014)
+# PVFMM [![Build Status](https://travis-ci.org/dmalhotra/pvfmm.svg?branch=develop)](https://travis-ci.org/dmalhotra/pvfmm)
 
 
-WHAT IS PVFMM?
-==============
+### What is PVFMM?
 
    PVFMM is a library for solving certain types of elliptic partial
    differential equations. 
@@ -18,27 +13,22 @@ WHAT IS PVFMM?
      Kernel Independent Fast Multipole Method. 
 
 
-HOW TO GET PVFMM
-================
+### How to get PVFMM
 
-   For the latest stable release of PVFMM
-       <URL: padas.ices.utexas.edu/pvfmm.tgz>
+   For the latest stable release of PVFMM visit [pvfmm.org](http://pvfmm.org)
 
-LICENSE
-=======
+### License
 
    PVFMM is distributed under the LGPLv3 licence. See COPYING in
    the top-level directory of the distribution. 
 
-INSTALLING PVFMM
-================
+### Installing PVFMM
 
    To install PVFMM, follow the steps in the INSTALL file, which is
    located in the top directory of the source distribution. 
 
 
-USING PVFMM
-===========
+### Using PVFMM
 
    The file examples/Makefile can be used as a template makefile for any
    project using the library. In general the MakeVariables file should
@@ -60,8 +50,7 @@ USING PVFMM
      path for precomputed data.
 
 
-Acknowledgment
-==============
+### Acknowledgment
 
    This software has been developed as part of the work supported by,
    * US National Institutes of Health/10042242

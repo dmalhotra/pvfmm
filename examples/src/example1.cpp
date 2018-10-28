@@ -7,16 +7,16 @@
 
 typedef std::vector<double> vec;
 
-void nbody(vec&  src_coord, vec&  src_value,
-           vec& surf_coord, vec& surf_value,
+void nbody(vec& sl_coord, vec& sl_den,
+           vec& dl_coord, vec& dl_den,
            vec&  trg_coord, vec&  trg_value,
 					 const pvfmm::Kernel<double>& kernel_fn, MPI_Comm& comm){
   int np, rank;
   MPI_Comm_size(comm, &np);
   MPI_Comm_rank(comm, &rank);
 
-  long long  n_src =  src_coord.size()/COORD_DIM;
-  long long n_surf = surf_coord.size()/COORD_DIM;
+  long long  n_sl = sl_coord.size()/COORD_DIM;
+  long long n_dl = dl_coord.size()/COORD_DIM;
   long long n_trg_glb=0, n_trg = trg_coord.size()/COORD_DIM;
   MPI_Allreduce(&n_trg , & n_trg_glb, 1, MPI_LONG_LONG, MPI_SUM, comm);
 
@@ -42,12 +42,12 @@ void nbody(vec&  src_coord, vec&  src_value,
       size_t b=((i+1)*n_trg_glb)/omp_p;
 
       if(kernel_fn.ker_poten!=NULL)
-      kernel_fn.ker_poten(&    src_coord[0]            , n_src, &src_value[0], 1,
-                          &glb_trg_coord[0]+a*COORD_DIM,   b-a, &glb_trg_value_[0]+a*kernel_fn.ker_dim[1],NULL);
+      kernel_fn.ker_poten(&sl_coord[0], n_sl, &sl_den[0], 1,
+                          &glb_trg_coord[0]+a*COORD_DIM, b-a, &glb_trg_value_[0]+a*kernel_fn.ker_dim[1],NULL);
 
       if(kernel_fn.dbl_layer_poten!=NULL)
-      kernel_fn.dbl_layer_poten(&   surf_coord[0]            , n_surf, &surf_value[0], 1,
-                                &glb_trg_coord[0]+a*COORD_DIM,    b-a, &glb_trg_value_[0]+a*kernel_fn.ker_dim[1],NULL);
+      kernel_fn.dbl_layer_poten(&dl_coord[0], n_dl, &dl_den[0], 1,
+                                &glb_trg_coord[0]+a*COORD_DIM, b-a, &glb_trg_value_[0]+a*kernel_fn.ker_dim[1],NULL);
     }
     MPI_Allreduce(&glb_trg_value_[0], &glb_trg_value[0], glb_trg_value.size(), pvfmm::par::Mpi_datatype<double>::value(), MPI_SUM, comm);
   }
@@ -62,28 +62,28 @@ void fmm_test(size_t N, int mult_order, MPI_Comm comm){
   const pvfmm::Kernel<double>& kernel_fn=pvfmm::LaplaceKernel<double>::gradient();
 
   // Create target and source vectors.
-  vec  trg_coord=point_distrib<double>(RandUnif,N,comm);
-  vec  src_coord=point_distrib<double>(RandUnif,N,comm);
-  vec surf_coord=point_distrib<double>(RandUnif,0,comm);
+  vec trg_coord=point_distrib<double>(RandUnif,N,comm);
+  vec  sl_coord=point_distrib<double>(RandUnif,N,comm);
+  vec  dl_coord=point_distrib<double>(RandUnif,0,comm);
   size_t n_trg = trg_coord.size()/COORD_DIM;
-  size_t n_src = src_coord.size()/COORD_DIM;
-  size_t n_surf=surf_coord.size()/COORD_DIM;
+  size_t n_sl  =  sl_coord.size()/COORD_DIM;
+  size_t n_dl  =  dl_coord.size()/COORD_DIM;
 
   // Set source charges.
-  vec  src_value( n_src* kernel_fn.ker_dim[0]);
-  vec surf_value(n_surf*(kernel_fn.ker_dim[0]+COORD_DIM));
-  for(size_t i=0;i< src_value.size();i++)  src_value[i]=drand48();
-  for(size_t i=0;i<surf_value.size();i++) surf_value[i]=drand48();
+  vec sl_den( n_sl* kernel_fn.ker_dim[0]);
+  vec dl_den(n_dl*(kernel_fn.ker_dim[0]+COORD_DIM));
+  for(size_t i=0;i<sl_den.size();i++) sl_den[i]=drand48();
+  for(size_t i=0;i<dl_den.size();i++) dl_den[i]=drand48();
 
   // Create memory-manager (optional)
   pvfmm::mem::MemoryManager mem_mgr(10000000);
 
   // Construct tree.
   size_t max_pts=600;
-  pvfmm::PtFMM_Tree* tree=PtFMM_CreateTree(src_coord, src_value, surf_coord, surf_value, trg_coord, comm, max_pts, pvfmm::FreeSpace);
+  auto* tree=PtFMM_CreateTree(sl_coord,sl_den, dl_coord, dl_den, trg_coord, comm, max_pts, pvfmm::FreeSpace);
 
   // Load matrices.
-  pvfmm::PtFMM matrices(&mem_mgr);
+  pvfmm::PtFMM<double> matrices(&mem_mgr);
   matrices.Initialize(mult_order, comm, &kernel_fn);
 
   // FMM Setup
@@ -95,9 +95,9 @@ void fmm_test(size_t N, int mult_order, MPI_Comm comm){
 
   // Re-run FMM
   tree->ClearFMMData();
-  for(size_t i=0;i< src_value.size();i++)  src_value[i]=drand48();
-  for(size_t i=0;i<surf_value.size();i++) surf_value[i]=drand48();
-  PtFMM_Evaluate(tree, trg_value, n_trg, &src_value, &surf_value);
+  for(size_t i=0;i<sl_den.size();i++) sl_den[i]=drand48();
+  for(size_t i=0;i<dl_den.size();i++) dl_den[i]=drand48();
+  PtFMM_Evaluate(tree, trg_value, n_trg, &sl_den, &dl_den);
 
   {// Check error
     vec trg_sample_coord;
@@ -117,8 +117,8 @@ void fmm_test(size_t N, int mult_order, MPI_Comm comm){
 
     // Direct n-body
     vec trg_sample_value_(n_trg_sample*kernel_fn.ker_dim[1]);
-    nbody(       src_coord,        src_value ,
-                surf_coord,       surf_value ,
+    nbody(      sl_coord,       sl_den ,
+                dl_coord,       dl_den ,
           trg_sample_coord, trg_sample_value_, kernel_fn, comm);
 
     // Compute error

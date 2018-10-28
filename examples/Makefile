@@ -38,21 +38,9 @@ $(BINDIR)/%: $(SRCDIR)/%.c
 	-@$(MKDIRS) $(dir $@)
 	$(CC) $(CXXFLAGS) -I$(INCDIR) $^ $(LDLIBS) -o $@
 
-ifeq ($(INTEL_OFFLOAD_OK),yes)
-
-$(BINDIR)/%: $(SRCDIR)/%.cpp
-	-@$(MKDIRS) $(dir $@)
-	$(CXX) $(CXXFLAGS) -no-offload         -I$(INCDIR) $^ $(LDLIBS) -o $@
-	$(CXX) $(CXXFLAGS)                     -I$(INCDIR) $^ $(LDLIBS) -o $@_async
-	$(CXX) $(CXXFLAGS) -D__DEVICE_SYNC__=1 -I$(INCDIR) $^ $(LDLIBS) -o $@_mic
-
-else
-
 $(BINDIR)/%: $(SRCDIR)/%.cpp
 	-@$(MKDIRS) $(dir $@)
 	$(CXX) $(CXXFLAGS) -I$(INCDIR) $^ $(LDLIBS) -o $@
-
-endif
 
 clean:
 	$(RM) -r $(BINDIR)/* $(OBJDIR)/*
