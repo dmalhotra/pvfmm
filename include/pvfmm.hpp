@@ -2,7 +2,7 @@
  * \file pvfmm.hpp
  * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 1-2-2014
- * \brief This file contains wrapper functions for PvFMM.
+ * \brief This file contains the declaration of wrapper functions for PVFMM.
  */
 
 #include <mpi.h>
@@ -25,197 +25,79 @@
 
 namespace pvfmm{
 
-typedef FMM_Node<Cheb_Node<double> > ChebFMM_Node;
-typedef FMM_Cheb<ChebFMM_Node>       ChebFMM;
-typedef FMM_Tree<ChebFMM>            ChebFMM_Tree;
-typedef ChebFMM_Node::NodeData       ChebFMM_Data;
-typedef ChebFMM_Node::Function_t     ChebFn;
+// Volume FMM data types
+template <class Real> using ChebFMM_Node = FMM_Node<Cheb_Node<Real>>;
+template <class Real> using ChebFMM      = FMM_Cheb<ChebFMM_Node<Real>>;
+template <class Real> using ChebFMM_Tree = FMM_Tree<ChebFMM<Real>>;
+template <class Real> using ChebFMM_Data = typename ChebFMM_Node<Real>::NodeData;
+template <class Real> using ChebFn       = typename ChebFMM_Node<Real>::Function_t;
 
-inline ChebFMM_Tree* ChebFMM_CreateTree(int cheb_deg, int data_dim, ChebFn fn_ptr, std::vector<double>& trg_coord, MPI_Comm& comm,
-                                        double tol=1e-6, int max_pts=100, BoundaryType bndry=FreeSpace, int init_depth=0){
-  int np, myrank;
-  MPI_Comm_size(comm, &np);
-  MPI_Comm_rank(comm, &myrank);
+template <class Real>
+ChebFMM_Tree<Real>* ChebFMM_CreateTree(int cheb_deg, int data_dim, ChebFn<Real> fn_ptr, std::vector<Real>& trg_coord, MPI_Comm& comm,
+                                      Real tol=1e-6, int max_pts=100, BoundaryType bndry=FreeSpace, int init_depth=0);
 
-  ChebFMM_Data tree_data;
-  tree_data.cheb_deg=cheb_deg;
-  tree_data.data_dof=data_dim;
-  tree_data.input_fn=fn_ptr;
-  tree_data.tol=tol;
-  bool adap=true;
-
-  tree_data.dim=COORD_DIM;
-  tree_data.max_depth=MAX_DEPTH;
-  tree_data.max_pts=max_pts;
-
-  { // Set points for initial tree.
-    std::vector<double> coord;
-    size_t N=pvfmm::pow<unsigned int>(8,init_depth);
-    N=(N<np?np:N)*max_pts;
-    size_t NN=ceil(pvfmm::pow<double>(N,1.0/3.0));
-    size_t N_total=NN*NN*NN;
-    size_t start= myrank   *N_total/np;
-    size_t end  =(myrank+1)*N_total/np;
-    for(size_t i=start;i<end;i++){
-      coord.push_back(((double)((i/  1    )%NN)+0.5)/NN);
-      coord.push_back(((double)((i/ NN    )%NN)+0.5)/NN);
-      coord.push_back(((double)((i/(NN*NN))%NN)+0.5)/NN);
-    }
-    tree_data.pt_coord=coord;
-  }
-
-  // Set target points.
-  tree_data.trg_coord=trg_coord;
-
-  ChebFMM_Tree* tree=new ChebFMM_Tree(comm);
-  tree->Initialize(&tree_data);
-  tree->InitFMM_Tree(adap,bndry);
-  return tree;
-}
-
-inline void ChebFMM_Evaluate(ChebFMM_Tree* tree, std::vector<double>& trg_val, size_t loc_size=0){
-  tree->RunFMM();
-  Vector<double> trg_value;
-  Vector<size_t> trg_scatter;
-  {// Collect data from each node to trg_value and trg_scatter.
-    std::vector<double> trg_value_;
-    std::vector<size_t> trg_scatter_;
-    std::vector<ChebFMM_Node*>& nodes=tree->GetNodeList();
-    for(size_t i=0;i<nodes.size();i++){
-      if(nodes[i]->IsLeaf() && !nodes[i]->IsGhost()){
-        Vector<double>& trg_value=nodes[i]->trg_value;
-        Vector<size_t>& trg_scatter=nodes[i]->trg_scatter;
-        for(size_t j=0;j<trg_value.Dim();j++) trg_value_.push_back(trg_value[j]);
-        for(size_t j=0;j<trg_scatter.Dim();j++) trg_scatter_.push_back(trg_scatter[j]);
-      }
-    }
-    trg_value=trg_value_;
-    trg_scatter=trg_scatter_;
-  }
-  par::ScatterReverse(trg_value,trg_scatter,*tree->Comm(),loc_size);
-  trg_val.assign(&trg_value[0],&trg_value[0]+trg_value.Dim());;
-}
+template <class Real>
+void ChebFMM_Evaluate(ChebFMM_Tree<Real>* tree, std::vector<Real>& trg_val, size_t loc_size=0);
 
 
 
 
-typedef FMM_Node<MPI_Node<double> > PtFMM_Node;
-typedef FMM_Pts<PtFMM_Node>         PtFMM;
-typedef FMM_Tree<PtFMM>             PtFMM_Tree;
-typedef PtFMM_Node::NodeData        PtFMM_Data;
+// Particle FMM data types
+template <class Real> using PtFMM_Node = FMM_Node<MPI_Node<Real>>;
+template <class Real> using PtFMM      = FMM_Pts<PtFMM_Node<Real>>;
+template <class Real> using PtFMM_Tree = FMM_Tree<PtFMM<Real>>;
+template <class Real> using PtFMM_Data = typename PtFMM_Node<Real>::NodeData;
 
-inline PtFMM_Tree* PtFMM_CreateTree(std::vector<double>&  src_coord, std::vector<double>&  src_value,
-                                    std::vector<double>& surf_coord, std::vector<double>& surf_value,
-                                    std::vector<double>& trg_coord, MPI_Comm& comm, int max_pts=100,
-                                    BoundaryType bndry=FreeSpace, int init_depth=0){
-  int np, myrank;
-  MPI_Comm_size(comm, &np);
-  MPI_Comm_rank(comm, &myrank);
+/**
+ * \brief Create a new instance of the tree and return a pointer. The tree must
+ * eventually be be destroyed by calling delete.
+ * \param[in] sl_coord   The single-layer source coordinate vector with values: [x1 y1 z1 ... xn yn zn] where (x1 y1 z1) are the coordinates of the first source point. The coordinates must be in [0,1]^3.
+ * \param[in] sl_density The single-layer source density vector with values: [u1 v1 w1 ... un vn wn] where (u1 v1 w1) is the density vector for the first particle.
+ * \param[in] dl_coord   The double-layer source coordinate vector with values: [x1 y1 z1 ... xn yn zn] where (x1 y1 z1) are the coordinates of the first source point. The coordinates must be in [0,1]^3.
+ * \param[in] dl_density The double-layer source density vector with values: [u1 v1 w1 nx1 ny1 nz1 ... un vn wn nxn nyn nzn] where (u1 v1 w1) is the density vector for the first particle and (nx1 ny1 nz1) is the normal vector for the first particle.
+ * \param[in] trg_coord  The target coordinate vector with values: [x1 y1 z1 ...  xn yn zn] where (x1 y1 z1) are the coordinates of the first target point.
+ * \param[in] comm       MPI communicator.
+ * \param[in] max_pts    Maximum number of source points per octant.
+ * \param[in] bndry      Boundary type (FreeSpace or Periodic)
+ * \param[in] init_depth Minimum depth for any octant
+ */
+template <class Real>
+PtFMM_Tree<Real>* PtFMM_CreateTree(const std::vector<Real>& sl_coord, const std::vector<Real>& sl_density,
+                                   const std::vector<Real>& dl_coord, const std::vector<Real>& dl_density,
+                                   const std::vector<Real>& trg_coord, const MPI_Comm& comm, int max_pts=100,
+                                   BoundaryType bndry=FreeSpace, int init_depth=0);
 
-  PtFMM_Data tree_data;
-  bool adap=true;
+/**
+ * \brief Create a new instance of the tree and return a pointer.
+ * \param[in] sl_coord   The single-layer source coordinate vector with values: [x1 y1 z1 ... xn yn zn] where (x1 y1 z1) are the coordinates of the first source point. The coordinates must be in [0,1]^3.
+ * \param[in] sl_density The single-layer source density vector with values: [u1 v1 w1 u2 ... un vn wn] where (u1 v1 w1) is the density vector for the first particle.
+ * \param[in] trg_coord  The target coordinate vector with values: [x1 y1 z1 ...  xn yn zn] where (x1 y1 z1) are the coordinates of the first target point.
+ * \param[in] comm       MPI communicator.
+ * \param[in] max_pts    Maximum number of source points per octant.
+ * \param[in] bndry      Boundary type (FreeSpace or Periodic)
+ * \param[in] init_depth Minimum depth for any octant
+ */
+template <class Real>
+PtFMM_Tree<Real>* PtFMM_CreateTree(const std::vector<Real>& sl_coord, const std::vector<Real>& sl_density,
+                                   const std::vector<Real>& trg_coord, const MPI_Comm& comm, int max_pts=100,
+                                   BoundaryType bndry=FreeSpace, int init_depth=0);
 
-  tree_data.dim=COORD_DIM;
-  tree_data.max_depth=MAX_DEPTH;
-  tree_data.max_pts=max_pts;
-
-  // Set source points.
-  tree_data. src_coord= src_coord;
-  tree_data. src_value= src_value;
-  tree_data.surf_coord=surf_coord;
-  tree_data.surf_value=surf_value;
-
-  // Set target points.
-  tree_data.trg_coord=trg_coord;
-  tree_data. pt_coord=trg_coord;
-
-  PtFMM_Tree* tree=new PtFMM_Tree(comm);
-  tree->Initialize(&tree_data);
-  tree->InitFMM_Tree(adap,bndry);
-  return tree;
-}
-
-inline PtFMM_Tree* PtFMM_CreateTree(std::vector<double>&  src_coord, std::vector<double>&  src_value,
-                                    std::vector<double>& trg_coord, MPI_Comm& comm, int max_pts=100,
-                                    BoundaryType bndry=FreeSpace, int init_depth=0){
-  std::vector<double> surf_coord;
-  std::vector<double> surf_value;
-  return PtFMM_CreateTree(src_coord, src_value, surf_coord,surf_value, trg_coord, comm, max_pts, bndry, init_depth);
-}
-
-inline void PtFMM_Evaluate(PtFMM_Tree* tree, std::vector<double>& trg_val, size_t loc_size=0, std::vector<double>* src_val=NULL, std::vector<double>* surf_val=NULL){
-  if(src_val){
-    std::vector<size_t> src_scatter_;
-    std::vector<PtFMM_Node*>& nodes=tree->GetNodeList();
-    for(size_t i=0;i<nodes.size();i++){
-      if(nodes[i]->IsLeaf() && !nodes[i]->IsGhost()){
-        Vector<size_t>& src_scatter=nodes[i]->src_scatter;
-        for(size_t j=0;j<src_scatter.Dim();j++) src_scatter_.push_back(src_scatter[j]);
-      }
-    }
-
-    Vector<double> src_value=*src_val;
-    Vector<size_t> src_scatter=src_scatter_;
-    par::ScatterForward(src_value,src_scatter,*tree->Comm());
-
-    size_t indx=0;
-    for(size_t i=0;i<nodes.size();i++){
-      if(nodes[i]->IsLeaf() && !nodes[i]->IsGhost()){
-        Vector<double>& src_value_=nodes[i]->src_value;
-        for(size_t j=0;j<src_value_.Dim();j++){
-          src_value_[j]=src_value[indx];
-          indx++;
-        }
-      }
-    }
-  }
-  if(surf_val){
-    std::vector<size_t> surf_scatter_;
-    std::vector<PtFMM_Node*>& nodes=tree->GetNodeList();
-    for(size_t i=0;i<nodes.size();i++){
-      if(nodes[i]->IsLeaf() && !nodes[i]->IsGhost()){
-        Vector<size_t>& surf_scatter=nodes[i]->surf_scatter;
-        for(size_t j=0;j<surf_scatter.Dim();j++) surf_scatter_.push_back(surf_scatter[j]);
-      }
-    }
-
-    Vector<double> surf_value=*surf_val;
-    Vector<size_t> surf_scatter=surf_scatter_;
-    par::ScatterForward(surf_value,surf_scatter,*tree->Comm());
-
-    size_t indx=0;
-    for(size_t i=0;i<nodes.size();i++){
-      if(nodes[i]->IsLeaf() && !nodes[i]->IsGhost()){
-        Vector<double>& surf_value_=nodes[i]->surf_value;
-        for(size_t j=0;j<surf_value_.Dim();j++){
-          surf_value_[j]=surf_value[indx];
-          indx++;
-        }
-      }
-    }
-  }
-  tree->RunFMM();
-  Vector<double> trg_value;
-  Vector<size_t> trg_scatter;
-  {
-    std::vector<double> trg_value_;
-    std::vector<size_t> trg_scatter_;
-    std::vector<PtFMM_Node*>& nodes=tree->GetNodeList();
-    for(size_t i=0;i<nodes.size();i++){
-      if(nodes[i]->IsLeaf() && !nodes[i]->IsGhost()){
-        Vector<double>& trg_value=nodes[i]->trg_value;
-        Vector<size_t>& trg_scatter=nodes[i]->trg_scatter;
-        for(size_t j=0;j<trg_value.Dim();j++) trg_value_.push_back(trg_value[j]);
-        for(size_t j=0;j<trg_scatter.Dim();j++) trg_scatter_.push_back(trg_scatter[j]);
-      }
-    }
-    trg_value=trg_value_;
-    trg_scatter=trg_scatter_;
-  }
-  par::ScatterReverse(trg_value,trg_scatter,*tree->Comm(),loc_size);
-  trg_val.assign(&trg_value[0],&trg_value[0]+trg_value.Dim());;
-}
+/**
+ * \brief Run FMM on the input octree and return the potential at the target
+ * points. The setup function PtFMM_Tree::SetupFMM(PtFMM_Tree* fmm_mat) must be
+ * called before evaluating FMM for the first time with a tree, or if a tree
+ * has changed.
+ * \param[in]  tree       Pointer to the octree.
+ * \param[out] trg_val    The target potential vector with values: [p1 q1 r1 ... pn qn rn] where (p1 q1 r1) is the potential at the first target point.
+ * \param[in]  loc_size   Number of local target points.
+ * \param[in]  sl_density The new single-layer source density vector.
+ * \param[in]  dl_density The new double-layer source density vector.
+ */
+template <class Real>
+void PtFMM_Evaluate(PtFMM_Tree<Real>* tree, std::vector<Real>& trg_val, size_t loc_size=0, const std::vector<Real>* sl_density=NULL, const std::vector<Real>* dl_density=NULL);
 
 }//end namespace
+
+#include <pvfmm.txx>
 
 #endif //_PVFMM_HPP_

@@ -20,7 +20,7 @@ matrix:
 script:
   - ./autogen.sh
   - ./configure
-  - make -j
+  - make all-examples -j
 
 notifications:
 email: true
