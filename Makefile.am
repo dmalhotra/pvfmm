@@ -45,6 +45,7 @@ lib_libfmm_a_HEADERS = \
 									include/pvfmm_config.h \
 									include/pvfmm_common.hpp \
 									include/pvfmm.hpp \
+									include/pvfmm.txx \
 									include/blas.h \
 									include/cheb_node.hpp \
 									include/cheb_utils.hpp \
