@@ -1,5 +1,5 @@
 ACLOCAL_AMFLAGS = -I m4 $(ACLOCAL_FLAGS)
-AUTOMAKE_OPTIONS = subdir-objects
+AUTOMAKE_OPTIONS = subdir-objects foreign
 @SET_MAKE@
 
 include MakeVariables.in
