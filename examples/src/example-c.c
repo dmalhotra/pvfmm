@@ -62,12 +62,13 @@ void test_FMM(void* ctx) { // Compare FMM and direct evaluation results
   BiotSavart(&src_X[0], &src_V[0], Ns, &trg_X[0], &trg_V0[0], Nt);
   printf("Direct evaluation time : %f\n", tt + omp_get_wtime());
 
-  double max_err = 0;
+  double max_err = 0, max_val = 0;
   for (long i = 0; i < Nt * kdim[1]; i++) { // Compute error
-    double err = fabs(trg_V[i] - trg_V0[i]);
+    double val = fabs(trg_V0[i]), err = fabs(trg_V[i] - trg_V0[i]);
+    if (val > max_val) max_val = val;
     if (err > max_err) max_err = err;
   }
-  printf("Max-error : %f\n", max_err);
+  printf("Max relative error : %e\n", max_err / max_val);
 
   free(src_X);
   free(src_V);

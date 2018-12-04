@@ -38,7 +38,7 @@ subroutine BiotSavart(Xs, Vs, Ns, Xt, Vt, Nt)
   real*8 :: oofp, X(3), rinv, rinv3
 
   oofp = 1/(16*atan(1.0))
-  !$omp parallel do
+  !$omp parallel do private(s,X,rinv,rinv3)
   do t = 0, Nt-1
     Vt(t*3+1) = 0
     Vt(t*3+2) = 0
