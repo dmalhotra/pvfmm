@@ -9,7 +9,6 @@ AC_CONFIG_SRCDIR([src/tree_node.cpp])
 AM_CONFIG_HEADER([config.h])               # prep config.h from config.h.in
 AX_PREFIX_CONFIG_H([include/pvfmm_config.h]) # prep include/pvfmm_config.h from it..
 
-
 # Set language to C++
 AC_LANG([C++])
 
@@ -19,7 +18,6 @@ AX_MPI([CXX=$MPICXX; CC=$MPICC; CFLAGS=$CFLAGS],
        [AC_MSG_ERROR([Cannot find mpicxx. Make sure that MPI is installed and location of compiler is in PATH.])])
 AX_COMPILER_VENDOR
 AC_PROG_AWK
-#AC_PROG_F77
 AC_PROG_INSTALL
 AC_PROG_MKDIR_P
 AC_PROG_LN_S
@@ -66,7 +64,6 @@ DX_INIT_DOXYGEN($PACKAGE_NAME, Doxyfile, doc/doxygen)
 
 
 AX_CXX_DEF_TEMPLATE_ARG
-CHECK_QUAD_PRECISION
 
 # Check for math libs
 AC_CHECK_LIB([m],[cos])
