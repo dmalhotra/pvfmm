@@ -223,7 +223,7 @@ void Cheb_Node<Real_t>::VTU_Data(VTUData_t& vtu_data, std::vector<Node_t*>& node
       Node_t* n=nodes[nid];
       if(n->IsGhost() || !n->IsLeaf()) continue;
 
-      size_t point_cnt=coord.size()/COORD_DIM;
+      size_t point_cnt=coord.size()/PVFMM_COORD_DIM;
       Real_t* c=n->Coord();
       Real_t s=pvfmm::pow<Real_t>(0.5,n->Depth());
       for(int i0=0;i0<gridpt_cnt;i0++)

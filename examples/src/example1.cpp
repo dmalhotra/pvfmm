@@ -15,16 +15,16 @@ void nbody(vec& sl_coord, vec& sl_den,
   MPI_Comm_size(comm, &np);
   MPI_Comm_rank(comm, &rank);
 
-  long long  n_sl = sl_coord.size()/COORD_DIM;
-  long long n_dl = dl_coord.size()/COORD_DIM;
-  long long n_trg_glb=0, n_trg = trg_coord.size()/COORD_DIM;
+  long long  n_sl = sl_coord.size()/PVFMM_COORD_DIM;
+  long long n_dl = dl_coord.size()/PVFMM_COORD_DIM;
+  long long n_trg_glb=0, n_trg = trg_coord.size()/PVFMM_COORD_DIM;
   MPI_Allreduce(&n_trg , & n_trg_glb, 1, MPI_LONG_LONG, MPI_SUM, comm);
 
-  vec glb_trg_coord(n_trg_glb*COORD_DIM);
+  vec glb_trg_coord(n_trg_glb*PVFMM_COORD_DIM);
   vec glb_trg_value(n_trg_glb*kernel_fn.ker_dim[1],0);
   std::vector<int> recv_disp(np,0);
   { // Gather all target coordinates.
-    int send_cnt=n_trg*COORD_DIM;
+    int send_cnt=n_trg*PVFMM_COORD_DIM;
     std::vector<int> recv_cnts(np);
     MPI_Allgather(&send_cnt    , 1, MPI_INT,
                   &recv_cnts[0], 1, MPI_INT, comm);
@@ -43,17 +43,17 @@ void nbody(vec& sl_coord, vec& sl_den,
 
       if(kernel_fn.ker_poten!=NULL)
       kernel_fn.ker_poten(&sl_coord[0], n_sl, &sl_den[0], 1,
-                          &glb_trg_coord[0]+a*COORD_DIM, b-a, &glb_trg_value_[0]+a*kernel_fn.ker_dim[1],NULL);
+                          &glb_trg_coord[0]+a*PVFMM_COORD_DIM, b-a, &glb_trg_value_[0]+a*kernel_fn.ker_dim[1],NULL);
 
       if(kernel_fn.dbl_layer_poten!=NULL)
       kernel_fn.dbl_layer_poten(&dl_coord[0], n_dl, &dl_den[0], 1,
-                                &glb_trg_coord[0]+a*COORD_DIM, b-a, &glb_trg_value_[0]+a*kernel_fn.ker_dim[1],NULL);
+                                &glb_trg_coord[0]+a*PVFMM_COORD_DIM, b-a, &glb_trg_value_[0]+a*kernel_fn.ker_dim[1],NULL);
     }
     MPI_Allreduce(&glb_trg_value_[0], &glb_trg_value[0], glb_trg_value.size(), pvfmm::par::Mpi_datatype<double>::value(), MPI_SUM, comm);
   }
 
   // Get local target values.
-  trg_value.assign(&glb_trg_value[0]+recv_disp[rank]/COORD_DIM*kernel_fn.ker_dim[1], &glb_trg_value[0]+(recv_disp[rank]/COORD_DIM+n_trg)*kernel_fn.ker_dim[1]);
+  trg_value.assign(&glb_trg_value[0]+recv_disp[rank]/PVFMM_COORD_DIM*kernel_fn.ker_dim[1], &glb_trg_value[0]+(recv_disp[rank]/PVFMM_COORD_DIM+n_trg)*kernel_fn.ker_dim[1]);
 }
 
 void fmm_test(size_t N, int mult_order, MPI_Comm comm){
@@ -65,13 +65,13 @@ void fmm_test(size_t N, int mult_order, MPI_Comm comm){
   vec trg_coord=point_distrib<double>(RandUnif,N,comm);
   vec  sl_coord=point_distrib<double>(RandUnif,N,comm);
   vec  dl_coord=point_distrib<double>(RandUnif,0,comm);
-  size_t n_trg = trg_coord.size()/COORD_DIM;
-  size_t n_sl  =  sl_coord.size()/COORD_DIM;
-  size_t n_dl  =  dl_coord.size()/COORD_DIM;
+  size_t n_trg = trg_coord.size()/PVFMM_COORD_DIM;
+  size_t n_sl  =  sl_coord.size()/PVFMM_COORD_DIM;
+  size_t n_dl  =  dl_coord.size()/PVFMM_COORD_DIM;
 
   // Set source charges.
   vec sl_den( n_sl* kernel_fn.ker_dim[0]);
-  vec dl_den(n_dl*(kernel_fn.ker_dim[0]+COORD_DIM));
+  vec dl_den(n_dl*(kernel_fn.ker_dim[0]+PVFMM_COORD_DIM));
   for(size_t i=0;i<sl_den.size();i++) sl_den[i]=drand48();
   for(size_t i=0;i<dl_den.size();i++) dl_den[i]=drand48();
 
@@ -107,8 +107,8 @@ void fmm_test(size_t N, int mult_order, MPI_Comm comm){
       size_t n_skip=N*n_trg/1e9;
       if(!n_skip) n_skip=1;
       for(size_t i=0;i<n_trg;i=i+n_skip){
-        for(size_t j=0;j<COORD_DIM;j++)
-          trg_sample_coord.push_back(trg_coord[i*COORD_DIM+j]);
+        for(size_t j=0;j<PVFMM_COORD_DIM;j++)
+          trg_sample_coord.push_back(trg_coord[i*PVFMM_COORD_DIM+j]);
         for(size_t j=0;j<kernel_fn.ker_dim[1];j++)
           trg_sample_value.push_back(trg_value[i*kernel_fn.ker_dim[1]+j]);
         n_trg_sample++;

@@ -27,7 +27,7 @@ namespace par{
     int Mpi_Alltoallv_sparse(T* sendbuf, int* sendcnts, int* sdispls,
         T* recvbuf, int* recvcnts, int* rdispls, const MPI_Comm &comm) {
 
-#ifndef ALLTOALLV_FIX
+#ifndef PVFMM_ALLTOALLV_FIX
       return MPI_Alltoallv(sendbuf, sendcnts, sdispls, par::Mpi_datatype<T>::value(),
                            recvbuf, recvcnts, rdispls, par::Mpi_datatype<T>::value(), comm);
 #else
@@ -119,7 +119,7 @@ namespace par{
     int Mpi_Alltoallv_dense(T* sbuff_, int* s_cnt_, int* sdisp_,
         T* rbuff_, int* r_cnt_, int* rdisp_, const MPI_Comm& comm){
 
-#ifndef ALLTOALLV_FIX
+#ifndef PVFMM_ALLTOALLV_FIX
       return MPI_Alltoallv(sbuff_, s_cnt_, sdisp_, par::Mpi_datatype<T>::value(),
                            rbuff_, r_cnt_, rdisp_, par::Mpi_datatype<T>::value(), comm);
 #else

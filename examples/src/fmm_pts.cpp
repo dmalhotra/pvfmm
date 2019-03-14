@@ -48,7 +48,7 @@ void fmm_test(int ker, size_t N, size_t M, Real_t b, int dist, int mult_order, i
 
   //Various parameters.
   typename FMMNode_t::NodeData tree_data;
-  tree_data.dim=COORD_DIM;
+  tree_data.dim=PVFMM_COORD_DIM;
   tree_data.max_depth=depth;
   tree_data.max_pts=M; // Points per octant.
 
@@ -56,7 +56,7 @@ void fmm_test(int ker, size_t N, size_t M, Real_t b, int dist, int mult_order, i
     std::vector<Real_t> src_coord, src_value;
     src_coord=point_distrib<Real_t>((dist==0?UnifGrid:(dist==1?RandSphr:RandElps)),N,comm);
     for(size_t i=0;i<src_coord.size();i++) src_coord[i]*=b;
-    for(size_t i=0;i<src_coord.size()*mykernel->ker_dim[0]/COORD_DIM;i++) src_value.push_back(drand48()-0.5);
+    for(size_t i=0;i<src_coord.size()*mykernel->ker_dim[0]/PVFMM_COORD_DIM;i++) src_value.push_back(drand48()-0.5);
     tree_data.pt_coord=src_coord;
     tree_data.pt_value=src_value;
     //tree_data.src_coord=src_coord;
@@ -136,7 +136,7 @@ void fmm_test(int ker, size_t N, size_t M, Real_t b, int dist, int mult_order, i
         trg_value=trg_value_;
         trg_scatter=trg_scatter_;
       }
-      pvfmm::par::ScatterReverse(trg_value,trg_scatter,*tree.Comm(),tree_data.trg_coord.Dim()*mykernel->ker_dim[1]/COORD_DIM);
+      pvfmm::par::ScatterReverse(trg_value,trg_scatter,*tree.Comm(),tree_data.trg_coord.Dim()*mykernel->ker_dim[1]/PVFMM_COORD_DIM);
       pvfmm::Profile::Toc();
     }
     pvfmm::Profile::Toc();
@@ -144,8 +144,8 @@ void fmm_test(int ker, size_t N, size_t M, Real_t b, int dist, int mult_order, i
 
   { //Output max tree depth.
     long nleaf=0, maxdepth=0;
-    std::vector<size_t> all_nodes(MAX_DEPTH+1,0);
-    std::vector<size_t> leaf_nodes(MAX_DEPTH+1,0);
+    std::vector<size_t> all_nodes(PVFMM_MAX_DEPTH+1,0);
+    std::vector<size_t> leaf_nodes(PVFMM_MAX_DEPTH+1,0);
     std::vector<FMMNode_t*>& nodes=tree.GetNodeList();
     for(size_t i=0;i<nodes.size();i++){
       FMMNode_t* n=nodes[i];
@@ -158,7 +158,7 @@ void fmm_test(int ker, size_t N, size_t M, Real_t b, int dist, int mult_order, i
     }
 
     if(!myrank) std::cout<<"All  Nodes: ";
-    for(int i=0;i<MAX_DEPTH;i++){
+    for(int i=0;i<PVFMM_MAX_DEPTH;i++){
       int local_size=all_nodes[i];
       int global_size;
       MPI_Allreduce(&local_size, &global_size, 1, MPI_INT, MPI_SUM, comm);
@@ -167,7 +167,7 @@ void fmm_test(int ker, size_t N, size_t M, Real_t b, int dist, int mult_order, i
     if(!myrank) std::cout<<'\n';
 
     if(!myrank) std::cout<<"Leaf Nodes: ";
-    for(int i=0;i<MAX_DEPTH;i++){
+    for(int i=0;i<PVFMM_MAX_DEPTH;i++){
       int local_size=leaf_nodes[i];
       int global_size;
       MPI_Allreduce(&local_size, &global_size, 1, MPI_INT, MPI_SUM, comm);

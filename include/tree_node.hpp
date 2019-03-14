@@ -37,7 +37,7 @@ class TreeNode{
   /**
    * \brief Initialize pointers to NULL
    */
-  TreeNode(): dim(0), depth(0), max_depth(MAX_DEPTH), parent(NULL), child(NULL), status(1) { }
+  TreeNode(): dim(0), depth(0), max_depth(PVFMM_MAX_DEPTH), parent(NULL), child(NULL), status(1) { }
 
   /**
    * \brief Virtual destructor

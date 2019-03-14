@@ -181,8 +181,8 @@ class MPI_Node: public TreeNode{
   size_t max_pts;
   long long weight;
 
-  Real_t coord[COORD_DIM];
-  MPI_Node<Real_t>* colleague[COLLEAGUE_COUNT];
+  Real_t coord[PVFMM_COORD_DIM];
+  MPI_Node<Real_t>* colleague[PVFMM_COLLEAGUE_COUNT];
   Vector<char> packed_data;
 };
 

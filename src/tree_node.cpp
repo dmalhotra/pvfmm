@@ -31,7 +31,7 @@ void TreeNode::Initialize(TreeNode* parent_, int path2node_, NodeData* data_){
   if(data_!=NULL){
     dim=data_->dim;
     max_depth=data_->max_depth;
-    if(max_depth>MAX_DEPTH) max_depth=MAX_DEPTH;
+    if(max_depth>PVFMM_MAX_DEPTH) max_depth=PVFMM_MAX_DEPTH;
   }else if(parent!=NULL){
     dim=parent->dim;
     max_depth=parent->max_depth;
