@@ -35,10 +35,10 @@ namespace DeviceWrapper{
 
   void free_device(char* dev_handle, uintptr_t dev_ptr);
 
-  template <int SYNC=__DEVICE_SYNC__>
+  template <int SYNC=PVFMM_DEVICE_SYNC>
   int host2device(char* host_ptr, char* dev_handle, uintptr_t dev_ptr, size_t len);
 
-  template <int SYNC=__DEVICE_SYNC__>
+  template <int SYNC=PVFMM_DEVICE_SYNC>
   int device2host(char* dev_handle, uintptr_t dev_ptr, char* host_ptr, size_t len);
 
   void wait(int lock_idx);
@@ -64,7 +64,7 @@ Note: Any MIC offload section should look like this:
       MIC_Lock::release_lock(lock_idx);
     }
 
-    #ifdef __DEVICE_SYNC__
+    #ifdef PVFMM_DEVICE_SYNC
     MIC_Lock::wait_lock(lock_idx);
     #endif
 

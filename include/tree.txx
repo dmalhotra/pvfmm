@@ -18,7 +18,7 @@ template <class TreeNode>
 void Tree<TreeNode>::Initialize(typename Node_t::NodeData* init_data_){
   dim=init_data_->dim;
   max_depth=init_data_->max_depth;
-  if(max_depth>MAX_DEPTH) max_depth=MAX_DEPTH;
+  if(max_depth>PVFMM_MAX_DEPTH) max_depth=PVFMM_MAX_DEPTH;
 
   if(root_node) mem::aligned_delete(root_node);
   root_node=mem::aligned_new<Node_t>();

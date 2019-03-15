@@ -132,7 +132,7 @@ extern MemoryManager glbMemMgr;
 
 
 inline uintptr_t align_ptr(uintptr_t ptr){
-  static constexpr uintptr_t     ALIGN_MINUS_ONE=MEM_ALIGN-1;
+  static constexpr uintptr_t     ALIGN_MINUS_ONE=PVFMM_MEM_ALIGN-1;
   static constexpr uintptr_t NOT_ALIGN_MINUS_ONE=~ALIGN_MINUS_ONE;
   return ((ptr+ALIGN_MINUS_ONE) & NOT_ALIGN_MINUS_ONE);
 }

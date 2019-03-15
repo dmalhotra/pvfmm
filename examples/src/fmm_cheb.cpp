@@ -17,11 +17,11 @@ extern pvfmm::PeriodicType pvfmm::periodicType;
 // Test1: Laplace problem, Smooth Gaussian, Periodic Boundary
 ///////////////////////////////////////////////////////////////////////////////
 template <class Real_t>
-void fn_input_t1(const Real_t *coord, int n, Real_t *out) { // Input function
-  int dof = 1;
-  Real_t a = -160;
-  for (int i = 0; i < n; i++) {
-    const Real_t *c = &coord[i * COORD_DIM];
+void fn_input_t1(const Real_t* coord, int n, Real_t* out){ //Input function
+  int dof=1;
+  Real_t a=-160;
+  for(int i=0;i<n;i++){
+    const Real_t* c=&coord[i*PVFMM_COORD_DIM];
     {
       Real_t r_2 = (c[0] - 0.5) * (c[0] - 0.5) + (c[1] - 0.5) * (c[1] - 0.5) +
                    (c[2] - 0.0) * (c[2] - 0.0);
@@ -35,11 +35,11 @@ void fn_input_t1(const Real_t *coord, int n, Real_t *out) { // Input function
   }
 }
 template <class Real_t>
-void fn_poten_t1(const Real_t *coord, int n, Real_t *out) { // Output potential
-  int dof = 1;
-  Real_t a = -160;
-  for (int i = 0; i < n; i++) {
-    const Real_t *c = &coord[i * COORD_DIM];
+void fn_poten_t1(const Real_t* coord, int n, Real_t* out){ //Output potential
+  int dof=1;
+  Real_t a=-160;
+  for(int i=0;i<n;i++){
+    const Real_t* c=&coord[i*PVFMM_COORD_DIM];
     {
       Real_t r_2 = (c[0] - 0.5) * (c[0] - 0.5) + (c[1] - 0.5) * (c[1] - 0.5) +
                    (c[2] - 0.0) * (c[2] - 0.0);
@@ -53,11 +53,11 @@ void fn_poten_t1(const Real_t *coord, int n, Real_t *out) { // Output potential
   }
 }
 template <class Real_t>
-void fn_grad_t1(const Real_t *coord, int n, Real_t *out) { // Output gradient
-  int dof = 1;
-  Real_t a = -160;
-  for (int i = 0; i < n; i++) {
-    const Real_t *c = &coord[i * COORD_DIM];
+void fn_grad_t1(const Real_t* coord, int n, Real_t* out){ //Output gradient
+  int dof=1;
+  Real_t a=-160;
+  for(int i=0;i<n;i++){
+    const Real_t* c=&coord[i*PVFMM_COORD_DIM];
     {
       Real_t r_2 = (c[0] - 0.5) * (c[0] - 0.5) + (c[1] - 0.5) * (c[1] - 0.5) +
                    (c[2] - 0.0) * (c[2] - 0.0);
@@ -79,11 +79,11 @@ void fn_grad_t1(const Real_t *coord, int n, Real_t *out) { // Output gradient
 // Test2: Laplace problem, Discontinuous Sphere, FreeSpace Boundary
 ///////////////////////////////////////////////////////////////////////////////
 template <class Real_t>
-void fn_input_t2(const Real_t *coord, int n, Real_t *out) { // Input function
-  int dof = 1;
-  Real_t R = 0.1;
-  for (int i = 0; i < n; i++) {
-    const Real_t *c = &coord[i * COORD_DIM];
+void fn_input_t2(const Real_t* coord, int n, Real_t* out){ //Input function
+  int dof=1;
+  Real_t R=0.1;
+  for(int i=0;i<n;i++){
+    const Real_t* c=&coord[i*PVFMM_COORD_DIM];
     {
       Real_t r_2 = (c[0] - 0.5) * (c[0] - 0.5) + (c[1] - 0.5) * (c[1] - 0.5) +
                    (c[2] - 0.5) * (c[2] - 0.5);
@@ -92,11 +92,11 @@ void fn_input_t2(const Real_t *coord, int n, Real_t *out) { // Input function
   }
 }
 template <class Real_t>
-void fn_poten_t2(const Real_t *coord, int n, Real_t *out) { // Output potential
-  int dof = 1;
-  Real_t R = 0.1;
-  for (int i = 0; i < n; i++) {
-    const Real_t *c = &coord[i * COORD_DIM];
+void fn_poten_t2(const Real_t* coord, int n, Real_t* out){ //Output potential
+  int dof=1;
+  Real_t R=0.1;
+  for(int i=0;i<n;i++){
+    const Real_t* c=&coord[i*PVFMM_COORD_DIM];
     {
       Real_t r_2 = (c[0] - 0.5) * (c[0] - 0.5) + (c[1] - 0.5) * (c[1] - 0.5) +
                    (c[2] - 0.5) * (c[2] - 0.5);
@@ -106,11 +106,11 @@ void fn_poten_t2(const Real_t *coord, int n, Real_t *out) { // Output potential
   }
 }
 template <class Real_t>
-void fn_grad_t2(const Real_t *coord, int n, Real_t *out) { // Output gradient
-  int dof = 3;
-  Real_t R = 0.1;
-  for (int i = 0; i < n; i++) {
-    const Real_t *c = &coord[i * COORD_DIM];
+void fn_grad_t2(const Real_t* coord, int n, Real_t* out){ //Output gradient
+  int dof=3;
+  Real_t R=0.1;
+  for(int i=0;i<n;i++){
+    const Real_t* c=&coord[i*PVFMM_COORD_DIM];
     {
       Real_t r_2 = (c[0] - 0.5) * (c[0] - 0.5) + (c[1] - 0.5) * (c[1] - 0.5) +
                    (c[2] - 0.5) * (c[2] - 0.5);
@@ -131,11 +131,11 @@ void fn_grad_t2(const Real_t *coord, int n, Real_t *out) { // Output gradient
 // Test3: Stokes problem, Smooth Gaussian, FreeSpace Boundary
 ///////////////////////////////////////////////////////////////////////////////
 template <class Real_t>
-void fn_input_t3(const Real_t *coord, int n, Real_t *out) { // Input function
-  int dof = 3;
-  Real_t L = 125;
-  for (int i = 0; i < n; i++) {
-    const Real_t *c = &coord[i * COORD_DIM];
+void fn_input_t3(const Real_t* coord, int n, Real_t* out){ //Input function
+  int dof=3;
+  Real_t L=125;
+  for(int i=0;i<n;i++){
+    const Real_t* c=&coord[i*PVFMM_COORD_DIM];
     {
       Real_t r_2 = (c[0] - 0.5) * (c[0] - 0.5) + (c[1] - 0.5) * (c[1] - 0.5) +
                    (c[2] - 0.5) * (c[2] - 0.5);
@@ -150,11 +150,11 @@ void fn_input_t3(const Real_t *coord, int n, Real_t *out) { // Input function
   }
 }
 template <class Real_t>
-void fn_poten_t3(const Real_t *coord, int n, Real_t *out) { // Output potential
-  int dof = 3;
-  Real_t L = 125;
-  for (int i = 0; i < n; i++) {
-    const Real_t *c = &coord[i * COORD_DIM];
+void fn_poten_t3(const Real_t* coord, int n, Real_t* out){ //Output potential
+  int dof=3;
+  Real_t L=125;
+  for(int i=0;i<n;i++){
+    const Real_t* c=&coord[i*PVFMM_COORD_DIM];
     {
       Real_t r_2 = (c[0] - 0.5) * (c[0] - 0.5) + (c[1] - 0.5) * (c[1] - 0.5) +
                    (c[2] - 0.5) * (c[2] - 0.5);
@@ -169,11 +169,11 @@ void fn_poten_t3(const Real_t *coord, int n, Real_t *out) { // Output potential
 // Test4: Biot-Savart problem, Smooth Gaussian, FreeSpace Boundary
 ///////////////////////////////////////////////////////////////////////////////
 template <class Real_t>
-void fn_input_t4(const Real_t *coord, int n, Real_t *out) { // Input function
-  int dof = 3;
-  Real_t L = 125;
-  for (int i = 0; i < n; i++) {
-    const Real_t *c = &coord[i * COORD_DIM];
+void fn_input_t4(const Real_t* coord, int n, Real_t* out){ //Input function
+  int dof=3;
+  Real_t L=125;
+  for(int i=0;i<n;i++){
+    const Real_t* c=&coord[i*PVFMM_COORD_DIM];
     {
       Real_t r_2 = (c[0] - 0.5) * (c[0] - 0.5) + (c[1] - 0.5) * (c[1] - 0.5) +
                    (c[2] - 0.5) * (c[2] - 0.5);
@@ -188,11 +188,11 @@ void fn_input_t4(const Real_t *coord, int n, Real_t *out) { // Input function
   }
 }
 template <class Real_t>
-void fn_poten_t4(const Real_t *coord, int n, Real_t *out) { // Output potential
-  int dof = 3;
-  Real_t L = 125;
-  for (int i = 0; i < n; i++) {
-    const Real_t *c = &coord[i * COORD_DIM];
+void fn_poten_t4(const Real_t* coord, int n, Real_t* out){ //Output potential
+  int dof=3;
+  Real_t L=125;
+  for(int i=0;i<n;i++){
+    const Real_t* c=&coord[i*PVFMM_COORD_DIM];
     {
       Real_t r_2 = (c[0] - 0.5) * (c[0] - 0.5) + (c[1] - 0.5) * (c[1] - 0.5) +
                    (c[2] - 0.5) * (c[2] - 0.5);
@@ -207,12 +207,12 @@ void fn_poten_t4(const Real_t *coord, int n, Real_t *out) { // Output potential
 // Test5: Helmholtz problem, Smooth Gaussian, FreeSpace Boundary
 ///////////////////////////////////////////////////////////////////////////////
 template <class Real_t>
-void fn_input_t5(const Real_t *coord, int n, Real_t *out) {
-  int dof = 2;
-  Real_t a = -160;
-  Real_t mu = (20.0 * M_PI);
-  for (int i = 0; i < n; i++) {
-    const Real_t *c = &coord[i * COORD_DIM];
+void fn_input_t5(const Real_t* coord, int n, Real_t* out){
+  int dof=2;
+  Real_t a=-160;
+  Real_t mu=(20.0*M_PI);
+  for(int i=0;i<n;i++){
+    const Real_t* c=&coord[i*PVFMM_COORD_DIM];
     {
       Real_t r_2 = (c[0] - 0.5) * (c[0] - 0.5) + (c[1] - 0.5) * (c[1] - 0.5) +
                    (c[2] - 0.5) * (c[2] - 0.5);
@@ -223,11 +223,11 @@ void fn_input_t5(const Real_t *coord, int n, Real_t *out) {
   }
 }
 template <class Real_t>
-void fn_poten_t5(const Real_t *coord, int n, Real_t *out) {
-  int dof = 2;
-  Real_t a = -160;
-  for (int i = 0; i < n; i++) {
-    const Real_t *c = &coord[i * COORD_DIM];
+void fn_poten_t5(const Real_t* coord, int n, Real_t* out){
+  int dof=2;
+  Real_t a=-160;
+  for(int i=0;i<n;i++){
+    const Real_t* c=&coord[i*PVFMM_COORD_DIM];
     {
       Real_t r_2 = (c[0] - 0.5) * (c[0] - 0.5) + (c[1] - 0.5) * (c[1] - 0.5) +
                    (c[2] - 0.5) * (c[2] - 0.5);
@@ -308,9 +308,9 @@ void fmm_test(int test_case, size_t N, size_t M, bool unif, int mult_order,
 
   // Various parameters.
   typename FMMNode_t::NodeData tree_data;
-  tree_data.dim = COORD_DIM;
-  tree_data.max_depth = depth;
-  tree_data.cheb_deg = cheb_deg;
+  tree_data.dim=PVFMM_COORD_DIM;
+  tree_data.max_depth=depth;
+  tree_data.cheb_deg=cheb_deg;
 
   // Set input function pointer
   tree_data.input_fn = fn_input_;
@@ -386,25 +386,22 @@ void fmm_test(int test_case, size_t N, size_t M, bool unif, int mult_order,
   FMM_Tree_t *tree = new FMM_Tree_t(comm);
   tree->Initialize(&tree_data);
 
-  // Initialize FMM Tree
-  tree->InitFMM_Tree(false, bndry);
+  //Initialize FMM Tree
+  tree->InitFMM_Tree(false,bndry);
 
-  { // Output max tree depth.
-    std::vector<size_t> all_nodes(MAX_DEPTH + 1, 0);
-    std::vector<size_t> leaf_nodes(MAX_DEPTH + 1, 0);
-    std::vector<FMMNode_t *> &nodes = tree->GetNodeList();
-    for (size_t i = 0; i < nodes.size(); i++) {
-      FMMNode_t *n = nodes[i];
-      if (!n->IsGhost())
-        all_nodes[n->Depth()]++;
-      if (!n->IsGhost() && n->IsLeaf())
-        leaf_nodes[n->Depth()]++;
+  { //Output max tree depth.
+    std::vector<size_t> all_nodes(PVFMM_MAX_DEPTH+1,0);
+    std::vector<size_t> leaf_nodes(PVFMM_MAX_DEPTH+1,0);
+    std::vector<FMMNode_t*>& nodes=tree->GetNodeList();
+    for(size_t i=0;i<nodes.size();i++){
+      FMMNode_t* n=nodes[i];
+      if(!n->IsGhost()) all_nodes[n->Depth()]++;
+      if(!n->IsGhost() && n->IsLeaf()) leaf_nodes[n->Depth()]++;
     }
 
-    if (!myrank)
-      std::cout << "All  Nodes: ";
-    for (int i = 0; i < MAX_DEPTH; i++) {
-      int local_size = all_nodes[i];
+    if(!myrank) std::cout<<"All  Nodes: ";
+    for(int i=0;i<PVFMM_MAX_DEPTH;i++){
+      int local_size=all_nodes[i];
       int global_size;
       MPI_Allreduce(&local_size, &global_size, 1, MPI_INT, MPI_SUM, comm);
       if (!myrank)
@@ -413,10 +410,9 @@ void fmm_test(int test_case, size_t N, size_t M, bool unif, int mult_order,
     if (!myrank)
       std::cout << '\n';
 
-    if (!myrank)
-      std::cout << "Leaf Nodes: ";
-    for (int i = 0; i < MAX_DEPTH; i++) {
-      int local_size = leaf_nodes[i];
+    if(!myrank) std::cout<<"Leaf Nodes: ";
+    for(int i=0;i<PVFMM_MAX_DEPTH;i++){
+      int local_size=leaf_nodes[i];
       int global_size;
       MPI_Allreduce(&local_size, &global_size, 1, MPI_INT, MPI_SUM, comm);
       if (!myrank)
@@ -542,10 +538,8 @@ void fmm_test(int test_case, size_t N, size_t M, bool unif, int mult_order,
     }
     pvfmm::Profile::Toc();
 
-    // Find error in FMM output (gradient).
-    CheckChebOutput<FMM_Tree_t>(tree, (typename TestFn<Real_t>::Fn_t)fn_grad_,
-                                mykernel->ker_dim[1] * COORD_DIM,
-                                std::string("OutputGrad"));
+    //Find error in FMM output (gradient).
+    CheckChebOutput<FMM_Tree_t>(tree, (typename TestFn<Real_t>::Fn_t) fn_grad_, mykernel->ker_dim[1]*PVFMM_COORD_DIM, std::string("OutputGrad"));
   }
 
   // Delete matrices.

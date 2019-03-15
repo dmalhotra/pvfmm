@@ -58,7 +58,7 @@ void MPI_Node<T>::ClearData(){
 template <class T>
 MortonId MPI_Node<T>::GetMortonId(){
   assert(coord);
-  Real_t s=0.25/(1UL<<MAX_DEPTH);
+  Real_t s=0.25/(1UL<<PVFMM_MAX_DEPTH);
   return MortonId(coord[0]+s,coord[1]+s,coord[2]+s, Depth()); // TODO: Use interger coordinates instead of floating point.
 }
 
@@ -452,8 +452,8 @@ void AppendVTUData(VTUData_t& vtu_data, VTUData_t& new_data){
 
 
 
-    size_t old_pts=vtu_coord.size()/COORD_DIM;
-    size_t new_pts=new_coord.size()/COORD_DIM;
+    size_t old_pts=vtu_coord.size()/PVFMM_COORD_DIM;
+    size_t new_pts=new_coord.size()/PVFMM_COORD_DIM;
 
     // New points
     for(size_t i=0;i<new_coord.size();i++){

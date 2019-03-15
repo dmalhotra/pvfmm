@@ -21,8 +21,8 @@ inline ChebFMM_Tree<Real>* ChebFMM_CreateTree(int cheb_deg, int data_dim, ChebFn
   tree_data.tol=tol;
   bool adap=true;
 
-  tree_data.dim=COORD_DIM;
-  tree_data.max_depth=MAX_DEPTH;
+  tree_data.dim=PVFMM_COORD_DIM;
+  tree_data.max_depth=PVFMM_MAX_DEPTH;
   tree_data.max_pts=max_pts;
 
   { // Set points for initial tree.
@@ -87,8 +87,8 @@ inline PtFMM_Tree<Real>* PtFMM_CreateTree(const std::vector<Real>&  src_coord, c
   PtFMM_Data<Real> tree_data;
   bool adap=true;
 
-  tree_data.dim=COORD_DIM;
-  tree_data.max_depth=MAX_DEPTH;
+  tree_data.dim=PVFMM_COORD_DIM;
+  tree_data.max_depth=PVFMM_MAX_DEPTH;
   tree_data.max_pts=max_pts;
 
   // Set source points.

@@ -15,8 +15,8 @@
 #ifndef _PVFMM_PROFILE_HPP_
 #define _PVFMM_PROFILE_HPP_
 
-#ifndef __PROFILE__
-#define __PROFILE__ -1
+#ifndef PVFMM_PROFILE
+#define PVFMM_PROFILE -1
 #endif
 
 namespace pvfmm{

@@ -141,11 +141,11 @@ class FMM_Pts{
 
   void SetupPrecomp(SetupData<Real_t>& setup_data, bool device=false);
   void SetupInterac(SetupData<Real_t>& setup_data, bool device=false);
-  template <int SYNC=__DEVICE_SYNC__>
+  template <int SYNC=PVFMM_DEVICE_SYNC>
   void EvalList    (SetupData<Real_t>& setup_data, bool device=false); // Run on CPU by default.
 
   void PtSetup(SetupData<Real_t>&  setup_data, void* data_);
-  template <int SYNC=__DEVICE_SYNC__>
+  template <int SYNC=PVFMM_DEVICE_SYNC>
   void EvalListPts(SetupData<Real_t>& setup_data, bool device=false); // Run on CPU by default.
 
   /**

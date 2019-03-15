@@ -11,7 +11,7 @@
 #include <vector>
 #if defined(PVFMM_HAVE_FFTW) || defined(PVFMM_HAVE_FFTWF)
 #include <fftw3.h>
-#ifdef FFTW3_MKL
+#ifdef PVFMM_FFTW3_MKL
 #include <fftw3_mkl.h>
 #endif
 #endif
@@ -241,7 +241,7 @@ struct FFTW_t<double>{
   static plan fft_plan_many_dft_r2c(int rank, const int *n, int howmany,
       double *in, const int *inembed, int istride, int idist,
       fftw_complex *out, const int *onembed, int ostride, int odist){
-    #ifdef FFTW3_MKL
+    #ifdef PVFMM_FFTW3_MKL
     int omp_p0=omp_get_num_threads();
     int omp_p1=omp_get_max_threads();
     fftw3_mkl.number_of_user_threads = (omp_p0>omp_p1?omp_p0:omp_p1);
@@ -253,7 +253,7 @@ struct FFTW_t<double>{
   static plan fft_plan_many_dft_c2r(int rank, const int *n, int howmany,
       cplx *in, const int *inembed, int istride, int idist,
       double *out, const int *onembed, int ostride, int odist){
-    #ifdef FFTW3_MKL
+    #ifdef PVFMM_FFTW3_MKL
     int omp_p0=omp_get_num_threads();
     int omp_p1=omp_get_max_threads();
     fftw3_mkl.number_of_user_threads = (omp_p0>omp_p1?omp_p0:omp_p1);

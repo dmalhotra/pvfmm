@@ -51,26 +51,22 @@ void fmm_test(int ker, size_t N, size_t M, Real_t b, int dist, int mult_order,
 
   // Various parameters.
   typename FMMNode_t::NodeData tree_data;
-  tree_data.dim = COORD_DIM;
-  tree_data.max_depth = depth;
-  tree_data.max_pts = M; // Points per octant.
+  tree_data.dim=PVFMM_COORD_DIM;
+  tree_data.max_depth=depth;
+  tree_data.max_pts=M; // Points per octant.
 
   { // Set particle coordinates and values.
     std::vector<Real_t> src_coord, src_value;
-    src_coord = point_distrib<Real_t>(
-        (dist == 0 ? UnifGrid : (dist == 1 ? RandSphr : RandElps)), N, comm);
-    for (size_t i = 0; i < src_coord.size(); i++)
-      src_coord[i] *= b;
-    for (size_t i = 0; i < src_coord.size() * mykernel->ker_dim[0] / COORD_DIM;
-         i++)
-      src_value.push_back(drand48() - 0.5);
-    tree_data.pt_coord = src_coord;
-    tree_data.pt_value = src_value;
-    // tree_data.src_coord=src_coord;
-    // tree_data.src_value=src_value;
+    src_coord=point_distrib<Real_t>((dist==0?UnifGrid:(dist==1?RandSphr:RandElps)),N,comm);
+    for(size_t i=0;i<src_coord.size();i++) src_coord[i]*=b;
+    for(size_t i=0;i<src_coord.size()*mykernel->ker_dim[0]/PVFMM_COORD_DIM;i++) src_value.push_back(drand48()-0.5);
+    tree_data.pt_coord=src_coord;
+    tree_data.pt_value=src_value;
+    //tree_data.src_coord=src_coord;
+    //tree_data.src_value=src_value;
 
-    // Set target coordinates.
-    // tree_data.trg_coord=tree_data.src_coord;
+    //Set target coordinates.
+    //tree_data.trg_coord=tree_data.src_coord;
   }
 
   // Print various parameters.
@@ -156,24 +152,21 @@ void fmm_test(int ker, size_t N, size_t M, Real_t b, int dist, int mult_order,
         trg_value = trg_value_;
         trg_scatter = trg_scatter_;
       }
-      pvfmm::par::ScatterReverse(trg_value, trg_scatter, *tree.Comm(),
-                                 tree_data.trg_coord.Dim() *
-                                     mykernel->ker_dim[1] / COORD_DIM);
+      pvfmm::par::ScatterReverse(trg_value,trg_scatter,*tree.Comm(),tree_data.trg_coord.Dim()*mykernel->ker_dim[1]/PVFMM_COORD_DIM);
       pvfmm::Profile::Toc();
     }
     pvfmm::Profile::Toc();
   }
 
-  { // Output max tree depth.
-    long nleaf = 0, maxdepth = 0;
-    std::vector<size_t> all_nodes(MAX_DEPTH + 1, 0);
-    std::vector<size_t> leaf_nodes(MAX_DEPTH + 1, 0);
-    std::vector<FMMNode_t *> &nodes = tree.GetNodeList();
-    for (size_t i = 0; i < nodes.size(); i++) {
-      FMMNode_t *n = nodes[i];
-      if (!n->IsGhost())
-        all_nodes[n->Depth()]++;
-      if (!n->IsGhost() && n->IsLeaf()) {
+  { //Output max tree depth.
+    long nleaf=0, maxdepth=0;
+    std::vector<size_t> all_nodes(PVFMM_MAX_DEPTH+1,0);
+    std::vector<size_t> leaf_nodes(PVFMM_MAX_DEPTH+1,0);
+    std::vector<FMMNode_t*>& nodes=tree.GetNodeList();
+    for(size_t i=0;i<nodes.size();i++){
+      FMMNode_t* n=nodes[i];
+      if(!n->IsGhost()) all_nodes[n->Depth()]++;
+      if(!n->IsGhost() && n->IsLeaf()){
         leaf_nodes[n->Depth()]++;
         if (maxdepth < n->Depth())
           maxdepth = n->Depth();
@@ -181,10 +174,9 @@ void fmm_test(int ker, size_t N, size_t M, Real_t b, int dist, int mult_order,
       }
     }
 
-    if (!myrank)
-      std::cout << "All  Nodes: ";
-    for (int i = 0; i < MAX_DEPTH; i++) {
-      int local_size = all_nodes[i];
+    if(!myrank) std::cout<<"All  Nodes: ";
+    for(int i=0;i<PVFMM_MAX_DEPTH;i++){
+      int local_size=all_nodes[i];
       int global_size;
       MPI_Allreduce(&local_size, &global_size, 1, MPI_INT, MPI_SUM, comm);
       if (!myrank)
@@ -193,10 +185,9 @@ void fmm_test(int ker, size_t N, size_t M, Real_t b, int dist, int mult_order,
     if (!myrank)
       std::cout << '\n';
 
-    if (!myrank)
-      std::cout << "Leaf Nodes: ";
-    for (int i = 0; i < MAX_DEPTH; i++) {
-      int local_size = leaf_nodes[i];
+    if(!myrank) std::cout<<"Leaf Nodes: ";
+    for(int i=0;i<PVFMM_MAX_DEPTH;i++){
+      int local_size=leaf_nodes[i];
       int global_size;
       MPI_Allreduce(&local_size, &global_size, 1, MPI_INT, MPI_SUM, comm);
       if (!myrank)

@@ -33,7 +33,7 @@ namespace pvfmm{
  */
 inline int p2oLocal(Vector<MortonId> & nodes, Vector<MortonId>& leaves,
     unsigned int maxNumPts, unsigned int maxDepth, bool complete) {
-  assert(maxDepth<=MAX_DEPTH);
+  assert(maxDepth<=PVFMM_MAX_DEPTH);
 
   std::vector<MortonId> leaves_lst;
   unsigned int init_size=leaves.Dim();
@@ -72,7 +72,7 @@ inline int p2oLocal(Vector<MortonId> & nodes, Vector<MortonId>& leaves,
     next_pt = curr_pt + maxNumPts;
     if(next_pt > num_pts) next_pt = num_pts;
   }
-#ifndef NDEBUG
+#ifndef PVFMM_NDEBUG
   for(size_t i=0;i<leaves_lst.size();i++){
     size_t a=std::lower_bound(&nodes[0],&nodes[0]+nodes.Dim(),leaves_lst[i],std::less<MortonId>())-&nodes[0];
     size_t b=std::lower_bound(&nodes[0],&nodes[0]+nodes.Dim(),leaves_lst[i].NextId(),std::less<MortonId>())-&nodes[0];
@@ -200,7 +200,7 @@ void MPI_Tree<TreeNode>::Initialize(typename Node_t::NodeData* init_data){
   Profile::Tic("InitRoot",Comm(),false,5);
   Tree<TreeNode>::Initialize(init_data);
   TreeNode* rnode=this->RootNode();
-  assert(this->dim==COORD_DIM);
+  assert(this->dim==PVFMM_COORD_DIM);
   Profile::Toc();
 
   Profile::Tic("Points2Octee",Comm(),true,5);
@@ -213,7 +213,7 @@ void MPI_Tree<TreeNode>::Initialize(typename Node_t::NodeData* init_data){
     pt_mid.Resize(pt_cnt);
     #pragma omp parallel for
     for(size_t i=0;i<pt_cnt;i++){
-      pt_mid[i]=MortonId(pt_coord[i*COORD_DIM+0],pt_coord[i*COORD_DIM+1],pt_coord[i*COORD_DIM+2],this->max_depth);
+      pt_mid[i]=MortonId(pt_coord[i*PVFMM_COORD_DIM+0],pt_coord[i*PVFMM_COORD_DIM+1],pt_coord[i*PVFMM_COORD_DIM+2],this->max_depth);
     }
 
     //Get the linear tree.
@@ -240,7 +240,7 @@ void MPI_Tree<TreeNode>::Initialize(typename Node_t::NodeData* init_data){
         pt_mid.Resize(pt_cnt);
         #pragma omp parallel for
         for(size_t i=0;i<pt_cnt;i++){
-          pt_mid[i]=MortonId(pt_coord[i*COORD_DIM+0],pt_coord[i*COORD_DIM+1],pt_coord[i*COORD_DIM+2],this->max_depth);
+          pt_mid[i]=MortonId(pt_coord[i*PVFMM_COORD_DIM+0],pt_coord[i*PVFMM_COORD_DIM+1],pt_coord[i*PVFMM_COORD_DIM+2],this->max_depth);
         }
       }
       par::SortScatterIndex(pt_mid  , scatter_index, comm, &lin_oct[0]);
@@ -268,7 +268,7 @@ void MPI_Tree<TreeNode>::Initialize(typename Node_t::NodeData* init_data){
       size_t idx=(lin_oct.Dim()*i)/omp_p;
       Node_t* n=FindNode(lin_oct[idx], true);
       assert(n->GetMortonId()==lin_oct[idx]);
-      UNUSED(n);
+      PVFMM_UNUSED(n);
     }
 
     #pragma omp parallel for
@@ -299,7 +299,7 @@ void MPI_Tree<TreeNode>::Initialize(typename Node_t::NodeData* init_data){
   }
   Profile::Toc();
 
-#ifndef NDEBUG
+#ifndef PVFMM_NDEBUG
   CheckTree();
 #endif
 }
@@ -444,11 +444,11 @@ void MPI_Tree<TreeNode>::RefineTree(){
 
     //RedistNodes if needed.
     if(global_max*np>4*global_sum){
-      #ifndef NDEBUG
+      #ifndef PVFMM_NDEBUG
       Profile::Tic("RedistNodes",Comm(),true,4);
       #endif
       RedistNodes();
-      #ifndef NDEBUG
+      #ifndef PVFMM_NDEBUG
       Profile::Toc();
       #endif
 
@@ -749,7 +749,7 @@ inline int balanceOctree (std::vector<MortonId > &in, std::vector<MortonId > &ou
     return 0;
   }
 
-#ifdef __VERBOSE__
+#ifdef PVFMM_VERBOSE
   long long locInSize = in.size();
 #endif
 
@@ -835,7 +835,7 @@ inline int balanceOctree (std::vector<MortonId > &in, std::vector<MortonId > &ou
     }
   }
 
-#ifdef __VERBOSE__
+#ifdef PVFMM_VERBOSE
   //Local size before removing duplicates and ancestors (linearise).
   long long locTmpSize = in.size();
 #endif
@@ -922,7 +922,7 @@ inline int balanceOctree (std::vector<MortonId > &in, std::vector<MortonId > &ou
 
   //////////////////////////////////////////////////////////////////////////////////////////////////
 
-#ifdef __VERBOSE__
+#ifdef PVFMM_VERBOSE
   long long locOutSize = out.size();
   long long globInSize, globTmpSize, globOutSize;
   MPI_Allreduce(&locInSize , &globInSize , 1, par::Mpi_datatype<long long>::value(), par::Mpi_datatype<long long>::sum(), comm);
@@ -1006,7 +1006,7 @@ void MPI_Tree<TreeNode>::Balance21(BoundaryType bndry) {
   //Redist nodes using new_mins.
   Profile::Tic("RedistNodes",Comm(),true,10);
   if(redist) RedistNodes(&out[0]);
-  #ifndef NDEBUG
+  #ifndef PVFMM_NDEBUG
   std::vector<MortonId> mins=GetMins();
   assert(mins[myrank].getDFD()==out[0].getDFD());
   #endif
@@ -1019,7 +1019,7 @@ void MPI_Tree<TreeNode>::Balance21(BoundaryType bndry) {
     size_t a=(out.size()*i)/omp_p;
     Node_t* n=FindNode(out[a], true);
     assert(n->GetMortonId()==out[a]);
-    UNUSED(n);
+    PVFMM_UNUSED(n);
   }
   #pragma omp parallel for
   for(int i=0;i<omp_p;i++){
@@ -1170,12 +1170,12 @@ void MPI_Tree<TreeNode>::SetColleagues(BoundaryType bndry, Node_t* node){
       curr_node=this->PreorderNxt(curr_node);
     }
 
-    Vector<std::vector<Node_t*> > nodes(MAX_DEPTH);
+    Vector<std::vector<Node_t*> > nodes(PVFMM_MAX_DEPTH);
     while(curr_node!=NULL){
       nodes[curr_node->Depth()].push_back(curr_node);
       curr_node=this->PreorderNxt(curr_node);
     }
-    for(size_t i=0;i<MAX_DEPTH;i++){
+    for(size_t i=0;i<PVFMM_MAX_DEPTH;i++){
       size_t j0=nodes[i].size();
       Node_t** nodes_=&nodes[i][0];
       #pragma omp parallel for
@@ -1190,7 +1190,7 @@ void MPI_Tree<TreeNode>::SetColleagues(BoundaryType bndry, Node_t* node){
     int d=node->Depth();
     Real_t* c0=node->Coord();
     Real_t s=pvfmm::pow<Real_t>(0.5,d);
-    Real_t c[COORD_DIM];
+    Real_t c[PVFMM_COORD_DIM];
     int idx=0;
     for(int i=-1;i<=1;i++)
     for(int j=-1;j<=1;j++)
@@ -1286,7 +1286,7 @@ bool MPI_Tree<TreeNode>::CheckTree(){
   while(n!=NULL){
     if(n->IsLeaf() && !n->IsGhost()){
       st<<"non-ghost leaf node "<<n->GetMortonId()<<"; after last node.";
-      str=st.str(); ASSERT_WITH_MSG(false,str.c_str());
+      str=st.str(); PVFMM_ASSERT_WITH_MSG(false,str.c_str());
     }
     n=this->PostorderNxt(n);
   }
@@ -1381,7 +1381,7 @@ void MPI_Tree<TreeNode>::ConstructLET(BoundaryType bndry){
   ConstructLET_Sparse(bndry);
   //Profile::Toc();
 
-#ifndef NDEBUG
+#ifndef PVFMM_NDEBUG
   CheckTree();
 #endif
 }
@@ -1598,8 +1598,8 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
     size_t pkd_length;
 
     size_t   usr_cnt;
-    MortonId usr_mid[COLLEAGUE_COUNT];
-    size_t   usr_pid[COLLEAGUE_COUNT];
+    MortonId usr_mid[PVFMM_COLLEAGUE_COUNT];
+    size_t   usr_pid[PVFMM_COLLEAGUE_COUNT];
   };
 
   int num_p,rank;
@@ -2165,7 +2165,7 @@ void MPI_Tree<TreeNode>::Write2File(const char* fname, int lod){
   std::vector<int32_t>& offset =vtu_data.offset;
   std::vector<uint8_t>& types  =vtu_data.types;
 
-  int pt_cnt=coord.size()/COORD_DIM;
+  int pt_cnt=coord.size()/PVFMM_COORD_DIM;
   int cell_cnt=types.size();
 
   std::vector<int32_t> mpi_rank;  //MPI_Rank at points.
@@ -2190,7 +2190,7 @@ void MPI_Tree<TreeNode>::Write2File(const char* fname, int lod){
 
   //---------------------------------------------------------------------------
   vtufile<<"      <Points>\n";
-  vtufile<<"        <DataArray type=\"Float"<<sizeof(VTKReal_t)*8<<"\" NumberOfComponents=\""<<COORD_DIM<<"\" Name=\"Position\" format=\"appended\" offset=\""<<data_size<<"\" />\n";
+  vtufile<<"        <DataArray type=\"Float"<<sizeof(VTKReal_t)*8<<"\" NumberOfComponents=\""<<PVFMM_COORD_DIM<<"\" Name=\"Position\" format=\"appended\" offset=\""<<data_size<<"\" />\n";
   data_size+=sizeof(uint32_t)+coord.size()*sizeof(VTKReal_t);
   vtufile<<"      </Points>\n";
   //---------------------------------------------------------------------------
@@ -2254,7 +2254,7 @@ void MPI_Tree<TreeNode>::Write2File(const char* fname, int lod){
   pvtufile<<"<VTKFile type=\"PUnstructuredGrid\">\n";
   pvtufile<<"  <PUnstructuredGrid GhostLevel=\"0\">\n";
   pvtufile<<"      <PPoints>\n";
-  pvtufile<<"        <PDataArray type=\"Float"<<sizeof(VTKReal_t)*8<<"\" NumberOfComponents=\""<<COORD_DIM<<"\" Name=\"Position\"/>\n";
+  pvtufile<<"        <PDataArray type=\"Float"<<sizeof(VTKReal_t)*8<<"\" NumberOfComponents=\""<<PVFMM_COORD_DIM<<"\" Name=\"Position\"/>\n";
   pvtufile<<"      </PPoints>\n";
   pvtufile<<"      <PPointData>\n";
   for(size_t i=0;i<name.size();i++) if(value[i].size()){ // value
@@ -2288,7 +2288,7 @@ const std::vector<MortonId>& MPI_Tree<TreeNode>::GetMins(){
     if(!n->IsGhost() && n->IsLeaf()) break;
     n=this->PreorderNxt(n);
   }
-  ASSERT_WITH_MSG(n!=NULL,"No non-ghost nodes found on this process.");
+  PVFMM_ASSERT_WITH_MSG(n!=NULL,"No non-ghost nodes found on this process.");
 
   MortonId my_min;
   my_min=n->GetMortonId();
