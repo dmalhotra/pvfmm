@@ -1214,7 +1214,7 @@ void scqf ( int nt, double t[], int mlt[], double wts[], int nwts, int ndx[],
 //    Input, double A, B, the interval endpoints.
 //
 {
-  (void)(nwts); //UNUSED(nwts);
+  (void)(nwts); //PVFMM_UNUSED(nwts);
   double al=0;
   double be=0;
   int i;

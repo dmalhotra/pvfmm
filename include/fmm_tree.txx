@@ -117,56 +117,56 @@ void FMM_Tree<FMM_Mat_t>::SetupFMM(FMM_Mat_t* fmm_mat_) {
   BuildInteracLists();
   Profile::Toc();
 
-  setup_data.resize(8*MAX_DEPTH);
+  setup_data.resize(8*PVFMM_MAX_DEPTH);
   precomp_lst.resize(8);
 
   Profile::Tic("UListSetup",this->Comm(),false,3);
-  for(size_t i=0;i<MAX_DEPTH;i++){
-    setup_data[i+MAX_DEPTH*0].precomp_data=&precomp_lst[0];
-    fmm_mat->U_ListSetup(setup_data[i+MAX_DEPTH*0],(MatTree_t*)this,node_data_buff,node_lists,fmm_mat->ScaleInvar()?(i==0?-1:MAX_DEPTH+1):i, device);
+  for(size_t i=0;i<PVFMM_MAX_DEPTH;i++){
+    setup_data[i+PVFMM_MAX_DEPTH*0].precomp_data=&precomp_lst[0];
+    fmm_mat->U_ListSetup(setup_data[i+PVFMM_MAX_DEPTH*0],(MatTree_t*)this,node_data_buff,node_lists,fmm_mat->ScaleInvar()?(i==0?-1:PVFMM_MAX_DEPTH+1):i, device);
   }
   Profile::Toc();
   Profile::Tic("WListSetup",this->Comm(),false,3);
-  for(size_t i=0;i<MAX_DEPTH;i++){
-    setup_data[i+MAX_DEPTH*1].precomp_data=&precomp_lst[1];
-    fmm_mat->W_ListSetup(setup_data[i+MAX_DEPTH*1],(MatTree_t*)this,node_data_buff,node_lists,fmm_mat->ScaleInvar()?(i==0?-1:MAX_DEPTH+1):i, device);
+  for(size_t i=0;i<PVFMM_MAX_DEPTH;i++){
+    setup_data[i+PVFMM_MAX_DEPTH*1].precomp_data=&precomp_lst[1];
+    fmm_mat->W_ListSetup(setup_data[i+PVFMM_MAX_DEPTH*1],(MatTree_t*)this,node_data_buff,node_lists,fmm_mat->ScaleInvar()?(i==0?-1:PVFMM_MAX_DEPTH+1):i, device);
   }
   Profile::Toc();
   Profile::Tic("XListSetup",this->Comm(),false,3);
-  for(size_t i=0;i<MAX_DEPTH;i++){
-    setup_data[i+MAX_DEPTH*2].precomp_data=&precomp_lst[2];
-    fmm_mat->X_ListSetup(setup_data[i+MAX_DEPTH*2],(MatTree_t*)this,node_data_buff,node_lists,fmm_mat->ScaleInvar()?(i==0?-1:MAX_DEPTH+1):i, device);
+  for(size_t i=0;i<PVFMM_MAX_DEPTH;i++){
+    setup_data[i+PVFMM_MAX_DEPTH*2].precomp_data=&precomp_lst[2];
+    fmm_mat->X_ListSetup(setup_data[i+PVFMM_MAX_DEPTH*2],(MatTree_t*)this,node_data_buff,node_lists,fmm_mat->ScaleInvar()?(i==0?-1:PVFMM_MAX_DEPTH+1):i, device);
   }
   Profile::Toc();
   Profile::Tic("VListSetup",this->Comm(),false,3);
-  for(size_t i=0;i<MAX_DEPTH;i++){
-    setup_data[i+MAX_DEPTH*3].precomp_data=&precomp_lst[3];
-    fmm_mat->V_ListSetup(setup_data[i+MAX_DEPTH*3],(MatTree_t*)this,node_data_buff,node_lists,fmm_mat->ScaleInvar()?(i==0?-1:MAX_DEPTH+1):i, /*device*/ false);
+  for(size_t i=0;i<PVFMM_MAX_DEPTH;i++){
+    setup_data[i+PVFMM_MAX_DEPTH*3].precomp_data=&precomp_lst[3];
+    fmm_mat->V_ListSetup(setup_data[i+PVFMM_MAX_DEPTH*3],(MatTree_t*)this,node_data_buff,node_lists,fmm_mat->ScaleInvar()?(i==0?-1:PVFMM_MAX_DEPTH+1):i, /*device*/ false);
   }
   Profile::Toc();
   Profile::Tic("D2DSetup",this->Comm(),false,3);
-  for(size_t i=0;i<MAX_DEPTH;i++){
-    setup_data[i+MAX_DEPTH*4].precomp_data=&precomp_lst[4];
-    fmm_mat->Down2DownSetup(setup_data[i+MAX_DEPTH*4],(MatTree_t*)this,node_data_buff,node_lists,i, /*device*/ false);
+  for(size_t i=0;i<PVFMM_MAX_DEPTH;i++){
+    setup_data[i+PVFMM_MAX_DEPTH*4].precomp_data=&precomp_lst[4];
+    fmm_mat->Down2DownSetup(setup_data[i+PVFMM_MAX_DEPTH*4],(MatTree_t*)this,node_data_buff,node_lists,i, /*device*/ false);
   }
   Profile::Toc();
   Profile::Tic("D2TSetup",this->Comm(),false,3);
-  for(size_t i=0;i<MAX_DEPTH;i++){
-    setup_data[i+MAX_DEPTH*5].precomp_data=&precomp_lst[5];
-    fmm_mat->Down2TargetSetup(setup_data[i+MAX_DEPTH*5],(MatTree_t*)this,node_data_buff,node_lists,fmm_mat->ScaleInvar()?(i==0?-1:MAX_DEPTH+1):i, /*device*/ false);
+  for(size_t i=0;i<PVFMM_MAX_DEPTH;i++){
+    setup_data[i+PVFMM_MAX_DEPTH*5].precomp_data=&precomp_lst[5];
+    fmm_mat->Down2TargetSetup(setup_data[i+PVFMM_MAX_DEPTH*5],(MatTree_t*)this,node_data_buff,node_lists,fmm_mat->ScaleInvar()?(i==0?-1:PVFMM_MAX_DEPTH+1):i, /*device*/ false);
   }
   Profile::Toc();
 
   Profile::Tic("S2USetup",this->Comm(),false,3);
-  for(size_t i=0;i<MAX_DEPTH;i++){
-    setup_data[i+MAX_DEPTH*6].precomp_data=&precomp_lst[6];
-    fmm_mat->Source2UpSetup(setup_data[i+MAX_DEPTH*6],(MatTree_t*)this,node_data_buff,node_lists,fmm_mat->ScaleInvar()?(i==0?-1:MAX_DEPTH+1):i, /*device*/ false);
+  for(size_t i=0;i<PVFMM_MAX_DEPTH;i++){
+    setup_data[i+PVFMM_MAX_DEPTH*6].precomp_data=&precomp_lst[6];
+    fmm_mat->Source2UpSetup(setup_data[i+PVFMM_MAX_DEPTH*6],(MatTree_t*)this,node_data_buff,node_lists,fmm_mat->ScaleInvar()?(i==0?-1:PVFMM_MAX_DEPTH+1):i, /*device*/ false);
   }
   Profile::Toc();
   Profile::Tic("U2USetup",this->Comm(),false,3);
-  for(size_t i=0;i<MAX_DEPTH;i++){
-    setup_data[i+MAX_DEPTH*7].precomp_data=&precomp_lst[7];
-    fmm_mat->Up2UpSetup(setup_data[i+MAX_DEPTH*7],(MatTree_t*)this,node_data_buff,node_lists,i, /*device*/ false);
+  for(size_t i=0;i<PVFMM_MAX_DEPTH;i++){
+    setup_data[i+PVFMM_MAX_DEPTH*7].precomp_data=&precomp_lst[7];
+    fmm_mat->Up2UpSetup(setup_data[i+PVFMM_MAX_DEPTH*7],(MatTree_t*)this,node_data_buff,node_lists,i, /*device*/ false);
   }
   Profile::Toc();
 
@@ -192,21 +192,21 @@ void FMM_Tree<FMM_Mat_t>::ClearFMMData() {
   for(int j=0;j<omp_p;j++){
     Matrix<Real_t>* mat;
 
-    mat=setup_data[0+MAX_DEPTH*1]. input_data;
+    mat=setup_data[0+PVFMM_MAX_DEPTH*1]. input_data;
     if(mat && mat->Dim(0)*mat->Dim(1)){
       size_t a=(mat->Dim(0)*mat->Dim(1)*(j+0))/omp_p;
       size_t b=(mat->Dim(0)*mat->Dim(1)*(j+1))/omp_p;
       memset(&(*mat)[0][a],0,(b-a)*sizeof(Real_t));
     }
 
-    mat=setup_data[0+MAX_DEPTH*2].output_data;
+    mat=setup_data[0+PVFMM_MAX_DEPTH*2].output_data;
     if(mat && mat->Dim(0)*mat->Dim(1)){
       size_t a=(mat->Dim(0)*mat->Dim(1)*(j+0))/omp_p;
       size_t b=(mat->Dim(0)*mat->Dim(1)*(j+1))/omp_p;
       memset(&(*mat)[0][a],0,(b-a)*sizeof(Real_t));
     }
 
-    mat=setup_data[0+MAX_DEPTH*0].output_data;
+    mat=setup_data[0+PVFMM_MAX_DEPTH*0].output_data;
     if(mat && mat->Dim(0)*mat->Dim(1)){
       size_t a=(mat->Dim(0)*mat->Dim(1)*(j+0))/omp_p;
       size_t b=(mat->Dim(0)*mat->Dim(1)*(j+1))/omp_p;
@@ -215,9 +215,9 @@ void FMM_Tree<FMM_Mat_t>::ClearFMMData() {
   }
 
   if(device){ // Host2Device
-    if(setup_data[0+MAX_DEPTH*1]. input_data!=NULL) setup_data[0+MAX_DEPTH*1]. input_data->AllocDevice(true);
-    if(setup_data[0+MAX_DEPTH*2].output_data!=NULL) setup_data[0+MAX_DEPTH*2].output_data->AllocDevice(true);
-    if(setup_data[0+MAX_DEPTH*0].output_data!=NULL) setup_data[0+MAX_DEPTH*0].output_data->AllocDevice(true);
+    if(setup_data[0+PVFMM_MAX_DEPTH*1]. input_data!=NULL) setup_data[0+PVFMM_MAX_DEPTH*1]. input_data->AllocDevice(true);
+    if(setup_data[0+PVFMM_MAX_DEPTH*2].output_data!=NULL) setup_data[0+PVFMM_MAX_DEPTH*2].output_data->AllocDevice(true);
+    if(setup_data[0+PVFMM_MAX_DEPTH*0].output_data!=NULL) setup_data[0+PVFMM_MAX_DEPTH*0].output_data->AllocDevice(true);
 
     #ifdef __INTEL_OFFLOAD
     if(!fmm_mat->ScaleInvar()){ // Wait
@@ -282,16 +282,16 @@ void FMM_Tree<FMM_Mat_t>::UpwardPass() {
   //Upward Pass (initialize all leaf nodes)
   Profile::Tic("S2U",this->Comm(),false,5);
   for(int i=0; i<=(fmm_mat->ScaleInvar()?0:max_depth); i++){ // Source2Up
-    if(!fmm_mat->ScaleInvar()) fmm_mat->SetupPrecomp(setup_data[i+MAX_DEPTH*6],/*device*/ false);
-    fmm_mat->Source2Up(setup_data[i+MAX_DEPTH*6]);
+    if(!fmm_mat->ScaleInvar()) fmm_mat->SetupPrecomp(setup_data[i+PVFMM_MAX_DEPTH*6],/*device*/ false);
+    fmm_mat->Source2Up(setup_data[i+PVFMM_MAX_DEPTH*6]);
   }
   Profile::Toc();
 
   //Upward Pass (level by level)
   Profile::Tic("U2U",this->Comm(),false,5);
   for(int i=max_depth-1; i>=0; i--){ // Up2Up
-    if(!fmm_mat->ScaleInvar()) fmm_mat->SetupPrecomp(setup_data[i+MAX_DEPTH*7],/*device*/ false);
-    fmm_mat->Up2Up(setup_data[i+MAX_DEPTH*7]);
+    if(!fmm_mat->ScaleInvar()) fmm_mat->SetupPrecomp(setup_data[i+PVFMM_MAX_DEPTH*7],/*device*/ false);
+    fmm_mat->Up2Up(setup_data[i+PVFMM_MAX_DEPTH*7]);
   }
   Profile::Toc();
 }
@@ -573,8 +573,8 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
   #if defined(__INTEL_OFFLOAD) || defined(PVFMM_HAVE_CUDA)
   if(device){ // Host2Device:Src
     Profile::Tic("Host2Device:Src",this->Comm(),false,5);
-    if(setup_data[0+MAX_DEPTH*2]. coord_data!=NULL) setup_data[0+MAX_DEPTH*2]. coord_data->AllocDevice(true);
-    if(setup_data[0+MAX_DEPTH*2]. input_data!=NULL) setup_data[0+MAX_DEPTH*2]. input_data->AllocDevice(true);
+    if(setup_data[0+PVFMM_MAX_DEPTH*2]. coord_data!=NULL) setup_data[0+PVFMM_MAX_DEPTH*2]. coord_data->AllocDevice(true);
+    if(setup_data[0+PVFMM_MAX_DEPTH*2]. input_data!=NULL) setup_data[0+PVFMM_MAX_DEPTH*2]. input_data->AllocDevice(true);
     Profile::Toc();
   }
   #endif
@@ -595,22 +595,22 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
       Profile::Tic("Precomp",this->Comm(),false,5);
       {// Precomp U
         Profile::Tic("Precomp-U",this->Comm(),false,10);
-        fmm_mat->SetupPrecomp(setup_data[i+MAX_DEPTH*0],device);
+        fmm_mat->SetupPrecomp(setup_data[i+PVFMM_MAX_DEPTH*0],device);
         Profile::Toc();
       }
       {// Precomp W
         Profile::Tic("Precomp-W",this->Comm(),false,10);
-        fmm_mat->SetupPrecomp(setup_data[i+MAX_DEPTH*1],device);
+        fmm_mat->SetupPrecomp(setup_data[i+PVFMM_MAX_DEPTH*1],device);
         Profile::Toc();
       }
       {// Precomp X
         Profile::Tic("Precomp-X",this->Comm(),false,10);
-        fmm_mat->SetupPrecomp(setup_data[i+MAX_DEPTH*2],device);
+        fmm_mat->SetupPrecomp(setup_data[i+PVFMM_MAX_DEPTH*2],device);
         Profile::Toc();
       }
       if(0){// Precomp V
         Profile::Tic("Precomp-V",this->Comm(),false,10);
-        fmm_mat->SetupPrecomp(setup_data[i+MAX_DEPTH*3], /*device*/ false);
+        fmm_mat->SetupPrecomp(setup_data[i+PVFMM_MAX_DEPTH*3], /*device*/ false);
         Profile::Toc();
       }
       Profile::Toc();
@@ -618,21 +618,21 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
 
     {// X-List
       Profile::Tic("X-List",this->Comm(),false,5);
-      fmm_mat->X_List(setup_data[i+MAX_DEPTH*2], device);
+      fmm_mat->X_List(setup_data[i+PVFMM_MAX_DEPTH*2], device);
       Profile::Toc();
     }
 
     #if defined(__INTEL_OFFLOAD) || defined(PVFMM_HAVE_CUDA)
     if(i==0 && device){ // Host2Device:Mult
       Profile::Tic("Host2Device:Mult",this->Comm(),false,5);
-      if(setup_data[0+MAX_DEPTH*1]. input_data!=NULL) setup_data[0+MAX_DEPTH*1]. input_data->AllocDevice(true);
+      if(setup_data[0+PVFMM_MAX_DEPTH*1]. input_data!=NULL) setup_data[0+PVFMM_MAX_DEPTH*1]. input_data->AllocDevice(true);
       Profile::Toc();
     }
 
     if(device) if(i==(fmm_mat->ScaleInvar()?0:max_depth)){ // Device2Host: LocalExp
       Profile::Tic("Device2Host:LocExp",this->Comm(),false,5);
-      if(setup_data[0+MAX_DEPTH*2].output_data!=NULL){
-        Matrix<Real_t>& output_data=*setup_data[0+MAX_DEPTH*2].output_data;
+      if(setup_data[0+PVFMM_MAX_DEPTH*2].output_data!=NULL){
+        Matrix<Real_t>& output_data=*setup_data[0+PVFMM_MAX_DEPTH*2].output_data;
         if(fmm_mat->staging_buffer.Dim()){
           assert(fmm_mat->staging_buffer.Dim()*sizeof(Real_t)>=output_data.Dim(0)*output_data.Dim(1));
           output_data.Device2Host((Real_t*)&fmm_mat->staging_buffer[0]);
@@ -644,19 +644,19 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
 
     {// W-List
       Profile::Tic("W-List",this->Comm(),false,5);
-      fmm_mat->W_List(setup_data[i+MAX_DEPTH*1], device);
+      fmm_mat->W_List(setup_data[i+PVFMM_MAX_DEPTH*1], device);
       Profile::Toc();
     }
 
     {// U-List
       Profile::Tic("U-List",this->Comm(),false,5);
-      fmm_mat->U_List(setup_data[i+MAX_DEPTH*0], device);
+      fmm_mat->U_List(setup_data[i+PVFMM_MAX_DEPTH*0], device);
       Profile::Toc();
     }
 
     {// V-List
       Profile::Tic("V-List",this->Comm(),false,5);
-      fmm_mat->V_List(setup_data[i+MAX_DEPTH*3], /*device*/ false);
+      fmm_mat->V_List(setup_data[i+PVFMM_MAX_DEPTH*3], /*device*/ false);
       Profile::Toc();
     }
 
@@ -673,9 +673,9 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
 
   #if defined(__INTEL_OFFLOAD) || defined(PVFMM_HAVE_CUDA)
   Profile::Tic("D2H_Wait:LocExp",this->Comm(),false,5);
-  if(device) if(setup_data[0+MAX_DEPTH*2].output_data!=NULL){
+  if(device) if(setup_data[0+PVFMM_MAX_DEPTH*2].output_data!=NULL){
     Real_t* dev_ptr=(Real_t*)&fmm_mat->staging_buffer[0];
-    Matrix<Real_t>& output_data=*setup_data[0+MAX_DEPTH*2].output_data;
+    Matrix<Real_t>& output_data=*setup_data[0+PVFMM_MAX_DEPTH*2].output_data;
     size_t n=output_data.Dim(0)*output_data.Dim(1);
     if(fmm_mat->staging_buffer.Dim()){
       Real_t* host_ptr=output_data[0];
@@ -690,8 +690,8 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
   Profile::Toc();
 
   Profile::Tic("Device2Host:Trg",this->Comm(),false,5);
-  if(device) if(setup_data[0+MAX_DEPTH*0].output_data!=NULL){ // Device2Host: Target
-    Matrix<Real_t>& output_data=*setup_data[0+MAX_DEPTH*0].output_data;
+  if(device) if(setup_data[0+PVFMM_MAX_DEPTH*0].output_data!=NULL){ // Device2Host: Target
+    Matrix<Real_t>& output_data=*setup_data[0+PVFMM_MAX_DEPTH*0].output_data;
     if(fmm_mat->staging_buffer.Dim()){
       assert(fmm_mat->staging_buffer.Dim()>=sizeof(Real_t)*output_data.Dim(0)*output_data.Dim(1));
       output_data.Device2Host((Real_t*)&fmm_mat->staging_buffer[0]);
@@ -702,23 +702,23 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
 
   Profile::Tic("D2D",this->Comm(),false,5);
   for(size_t i=0; i<=max_depth; i++){ // Down2Down
-    if(!fmm_mat->ScaleInvar()) fmm_mat->SetupPrecomp(setup_data[i+MAX_DEPTH*4],/*device*/ false);
-    fmm_mat->Down2Down(setup_data[i+MAX_DEPTH*4]);
+    if(!fmm_mat->ScaleInvar()) fmm_mat->SetupPrecomp(setup_data[i+PVFMM_MAX_DEPTH*4],/*device*/ false);
+    fmm_mat->Down2Down(setup_data[i+PVFMM_MAX_DEPTH*4]);
   }
   Profile::Toc();
 
   Profile::Tic("D2T",this->Comm(),false,5);
   for(int i=0; i<=(fmm_mat->ScaleInvar()?0:max_depth); i++){ // Down2Target
-    if(!fmm_mat->ScaleInvar()) fmm_mat->SetupPrecomp(setup_data[i+MAX_DEPTH*5],/*device*/ false);
-    fmm_mat->Down2Target(setup_data[i+MAX_DEPTH*5]);
+    if(!fmm_mat->ScaleInvar()) fmm_mat->SetupPrecomp(setup_data[i+PVFMM_MAX_DEPTH*5],/*device*/ false);
+    fmm_mat->Down2Target(setup_data[i+PVFMM_MAX_DEPTH*5]);
   }
   Profile::Toc();
 
   #if defined(__INTEL_OFFLOAD) || defined(PVFMM_HAVE_CUDA)
   Profile::Tic("D2H_Wait:Trg",this->Comm(),false,5);
-  if(device) if(setup_data[0+MAX_DEPTH*0].output_data!=NULL){
+  if(device) if(setup_data[0+PVFMM_MAX_DEPTH*0].output_data!=NULL){
     Real_t* dev_ptr=(Real_t*)&fmm_mat->staging_buffer[0];
-    Matrix<Real_t>& output_data=*setup_data[0+MAX_DEPTH*0].output_data;
+    Matrix<Real_t>& output_data=*setup_data[0+PVFMM_MAX_DEPTH*0].output_data;
     size_t n=output_data.Dim(0)*output_data.Dim(1);
     if(fmm_mat->staging_buffer.Dim()){
       Real_t* host_ptr=output_data[0];

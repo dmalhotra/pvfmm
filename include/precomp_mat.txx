@@ -20,11 +20,11 @@
 namespace pvfmm{
 
 #define PRECOMP_MIN_DEPTH 128
-#define PRECOMP_MAX_DEPTH 128
+#define PRECOMP_PVFMM_MAX_DEPTH 128
 template <class T>
 PrecompMat<T>::PrecompMat(bool scale_invar_): scale_invar(scale_invar_){
 
-  if(!scale_invar) mat.resize((PRECOMP_MAX_DEPTH+PRECOMP_MIN_DEPTH)*Type_Count); //For each U,V,W,X
+  if(!scale_invar) mat.resize((PRECOMP_PVFMM_MAX_DEPTH+PRECOMP_MIN_DEPTH)*Type_Count); //For each U,V,W,X
   else mat.resize(Type_Count);
   for(size_t i=0;i<mat.size();i++)
     mat[i].resize(500);
@@ -34,8 +34,8 @@ PrecompMat<T>::PrecompMat(bool scale_invar_): scale_invar(scale_invar_){
     perm[i].resize(Perm_Count);
   }
 
-  perm_r.resize((PRECOMP_MAX_DEPTH+PRECOMP_MIN_DEPTH)*Type_Count);
-  perm_c.resize((PRECOMP_MAX_DEPTH+PRECOMP_MIN_DEPTH)*Type_Count);
+  perm_r.resize((PRECOMP_PVFMM_MAX_DEPTH+PRECOMP_MIN_DEPTH)*Type_Count);
+  perm_c.resize((PRECOMP_PVFMM_MAX_DEPTH+PRECOMP_MIN_DEPTH)*Type_Count);
   for(size_t i=0;i<perm_r.size();i++){
     perm_r[i].resize(500);
     perm_c[i].resize(500);
@@ -109,7 +109,7 @@ size_t PrecompMat<T>::CompactData(int level, Mat_Type type, Matrix<char>& comp_d
 
   int omp_p=omp_get_max_threads();
   size_t l0=(scale_invar?0:level);
-  size_t l1=(scale_invar?PRECOMP_MAX_DEPTH:level+1);
+  size_t l1=(scale_invar?PRECOMP_PVFMM_MAX_DEPTH:level+1);
 
   { // Determine memory size.
     indx_size+=sizeof(HeaderData); // HeaderData
@@ -318,7 +318,7 @@ void PrecompMat<T>::LoadFile(const char* fname, MPI_Comm comm){
     assert(tmp==sizeof(T));
     tmp=*(int*)f_ptr; f_ptr+=sizeof(int);
     scale_invar=tmp;
-    size_t mat_size=(size_t)Type_Count*(scale_invar?1:PRECOMP_MAX_DEPTH+PRECOMP_MIN_DEPTH);
+    size_t mat_size=(size_t)Type_Count*(scale_invar?1:PRECOMP_PVFMM_MAX_DEPTH+PRECOMP_MIN_DEPTH);
     if(mat.size()<mat_size){
       mat.resize(mat_size);
     }
@@ -342,8 +342,8 @@ void PrecompMat<T>::LoadFile(const char* fname, MPI_Comm comm){
     }
 
     // Resize perm_r, perm_c
-    perm_r.resize((PRECOMP_MAX_DEPTH+PRECOMP_MIN_DEPTH)*Type_Count);
-    perm_c.resize((PRECOMP_MAX_DEPTH+PRECOMP_MIN_DEPTH)*Type_Count);
+    perm_r.resize((PRECOMP_PVFMM_MAX_DEPTH+PRECOMP_MIN_DEPTH)*Type_Count);
+    perm_c.resize((PRECOMP_PVFMM_MAX_DEPTH+PRECOMP_MIN_DEPTH)*Type_Count);
     for(size_t i=0;i<perm_r.size();i++){
       perm_r[i].resize(500);
       perm_c[i].resize(500);

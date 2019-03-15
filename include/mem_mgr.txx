@@ -39,7 +39,7 @@ PVFMMDefinePOD(double*);
 
 
 MemoryManager::MemHead* MemoryManager::GetMemHead(void* p){
-  static constexpr uintptr_t alignment=MEM_ALIGN-1;
+  static constexpr uintptr_t alignment=PVFMM_MEM_ALIGN-1;
   static constexpr uintptr_t header_size=(uintptr_t)(sizeof(MemoryManager::MemHead)+alignment) & ~(uintptr_t)alignment;
   return (MemHead*)(((char*)p)-header_size);
 }
@@ -85,7 +85,7 @@ T* aligned_new(size_t n_elem, const MemoryManager* mem_mgr){
       assert(Ai==(A+i));
     }
   }else{
-    #ifndef NDEBUG
+    #ifndef PVFMM_NDEBUG
     #pragma omp parallel for
     for(size_t i=0;i<n_elem*sizeof(T);i++){
       ((char*)A)[i]=0;
@@ -110,7 +110,7 @@ void aligned_delete(T* A, const MemoryManager* mem_mgr){
       ((T*)(((char*)A)+i*type_size))->~T();
     }
   }else{
-    #ifndef NDEBUG
+    #ifndef PVFMM_NDEBUG
     MemoryManager::MemHead* mem_head=MemoryManager::GetMemHead(A);
     size_t type_size=mem_head->type_size;
     size_t n_elem=mem_head->n_elem;

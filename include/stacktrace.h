@@ -65,8 +65,8 @@ inline void print_stacktrace(FILE *out = stderr, int skip=1){
 
 inline void abortHandler( int signum, siginfo_t* si, void* unused ){
   static bool first_time=true;
-  UNUSED(unused);
-  UNUSED(si);
+  PVFMM_UNUSED(unused);
+  PVFMM_UNUSED(si);
 
   #pragma omp critical (STACK_TRACE)
   if(first_time){

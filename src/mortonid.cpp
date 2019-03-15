@@ -16,15 +16,15 @@ void MortonId::NbrList(std::vector<MortonId>& nbrs, uint8_t level, int periodic)
   nbrs.clear();
   static unsigned int dim=3;
   static unsigned int nbr_cnt=pvfmm::pow<unsigned int>(3,dim);
-  static UINT_T maxCoord=(((UINT_T)1)<<(MAX_DEPTH));
+  static UINT_T maxCoord=(((UINT_T)1)<<(PVFMM_MAX_DEPTH));
 
-  UINT_T mask=maxCoord-(((UINT_T)1)<<(MAX_DEPTH-level));
+  UINT_T mask=maxCoord-(((UINT_T)1)<<(PVFMM_MAX_DEPTH-level));
   UINT_T pX=x & mask;
   UINT_T pY=y & mask;
   UINT_T pZ=z & mask;
 
   MortonId mid_tmp;
-  mask=(((UINT_T)1)<<(MAX_DEPTH-level));
+  mask=(((UINT_T)1)<<(PVFMM_MAX_DEPTH-level));
   for(int i=0; i<nbr_cnt; i++){
     INT_T dX = ((i/1)%3-1)*mask;
     INT_T dY = ((i/3)%3-1)*mask;
@@ -54,15 +54,15 @@ void MortonId::NbrList(std::vector<MortonId>& nbrs, uint8_t level, int periodic)
 std::vector<MortonId> MortonId::Children() const{
   static int dim=3;
   static int c_cnt=(1UL<<dim);
-  static UINT_T maxCoord=(((UINT_T)1)<<(MAX_DEPTH));
+  static UINT_T maxCoord=(((UINT_T)1)<<(PVFMM_MAX_DEPTH));
   std::vector<MortonId> child(c_cnt);
 
-  UINT_T mask=maxCoord-(((UINT_T)1)<<(MAX_DEPTH-depth));
+  UINT_T mask=maxCoord-(((UINT_T)1)<<(PVFMM_MAX_DEPTH-depth));
   UINT_T pX=x & mask;
   UINT_T pY=y & mask;
   UINT_T pZ=z & mask;
 
-  mask=(((UINT_T)1)<<(MAX_DEPTH-(depth+1)));
+  mask=(((UINT_T)1)<<(PVFMM_MAX_DEPTH-(depth+1)));
   for(int i=0; i<c_cnt; i++){
     child[i].x=pX+mask*((i/1)%2);
     child[i].y=pY+mask*((i/2)%2);
@@ -75,7 +75,7 @@ std::vector<MortonId> MortonId::Children() const{
 std::ostream& operator<<(std::ostream& out, const MortonId & mid){
   double a=0;
   double s=1;
-  for(int i=MAX_DEPTH;i>=0;i--){
+  for(int i=PVFMM_MAX_DEPTH;i>=0;i--){
     s=s*0.5; if(mid.z & (((UINT_T)1)<<i)) a+=s;
     s=s*0.5; if(mid.y & (((UINT_T)1)<<i)) a+=s;
     s=s*0.5; if(mid.x & (((UINT_T)1)<<i)) a+=s;

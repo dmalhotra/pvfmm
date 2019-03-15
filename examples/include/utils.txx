@@ -133,8 +133,8 @@ void CheckChebOutput(FMMTree_t* mytree, typename TestFn<typename FMMTree_t::Real
   int cheb_deg=nodes[0]->ChebDeg();
   std::vector<Real_t> cheb_nds=pvfmm::cheb_nodes<Real_t>(cheb_deg+1, 1);
   for(size_t i=0;i<cheb_nds.size();i++) cheb_nds[i]=2.0*cheb_nds[i]-1.0;
-  std::vector<Real_t> cheb_pts=pvfmm::cheb_nodes<Real_t>(cheb_deg+1, COORD_DIM);
-  int n_pts=cheb_pts.size()/COORD_DIM;
+  std::vector<Real_t> cheb_pts=pvfmm::cheb_nodes<Real_t>(cheb_deg+1, PVFMM_COORD_DIM);
+  int n_pts=cheb_pts.size()/PVFMM_COORD_DIM;
   int omp_p=omp_get_max_threads();
 
   std::vector<Real_t> glb_err_avg(dof*fn_dof,0);
@@ -152,9 +152,9 @@ void CheckChebOutput(FMMTree_t* mytree, typename TestFn<typename FMMTree_t::Real
         Real_t s=pow(2.0,-nodes[i]->Depth());
         Real_t s3=s*s*s;
         for(size_t j=0;j<n_pts;j++){
-          Real_t coord[3]={c[0]+s*cheb_pts[j*COORD_DIM+0],
-                           c[1]+s*cheb_pts[j*COORD_DIM+1],
-                           c[2]+s*cheb_pts[j*COORD_DIM+2]};
+          Real_t coord[3]={c[0]+s*cheb_pts[j*PVFMM_COORD_DIM+0],
+                           c[1]+s*cheb_pts[j*PVFMM_COORD_DIM+1],
+                           c[2]+s*cheb_pts[j*PVFMM_COORD_DIM+2]};
           fn_out.SetZero();
           for(size_t k=0;k<dof;k++)
             fn_poten(coord,1,&fn_out[k*fn_dof]);
@@ -233,9 +233,9 @@ void CheckChebOutput(FMMTree_t* mytree, typename TestFn<typename FMMTree_t::Real
       Real_t s=pow(2.0,-nodes[i]->Depth());
       Real_t s3=s*s*s;
       for(size_t j=0;j<n_pts;j++){
-        Real_t coord[3]={c[0]+s*cheb_pts[j*COORD_DIM+0],
-                         c[1]+s*cheb_pts[j*COORD_DIM+1],
-                         c[2]+s*cheb_pts[j*COORD_DIM+2]};
+        Real_t coord[3]={c[0]+s*cheb_pts[j*PVFMM_COORD_DIM+0],
+                         c[1]+s*cheb_pts[j*PVFMM_COORD_DIM+1],
+                         c[2]+s*cheb_pts[j*PVFMM_COORD_DIM+2]};
         fn_out.SetZero();
         for(size_t k=0;k<dof;k++)
           fn_poten(coord,1,&fn_out[k*fn_dof]);

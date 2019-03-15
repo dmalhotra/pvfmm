@@ -15,20 +15,20 @@
 
 namespace pvfmm{
 
-#ifndef MAX_DEPTH
-#define MAX_DEPTH 30
+#ifndef PVFMM_MAX_DEPTH
+#define PVFMM_MAX_DEPTH 30
 #endif
 
-#if MAX_DEPTH < 7
+#if PVFMM_MAX_DEPTH < 7
 #define UINT_T uint8_t
 #define  INT_T  int8_t
-#elif MAX_DEPTH < 15
+#elif PVFMM_MAX_DEPTH < 15
 #define UINT_T uint16_t
 #define  INT_T  int16_t
-#elif MAX_DEPTH < 31
+#elif PVFMM_MAX_DEPTH < 31
 #define UINT_T uint32_t
 #define  INT_T  int32_t
-#elif MAX_DEPTH < 63
+#elif PVFMM_MAX_DEPTH < 63
 #define UINT_T uint64_t
 #define  INT_T  int64_t
 #endif
@@ -42,10 +42,10 @@ class MortonId{
   MortonId(MortonId m, uint8_t depth);
 
   template <class T>
-  MortonId(T x_f,T y_f, T z_f, uint8_t depth=MAX_DEPTH);
+  MortonId(T x_f,T y_f, T z_f, uint8_t depth=PVFMM_MAX_DEPTH);
 
   template <class T>
-  MortonId(T* coord, uint8_t depth=MAX_DEPTH);
+  MortonId(T* coord, uint8_t depth=PVFMM_MAX_DEPTH);
 
   unsigned int GetDepth() const;
 
@@ -59,7 +59,7 @@ class MortonId{
   /**
    * \brief Returns the deepest first descendant.
    */
-  MortonId getDFD(uint8_t level=MAX_DEPTH) const;
+  MortonId getDFD(uint8_t level=PVFMM_MAX_DEPTH) const;
 
   void NbrList(std::vector<MortonId>& nbrs,uint8_t level, int periodic) const;
 

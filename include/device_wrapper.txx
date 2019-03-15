@@ -53,8 +53,8 @@ namespace DeviceWrapper{
       std::cout<<cudaGetErrorString(error)<< '\n';
     assert(error == cudaSuccess);
 #else
-    UNUSED(dev_handle);
-    UNUSED(len);
+    PVFMM_UNUSED(dev_handle);
+    PVFMM_UNUSED(len);
 #endif
     return (uintptr_t)dev_ptr;
   }
@@ -70,8 +70,8 @@ namespace DeviceWrapper{
     error = cudaFree((char*)dev_ptr);
     assert(error == cudaSuccess);
 #else
-    UNUSED(dev_handle);
-    UNUSED(dev_ptr);
+    PVFMM_UNUSED(dev_handle);
+    PVFMM_UNUSED(dev_ptr);
 #endif
   }
 
@@ -83,9 +83,9 @@ namespace DeviceWrapper{
     if (error != cudaSuccess) std::cout<<cudaGetErrorString(error)<< '\n';
     assert(error == cudaSuccess);
     #else
-    UNUSED(host_ptr);
-    UNUSED(dev_ptr);
-    UNUSED(len);
+    PVFMM_UNUSED(host_ptr);
+    PVFMM_UNUSED(dev_ptr);
+    PVFMM_UNUSED(len);
     #endif
     return 0;
   }
@@ -100,8 +100,8 @@ namespace DeviceWrapper{
       std::cout<<cudaGetErrorString(error)<< '\n';
     assert(error == cudaSuccess);
     #else
-    UNUSED(host_ptr);
-    UNUSED(len);
+    PVFMM_UNUSED(host_ptr);
+    PVFMM_UNUSED(len);
     #endif
     return 0;
   }
@@ -119,7 +119,7 @@ namespace DeviceWrapper{
     #ifdef __INTEL_OFFLOAD
     #pragma offload target(mic:0) nocopy( dev_handle: length(len) ALLOC) out(dev_ptr)
     #else
-    UNUSED(len);
+    PVFMM_UNUSED(len);
     #endif
     {dev_ptr=(uintptr_t)dev_handle;}
     return dev_ptr;
@@ -132,8 +132,8 @@ namespace DeviceWrapper{
       assert(dev_ptr==(uintptr_t)dev_handle);
     }
     #else
-    UNUSED(dev_handle);
-    UNUSED(dev_ptr);
+    PVFMM_UNUSED(dev_handle);
+    PVFMM_UNUSED(dev_ptr);
     #endif
   }
 
@@ -158,10 +158,10 @@ namespace DeviceWrapper{
     }
     return lock_idx;
     #else
-    UNUSED(host_ptr);
-    UNUSED(dev_handle);
-    UNUSED(dev_ptr);
-    UNUSED(len);
+    PVFMM_UNUSED(host_ptr);
+    PVFMM_UNUSED(dev_handle);
+    PVFMM_UNUSED(dev_ptr);
+    PVFMM_UNUSED(len);
     #endif
     return -1;
   }
@@ -187,10 +187,10 @@ namespace DeviceWrapper{
     }
     return lock_idx;
     #else
-    UNUSED(host_ptr);
-    UNUSED(dev_handle);
-    UNUSED(dev_ptr);
-    UNUSED(len);
+    PVFMM_UNUSED(host_ptr);
+    PVFMM_UNUSED(dev_handle);
+    PVFMM_UNUSED(dev_ptr);
+    PVFMM_UNUSED(len);
     #endif
     return -1;
   }
@@ -199,7 +199,7 @@ namespace DeviceWrapper{
     #ifdef __INTEL_OFFLOAD
     MIC_Lock::wait_lock(lock_idx);
     #else
-    UNUSED(lock_idx);
+    PVFMM_UNUSED(lock_idx);
     #endif
   }
 
@@ -230,7 +230,7 @@ namespace DeviceWrapper{
     #elif defined(PVFMM_HAVE_CUDA)
     return alloc_device_cuda(dev_handle,len);
     #else
-    UNUSED(len);
+    PVFMM_UNUSED(len);
     uintptr_t dev_ptr=(uintptr_t)NULL;
     {dev_ptr=(uintptr_t)dev_handle;}
     return dev_ptr;
@@ -243,8 +243,8 @@ namespace DeviceWrapper{
     #elif defined(PVFMM_HAVE_CUDA)
     free_device_cuda(dev_handle,dev_ptr);
     #else
-    UNUSED(dev_handle);
-    UNUSED(dev_ptr);
+    PVFMM_UNUSED(dev_handle);
+    PVFMM_UNUSED(dev_ptr);
     #endif
   }
 
@@ -274,10 +274,10 @@ namespace DeviceWrapper{
     #elif defined(PVFMM_HAVE_CUDA)
     lock_idx=device2host_cuda((char*)dev_ptr, host_ptr, len);
     #else
-    UNUSED(dev_handle);
-    UNUSED(host_ptr);
-    UNUSED(dev_ptr);
-    UNUSED(len);
+    PVFMM_UNUSED(dev_handle);
+    PVFMM_UNUSED(host_ptr);
+    PVFMM_UNUSED(dev_ptr);
+    PVFMM_UNUSED(len);
     #endif
     return lock_idx;
   }
@@ -288,7 +288,7 @@ namespace DeviceWrapper{
     #elif defined(PVFMM_HAVE_CUDA)
     CUDA_Lock::wait();
     #else
-    UNUSED(lock_idx);
+    PVFMM_UNUSED(lock_idx);
     #endif
   }
 
@@ -357,7 +357,7 @@ namespace DeviceWrapper{
     #if defined(__INTEL_OFFLOAD) && defined(__MIC__)
     if(idx>=0) lock_vec_[idx]=0;
     #else
-    UNUSED(idx);
+    PVFMM_UNUSED(idx);
     #endif
   }
 
@@ -378,7 +378,7 @@ namespace DeviceWrapper{
     lock_vec[idx]=0;
     #endif
     #else
-    UNUSED(idx);
+    PVFMM_UNUSED(idx);
     #endif
   }
 

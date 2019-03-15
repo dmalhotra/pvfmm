@@ -22,7 +22,7 @@ namespace pvfmm{
 
 long long Profile::Add_FLOP(long long inc){
   long long orig_val=FLOP;
-  #if __PROFILE__ >= 0
+  #if PVFMM_PROFILE >= 0
   #pragma omp atomic update
   FLOP+=inc;
   #endif
@@ -31,7 +31,7 @@ long long Profile::Add_FLOP(long long inc){
 
 long long Profile::Add_MEM(long long inc){
   long long orig_val=MEM;
-  #if __PROFILE__ >= 0
+  #if PVFMM_PROFILE >= 0
   #pragma omp atomic update
   MEM+=inc;
   for(size_t i=0;i<max_mem.size();i++){
@@ -43,19 +43,19 @@ long long Profile::Add_MEM(long long inc){
 
 bool Profile::Enable(bool state){
   bool orig_val=enable_state;
-  #if __PROFILE__ >= 0
+  #if PVFMM_PROFILE >= 0
   enable_state=state;
   #endif
   return orig_val;
 }
 
 void Profile::Tic(const char* name_, const MPI_Comm* comm_,bool sync_, int verbose){
-#if __PROFILE__ >= 0
+#if PVFMM_PROFILE >= 0
   //sync_=true;
   if(!enable_state) return;
-  if(verbose<=__PROFILE__ && verb_level.size()==enable_depth){
+  if(verbose<=PVFMM_PROFILE && verb_level.size()==enable_depth){
     if(comm_!=NULL && sync_) MPI_Barrier(*comm_);
-    #ifdef __VERBOSE__
+    #ifdef PVFMM_VERBOSE
     int rank=0;
     if(comm_!=NULL) MPI_Comm_rank(*comm_,&rank);
     if(!rank){
@@ -83,11 +83,11 @@ void Profile::Tic(const char* name_, const MPI_Comm* comm_,bool sync_, int verbo
 }
 
 void Profile::Toc(){
-#if __PROFILE__ >= 0
+#if PVFMM_PROFILE >= 0
   if(!enable_state) return;
-  ASSERT_WITH_MSG(!verb_level.empty(),"Unbalanced extra Toc()");
-  if(verb_level.top()<=__PROFILE__ && verb_level.size()==enable_depth){
-    ASSERT_WITH_MSG(!name.empty() && !comm.empty() && !sync.empty() && !max_mem.empty(),"Unbalanced extra Toc()");
+  PVFMM_ASSERT_WITH_MSG(!verb_level.empty(),"Unbalanced extra Toc()");
+  if(verb_level.top()<=PVFMM_PROFILE && verb_level.size()==enable_depth){
+    PVFMM_ASSERT_WITH_MSG(!name.empty() && !comm.empty() && !sync.empty() && !max_mem.empty(),"Unbalanced extra Toc()");
     std::string name_=name.top();
     MPI_Comm* comm_=comm.top();
     bool sync_=sync.top();
@@ -102,7 +102,7 @@ void Profile::Toc(){
     m_log.push_back(MEM);
     max_m_log.push_back(max_mem.back());
 
-    #ifndef NDEBUG
+    #ifndef PVFMM_NDEBUG
     if(comm_!=NULL && sync_) MPI_Barrier(*comm_);
     #endif
     name.pop();
@@ -110,7 +110,7 @@ void Profile::Toc(){
     sync.pop();
     max_mem.pop_back();
 
-    #ifdef __VERBOSE__
+    #ifdef PVFMM_VERBOSE
     int rank=0;
     if(comm_!=NULL) MPI_Comm_rank(*comm_,&rank);
     if(!rank){
@@ -125,8 +125,8 @@ void Profile::Toc(){
 }
 
 void Profile::print(const MPI_Comm* comm_){
-#if __PROFILE__ >= 0
-  ASSERT_WITH_MSG(name.empty(),"Missing balancing Toc()");
+#if PVFMM_PROFILE >= 0
+  PVFMM_ASSERT_WITH_MSG(name.empty(),"Missing balancing Toc()");
 
   int np, rank;
   MPI_Comm c_self=MPI_COMM_SELF;

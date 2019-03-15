@@ -20,14 +20,14 @@ namespace mem{
 MemoryManager::MemoryManager(size_t N){
   buff_size=N;
   { // Allocate buff
-    assert(MEM_ALIGN <= 0x8000);
-    size_t alignment=MEM_ALIGN-1;
+    assert(PVFMM_MEM_ALIGN <= 0x8000);
+    size_t alignment=PVFMM_MEM_ALIGN-1;
     char* base_ptr=(char*)DeviceWrapper::host_malloc(N+2+alignment); assert(base_ptr);
     buff=(char*)((uintptr_t)(base_ptr+2+alignment) & ~(uintptr_t)alignment);
     ((uint16_t*)buff)[-1] = (uint16_t)(buff-base_ptr);
   }
   { // Initialize to init_mem_val
-    #ifndef NDEBUG
+    #ifndef PVFMM_NDEBUG
     #pragma omp parallel for
     for(size_t i=0;i<buff_size;i++){
       buff[i]=init_mem_val;
@@ -63,7 +63,7 @@ MemoryManager::~MemoryManager(){
   }
 
   { // Check out-of-bounds write
-    #ifndef NDEBUG
+    #ifndef PVFMM_NDEBUG
     #pragma omp parallel for
     for(size_t i=0;i<buff_size;i++){
       assert(buff[i]==init_mem_val);
@@ -78,7 +78,7 @@ MemoryManager::~MemoryManager(){
 
 void* MemoryManager::malloc(const size_t n_elem, const size_t type_size) const{
   if(!n_elem) return NULL;
-  static constexpr uintptr_t alignment=MEM_ALIGN-1;
+  static constexpr uintptr_t alignment=PVFMM_MEM_ALIGN-1;
   static constexpr uintptr_t header_size=(uintptr_t)(sizeof(MemHead)+alignment) & ~(uintptr_t)alignment;
 
   size_t size=n_elem*type_size+header_size;
@@ -127,7 +127,7 @@ void* MemoryManager::malloc(const size_t n_elem, const size_t type_size) const{
   }
 
   { // Check out-of-bounds write
-    #ifndef NDEBUG
+    #ifndef PVFMM_NDEBUG
     if(n_indx){
       #pragma omp parallel for
       for(size_t i=0;i<size;i++) assert(base[i]==init_mem_val);
@@ -142,7 +142,7 @@ void* MemoryManager::malloc(const size_t n_elem, const size_t type_size) const{
     mem_head->type_size=type_size;
   }
   { // Set header check_sum
-    #ifndef NDEBUG
+    #ifndef PVFMM_NDEBUG
     size_t check_sum=0;
     mem_head->check_sum=0;
     for(size_t i=0;i<header_size;i++){
@@ -157,7 +157,7 @@ void* MemoryManager::malloc(const size_t n_elem, const size_t type_size) const{
 
 void MemoryManager::free(void* p) const{
   if(!p) return;
-  static constexpr uintptr_t alignment=MEM_ALIGN-1;
+  static constexpr uintptr_t alignment=PVFMM_MEM_ALIGN-1;
   static constexpr uintptr_t header_size=(uintptr_t)(sizeof(MemHead)+alignment) & ~(uintptr_t)alignment;
 
   char* base=(char*)((char*)p-header_size);
@@ -171,7 +171,7 @@ void MemoryManager::free(void* p) const{
   size_t n_indx=mem_head->n_indx;
   assert(n_indx>0 && n_indx<=node_buff.size());
   { // Verify header check_sum; set array to init_mem_val
-    #ifndef NDEBUG
+    #ifndef PVFMM_NDEBUG
     { // Verify header check_sum
       size_t check_sum=0;
       for(size_t i=0;i<header_size;i++){
@@ -286,7 +286,7 @@ void MemoryManager::test(){
 }
 
 void MemoryManager::Check() const{
-  #ifndef NDEBUG
+  #ifndef PVFMM_NDEBUG
   //print();
   mutex_lock.lock();
   MemNode* curr_node=&node_buff[n_dummy_indx-1];
@@ -304,7 +304,7 @@ void MemoryManager::Check() const{
   #endif
 }
 
-MemoryManager glbMemMgr(GLOBAL_MEM_BUFF*1024LL*1024LL);
+MemoryManager glbMemMgr(PVFMM_GLOBAL_MEM_BUFF*1024LL*1024LL);
 
 }//end namespace
 }//end namespace

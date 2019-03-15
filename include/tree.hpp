@@ -30,7 +30,7 @@ class Tree{
   /**
    * \brief Constructor.
    */
-  Tree(): dim(0), root_node(NULL), max_depth(MAX_DEPTH), memgr(0) { };
+  Tree(): dim(0), root_node(NULL), max_depth(PVFMM_MAX_DEPTH), memgr(0) { };
 
   /**
    * \brief Virtual destructor.
