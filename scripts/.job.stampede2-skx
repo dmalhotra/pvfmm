@@ -1,0 +1,53 @@
+#!/bin/bash
+#SBATCH -J fmm
+#SBATCH --export=ALL
+#
+# Options for Stampede
+#SBATCH -p skx-normal
+#SBATCH -A TG-DPP130002
+
+module list
+pwd
+date
+
+
+eval    $nodes_;
+eval    $cores_;
+eval $mpi_proc_;
+eval  $threads_;
+eval $max_time_;
+eval    $fname_;
+eval     $args_;
+
+WORK_DIR=${PWD}
+cd ${WORK_DIR}
+
+#export KMP_AFFINITY=verbose
+#Set mic environment variables
+#export OFFLOAD_REPORT=2
+export MIC_ENV_PREFIX=MIC
+export MIC_KMP_AFFINITY=explicit,granularity=fine,proclist=[1-240:1]
+export MIC_OMP_NUM_THREADS=240
+export MIC_USE_2MB_BUFFERS=64K
+
+export KMP_AFFINITY=scatter
+export I_MPI_HYDRA_BRANCH_COUNT=32
+
+for (( k=0; k<${#nodes[@]}; k++ )) ; do
+  if [ "${nodes[k]}" == "${NODES}" ] &&
+     [ "${mpi_proc[k]}" == "${MPI_PROC}" ]; then
+    export OMP_NUM_THREADS=${threads[k]};
+
+    # CPU only
+    EXEC_=${EXEC};
+    FNAME=${RESULT_DIR}/$(basename ${EXEC_})_${fname[k]}.out;
+    if [ -f ${EXEC_} ] && [ ! -s ${FNAME} ] ; then
+      printf '%*s\n\n' "100" ' ' | tr ' ' "#" | tee -a ${FNAME};
+      printf "COMMAND: ${EXEC_} ${args[k]}\n" | tee -a ${FNAME};
+      ${TIMEOUT} ${max_time[k]} time ibrun tacc_affinity ${EXEC_} ${args[k]} &> >(tee -a ${FNAME});
+      printf '\n%*s\n\n' "100" ' ' | tr ' ' "#" | tee -a ${FNAME};
+    fi;
+
+  fi;
+done;
+
