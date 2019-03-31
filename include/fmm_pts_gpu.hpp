@@ -1,5 +1,5 @@
-#ifndef _CUDA_FUNC_HPP_
-#define _CUDA_FUNC_HPP_
+#ifndef _PVFMM_CUDA_FUNC_HPP_
+#define _PVFMM_CUDA_FUNC_HPP_
 
 #ifdef __cplusplus
 extern "C" {
@@ -33,4 +33,4 @@ template<> inline void out_perm_gpu<double>(char* precomp_data, double* output_d
   out_perm_gpu_d(precomp_data, output_data, buff_out, output_perm, vec_cnt, M_dim1, stream);
 }
 
-#endif //_CUDA_FUNC_HPP_
+#endif //_PVFMM_CUDA_FUNC_HPP_

@@ -98,13 +98,12 @@ namespace mat{
   }
   #endif
 
-  #define U(i,j) U_[(i)*dim[0]+(j)]
-  #define S(i,j) S_[(i)*dim[1]+(j)]
-  #define V(i,j) V_[(i)*dim[1]+(j)]
-  //#define SVD_DEBUG
+  //#define PVFMM_SVD_DEBUG
 
   template <class T>
   static void GivensL(T* S_, const size_t dim[2], size_t m, T a, T b){
+    auto S=[S_,dim](long i,long j) { return S_[(i)*dim[1]+(j)]; };
+
     T r=pvfmm::sqrt<T>(a*a+b*b);
     if (r == 0) return;
     T c=a/r;
@@ -124,6 +123,8 @@ namespace mat{
 
   template <class T>
   static void GivensR(T* S_, const size_t dim[2], size_t m, T a, T b){
+    auto S=[S_,dim](long i,long j) { return S_[(i)*dim[1]+(j)]; };
+
     T r=pvfmm::sqrt<T>(a*a+b*b);
     if (r == 0) return;
     T c=a/r;
@@ -143,8 +144,12 @@ namespace mat{
 
   template <class T>
   static void SVD(const size_t dim[2], T* U_, T* S_, T* V_, T eps=-1){
+    auto U=[U_,dim](long i,long j) { return U_[(i)*dim[0]+(j)]; };
+    auto S=[S_,dim](long i,long j) { return S_[(i)*dim[1]+(j)]; };
+    auto V=[V_,dim](long i,long j) { return V_[(i)*dim[1]+(j)]; };
+
     assert(dim[0]>=dim[1]);
-    #ifdef SVD_DEBUG
+    #ifdef PVFMM_SVD_DEBUG
     Matrix<T> M0(dim[0],dim[1],S_);
     #endif
 
@@ -335,7 +340,7 @@ namespace mat{
     }
 
     { // Check Error
-      #ifdef SVD_DEBUG
+      #ifdef PVFMM_SVD_DEBUG
       Matrix<T> U0(dim[0],dim[0],U_);
       Matrix<T> S0(dim[0],dim[1],S_);
       Matrix<T> V0(dim[1],dim[1],V_);
@@ -356,10 +361,7 @@ namespace mat{
     }
   }
 
-  #undef U
-  #undef S
-  #undef V
-  #undef SVD_DEBUG
+  #undef PVFMM_SVD_DEBUG
 
   template<class T>
   inline void svd(char *JOBU, char *JOBVT, int *M, int *N, T *A, int *LDA,
