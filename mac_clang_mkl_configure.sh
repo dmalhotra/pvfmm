@@ -1,6 +1,6 @@
 unset PVFMM_DIR
 
-export CXXFLAGS="-std=c++14 -O3 -march=native -DFFTW3_MKL" 
+export CXXFLAGS="-std=c++14 -O3 -march=native -DPVFMM_FFTW3_MKL" 
 # embed rpath
 export LDFLAGS="-L${MKLROOT}/lib -Wl,-rpath,${MKLROOT}/lib -lmkl_rt -L/opt/intel/lib -Wl,-rpath,/opt/intel/lib -liomp5 "
 
