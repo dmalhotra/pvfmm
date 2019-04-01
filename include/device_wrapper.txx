@@ -109,15 +109,15 @@ namespace DeviceWrapper{
 
   // MIC functions
 
-  #define ALLOC alloc_if(1) free_if(0)
-  #define FREE alloc_if(0) free_if(1)
-  #define REUSE alloc_if(0) free_if(0)
+  #define PVFMM_ALLOC alloc_if(1) free_if(0)
+  #define PVFMM_FREE alloc_if(0) free_if(1)
+  #define PVFMM_REUSE alloc_if(0) free_if(0)
 
   inline uintptr_t alloc_device_mic(char* dev_handle, size_t len){
     assert(dev_handle!=NULL);
     uintptr_t dev_ptr=(uintptr_t)NULL;
     #ifdef __INTEL_OFFLOAD
-    #pragma offload target(mic:0) nocopy( dev_handle: length(len) ALLOC) out(dev_ptr)
+    #pragma offload target(mic:0) nocopy( dev_handle: length(len) PVFMM_ALLOC) out(dev_ptr)
     #else
     PVFMM_UNUSED(len);
     #endif
@@ -127,7 +127,7 @@ namespace DeviceWrapper{
 
   inline void free_device_mic(char* dev_handle, uintptr_t dev_ptr){
     #ifdef __INTEL_OFFLOAD
-    #pragma offload          target(mic:0) in( dev_handle: length(0) FREE)
+    #pragma offload          target(mic:0) in( dev_handle: length(0) PVFMM_FREE)
     {
       assert(dev_ptr==(uintptr_t)dev_handle);
     }
@@ -142,14 +142,14 @@ namespace DeviceWrapper{
     int wait_lock_idx=MIC_Lock::curr_lock();
     int lock_idx=MIC_Lock::get_lock();
     if(dev_handle==host_ptr){
-      #pragma offload target(mic:0)  in( dev_handle        :              length(len)  REUSE ) signal(&MIC_Lock::lock_vec[lock_idx])
+      #pragma offload target(mic:0)  in( dev_handle        :              length(len)  PVFMM_REUSE ) signal(&MIC_Lock::lock_vec[lock_idx])
       {
         assert(dev_ptr==(uintptr_t)dev_handle);
         MIC_Lock::wait_lock(wait_lock_idx);
         MIC_Lock::release_lock(lock_idx);
       }
     }else{
-      #pragma offload target(mic:0)  in(host_ptr   [0:len] : into ( dev_handle[0:len]) REUSE ) signal(&MIC_Lock::lock_vec[lock_idx])
+      #pragma offload target(mic:0)  in(host_ptr   [0:len] : into ( dev_handle[0:len]) PVFMM_REUSE ) signal(&MIC_Lock::lock_vec[lock_idx])
       {
         assert(dev_ptr==(uintptr_t)dev_handle);
         MIC_Lock::wait_lock(wait_lock_idx);
@@ -171,14 +171,14 @@ namespace DeviceWrapper{
     int wait_lock_idx=MIC_Lock::curr_lock();
     int lock_idx=MIC_Lock::get_lock();
     if(dev_handle==host_ptr){
-      #pragma offload target(mic:0) out( dev_handle        :              length(len)  REUSE ) signal(&MIC_Lock::lock_vec[lock_idx])
+      #pragma offload target(mic:0) out( dev_handle        :              length(len)  PVFMM_REUSE ) signal(&MIC_Lock::lock_vec[lock_idx])
       {
         assert(dev_ptr==(uintptr_t)dev_handle);
         MIC_Lock::wait_lock(wait_lock_idx);
         MIC_Lock::release_lock(lock_idx);
       }
     }else{
-      #pragma offload target(mic:0) out( dev_handle[0:len] : into (host_ptr   [0:len]) REUSE ) signal(&MIC_Lock::lock_vec[lock_idx])
+      #pragma offload target(mic:0) out( dev_handle[0:len] : into (host_ptr   [0:len]) PVFMM_REUSE ) signal(&MIC_Lock::lock_vec[lock_idx])
       {
         assert(dev_ptr==(uintptr_t)dev_handle);
         MIC_Lock::wait_lock(wait_lock_idx);
@@ -298,34 +298,34 @@ namespace DeviceWrapper{
   // Implementation of MIC_Lock
 
   #ifdef __MIC__
-  #define have_mic 1
+  #define PVFMM_have_mic 1
   #else
-  #define have_mic 0
+  #define PVFMM_have_mic 0
   #endif
 
-  #define NUM_LOCKS 1000000
+  #define PVFMM_NUM_LOCKS 1000000
   inline void MIC_Lock::init(){
     #ifdef __INTEL_OFFLOAD
-    if(have_mic) abort();// Cannot be called from MIC.
+    if(PVFMM_have_mic) abort();// Cannot be called from MIC.
 
     lock_idx=0;
-    lock_vec.Resize(NUM_LOCKS);
+    lock_vec.Resize(PVFMM_NUM_LOCKS);
     lock_vec.SetZero();
     lock_vec_=lock_vec.AllocDevice(false);
-    {for(size_t i=0;i<NUM_LOCKS;i++) lock_vec [i]=1;}
+    {for(size_t i=0;i<PVFMM_NUM_LOCKS;i++) lock_vec [i]=1;}
     #pragma offload target(mic:0)
-    {for(size_t i=0;i<NUM_LOCKS;i++) lock_vec_[i]=1;}
+    {for(size_t i=0;i<PVFMM_NUM_LOCKS;i++) lock_vec_[i]=1;}
     #endif
   }
 
   inline int MIC_Lock::get_lock(){
     #ifdef __INTEL_OFFLOAD
-    if(have_mic) abort();// Cannot be called from MIC.
+    if(PVFMM_have_mic) abort();// Cannot be called from MIC.
 
     int idx;
     #pragma omp critical
     {
-      if(lock_idx==NUM_LOCKS-1){
+      if(lock_idx==PVFMM_NUM_LOCKS-1){
         int wait_lock_idx=-1;
         wait_lock_idx=MIC_Lock::curr_lock();
         MIC_Lock::wait_lock(wait_lock_idx);
@@ -335,18 +335,18 @@ namespace DeviceWrapper{
       }
       idx=lock_idx;
       lock_idx++;
-      assert(lock_idx<NUM_LOCKS);
+      assert(lock_idx<PVFMM_NUM_LOCKS);
     }
     return idx;
     #else
     return -1;
     #endif
   }
-  #undef NUM_LOCKS
+  #undef PVFMM_NUM_LOCKS
 
   inline int MIC_Lock::curr_lock(){
     #ifdef __INTEL_OFFLOAD
-    if(have_mic) abort();// Cannot be called from MIC.
+    if(PVFMM_have_mic) abort();// Cannot be called from MIC.
     return lock_idx-1;
     #else
     return -1;

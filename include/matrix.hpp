@@ -143,7 +143,7 @@ std::ostream& operator<<(std::ostream& output, const Matrix<Y>& M);
  * perm := [p1 p2 ... pn] is the permutation vector,
  * scal := [s1 s2 ... sn] is the scaling vector.
  */
-#define PERM_INT_T size_t
+#define PVFMM_PERM_INT_T size_t
 template <class T>
 class Permutation{
 
@@ -171,7 +171,7 @@ class Permutation{
   template <class Y>
   friend Matrix<Y> operator*(const Matrix<Y>& M, const Permutation<Y>& P);
 
-  Vector<PERM_INT_T> perm;
+  Vector<PVFMM_PERM_INT_T> perm;
   Vector<T> scal;
 };
 

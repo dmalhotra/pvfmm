@@ -8,8 +8,8 @@
 #include <cmath>
 #include <ostream>
 
-#ifndef _MATH_UTILS_
-#define _MATH_UTILS_
+#ifndef _PVFMM_MATH_UTILS_
+#define _PVFMM_MATH_UTILS_
 
 namespace pvfmm{
 
@@ -59,5 +59,5 @@ inline std::ostream& operator<<(std::ostream& output, const QuadReal_t q_);
 
 #endif //PVFMM_QUAD_T
 
-#endif //_MATH_UTILS_HPP_
+#endif //_PVFMM_MATH_UTILS_HPP_
 

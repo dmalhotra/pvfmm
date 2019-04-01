@@ -88,7 +88,7 @@ namespace par{
 
   };
 
-  #define HS_MPIDATATYPE(CTYPE, MPITYPE) \
+  #define PVFMM_HS_MPIDATATYPE(CTYPE, MPITYPE) \
     template <> \
     class Mpi_datatype<CTYPE> { \
      public: \
@@ -103,23 +103,23 @@ namespace par{
       } \
     };
 
-  HS_MPIDATATYPE(short,          MPI_SHORT)
-  HS_MPIDATATYPE(int,            MPI_INT)
-  HS_MPIDATATYPE(long,           MPI_LONG)
-  HS_MPIDATATYPE(unsigned short, MPI_UNSIGNED_SHORT)
-  HS_MPIDATATYPE(unsigned int,   MPI_UNSIGNED)
-  HS_MPIDATATYPE(unsigned long,  MPI_UNSIGNED_LONG)
-  HS_MPIDATATYPE(float,          MPI_FLOAT)
-  HS_MPIDATATYPE(double,         MPI_DOUBLE)
-  HS_MPIDATATYPE(long double,    MPI_LONG_DOUBLE)
-  HS_MPIDATATYPE(long long,      MPI_LONG_LONG_INT)
-  HS_MPIDATATYPE(char,           MPI_CHAR)
-  HS_MPIDATATYPE(unsigned char,  MPI_UNSIGNED_CHAR)
+  PVFMM_HS_MPIDATATYPE(short,          MPI_SHORT)
+  PVFMM_HS_MPIDATATYPE(int,            MPI_INT)
+  PVFMM_HS_MPIDATATYPE(long,           MPI_LONG)
+  PVFMM_HS_MPIDATATYPE(unsigned short, MPI_UNSIGNED_SHORT)
+  PVFMM_HS_MPIDATATYPE(unsigned int,   MPI_UNSIGNED)
+  PVFMM_HS_MPIDATATYPE(unsigned long,  MPI_UNSIGNED_LONG)
+  PVFMM_HS_MPIDATATYPE(float,          MPI_FLOAT)
+  PVFMM_HS_MPIDATATYPE(double,         MPI_DOUBLE)
+  PVFMM_HS_MPIDATATYPE(long double,    MPI_LONG_DOUBLE)
+  PVFMM_HS_MPIDATATYPE(long long,      MPI_LONG_LONG_INT)
+  PVFMM_HS_MPIDATATYPE(char,           MPI_CHAR)
+  PVFMM_HS_MPIDATATYPE(unsigned char,  MPI_UNSIGNED_CHAR)
 
   //PetscScalar is simply a typedef for double. Hence no need to explicitly
   //define an mpi_datatype for it.
 
-  #undef HS_MPIDATATYPE
+  #undef PVFMM_HS_MPIDATATYPE
 
   template <typename T>
   class Mpi_datatype<std::complex<T> > {

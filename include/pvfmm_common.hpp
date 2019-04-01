@@ -26,7 +26,7 @@
 // Verbose
 //#define PVFMM_VERBOSE
 
-#define PVFMM_MAX_DEPTH 15
+#define PVFMM_MAX_DEPTH 30
 
 #define PVFMM_BC_LEVELS 1
 

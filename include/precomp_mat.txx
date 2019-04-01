@@ -19,12 +19,12 @@
 
 namespace pvfmm{
 
-#define PRECOMP_MIN_DEPTH 128
-#define PRECOMP_PVFMM_MAX_DEPTH 128
+#define PVFMM_PRECOMP_MIN_DEPTH 128
+#define PVFMM_PRECOMP_MAX_DEPTH 128
 template <class T>
 PrecompMat<T>::PrecompMat(bool scale_invar_): scale_invar(scale_invar_){
 
-  if(!scale_invar) mat.resize((PRECOMP_PVFMM_MAX_DEPTH+PRECOMP_MIN_DEPTH)*Type_Count); //For each U,V,W,X
+  if(!scale_invar) mat.resize((PVFMM_PRECOMP_MAX_DEPTH+PVFMM_PRECOMP_MIN_DEPTH)*Type_Count); //For each U,V,W,X
   else mat.resize(Type_Count);
   for(size_t i=0;i<mat.size();i++)
     mat[i].resize(500);
@@ -34,8 +34,8 @@ PrecompMat<T>::PrecompMat(bool scale_invar_): scale_invar(scale_invar_){
     perm[i].resize(Perm_Count);
   }
 
-  perm_r.resize((PRECOMP_PVFMM_MAX_DEPTH+PRECOMP_MIN_DEPTH)*Type_Count);
-  perm_c.resize((PRECOMP_PVFMM_MAX_DEPTH+PRECOMP_MIN_DEPTH)*Type_Count);
+  perm_r.resize((PVFMM_PRECOMP_MAX_DEPTH+PVFMM_PRECOMP_MIN_DEPTH)*Type_Count);
+  perm_c.resize((PVFMM_PRECOMP_MAX_DEPTH+PVFMM_PRECOMP_MIN_DEPTH)*Type_Count);
   for(size_t i=0;i<perm_r.size();i++){
     perm_r[i].resize(500);
     perm_c[i].resize(500);
@@ -44,7 +44,7 @@ PrecompMat<T>::PrecompMat(bool scale_invar_): scale_invar(scale_invar_){
 
 template <class T>
 Matrix<T>& PrecompMat<T>::Mat(int l, Mat_Type type, size_t indx){
-  int level=(scale_invar?0:l+PRECOMP_MIN_DEPTH);
+  int level=(scale_invar?0:l+PVFMM_PRECOMP_MIN_DEPTH);
   assert(level*Type_Count+type<mat.size());
   //#pragma omp critical (PrecompMAT)
   if(indx>=mat[level*Type_Count+type].size()){
@@ -56,7 +56,7 @@ Matrix<T>& PrecompMat<T>::Mat(int l, Mat_Type type, size_t indx){
 
 template <class T>
 Permutation<T>& PrecompMat<T>::Perm_R(int l, Mat_Type type, size_t indx){
-  int level=l+PRECOMP_MIN_DEPTH;
+  int level=l+PVFMM_PRECOMP_MIN_DEPTH;
   assert(level*Type_Count+type<perm_r.size());
   //#pragma omp critical (PrecompMAT)
   if(indx>=perm_r[level*Type_Count+type].size()){
@@ -68,7 +68,7 @@ Permutation<T>& PrecompMat<T>::Perm_R(int l, Mat_Type type, size_t indx){
 
 template <class T>
 Permutation<T>& PrecompMat<T>::Perm_C(int l, Mat_Type type, size_t indx){
-  int level=l+PRECOMP_MIN_DEPTH;
+  int level=l+PVFMM_PRECOMP_MIN_DEPTH;
   assert(level*Type_Count+type<perm_c.size());
   //#pragma omp critical (PrecompMAT)
   if(indx>=perm_c[level*Type_Count+type].size()){
@@ -102,14 +102,14 @@ size_t PrecompMat<T>::CompactData(int level, Mat_Type type, Matrix<char>& comp_d
     }
   }
 
-  std::vector<Matrix<T> >& mat_=mat[(scale_invar?0:level+PRECOMP_MIN_DEPTH)*Type_Count+type];
+  std::vector<Matrix<T> >& mat_=mat[(scale_invar?0:level+PVFMM_PRECOMP_MIN_DEPTH)*Type_Count+type];
   size_t mat_cnt=mat_.size();
   size_t indx_size=0;
   size_t mem_size=0;
 
   int omp_p=omp_get_max_threads();
   size_t l0=(scale_invar?0:level);
-  size_t l1=(scale_invar?PRECOMP_PVFMM_MAX_DEPTH:level+1);
+  size_t l1=(scale_invar?PVFMM_PRECOMP_MAX_DEPTH:level+1);
 
   { // Determine memory size.
     indx_size+=sizeof(HeaderData); // HeaderData
@@ -126,11 +126,11 @@ size_t PrecompMat<T>::CompactData(int level, Mat_Type type, Matrix<char>& comp_d
         Permutation<T>& Pr=Perm_R(l,type,j);
         Permutation<T>& Pc=Perm_C(l,type,j);
         if(Pr.Dim()>0){
-          mem_size+=Pr.Dim()*sizeof(PERM_INT_T); mem_size=mem::align_ptr(mem_size);
+          mem_size+=Pr.Dim()*sizeof(PVFMM_PERM_INT_T); mem_size=mem::align_ptr(mem_size);
           mem_size+=Pr.Dim()*sizeof(T);          mem_size=mem::align_ptr(mem_size);
         }
         if(Pc.Dim()>0){
-          mem_size+=Pc.Dim()*sizeof(PERM_INT_T); mem_size=mem::align_ptr(mem_size);
+          mem_size+=Pc.Dim()*sizeof(PVFMM_PERM_INT_T); mem_size=mem::align_ptr(mem_size);
           mem_size+=Pc.Dim()*sizeof(T);          mem_size=mem::align_ptr(mem_size);
         }
       }
@@ -168,13 +168,13 @@ size_t PrecompMat<T>::CompactData(int level, Mat_Type type, Matrix<char>& comp_d
       for(size_t l=l0;l<l1;l++){
         Permutation<T>& Pr=Perm_R(l,type,j);
         offset_indx[j][1+4*(l-l0)+0]=data_offset;
-        data_offset+=Pr.Dim()*sizeof(PERM_INT_T); mem_size=mem::align_ptr(mem_size);
+        data_offset+=Pr.Dim()*sizeof(PVFMM_PERM_INT_T); mem_size=mem::align_ptr(mem_size);
         offset_indx[j][1+4*(l-l0)+1]=data_offset;
         data_offset+=Pr.Dim()*sizeof(T);          mem_size=mem::align_ptr(mem_size);
 
         Permutation<T>& Pc=Perm_C(l,type,j);
         offset_indx[j][1+4*(l-l0)+2]=data_offset;
-        data_offset+=Pc.Dim()*sizeof(PERM_INT_T); mem_size=mem::align_ptr(mem_size);
+        data_offset+=Pc.Dim()*sizeof(PVFMM_PERM_INT_T); mem_size=mem::align_ptr(mem_size);
         offset_indx[j][1+4*(l-l0)+3]=data_offset;
         data_offset+=Pc.Dim()*sizeof(T);          mem_size=mem::align_ptr(mem_size);
       }
@@ -201,13 +201,13 @@ size_t PrecompMat<T>::CompactData(int level, Mat_Type type, Matrix<char>& comp_d
         if(Pr.Dim()>0){
           size_t a=(Pr.Dim()* tid   )/omp_p;
           size_t b=(Pr.Dim()*(tid+1))/omp_p;
-          mem::copy<PERM_INT_T>((PERM_INT_T*)(comp_data[0]+offset_indx[j][1+4*(l-l0)+0])+a, &Pr.perm[a], (b-a));
+          mem::copy<PVFMM_PERM_INT_T>((PVFMM_PERM_INT_T*)(comp_data[0]+offset_indx[j][1+4*(l-l0)+0])+a, &Pr.perm[a], (b-a));
           mem::copy<         T>((         T*)(comp_data[0]+offset_indx[j][1+4*(l-l0)+1])+a, &Pr.scal[a], (b-a));
         }
         if(Pc.Dim()>0){
           size_t a=(Pc.Dim()* tid   )/omp_p;
           size_t b=(Pc.Dim()*(tid+1))/omp_p;
-          mem::copy<PERM_INT_T>((PERM_INT_T*)(comp_data[0]+offset_indx[j][1+4*(l-l0)+2])+a, &Pc.perm[a], (b-a));
+          mem::copy<PVFMM_PERM_INT_T>((PVFMM_PERM_INT_T*)(comp_data[0]+offset_indx[j][1+4*(l-l0)+2])+a, &Pc.perm[a], (b-a));
           mem::copy<         T>((         T*)(comp_data[0]+offset_indx[j][1+4*(l-l0)+3])+a, &Pc.scal[a], (b-a));
         }
       }
@@ -251,13 +251,6 @@ void PrecompMat<T>::Save2File(const char* fname, bool replace){
   fclose(f);
 }
 
-#define MY_FREAD(a,b,c,d) { \
-  size_t r_cnt=fread(a,b,c,d); \
-  if(r_cnt!=c){ \
-    fputs ("Reading error ",stderr); \
-    exit (-1); \
-  } }
-
 template <class T>
 void PrecompMat<T>::LoadFile(const char* fname, MPI_Comm comm){
   Profile::Tic("LoadMatrices",&comm,true,3);
@@ -283,7 +276,14 @@ void PrecompMat<T>::LoadFile(const char* fname, MPI_Comm comm){
     if(f_size>0){
       f_data=mem::aligned_new<char>(f_size);
       fseek (f, 0, SEEK_SET);
-      MY_FREAD(f_data,sizeof(char),f_size,f);
+      {
+        size_t r_cnt=fread(f_data,sizeof(char),f_size,f);
+        if(r_cnt!=f_size){
+          fputs ("Reading error ",stderr);
+          exit (-1);
+        }
+      }
+
       fclose(f);
     }
   }
@@ -318,7 +318,7 @@ void PrecompMat<T>::LoadFile(const char* fname, MPI_Comm comm){
     assert(tmp==sizeof(T));
     tmp=*(int*)f_ptr; f_ptr+=sizeof(int);
     scale_invar=tmp;
-    size_t mat_size=(size_t)Type_Count*(scale_invar?1:PRECOMP_PVFMM_MAX_DEPTH+PRECOMP_MIN_DEPTH);
+    size_t mat_size=(size_t)Type_Count*(scale_invar?1:PVFMM_PRECOMP_MAX_DEPTH+PVFMM_PRECOMP_MIN_DEPTH);
     if(mat.size()<mat_size){
       mat.resize(mat_size);
     }
@@ -342,8 +342,8 @@ void PrecompMat<T>::LoadFile(const char* fname, MPI_Comm comm){
     }
 
     // Resize perm_r, perm_c
-    perm_r.resize((PRECOMP_PVFMM_MAX_DEPTH+PRECOMP_MIN_DEPTH)*Type_Count);
-    perm_c.resize((PRECOMP_PVFMM_MAX_DEPTH+PRECOMP_MIN_DEPTH)*Type_Count);
+    perm_r.resize((PVFMM_PRECOMP_MAX_DEPTH+PVFMM_PRECOMP_MIN_DEPTH)*Type_Count);
+    perm_c.resize((PVFMM_PRECOMP_MAX_DEPTH+PVFMM_PRECOMP_MIN_DEPTH)*Type_Count);
     for(size_t i=0;i<perm_r.size();i++){
       perm_r[i].resize(500);
       perm_c[i].resize(500);
@@ -353,9 +353,6 @@ void PrecompMat<T>::LoadFile(const char* fname, MPI_Comm comm){
   Profile::Toc();
   Profile::Toc();
 }
-
-#undef MY_FREAD
-#undef PRECOMP_MIN_DEPTH
 
 template <class T>
 std::vector<T>& PrecompMat<T>::RelativeTrgCoord(){

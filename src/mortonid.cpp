@@ -16,34 +16,34 @@ void MortonId::NbrList(std::vector<MortonId>& nbrs, uint8_t level, int periodic)
   nbrs.clear();
   static unsigned int dim=3;
   static unsigned int nbr_cnt=pvfmm::pow<unsigned int>(3,dim);
-  static UINT_T maxCoord=(((UINT_T)1)<<(PVFMM_MAX_DEPTH));
+  static PVFMM_MID_UINT_T maxCoord=(((PVFMM_MID_UINT_T)1)<<(PVFMM_MAX_DEPTH));
 
-  UINT_T mask=maxCoord-(((UINT_T)1)<<(PVFMM_MAX_DEPTH-level));
-  UINT_T pX=x & mask;
-  UINT_T pY=y & mask;
-  UINT_T pZ=z & mask;
+  PVFMM_MID_UINT_T mask=maxCoord-(((PVFMM_MID_UINT_T)1)<<(PVFMM_MAX_DEPTH-level));
+  PVFMM_MID_UINT_T pX=x & mask;
+  PVFMM_MID_UINT_T pY=y & mask;
+  PVFMM_MID_UINT_T pZ=z & mask;
 
   MortonId mid_tmp;
-  mask=(((UINT_T)1)<<(PVFMM_MAX_DEPTH-level));
+  mask=(((PVFMM_MID_UINT_T)1)<<(PVFMM_MAX_DEPTH-level));
   for(int i=0; i<nbr_cnt; i++){
-    INT_T dX = ((i/1)%3-1)*mask;
-    INT_T dY = ((i/3)%3-1)*mask;
-    INT_T dZ = ((i/9)%3-1)*mask;
-    INT_T newX=(INT_T)pX+dX;
-    INT_T newY=(INT_T)pY+dY;
-    INT_T newZ=(INT_T)pZ+dZ;
+    PVFMM_MID_INT_T dX = ((i/1)%3-1)*mask;
+    PVFMM_MID_INT_T dY = ((i/3)%3-1)*mask;
+    PVFMM_MID_INT_T dZ = ((i/9)%3-1)*mask;
+    PVFMM_MID_INT_T newX=(PVFMM_MID_INT_T)pX+dX;
+    PVFMM_MID_INT_T newY=(PVFMM_MID_INT_T)pY+dY;
+    PVFMM_MID_INT_T newZ=(PVFMM_MID_INT_T)pZ+dZ;
     if(!periodic){
-      if(newX>=0 && newX<(INT_T)maxCoord)
-      if(newY>=0 && newY<(INT_T)maxCoord)
-      if(newZ>=0 && newZ<(INT_T)maxCoord){
+      if(newX>=0 && newX<(PVFMM_MID_INT_T)maxCoord)
+      if(newY>=0 && newY<(PVFMM_MID_INT_T)maxCoord)
+      if(newZ>=0 && newZ<(PVFMM_MID_INT_T)maxCoord){
         mid_tmp.x=newX; mid_tmp.y=newY; mid_tmp.z=newZ;
         mid_tmp.depth=level;
         nbrs.push_back(mid_tmp);
       }
     }else{
-      if(newX<0) newX+=maxCoord; if(newX>=(INT_T)maxCoord) newX-=maxCoord;
-      if(newY<0) newY+=maxCoord; if(newY>=(INT_T)maxCoord) newY-=maxCoord;
-      if(newZ<0) newZ+=maxCoord; if(newZ>=(INT_T)maxCoord) newZ-=maxCoord;
+      if(newX<0) newX+=maxCoord; if(newX>=(PVFMM_MID_INT_T)maxCoord) newX-=maxCoord;
+      if(newY<0) newY+=maxCoord; if(newY>=(PVFMM_MID_INT_T)maxCoord) newY-=maxCoord;
+      if(newZ<0) newZ+=maxCoord; if(newZ>=(PVFMM_MID_INT_T)maxCoord) newZ-=maxCoord;
       mid_tmp.x=newX; mid_tmp.y=newY; mid_tmp.z=newZ;
       mid_tmp.depth=level;
       nbrs.push_back(mid_tmp);
@@ -54,15 +54,15 @@ void MortonId::NbrList(std::vector<MortonId>& nbrs, uint8_t level, int periodic)
 std::vector<MortonId> MortonId::Children() const{
   static int dim=3;
   static int c_cnt=(1UL<<dim);
-  static UINT_T maxCoord=(((UINT_T)1)<<(PVFMM_MAX_DEPTH));
+  static PVFMM_MID_UINT_T maxCoord=(((PVFMM_MID_UINT_T)1)<<(PVFMM_MAX_DEPTH));
   std::vector<MortonId> child(c_cnt);
 
-  UINT_T mask=maxCoord-(((UINT_T)1)<<(PVFMM_MAX_DEPTH-depth));
-  UINT_T pX=x & mask;
-  UINT_T pY=y & mask;
-  UINT_T pZ=z & mask;
+  PVFMM_MID_UINT_T mask=maxCoord-(((PVFMM_MID_UINT_T)1)<<(PVFMM_MAX_DEPTH-depth));
+  PVFMM_MID_UINT_T pX=x & mask;
+  PVFMM_MID_UINT_T pY=y & mask;
+  PVFMM_MID_UINT_T pZ=z & mask;
 
-  mask=(((UINT_T)1)<<(PVFMM_MAX_DEPTH-(depth+1)));
+  mask=(((PVFMM_MID_UINT_T)1)<<(PVFMM_MAX_DEPTH-(depth+1)));
   for(int i=0; i<c_cnt; i++){
     child[i].x=pX+mask*((i/1)%2);
     child[i].y=pY+mask*((i/2)%2);
@@ -76,9 +76,9 @@ std::ostream& operator<<(std::ostream& out, const MortonId & mid){
   double a=0;
   double s=1;
   for(int i=PVFMM_MAX_DEPTH;i>=0;i--){
-    s=s*0.5; if(mid.z & (((UINT_T)1)<<i)) a+=s;
-    s=s*0.5; if(mid.y & (((UINT_T)1)<<i)) a+=s;
-    s=s*0.5; if(mid.x & (((UINT_T)1)<<i)) a+=s;
+    s=s*0.5; if(mid.z & (((PVFMM_MID_UINT_T)1)<<i)) a+=s;
+    s=s*0.5; if(mid.y & (((PVFMM_MID_UINT_T)1)<<i)) a+=s;
+    s=s*0.5; if(mid.x & (((PVFMM_MID_UINT_T)1)<<i)) a+=s;
   }
   out<<"("<<(size_t)mid.x<<","<<(size_t)mid.y<<","<<(size_t)mid.z<<" - "<<a<<")";
   return out;

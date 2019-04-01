@@ -20,17 +20,17 @@ namespace pvfmm{
 #endif
 
 #if PVFMM_MAX_DEPTH < 7
-#define UINT_T uint8_t
-#define  INT_T  int8_t
+#define PVFMM_MID_UINT_T uint8_t
+#define  PVFMM_MID_INT_T  int8_t
 #elif PVFMM_MAX_DEPTH < 15
-#define UINT_T uint16_t
-#define  INT_T  int16_t
+#define PVFMM_MID_UINT_T uint16_t
+#define  PVFMM_MID_INT_T  int16_t
 #elif PVFMM_MAX_DEPTH < 31
-#define UINT_T uint32_t
-#define  INT_T  int32_t
+#define PVFMM_MID_UINT_T uint32_t
+#define  PVFMM_MID_INT_T  int32_t
 #elif PVFMM_MAX_DEPTH < 63
-#define UINT_T uint64_t
-#define  INT_T  int64_t
+#define PVFMM_MID_UINT_T uint64_t
+#define  PVFMM_MID_INT_T  int64_t
 #endif
 
 class MortonId{
@@ -83,7 +83,7 @@ class MortonId{
 
  private:
 
-  UINT_T x,y,z;
+  PVFMM_MID_UINT_T x,y,z;
   uint8_t depth;
 
 };
