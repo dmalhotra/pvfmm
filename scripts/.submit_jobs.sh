@@ -22,6 +22,7 @@ for (( k=0; k<${#nodes[@]}; k++ )) ; do
   # Set output filename
   case $HOSTNAME in
     *titan*) fname[$k]="host_titan";;
+    *stampede2*) fname[$k]="host_stampede2";;
     *stampede*) fname[$k]="host_stampede";;
     *ls4*) fname[$k]="host_lonestar";;
     *ronaldo*) fname[$k]="host_ronaldo";;
@@ -80,6 +81,14 @@ for (( k=0; k<${#nodes[@]}; k++ )) ; do
              -o ${FNAME}.out -e ${FNAME}.err \
              -l walltime=${TOTAL_TIME} \
              ./scripts/.job.titan
+      ;;
+    *stampede2*) #stampede2.tacc.utexas.edu (Slurm Batch)
+        if (( ${TOTAL_TIME} > 14400 )); then TOTAL_TIME="14400"; fi
+        #if (( ${NODES} > 128 )) ; then continue; fi;
+        sbatch -N${NODES} -n${MPI_PROC} \
+               -o ${FNAME}.out -e ${FNAME}.err -D ${PWD} \
+               --time=00:00:${TOTAL_TIME} \
+               ./scripts/.job.stampede2-skx
       ;;
     *stampede*) #stampede.tacc.utexas.edu (Slurm Batch)
         if (( ${TOTAL_TIME} > 14400 )); then TOTAL_TIME="14400"; fi

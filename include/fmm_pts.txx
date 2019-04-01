@@ -1950,7 +1950,7 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
           size_t b=((tid+1)*vec_cnt)/omp_p;
 
           for(size_t i=a;i<b;i++){
-            const PERM_INT_T*  perm=(PERM_INT_T*)(precomp_data[0]+input_perm[(interac_indx+i)*4+0]);
+            const PVFMM_PERM_INT_T*  perm=(PVFMM_PERM_INT_T*)(precomp_data[0]+input_perm[(interac_indx+i)*4+0]);
             const     Real_t*  scal=(    Real_t*)(precomp_data[0]+input_perm[(interac_indx+i)*4+1]);
             const     Real_t* v_in =(    Real_t*)(  input_data[0]+input_perm[(interac_indx+i)*4+3]);
             Real_t*           v_out=(    Real_t*)(     buff_in   +input_perm[(interac_indx+i)*4+2]);
@@ -2034,7 +2034,7 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
             if(tid<omp_p-1) while(b<vec_cnt && out_ptr==output_perm[(interac_indx+b)*4+3]) b++;
           }
           for(size_t i=a;i<b;i++){ // Compute permutations.
-            const PERM_INT_T*  perm=(PERM_INT_T*)(precomp_data[0]+output_perm[(interac_indx+i)*4+0]);
+            const PVFMM_PERM_INT_T*  perm=(PVFMM_PERM_INT_T*)(precomp_data[0]+output_perm[(interac_indx+i)*4+0]);
             const     Real_t*  scal=(    Real_t*)(precomp_data[0]+output_perm[(interac_indx+i)*4+1]);
             const     Real_t* v_in =(    Real_t*)(    buff_out   +output_perm[(interac_indx+i)*4+2]);
             Real_t*           v_out=(    Real_t*)( output_data[0]+output_perm[(interac_indx+i)*4+3]);

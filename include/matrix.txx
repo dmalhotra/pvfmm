@@ -344,7 +344,6 @@ void Matrix<T>::CUBLASGEMM(Matrix<T>& M_r, const Matrix<T>& A, const Matrix<T>& 
 }
 #endif
 
-#define myswap(t,a,b) {t c=a;a=b;b=c;}
 template <class T>
 void Matrix<T>::RowPerm(const Permutation<T>& P){
   Matrix<T>& M=*this;
@@ -367,9 +366,9 @@ void Matrix<T>::RowPerm(const Permutation<T>& P){
     size_t b=i;
     T* M_a=M[a];
     T* M_b=M[b];
-    myswap(size_t,P_.perm[a],P_.perm[b]);
+    std::swap<PVFMM_PERM_INT_T>(P_.perm[a],P_.perm[b]);
     for(size_t j=0;j<d1;j++)
-      myswap(T,M_a[j],M_b[j]);
+      std::swap<T>(M_a[j],M_b[j]);
   }
 }
 
@@ -398,10 +397,9 @@ void Matrix<T>::ColPerm(const Permutation<T>& P){
     }
   }
 }
-#undef myswap
 
-#define B1 128
-#define B2 32
+#define PVFMM_B1 128
+#define PVFMM_B2 32
 template <class T>
 Matrix<T> Matrix<T>::Transpose(){
   Matrix<T>& M=*this;
@@ -409,21 +407,21 @@ Matrix<T> Matrix<T>::Transpose(){
   size_t d1=M.dim[1];
   Matrix<T> M_r(d1,d0,NULL);
 
-  const size_t blk0=((d0+B1-1)/B1);
-  const size_t blk1=((d1+B1-1)/B1);
+  const size_t blk0=((d0+PVFMM_B1-1)/PVFMM_B1);
+  const size_t blk1=((d1+PVFMM_B1-1)/PVFMM_B1);
   const size_t blks=blk0*blk1;
 //  #pragma omp parallel for
   for(size_t k=0;k<blks;k++){
-    size_t i=(k%blk0)*B1;
-    size_t j=(k/blk0)*B1;
-//  for(size_t i=0;i<d0;i+=B1)
-//  for(size_t j=0;j<d1;j+=B1){
-    size_t d0_=i+B1; if(d0_>=d0) d0_=d0;
-    size_t d1_=j+B1; if(d1_>=d1) d1_=d1;
-    for(size_t ii=i;ii<d0_;ii+=B2)
-    for(size_t jj=j;jj<d1_;jj+=B2){
-      size_t d0__=ii+B2; if(d0__>=d0) d0__=d0;
-      size_t d1__=jj+B2; if(d1__>=d1) d1__=d1;
+    size_t i=(k%blk0)*PVFMM_B1;
+    size_t j=(k/blk0)*PVFMM_B1;
+//  for(size_t i=0;i<d0;i+=PVFMM_B1)
+//  for(size_t j=0;j<d1;j+=PVFMM_B1){
+    size_t d0_=i+PVFMM_B1; if(d0_>=d0) d0_=d0;
+    size_t d1_=j+PVFMM_B1; if(d1_>=d1) d1_=d1;
+    for(size_t ii=i;ii<d0_;ii+=PVFMM_B2)
+    for(size_t jj=j;jj<d1_;jj+=PVFMM_B2){
+      size_t d0__=ii+PVFMM_B2; if(d0__>=d0) d0__=d0;
+      size_t d1__=jj+PVFMM_B2; if(d1__>=d1) d1__=d1;
       for(size_t iii=ii;iii<d0__;iii++)
       for(size_t jjj=jj;jjj<d1__;jjj++){
         M_r[jjj][iii]=M[iii][jjj];
@@ -442,21 +440,21 @@ void Matrix<T>::Transpose(Matrix<T>& M_r, const Matrix<T>& M){
   size_t d1=M.dim[1];
   M_r.Resize(d1, d0);
 
-  const size_t blk0=((d0+B1-1)/B1);
-  const size_t blk1=((d1+B1-1)/B1);
+  const size_t blk0=((d0+PVFMM_B1-1)/PVFMM_B1);
+  const size_t blk1=((d1+PVFMM_B1-1)/PVFMM_B1);
   const size_t blks=blk0*blk1;
   #pragma omp parallel for
   for(size_t k=0;k<blks;k++){
-    size_t i=(k%blk0)*B1;
-    size_t j=(k/blk0)*B1;
-//  for(size_t i=0;i<d0;i+=B1)
-//  for(size_t j=0;j<d1;j+=B1){
-    size_t d0_=i+B1; if(d0_>=d0) d0_=d0;
-    size_t d1_=j+B1; if(d1_>=d1) d1_=d1;
-    for(size_t ii=i;ii<d0_;ii+=B2)
-    for(size_t jj=j;jj<d1_;jj+=B2){
-      size_t d0__=ii+B2; if(d0__>=d0) d0__=d0;
-      size_t d1__=jj+B2; if(d1__>=d1) d1__=d1;
+    size_t i=(k%blk0)*PVFMM_B1;
+    size_t j=(k/blk0)*PVFMM_B1;
+//  for(size_t i=0;i<d0;i+=PVFMM_B1)
+//  for(size_t j=0;j<d1;j+=PVFMM_B1){
+    size_t d0_=i+PVFMM_B1; if(d0_>=d0) d0_=d0;
+    size_t d1_=j+PVFMM_B1; if(d1_>=d1) d1_=d1;
+    for(size_t ii=i;ii<d0_;ii+=PVFMM_B2)
+    for(size_t jj=j;jj<d1_;jj+=PVFMM_B2){
+      size_t d0__=ii+PVFMM_B2; if(d0__>=d0) d0__=d0;
+      size_t d1__=jj+PVFMM_B2; if(d1__>=d1) d1__=d1;
       for(size_t iii=ii;iii<d0__;iii++)
       for(size_t jjj=jj;jjj<d1__;jjj++){
         M_r[jjj][iii]=M[iii][jjj];
@@ -464,8 +462,6 @@ void Matrix<T>::Transpose(Matrix<T>& M_r, const Matrix<T>& M){
     }
   }
 }
-#undef B2
-#undef B1
 
 template <class T>
 void Matrix<T>::SVD(Matrix<T>& tU, Matrix<T>& tS, Matrix<T>& tVT){
@@ -571,7 +567,7 @@ Permutation<T> Permutation<T>::Transpose(){
   size_t size=perm.Dim();
   Permutation<T> P_r(size);
 
-  Vector<PERM_INT_T>& perm_r=P_r.perm;
+  Vector<PVFMM_PERM_INT_T>& perm_r=P_r.perm;
   Vector<T>& scal_r=P_r.scal;
   for(size_t i=0;i<size;i++){
     perm_r[perm[i]]=i;
@@ -586,7 +582,7 @@ Permutation<T> Permutation<T>::operator*(const Permutation<T>& P){
   assert(P.Dim()==size);
 
   Permutation<T> P_r(size);
-  Vector<PERM_INT_T>& perm_r=P_r.perm;
+  Vector<PVFMM_PERM_INT_T>& perm_r=P_r.perm;
   Vector<T>& scal_r=P_r.scal;
   for(size_t i=0;i<size;i++){
     perm_r[i]=perm[P.perm[i]];
@@ -622,7 +618,7 @@ Matrix<T> operator*(const Matrix<T>& M, const Permutation<T>& P){
 
   Matrix<T> M_r(d0,d1,NULL);
   for(size_t i=0;i<d0;i++){
-    const PERM_INT_T* perm_=&(P.perm[0]);
+    const PVFMM_PERM_INT_T* perm_=&(P.perm[0]);
     const T* scal_=&(P.scal[0]);
     const T* M_=M[i];
     T* M_r_=M_r[i];

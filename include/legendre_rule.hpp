@@ -1,8 +1,8 @@
 
 # include <string>
 
-#ifndef _LEGENDRE_RULE_HPP_
-#define _LEGENDRE_RULE_HPP_
+#ifndef _PVFMM_LEGENDRE_RULE_HPP_
+#define _PVFMM_LEGENDRE_RULE_HPP_
 
 void cdgqf ( int nt, int kind, double alpha, double beta, double t[],
   double wts[] );
