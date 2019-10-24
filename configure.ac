@@ -67,7 +67,6 @@ DX_INIT_DOXYGEN($PACKAGE_NAME, Doxyfile, doc/doxygen)
 
 
 AX_CXX_DEF_TEMPLATE_ARG
-
 CHECK_QUAD_PRECISION
 
 # Check for math libs
@@ -150,22 +149,22 @@ AC_CHECK_FFTWF
 #AM_CONDITIONAL(BLAS_EQ_MKL, test "$BLAS" = "MKL")
 #AM_CONDITIONAL(BLAS_EQ_GSL, test "$BLAS" = "GSL")
 #if (test -r $PETSC_DIR/$PETSC_ARCH/conf/petscvariables) ; then
-# PETSC_BLASLAPACK_LIB=`grep "BLASLAPACK_LIB" $PETSC_DIR/$PETSC_ARCH/conf/petscvariables | sed -e 's/.*BLASLAPACK_LIB = //'`
-# if test "x$PETSC_BLASLAPACK_LIB" != x ; then
-#   if test "x$with_blas" != "x" -a "$with_blas" != "$PETSC_BLASLAPACK_LIB" ; then
-#     AC_MSG_WARN([BLAS flags specified by --with-blas appear to disagree with PETSc BLAS/LAPACK flags; using PETSc settings])
-#   fi
-#   if test "x$with_lapack" != "x" -a "$with_lapack" != "$PETSC_BLASLAPACK_LIB" ; then
-#     AC_MSG_WARN([LAPACK flags specified by --with-lapack appear to disagree with PETSc BLAS/LAPACK flags; using PETSc settings])
-#   fi
-#   echo "using PETSc BLAS/LAPACK library flags: $PETSC_BLASLAPACK_LIB"
-#   with_blas="$PETSC_BLASLAPACK_LIB"
-#   with_lapack=""
-# fi
-# PETSC_BLASLAPACK_INCLUDE=`grep "BLASLAPACK_INCLUDE" $PETSC_DIR/$PETSC_ARCH/conf/petscvariables | sed -e 's/.*BLASLAPACK_INCLUDE = //'`
-# if test "x$PETSC_BLASLAPACK_INCLUDE" != x ; then
-#   CPPFLAGS="${PETSC_BLASLAPACK_INCLUDE} $CPPFLAGS"
-# fi
+#  PETSC_BLASLAPACK_LIB=`grep "BLASLAPACK_LIB" $PETSC_DIR/$PETSC_ARCH/conf/petscvariables | sed -e 's/.*BLASLAPACK_LIB = //'`
+#  if test "x$PETSC_BLASLAPACK_LIB" != x ; then
+#    if test "x$with_blas" != "x" -a "$with_blas" != "$PETSC_BLASLAPACK_LIB" ; then
+#      AC_MSG_WARN([BLAS flags specified by --with-blas appear to disagree with PETSc BLAS/LAPACK flags; using PETSc settings])
+#    fi
+#    if test "x$with_lapack" != "x" -a "$with_lapack" != "$PETSC_BLASLAPACK_LIB" ; then
+#      AC_MSG_WARN([LAPACK flags specified by --with-lapack appear to disagree with PETSc BLAS/LAPACK flags; using PETSc settings])
+#    fi
+#    echo "using PETSc BLAS/LAPACK library flags: $PETSC_BLASLAPACK_LIB"
+#    with_blas="$PETSC_BLASLAPACK_LIB"
+#    with_lapack=""
+#  fi
+#  PETSC_BLASLAPACK_INCLUDE=`grep "BLASLAPACK_INCLUDE" $PETSC_DIR/$PETSC_ARCH/conf/petscvariables | sed -e 's/.*BLASLAPACK_INCLUDE = //'`
+#  if test "x$PETSC_BLASLAPACK_INCLUDE" != x ; then
+#    CPPFLAGS="${PETSC_BLASLAPACK_INCLUDE} $CPPFLAGS"
+#  fi
 #fi
 CFLAGS_save=$CFLAGS
 CXXFLAGS_save=$CXXFLAGS
