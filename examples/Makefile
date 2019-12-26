@@ -1,10 +1,10 @@
+ifndef PVFMM_DIR
+PVFMM_DIR=./..
+endif
+
 -include $(PVFMM_DIR)/MakeVariables
 
 ifndef CXX_PVFMM
--include ../MakeVariables
-endif
-
-ifndef CXXFLAGS_PVFMM
 $(error Cannot find file: MakeVariables)
 endif
 
@@ -32,15 +32,15 @@ all : $(TARGET_BIN)
 
 $(BINDIR)/%: $(SRCDIR)/%.f90
 	-@$(MKDIRS) $(dir $@)
-	$(FC) $(CXXFLAGS) -I$(INCDIR) $^ $(LDLIBS) -o $@
+	$(PVFMM_DIR)/libtool --mode=link --tag=FC $(FC) $(CXXFLAGS) -I$(INCDIR) $^ $(LDLIBS) -o $@
 
 $(BINDIR)/%: $(SRCDIR)/%.c
 	-@$(MKDIRS) $(dir $@)
-	$(CC) $(CXXFLAGS) -I$(INCDIR) $^ $(LDLIBS) -o $@
+	$(PVFMM_DIR)/libtool --mode=link --tag=CC $(CC) $(CXXFLAGS) -I$(INCDIR) $^ $(LDLIBS) -o $@
 
 $(BINDIR)/%: $(SRCDIR)/%.cpp
 	-@$(MKDIRS) $(dir $@)
-	$(CXX) $(CXXFLAGS) -I$(INCDIR) $^ $(LDLIBS) -o $@
+	$(PVFMM_DIR)/libtool --mode=link --tag=CXX $(CXX) $(CXXFLAGS) -I$(INCDIR) $^ $(LDLIBS) -o $@
 
 clean:
 	$(RM) -r $(BINDIR)/* $(OBJDIR)/*

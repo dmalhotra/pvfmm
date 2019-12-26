@@ -28,20 +28,20 @@ EXTRA_DIST = \
 
 # additional include pathes necessary to compile the C++ library
 AM_CXXFLAGS =
-AM_LDFLAGS = -static
+#AM_LDFLAGS = -static
 
 ###############################################################################
 # THE LIBRARIES TO BUILD
 ###############################################################################
 
-# the library names to build (note we are building static libs only)
-pkglib_LIBRARIES = lib/libpvfmm.a
+# the library names to build
+pkglib_LTLIBRARIES = lib/libpvfmm.la
 
 # where to install the headers on the system
-lib_libfmm_adir = $(pkgincludedir)
+lib_libpvfmm_ladir = $(pkgincludedir)
 
 # the list of header files that belong to the library (to be installed later)
-lib_libfmm_a_HEADERS = \
+pvfmm_cpp_header_files = \
 									include/pvfmm_config.h \
 									include/pvfmm_common.hpp \
 									include/pvfmm.hpp \
@@ -98,12 +98,17 @@ lib_libfmm_a_HEADERS = \
 									include/tree.txx \
 									include/vector.txx
 
-#nodist_lib_libpvfmm_a_HEADERS = \
+lib_libpvfmm_la_HEADERS = \
+									$(pvfmm_cpp_header_files) \
+									include/pvfmm.f90 \
+									include/pvfmm.h
+
+#nodist_lib_libpvfmm_la_HEADERS = \
 #									include/pvfmm_config.h
 
 # the sources to add to the library and to add to the source distribution
-lib_libpvfmm_a_SOURCES = \
-									$(lib_libpvfmm_a_HEADERS) \
+lib_libpvfmm_la_SOURCES = \
+									$(pvfmm_cpp_header_files) \
 									src/cheb_utils.cpp \
 									src/device_wrapper.cpp \
 									src/legendre_rule.cpp \
@@ -116,13 +121,13 @@ lib_libpvfmm_a_SOURCES = \
 									src/tree_node.cpp
 
 if NVCC_OK
-lib_libpvfmm_a_SOURCES += \
+lib_libpvfmm_la_SOURCES += \
 													src/fmm_pts_gpu.cu
 endif
 
 dist_noinst_SCRIPTS = autogen.sh
 
-core: $(pkglib_LIBRARIES)
+core: $(pkglib_LTLIBRARIES)
 
 all: #all-docs all-examples 
 
@@ -173,6 +178,18 @@ uninstall-make-variables:
 
 
 ###############################################################################
+# INSTALL/UNINSTALL libtool
+#------------------------------------------------------------------------------
+
+install-libtool:
+	$(MKDIR_P) $(INSTALL_DIR)
+	$(INSTALL_PROGRAM) libtool $(INSTALL_DIR)/libtool
+
+uninstall-libtool:
+	$(RM) $(INSTALL_DIR)/libtool
+
+
+###############################################################################
 # INSTALL/UNINSTALL DOCS
 #------------------------------------------------------------------------------
 
@@ -212,10 +229,10 @@ install: install-am
 	@echo 'use the variables CXXFLAGS_PVFMM and LDLIBS_PVFMM for compiling your code.'
 	@echo '======================================================================='
 
-install-data-local: install-make-variables install-doxygen-doc
+install-data-local: install-make-variables install-libtool install-doxygen-doc
 	cd doc/doc && $(MAKE) install;
 
-uninstall-local: uninstall-make-variables uninstall-doxygen-doc
+uninstall-local: uninstall-make-variables uninstall-libtool uninstall-doxygen-doc
 	cd doc/doc && $(MAKE) uninstall;
 
 
