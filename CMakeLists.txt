@@ -37,8 +37,9 @@ else()
   find_package(BLAS REQUIRED)
   find_package(LAPACK REQUIRED)
   find_package(FFTW REQUIRED)
-  set(DEP_INC ${MKL_FFTW_INCLUDE_DIR} ${MKL_INCLUDE_DIR})
-  set(DEP_LIB ${MKL_SDL_LIBRARY})
+  set(DEP_INC ${FFTW_INCLUDE_DIRS})
+  set(DEP_LIB ${FFTW_FLOAT_LIB} ${FFTW_DOUBLE_LIB} ${BLAS_LIBRARIES}
+              ${LAPACK_LIBRARIES})
 endif()
 
 find_file(SYS_STAT sys/stat.h OPTIONAL)
