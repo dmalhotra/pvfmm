@@ -69,8 +69,6 @@ endif()
 
 configure_file(pvfmm_config.h.in pvfmm_config.h @ONLY)
 
-enable_testing()
-
 # part 1, core library
 file(GLOB pvfmm_SRC "src/*.cpp")
 
@@ -83,7 +81,6 @@ target_include_directories(
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
          ${CMAKE_BINARY_DIR} ${DEP_INC})
 target_link_libraries(pvfmm PUBLIC ${DEP_LIB} OpenMP::OpenMP_CXX MPI::MPI_CXX)
-target_compile_options(pvfmm PUBLIC ${OpenMP_CXX_FLAGS})
 
 # static lib
 add_library(pvfmmStatic STATIC ${pvfmm_SRC})
@@ -95,7 +92,25 @@ target_include_directories(
          ${CMAKE_BINARY_DIR} ${DEP_INC})
 target_link_libraries(pvfmmStatic PUBLIC ${DEP_LIB} OpenMP::OpenMP_CXX
                                          MPI::MPI_CXX)
-target_compile_options(pvfmmStatic PUBLIC ${OpenMP_CXX_FLAGS})
+
+# Config.cmake files
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+  ${CMAKE_BINARY_DIR}/pvfmmConfigVersion.cmake
+  VERSION ${PROJECT_VERSION}
+  COMPATIBILITY AnyNewerVersion)
+
+get_target_property(PVFMM_SHARED_NAME pvfmm OUTPUT_NAME)
+get_target_property(PVFMM_STATIC_NAME pvfmmStatic OUTPUT_NAME)
+
+configure_package_config_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/cmake/pvfmmConfig.cmake.in
+  ${CMAKE_BINARY_DIR}/pvfmmConfig.cmake INSTALL_DESTINATION
+  ${CMAKE_INSTALL_PREFIX}/share/pvfmm)
+
+install(FILES ${CMAKE_BINARY_DIR}/pvfmmConfig.cmake
+              ${CMAKE_BINARY_DIR}/pvfmmConfigVersion.cmake
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/share/pvfmm)
 
 # install core library and headers
 include(GNUInstallDirs)
