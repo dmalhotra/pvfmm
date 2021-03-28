@@ -68,6 +68,7 @@ if(SYS_STAT)
 endif()
 
 configure_file(pvfmm_config.h.in pvfmm_config.h @ONLY)
+configure_file(pvfmm_config.h.in include/pvfmm_config.h @ONLY)
 
 # part 1, core library
 file(GLOB pvfmm_SRC "src/*.cpp")
