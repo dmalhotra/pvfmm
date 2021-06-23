@@ -25,6 +25,9 @@
 #include <mpi_node.hpp>
 #include <profile.hpp>
 
+// TODO: optimize 2:1 balance refinement (Balance21) and halo-exchange
+// (ConstructLET) for 1D and 2D periodicity.
+
 namespace pvfmm{
 
 /**
@@ -958,7 +961,7 @@ void MPI_Tree<TreeNode>::Balance21(BoundaryType bndry) {
   //2:1 balance
   Profile::Tic("ot::balanceOctree",Comm(),true,10);
   std::vector<MortonId> out;
-  balanceOctree(in, out, this->Dim(), this->max_depth, (bndry==Periodic), *Comm());
+  balanceOctree(in, out, this->Dim(), this->max_depth, (bndry!=FreeSpace), *Comm());
   if(!redist){ // Use original partitioning
     std::vector<int> cnt(num_proc,0);
     std::vector<int> dsp(num_proc+1,out.size());
@@ -1083,7 +1086,7 @@ void MPI_Tree<TreeNode>::Balance21_local(BoundaryType bndry){
           Real_t c0[3]={coord[0]+((k/1)%3-1)*s+s*0.5,
                         coord[1]+((k/3)%3-1)*s+s*0.5,
                         coord[2]+((k/9)%3-1)*s+s*0.5};
-          if(bndry==Periodic){
+          if(bndry!=FreeSpace){
             c0[0]=c0[0]-floor(c0[0]);
             c0[1]=c0[1]-floor(c0[1]);
             c0[2]=c0[2]-floor(c0[2]);
@@ -1134,12 +1137,39 @@ void MPI_Tree<TreeNode>::SetColleagues(BoundaryType bndry, Node_t* node){
 
   if(node==NULL){
     Node_t* curr_node=this->PreorderFirst();
-    if(curr_node!=NULL){
-      if(bndry==Periodic){
+    if(curr_node!=NULL){ // Set colleagues of root node
+      if(bndry==FreeSpace){
+        curr_node->SetColleague(curr_node,(n1-1)/2);
+      }else{
+#ifndef PVFMM_EXTENDED_BC
         for(int i=0;i<n1;i++)
           curr_node->SetColleague(curr_node,i);
-      }else{
-        curr_node->SetColleague(curr_node,(n1-1)/2);
+#else
+          int xlow,xhigh,ylow,yhigh,zlow,zhigh;
+          switch(bndry){
+          case BoundaryType::PXYZ :
+            xlow=-1;xhigh=+1;
+            ylow=-1;yhigh=+1;
+            zlow=-1;zhigh=+1;
+            break;
+          case BoundaryType::PX :
+            xlow=-1;xhigh=+1;
+            ylow=0;yhigh=0;
+            zlow=0;zhigh=0;
+            break;
+          case BoundaryType::PXY :
+            xlow=-1;xhigh=+1;
+            ylow=-1;yhigh=+1;
+            zlow=0;zhigh=0;
+            break;
+          }
+
+        for(long i0=xlow;i0<=xhigh;i0++)
+        for(long i1=ylow;i1<=yhigh;i1++)
+        for(long i2=zlow;i2<=zhigh;i2++){
+          curr_node->SetColleague(curr_node,3*(3*(i2+1)+(i1+1))+(i0+1));
+        }
+#endif
       }
       curr_node=this->PreorderNxt(curr_node);
     }
@@ -1172,7 +1202,7 @@ void MPI_Tree<TreeNode>::SetColleagues(BoundaryType bndry, Node_t* node){
       c[0]=c0[0]+s*0.5+s*k;
       c[1]=c0[1]+s*0.5+s*j;
       c[2]=c0[2]+s*0.5+s*i;
-      if(bndry==Periodic){
+      if(bndry!=FreeSpace){
         if(c[0]<0.0) c[0]+=1.0;
         if(c[0]>1.0) c[0]-=1.0;
         if(c[1]<1.0) c[1]+=1.0;
@@ -1293,7 +1323,7 @@ void IsShared(std::vector<TreeNode*>& nodes, MortonId* m1, MortonId* m2, Boundar
         shared_flag[i]=true;
         continue;
       }
-      node->GetMortonId().NbrList(nbr_lst, node->Depth()-1, bndry==Periodic);
+      node->GetMortonId().NbrList(nbr_lst, node->Depth()-1, bndry!=FreeSpace);
       for(size_t k=0;k<nbr_lst.size();k++){
         MortonId n1=nbr_lst[k]         .getDFD();
         MortonId n2=nbr_lst[k].NextId().getDFD();
@@ -1327,7 +1357,7 @@ inline void IsShared(std::vector<PackedData>& nodes, MortonId* m1, MortonId* m2,
         shared_flag[i]=true;
         continue;
       }
-      node->NbrList(nbr_lst, node->GetDepth()-1, bndry==Periodic);
+      node->NbrList(nbr_lst, node->GetDepth()-1, bndry!=FreeSpace);
       for(size_t k=0;k<nbr_lst.size();k++){
         MortonId n1=nbr_lst[k]         .getDFD();
         MortonId n2=nbr_lst[k].NextId().getDFD();
@@ -1617,7 +1647,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
         //MortonId mid0=comm_data.mid.         getDFD();
         //MortonId mid1=comm_data.mid.NextId().getDFD();
 
-        comm_data.mid.NbrList(nbr_lst,comm_data.node->Depth()-1, bndry==Periodic);
+        comm_data.mid.NbrList(nbr_lst,comm_data.node->Depth()-1, bndry!=FreeSpace);
         comm_data.usr_cnt=nbr_lst.size();
         for(size_t j=0;j<nbr_lst.size();j++){
           MortonId usr_mid=nbr_lst[j];

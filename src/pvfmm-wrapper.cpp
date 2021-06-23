@@ -32,7 +32,14 @@ template<typename Real> static void* PVFMMCreateContext(Real box_size, int n, in
   ctx->max_pts=n;
   ctx->mult_order=m;
   ctx->max_depth=max_d;
-  ctx->bndry=(box_size<=0?pvfmm::FreeSpace:pvfmm::Periodic);
+  if (box_size<=0) ctx->bndry=pvfmm::BoundaryType::FreeSpace;
+  else {
+    #ifndef PVFMM_EXTENDED_BC
+    ctx->bndry=pvfmm::BoundaryType::Periodic;
+    #else
+    ctx->bndry=pvfmm::BoundaryType::PXYZ;
+    #endif
+  }
   ctx->ker=ker;
   ctx->comm=comm;
 

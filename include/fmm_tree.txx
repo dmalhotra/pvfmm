@@ -579,11 +579,9 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
   }
   #endif
 
-  if(bndry==Periodic){ //Add contribution from periodic infinite tiling.
-    Profile::Tic("BoundaryCondition",this->Comm(),false,5);
-    fmm_mat->PeriodicBC(dynamic_cast<Node_t*>(this->RootNode()));
-    Profile::Toc();
-  }
+  Profile::Tic("BoundaryCondition",this->Comm(),false,5);
+  fmm_mat->PeriodicBC(dynamic_cast<Node_t*>(this->RootNode()), bndry);
+  Profile::Toc();
 
   for(size_t i=0; i<=(fmm_mat->ScaleInvar()?0:max_depth); i++){ // U,V,W,X-lists
 

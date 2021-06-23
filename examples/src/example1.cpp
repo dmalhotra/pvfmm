@@ -151,7 +151,6 @@ int main(int argc, char **argv){
   commandline_option_start(argc, argv, "\
   This example demonstrates solving a particle N-body problem,\n\
 with Laplace Gradient kernel, using the PvFMM library.\n");
-  commandline_option_start(argc, argv);
   omp_set_num_threads( atoi(commandline_option(argc, argv,  "-omp",     "1", false, "-omp  <int> = (1)    : Number of OpenMP threads."          )));
   size_t   N=(size_t)strtod(commandline_option(argc, argv,    "-N",     "1",  true, "-N    <int>          : Number of source and target points."),NULL);
   int      m=       strtoul(commandline_option(argc, argv,    "-m",    "10", false, "-m    <int> = (10)   : Multipole order (+ve even integer)."),NULL,10);

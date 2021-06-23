@@ -232,7 +232,11 @@ void fmm_test(int test_case, size_t N, size_t M, bool unif, int mult_order, int 
       fn_grad_ =fn_grad_t1<Real_t>;
       mykernel     =&pvfmm::LaplaceKernel<Real_t>::potential();
       //mykernel_grad=&pvfmm::LaplaceKernel<Real_t>::gradient();
-      bndry=pvfmm::Periodic;
+      #ifndef PVFMM_EXTENDED_BC
+      bndry=pvfmm::BoundaryType::Periodic;
+      #else
+      bndry=pvfmm::BoundaryType::PXYZ;
+      #endif
       break;
     case 2:
       fn_input_=fn_input_t2<Real_t>;
@@ -307,7 +311,7 @@ void fmm_test(int test_case, size_t N, size_t M, bool unif, int mult_order, int 
     std::cout<<"Maximum points per octant: "<<tree_data.max_pts<<'\n';
     std::cout<<"Chebyshev Tolerance: "<<tree_data.tol<<'\n';
     std::cout<<"Maximum Tree Depth: "<<depth<<'\n';
-    std::cout<<"BoundaryType: "<<(bndry==pvfmm::Periodic?"Periodic":"FreeSpace")<<'\n';
+    std::cout<<"BoundaryType: "<<(bndry==pvfmm::FreeSpace?"FreeSpace":"Periodic")<<'\n';
   }
 
   //Initialize FMM_Mat.

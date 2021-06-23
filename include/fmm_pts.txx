@@ -287,8 +287,11 @@ void FMM_Pts<FMMNode>::Initialize(int mult_order, const MPI_Comm& comm_, const K
       Matrix<Real_t>& M=this->mat->Mat(l, (Mat_Type)type, indx);
       M.Resize(0,0);
     } // */
+    mat->Mat(0, BC_Type, BoundaryType::BoundaryTypeCount-1);
+    for (int mat_indx = 0; mat_indx < BoundaryType::BoundaryTypeCount; mat_indx++) {
+      Precomp(0, BC_Type, mat_indx);
+    }
   }
-  this->PrecompAll(BC_Type,0);
   Profile::Toc();
 
   Profile::Tic("PrecompU2U",&comm,false,4);
@@ -783,11 +786,11 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
       if(kernel->k_m2l->ker_dim[0]!=kernel->k_m2m->ker_dim[0]) break;
       if(kernel->k_m2l->ker_dim[1]!=kernel->k_l2l->ker_dim[1]) break;
       int ker_dim[2]={kernel->k_m2l->ker_dim[0],kernel->k_m2l->ker_dim[1]};
-      size_t mat_cnt_m2m=interac_list.ListCount(U2U_Type);
       size_t n_surf=(6*(MultipoleOrder()-1)*(MultipoleOrder()-1)+2);  //Total number of points.
 
       if((M.Dim(0)!=n_surf*ker_dim[0] || M.Dim(1)!=n_surf*ker_dim[1]) && level==0){
-        if(PVFMM_BC_LEVELS==0){ // Set M=0 and break;
+        #ifndef PVFMM_EXTENDED_BC
+        if(PVFMM_BC_LEVELS==0 || mat_indx == BoundaryType::FreeSpace){ // Set M=0 and break;
           M.ReInit(n_surf*ker_dim[0],n_surf*ker_dim[1]);
           M.SetZero();
           break;
@@ -845,6 +848,8 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
               for(size_t k=0;k<ker_dim[1];k++)
                 M_check_zero_avg[i*ker_dim[1]+k][j*ker_dim[1]+k]-=1.0/n_surf;
         }
+
+        size_t mat_cnt_m2m=interac_list.ListCount(U2U_Type);
         for(int level=0; level>=-PVFMM_BC_LEVELS; level--){
           { // Compute M_l2l
             this->Precomp(level, D2D_Type, 0);
@@ -1058,6 +1063,49 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
             M.Resize(0,0);
           }
         }
+        #else
+        { // Compute M
+          M.ReInit(n_surf*ker_dim[0], n_surf*ker_dim[1]); M.SetZero();
+
+          Real_t dc_coord[3]={0,0,0};
+          std::vector<Real_t> trg_coord=d_check_surf(MultipoleOrder(), dc_coord, 0);
+
+          int xlow,xhigh,ylow,yhigh,zlow,zhigh;
+          switch(mat_indx){
+          case BoundaryType::FreeSpace :
+            xlow=0;xhigh=0;ylow=0;yhigh=0;zlow=0;zhigh=0;
+            break;
+          case BoundaryType::PX :
+            xlow=-2;xhigh=2;
+            ylow=0;yhigh=0;
+            zlow=0;zhigh=0;
+            break;
+          case BoundaryType::PXY :
+            xlow=-2;xhigh=2;
+            ylow=-2;yhigh=2;
+            zlow=0;zhigh=0;
+            break;
+          case BoundaryType::PXYZ :
+            xlow=-2;xhigh=2;
+            ylow=-2;yhigh=2;
+            zlow=-2;zhigh=2;
+            break;
+          }
+
+          for(int x0=xlow;x0<=xhigh;x0++)
+          for(int x1=ylow;x1<=yhigh;x1++)
+          for(int x2=zlow;x2<=zhigh;x2++)
+          if(abs(x0)>1 || abs(x1)>1 || abs(x2)>1){
+            Real_t ue_coord[3]={(Real_t)x0, (Real_t)x1, (Real_t)x2};
+            std::vector<Real_t> src_coord=u_equiv_surf(MultipoleOrder(), ue_coord, 0);
+
+            Matrix<Real_t> M_tmp(n_surf*ker_dim[0], n_surf*ker_dim[1]);
+            kernel->k_m2l->BuildMatrix(&src_coord[0], n_surf,
+                                       &trg_coord[0], n_surf, &(M_tmp[0][0]));
+            M+=M_tmp;
+          }
+        }
+        #endif
       }
 
       break;
@@ -1288,7 +1336,7 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& n
   {// 4. src_val
     int indx=4;
     int src_dof=kernel->ker_dim[0];
-    int surf_dof=PVFMM_COORD_DIM+src_dof;
+    int surf_dof=kernel->surf_dim;
 
     std::vector< FMMNode* > node_lst;
     for(size_t i=0;i<node.size();i++){// Construct node_lst
@@ -1839,7 +1887,7 @@ void EvalListGPU(SetupData<Real_t>& setup_data, Vector<char>& dev_buffer, MPI_Co
   }
   Profile::Toc();
 
-	if(SYNC) CUDA_Lock::wait();
+  if(SYNC) CUDA_Lock::wait();
 }
 #endif
 
@@ -2468,9 +2516,9 @@ void FMM_Pts<FMMNode>::Up2Up     (SetupData<Real_t>& setup_data, bool device){
 
 
 template <class FMMNode>
-void FMM_Pts<FMMNode>::PeriodicBC(FMMNode* node){
-  if(!this->ScaleInvar() || this->MultipoleOrder()==0) return;
-  Matrix<Real_t>& M = Precomp(0, BC_Type, 0);
+void FMM_Pts<FMMNode>::PeriodicBC(FMMNode* node, BoundaryType bndry_cond){
+  if(!this->ScaleInvar() || this->MultipoleOrder()==0 || bndry_cond==BoundaryType::FreeSpace) return;
+  Matrix<Real_t>& M = Precomp(0, BC_Type, bndry_cond);
 
   assert(node->FMMData()->upward_equiv.Dim()>0);
   int dof=1;
@@ -5542,6 +5590,7 @@ void FMM_Pts<FMMNode>::Down2Target(SetupData<Real_t>&  setup_data, bool device){
 
 template <class FMMNode>
 void FMM_Pts<FMMNode>::PostProcessing(FMMTree_t* tree, std::vector<FMMNode_t*>& nodes, BoundaryType bndry){
+#ifndef PVFMM_EXTENDED_BC
   if(kernel->k_m2l->vol_poten && bndry==Periodic && PVFMM_BC_LEVELS>0){ // Add analytical near-field to target potential
     const Kernel<Real_t>& k_m2t=*kernel->k_m2t;
     int ker_dim[2]={k_m2t.ker_dim[0],k_m2t.ker_dim[1]};
@@ -5571,6 +5620,7 @@ void FMM_Pts<FMMNode>::PostProcessing(FMMTree_t* tree, std::vector<FMMNode_t*>& 
       M_trg-=avg_density*M_vol;
     }
   }
+#endif
 }
 
 

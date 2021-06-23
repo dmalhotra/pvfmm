@@ -162,7 +162,7 @@ class FMM_Pts{
   virtual void Up2UpSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tree, std::vector<Matrix<Real_t> >& node_data, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device);
   virtual void Up2Up     (SetupData<Real_t>&  setup_data, bool device=false);
 
-  virtual void PeriodicBC(FMMNode* node);
+  virtual void PeriodicBC(FMMNode* node, BoundaryType bndry_cond);
 
   /**
    * \brief Compute V-List intractions.

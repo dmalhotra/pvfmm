@@ -79,6 +79,7 @@ int* InteracList<Node_t>::RelativeCoord(Mat_Type t, size_t i){
  */
 template <class Node_t>
 size_t InteracList<Node_t>::InteracClass(Mat_Type t, size_t i){
+  if (i >= interac_class[t].size()) return i;
   return interac_class[t][i];
 }
 

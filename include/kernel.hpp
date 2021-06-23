@@ -70,6 +70,7 @@ struct Kernel{
 
   int dim;
   int ker_dim[2];
+  int surf_dim; // dimension of source term for double-layer kernel
   std::string ker_name;
 
   Ker_t ker_poten;

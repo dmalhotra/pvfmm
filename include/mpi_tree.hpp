@@ -21,7 +21,14 @@ namespace pvfmm{
 
 enum BoundaryType{
   FreeSpace,
-  Periodic
+#ifndef PVFMM_EXTENDED_BC
+  Periodic,
+#else
+  PX,
+  PXY,
+  PXYZ,
+#endif
+  BoundaryTypeCount
 };
 
 /**

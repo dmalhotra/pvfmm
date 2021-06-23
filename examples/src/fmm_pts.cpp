@@ -77,7 +77,7 @@ void fmm_test(int ker, size_t N, size_t M, Real_t b, int dist, int mult_order, i
     std::cout<<"Point distribution: "<<(dist==0?"Unif":(dist==1?"Sphere":"Ellipse"))<<'\n';
     std::cout<<"Maximum points per octant: "<<tree_data.max_pts<<'\n';
     std::cout<<"Maximum Tree Depth: "<<depth<<'\n';
-    std::cout<<"BoundaryType: "<<(bndry==pvfmm::Periodic?"Periodic":"FreeSpace")<<'\n';
+    std::cout<<"BoundaryType: "<<(bndry==pvfmm::FreeSpace?"FreeSpace":"Periodic")<<'\n';
   }
 
   //Initialize FMM_Mat.

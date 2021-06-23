@@ -1058,6 +1058,7 @@ void FMM_Cheb<FMMNode>::Down2Target     (SetupData<Real_t>& setup_data, bool dev
 
 template <class FMMNode>
 void FMM_Cheb<FMMNode>::PostProcessing(FMMTree_t* tree, std::vector<FMMNode_t*>& nodes, BoundaryType bndry){
+#ifndef PVFMM_EXTENDED_BC
   if(this->kernel->k_m2l->vol_poten && bndry==Periodic && PVFMM_BC_LEVELS>0){ // Add analytical near-field to target potential
     const Kernel<Real_t>& k_m2t=*this->kernel->k_m2t;
     int ker_dim[2]={k_m2t.ker_dim[0],k_m2t.ker_dim[1]};
@@ -1113,6 +1114,7 @@ void FMM_Cheb<FMMNode>::PostProcessing(FMMTree_t* tree, std::vector<FMMNode_t*>&
       }
     }
   }
+#endif
 
   size_t n=nodes.size();
   #pragma omp parallel

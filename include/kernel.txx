@@ -29,6 +29,7 @@ Kernel<T>::Kernel(Ker_t poten, Ker_t dbl_poten, const char* name, int dim_, std:
   dim=dim_;
   ker_dim[0]=k_dim.first;
   ker_dim[1]=k_dim.second;
+  surf_dim=PVFMM_COORD_DIM+ker_dim[0]; // including the normal-vector for double-layer kernels
   ker_poten=poten;
   dbl_layer_poten=dbl_poten;
   ker_name=std::string(name);
