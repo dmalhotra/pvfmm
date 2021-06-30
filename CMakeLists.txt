@@ -1,12 +1,13 @@
 cmake_minimum_required(VERSION 3.10)
 project(
   PVFMM
-  VERSION 1.1
+  VERSION 1.2
   LANGUAGES CXX)
 
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_EXTENSIONS OFF)
+include(GNUInstallDirs)
 
 # compiler flags
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
@@ -24,6 +25,7 @@ set(MPI_CXX_SKIP_MPICXX
     true
     CACHE BOOL
           "If true, the MPI-2 C++ bindings are disabled using definitions.")
+          
 # required compiler features
 find_package(MPI REQUIRED)
 find_package(OpenMP REQUIRED)
@@ -38,13 +40,19 @@ else()
   find_package(LAPACK REQUIRED)
   find_package(FFTW REQUIRED)
   set(DEP_INC ${FFTW_INCLUDE_DIRS})
-  set(DEP_LIB ${FFTW_FLOAT_LIB} ${FFTW_DOUBLE_LIB} ${BLAS_LIBRARIES}
+  set(DEP_LIB ${FFTW_FLOAT_OPENMP_LIB} ${FFTW_FLOAT_LIB}
+              ${FFTW_DOUBLE_OPENMP_LIB} ${FFTW_DOUBLE_LIB} 
+              ${BLAS_LIBRARIES}
               ${LAPACK_LIBRARIES})
 endif()
 
 find_file(SYS_STAT sys/stat.h OPTIONAL)
 
 # generate pvfmm_config.h
+
+# switch for periodic boundary condition
+option(PVFMM_EXTENDED_BC "PVFMM_EXTENDED_BC" ON)
+
 if(MKL_FOUND)
   option(PVFMM_FFTW3_MKL "PVFMM_FFTW3_MKL" ON)
   option(PVFMM_HAVE_FFTW "PVFMM_HAVE_FFTW" ON)
@@ -68,7 +76,6 @@ if(SYS_STAT)
 endif()
 
 configure_file(pvfmm_config.h.in pvfmm_config.h @ONLY)
-configure_file(pvfmm_config.h.in include/pvfmm_config.h @ONLY)
 
 # part 1, core library
 file(GLOB pvfmm_SRC "src/*.cpp")
