@@ -6,4 +6,5 @@
 #cmakedefine PVFMM_HAVE_FFTWF
 #cmakedefine PVFMM_HAVE_SYS_STAT_H
 #cmakedefine PVFMM_HAVE_INTEL_SVML
+#cmakedefine PVFMM_EXTENDED_BC
 #define PVFMM_PRECOMP_DATA_PATH ""

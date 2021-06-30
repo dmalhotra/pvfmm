@@ -163,6 +163,7 @@ class FMM_Pts{
   virtual void Up2Up     (SetupData<Real_t>&  setup_data, bool device=false);
 
   virtual void PeriodicBC(FMMNode* node, BoundaryType bndry_cond);
+  virtual void SetM2C(Real_t* dataPtr);
 
   /**
    * \brief Compute V-List intractions.
@@ -234,6 +235,7 @@ class FMM_Pts{
   std::string mat_fname;
   int multipole_order;       //Order of multipole expansion.
   MPI_Comm comm;
+  Real_t* m2c;
 
 };
 

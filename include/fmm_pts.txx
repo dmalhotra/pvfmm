@@ -2530,8 +2530,37 @@ void FMM_Pts<FMMNode>::PeriodicBC(FMMNode* node, BoundaryType bndry_cond){
   Matrix<Real_t> d_equiv(dof,M.Dim(1),&dnward_equiv[0],false);
   Matrix<Real_t> u_equiv(dof,M.Dim(0),&upward_equiv[0],false);
   Matrix<Real_t>::GEMM(d_equiv,u_equiv,M);
+
+#ifdef PVFMM_EXTENDED_BC
+  if(m2c!=NULL){
+    const int mi = dnward_equiv.Dim();
+    const int nj = upward_equiv.Dim();
+    if(mi!=nj){
+      printf("PVFMM_EXTENDED_BC operator size error\n");
+      exit(1);
+    }
+    Matrix<Real_t> M2C(mi,nj,m2c,false);
+    Matrix<Real_t> d_check=d_equiv;
+    Matrix<Real_t>::GEMM(d_check,u_equiv,M2C);
+    d_equiv += d_check;
+    // for (int i = 0; i < mi; i++) {
+    //     double temp = 0;
+    //     for (int j = 0; j < nj; j++) {
+    //         temp += m2c[i * nj + j] * upward_equiv[j];
+    //     }
+    //     dnward_equiv[i] += temp;
+    // }
+  }
+#endif
 }
 
+template <class FMMNode>
+void FMM_Pts<FMMNode>::SetM2C(Real_t* dataPtr){
+#ifdef PVFMM_EXTENDED_BC
+  if(dataPtr!=NULL)
+    m2c=dataPtr;
+#endif
+}
 
 
 template <class FMMNode>
