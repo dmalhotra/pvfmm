@@ -63,4 +63,6 @@
 
 #include <math_utils.hpp>
 
+#include <sctl.hpp>
+
 #endif //_PVFMM_COMMON_HPP_

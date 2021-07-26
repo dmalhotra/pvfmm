@@ -1064,6 +1064,148 @@ void generic_kernel(Real_t* r_src, int src_cnt, Real_t* v_src, int dof, Real_t* 
   }
 }
 
+template <class uKernel> class GenericKernel {
+  template <class VecType, int D, int K0, int K1> static constexpr int get_DIM  (void (*uKer)(VecType (&u)[K1], const VecType (&r)[D], const VecType (&f)[K0], const void* ctx_ptr)) { return D; }
+  template <class VecType, int D, int K0, int K1> static constexpr int get_KDIM0(void (*uKer)(VecType (&u)[K1], const VecType (&r)[D], const VecType (&f)[K0], const void* ctx_ptr)) { return K0; }
+  template <class VecType, int D, int K0, int K1> static constexpr int get_KDIM1(void (*uKer)(VecType (&u)[K1], const VecType (&r)[D], const VecType (&f)[K0], const void* ctx_ptr)) { return K1; }
+
+  static constexpr int DIM   = get_DIM  (uKernel::template uKerEval<sctl::Vec<double,1>,0>);
+  static constexpr int KDIM0 = get_KDIM0(uKernel::template uKerEval<sctl::Vec<double,1>,0>);
+  static constexpr int KDIM1 = get_KDIM1(uKernel::template uKerEval<sctl::Vec<double,1>,0>);
+
+  public:
+
+  template <class Real, int digits = -1> static void Eval(Real* r_src, int src_cnt, Real* v_src, int dof, Real* r_trg, int trg_cnt, Real* v_trg, mem::MemoryManager* mem_mgr) {
+    static constexpr int digits_ = (digits==-1 ? (int)(sctl::TypeTraits<Real>::SigBits*0.3010299957) : digits); // log(2)/log(10) = 0.3010299957
+    static constexpr int VecLen = sctl::DefaultVecLen<Real>();
+    using RealVec = sctl::Vec<Real, VecLen>;
+    assert(dof==1);
+
+    #define STACK_BUFF_SIZE 4096
+    alignas(sizeof(RealVec)) Real stack_buff[STACK_BUFF_SIZE];
+    Real* buff=nullptr;
+
+    Matrix<Real> src_coord;
+    Matrix<Real> src_value;
+    Matrix<Real> trg_coord;
+    Matrix<Real> trg_value;
+
+    const int src_cnt_ = ((src_cnt + VecLen-1)/VecLen)*VecLen; // count after zero padding
+    const int trg_cnt_ = ((trg_cnt + VecLen-1)/VecLen)*VecLen; // count after zero padding
+    { // Rearrange data in src_coord, src_coord, trg_coord, trg_value
+      int buff_size = src_cnt_*(DIM + KDIM0)+
+                      trg_cnt_*(DIM + KDIM1);
+      if (buff_size > STACK_BUFF_SIZE) { // Allocate buff
+        buff = mem::aligned_new<Real>(buff_size, mem_mgr);
+      }
+
+      Real* buff_ptr = buff;
+      if (!buff_ptr) buff_ptr = (Real*)stack_buff;
+      src_coord.ReInit(  DIM, src_cnt_,buff_ptr,false);  buff_ptr+=DIM  *src_cnt_;
+      src_value.ReInit(KDIM0, src_cnt_,buff_ptr,false);  buff_ptr+=KDIM0*src_cnt_;
+      trg_coord.ReInit(  DIM, trg_cnt_,buff_ptr,false);  buff_ptr+=DIM  *trg_cnt_;
+      trg_value.ReInit(KDIM1, trg_cnt_,buff_ptr,false);//buff_ptr+=KDIM1*trg_cnt_;
+      { // Set src_coord
+        int i=0;
+        for(   ;i<src_cnt ;i++){
+          for(int j=0;j<DIM;j++){
+            src_coord[j][i]=r_src[i*DIM+j];
+          }
+        }
+        for(   ;i<src_cnt_;i++){
+          for(int j=0;j<DIM;j++){
+            src_coord[j][i]=0;
+          }
+        }
+      }
+      { // Set src_value
+        int i=0;
+        for(   ;i<src_cnt ;i++){
+          for(int j=0;j<KDIM0;j++){
+            src_value[j][i]=v_src[i*KDIM0+j];
+          }
+        }
+        for(   ;i<src_cnt_;i++){
+          for(int j=0;j<KDIM0;j++){
+            src_value[j][i]=0;
+          }
+        }
+      }
+      { // Set trg_coord
+        int i=0;
+        for(   ;i<trg_cnt ;i++){
+          for(int j=0;j<DIM;j++){
+            trg_coord[j][i]=r_trg[i*DIM+j];
+          }
+        }
+        for(   ;i<trg_cnt_;i++){
+          for(int j=0;j<DIM;j++){
+            trg_coord[j][i]=0;
+          }
+        }
+      }
+      { // Set trg_value
+        int i=0;
+        for(   ;i<trg_cnt_;i++){
+          for(int j=0;j<KDIM1;j++){
+            trg_value[j][i]=0;
+          }
+        }
+      }
+    }
+
+    constexpr int SRC_BLK = 500;
+    const RealVec scale = RealVec(uKernel::template ScaleFactor<Real>());
+    for (int sblk = 0; sblk < src_cnt_; sblk += SRC_BLK){
+      int src_cnt = std::min<int>(src_cnt_-sblk, SRC_BLK);
+      for (int t = 0; t < trg_cnt_; t += VecLen) {
+        const RealVec tx = RealVec::LoadAligned(&trg_coord[0][t]);
+        const RealVec ty = RealVec::LoadAligned(&trg_coord[1][t]);
+        const RealVec tz = RealVec::LoadAligned(&trg_coord[2][t]);
+
+        RealVec tv[KDIM1];
+        for (int k = 0; k < KDIM1; k++) {
+          tv[k] = RealVec::Zero();
+        }
+
+        for (int s = sblk; s < sblk + src_cnt; s++) {
+          RealVec r[DIM];
+          r[0] = tx - RealVec::Load1(&src_coord[0][s]);
+          r[1] = ty - RealVec::Load1(&src_coord[1][s]);
+          r[2] = tz - RealVec::Load1(&src_coord[2][s]);
+
+          RealVec sv[KDIM0];
+          for (int k = 0; k < KDIM0; k++) {
+            sv[k] = RealVec::Load1(&src_value[k][s]);
+          }
+          uKernel::template uKerEval<RealVec, digits_>(tv, r, sv, nullptr);
+        }
+
+        for (int k = 0; k < KDIM1; k++) {
+          tv[k] = FMA(tv[k], scale, RealVec::LoadAligned(&trg_value[k][t]));
+          tv[k].StoreAligned(&trg_value[k][t]);
+        }
+      }
+    }
+    { // Add FLOPS
+      #ifndef __MIC__
+      Profile::Add_FLOP((long long)trg_cnt_*(long long)src_cnt_* uKernel::FLOPS);
+      #endif
+    }
+
+    { // Set v_trg
+      for(int i=0;i<trg_cnt ;i++){
+        for(int j=0;j<KDIM1;j++){
+          v_trg[i*KDIM1+j]+=trg_value[j][i];
+        }
+      }
+    }
+    if(buff){ // Free memory: buff
+      mem::aligned_delete<Real>(buff);
+    }
+  }
+};
+
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////                   LAPLACE KERNEL                               ////////
@@ -1073,363 +1215,72 @@ void generic_kernel(Real_t* r_src, int src_cnt, Real_t* v_src, int dof, Real_t* 
  * \brief Green's function for the Poisson's equation. Kernel tensor
  * dimension = 1x1.
  */
-template <class Real_t, class Vec_t=Real_t, Vec_t (*RSQRT_INTRIN)(Vec_t)=rsqrt_intrin0<Vec_t> >
-void laplace_poten_uKernel(Matrix<Real_t>& src_coord, Matrix<Real_t>& src_value, Matrix<Real_t>& trg_coord, Matrix<Real_t>& trg_value){
-  #define SRC_BLK 1000
-  size_t VecLen=sizeof(Vec_t)/sizeof(Real_t);
-
-  //// Number of newton iterations
-  size_t NWTN_ITER=0;
-  if(RSQRT_INTRIN==(Vec_t (*)(Vec_t))rsqrt_intrin0<Vec_t,Real_t>) NWTN_ITER=0;
-  if(RSQRT_INTRIN==(Vec_t (*)(Vec_t))rsqrt_intrin1<Vec_t,Real_t>) NWTN_ITER=1;
-  if(RSQRT_INTRIN==(Vec_t (*)(Vec_t))rsqrt_intrin2<Vec_t,Real_t>) NWTN_ITER=2;
-  if(RSQRT_INTRIN==(Vec_t (*)(Vec_t))rsqrt_intrin3<Vec_t,Real_t>) NWTN_ITER=3;
-
-  Real_t nwtn_scal=1; // scaling factor for newton iterations
-  for(int i=0;i<NWTN_ITER;i++){
-    nwtn_scal=2*nwtn_scal*nwtn_scal*nwtn_scal;
+struct laplace_poten : public GenericKernel<laplace_poten> {
+  static const int FLOPS = 9;
+  template <class Real> static Real ScaleFactor() {
+    return 1.0/(4*const_pi<Real>());
   }
-  const Real_t OOFP = 1.0/(4*nwtn_scal*const_pi<Real_t>());
-
-  size_t src_cnt_=src_coord.Dim(1);
-  size_t trg_cnt_=trg_coord.Dim(1);
-  for(size_t sblk=0;sblk<src_cnt_;sblk+=SRC_BLK){
-    size_t src_cnt=src_cnt_-sblk;
-    if(src_cnt>SRC_BLK) src_cnt=SRC_BLK;
-    for(size_t t=0;t<trg_cnt_;t+=VecLen){
-      Vec_t tx=load_intrin<Vec_t>(&trg_coord[0][t]);
-      Vec_t ty=load_intrin<Vec_t>(&trg_coord[1][t]);
-      Vec_t tz=load_intrin<Vec_t>(&trg_coord[2][t]);
-      Vec_t tv=zero_intrin<Vec_t>();
-      for(size_t s=sblk;s<sblk+src_cnt;s++){
-        Vec_t dx=sub_intrin(tx,bcast_intrin<Vec_t>(&src_coord[0][s]));
-        Vec_t dy=sub_intrin(ty,bcast_intrin<Vec_t>(&src_coord[1][s]));
-        Vec_t dz=sub_intrin(tz,bcast_intrin<Vec_t>(&src_coord[2][s]));
-        Vec_t sv=              bcast_intrin<Vec_t>(&src_value[0][s]) ;
-
-        Vec_t r2=        mul_intrin(dx,dx) ;
-        r2=add_intrin(r2,mul_intrin(dy,dy));
-        r2=add_intrin(r2,mul_intrin(dz,dz));
-
-        Vec_t rinv=RSQRT_INTRIN(r2);
-        tv=add_intrin(tv,mul_intrin(rinv,sv));
-      }
-      Vec_t oofp=set_intrin<Vec_t,Real_t>(OOFP);
-      tv=add_intrin(mul_intrin(tv,oofp),load_intrin<Vec_t>(&trg_value[0][t]));
-      store_intrin(&trg_value[0][t],tv);
-    }
+  template <class VecType, int digits> static void uKerEval(VecType (&u)[1], const VecType (&r)[3], const VecType (&f)[1], const void* ctx_ptr) {
+    VecType r2 = r[0]*r[0]+r[1]*r[1]+r[2]*r[2];
+    VecType rinv = sctl::approx_rsqrt<digits>(r2, r2 > VecType::Zero());
+    u[0] = FMA(rinv, f[0], u[0]);
   }
+};
 
-  { // Add FLOPS
-    #ifndef __MIC__
-    Profile::Add_FLOP((long long)trg_cnt_*(long long)src_cnt_*(12+4*(NWTN_ITER)));
-    #endif
-  }
-  #undef SRC_BLK
-}
-
-template <class T, int newton_iter=0>
-void laplace_poten(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* v_trg, mem::MemoryManager* mem_mgr){
-  #define LAP_KER_NWTN(nwtn) if(newton_iter==nwtn) \
-        generic_kernel<Real_t, 1, 1, laplace_poten_uKernel<Real_t,Vec_t, rsqrt_intrin##nwtn<Vec_t,Real_t> > > \
-            ((Real_t*)r_src, src_cnt, (Real_t*)v_src, dof, (Real_t*)r_trg, trg_cnt, (Real_t*)v_trg, mem_mgr)
-  #define LAPLACE_KERNEL LAP_KER_NWTN(0); LAP_KER_NWTN(1); LAP_KER_NWTN(2); LAP_KER_NWTN(3);
-
-  if(mem::TypeTraits<T>::ID()==mem::TypeTraits<float>::ID()){
-    typedef float Real_t;
-    #if defined __MIC__
-      #define Vec_t Real_t
-    #elif defined __AVX__
-      #define Vec_t __m256
-    #elif defined __SSE3__
-      #define Vec_t __m128
-    #else
-      #define Vec_t Real_t
-    #endif
-    LAPLACE_KERNEL;
-    #undef Vec_t
-  }else if(mem::TypeTraits<T>::ID()==mem::TypeTraits<double>::ID()){
-    typedef double Real_t;
-    #if defined __MIC__
-      #define Vec_t Real_t
-    #elif defined __AVX__
-      #define Vec_t __m256d
-    #elif defined __SSE3__
-      #define Vec_t __m128d
-    #else
-      #define Vec_t Real_t
-    #endif
-    LAPLACE_KERNEL;
-    #undef Vec_t
-  }else{
-    typedef T Real_t;
-    #define Vec_t Real_t
-    LAPLACE_KERNEL;
-    #undef Vec_t
-  }
-
-  #undef LAP_KER_NWTN
-  #undef LAPLACE_KERNEL
-}
-
-template <class Real_t>
-void laplace_vol_poten(const Real_t* coord, int n, Real_t* out){
+template <class Real> void laplace_vol_poten(const Real* coord, int n, Real* out){
   for(int i=0;i<n;i++){
-    const Real_t* c=&coord[i*PVFMM_COORD_DIM];
-    Real_t r_2=c[0]*c[0]+c[1]*c[1]+c[2]*c[2];
+    const Real* c=&coord[i*PVFMM_COORD_DIM];
+    Real r_2=c[0]*c[0]+c[1]*c[1]+c[2]*c[2];
     out[i]=-r_2/6;
   }
 }
 
 
 // Laplace double layer potential.
-template <class Real_t, class Vec_t=Real_t, Vec_t (*RSQRT_INTRIN)(Vec_t)=rsqrt_intrin0<Vec_t> >
-void laplace_dbl_uKernel(Matrix<Real_t>& src_coord, Matrix<Real_t>& src_value, Matrix<Real_t>& trg_coord, Matrix<Real_t>& trg_value){
-  #define SRC_BLK 500
-  size_t VecLen=sizeof(Vec_t)/sizeof(Real_t);
-
-  //// Number of newton iterations
-  size_t NWTN_ITER=0;
-  if(RSQRT_INTRIN==(Vec_t (*)(Vec_t))rsqrt_intrin0<Vec_t,Real_t>) NWTN_ITER=0;
-  if(RSQRT_INTRIN==(Vec_t (*)(Vec_t))rsqrt_intrin1<Vec_t,Real_t>) NWTN_ITER=1;
-  if(RSQRT_INTRIN==(Vec_t (*)(Vec_t))rsqrt_intrin2<Vec_t,Real_t>) NWTN_ITER=2;
-  if(RSQRT_INTRIN==(Vec_t (*)(Vec_t))rsqrt_intrin3<Vec_t,Real_t>) NWTN_ITER=3;
-
-  Real_t nwtn_scal=1; // scaling factor for newton iterations
-  for(int i=0;i<NWTN_ITER;i++){
-    nwtn_scal=2*nwtn_scal*nwtn_scal*nwtn_scal;
+struct laplace_dbl_poten : public GenericKernel<laplace_dbl_poten> {
+  static const int FLOPS = 17;
+  template <class Real> static Real ScaleFactor() {
+    return 1.0/(4*const_pi<Real>());
   }
-  const Real_t OOFP = -1.0/(4*nwtn_scal*nwtn_scal*nwtn_scal*const_pi<Real_t>());
-
-  size_t src_cnt_=src_coord.Dim(1);
-  size_t trg_cnt_=trg_coord.Dim(1);
-  for(size_t sblk=0;sblk<src_cnt_;sblk+=SRC_BLK){
-    size_t src_cnt=src_cnt_-sblk;
-    if(src_cnt>SRC_BLK) src_cnt=SRC_BLK;
-    for(size_t t=0;t<trg_cnt_;t+=VecLen){
-      Vec_t tx=load_intrin<Vec_t>(&trg_coord[0][t]);
-      Vec_t ty=load_intrin<Vec_t>(&trg_coord[1][t]);
-      Vec_t tz=load_intrin<Vec_t>(&trg_coord[2][t]);
-      Vec_t tv=zero_intrin<Vec_t>();
-      for(size_t s=sblk;s<sblk+src_cnt;s++){
-        Vec_t dx=sub_intrin(tx,bcast_intrin<Vec_t>(&src_coord[0][s]));
-        Vec_t dy=sub_intrin(ty,bcast_intrin<Vec_t>(&src_coord[1][s]));
-        Vec_t dz=sub_intrin(tz,bcast_intrin<Vec_t>(&src_coord[2][s]));
-        Vec_t sn0=             bcast_intrin<Vec_t>(&src_value[0][s]) ;
-        Vec_t sn1=             bcast_intrin<Vec_t>(&src_value[1][s]) ;
-        Vec_t sn2=             bcast_intrin<Vec_t>(&src_value[2][s]) ;
-        Vec_t sv=              bcast_intrin<Vec_t>(&src_value[3][s]) ;
-
-        Vec_t r2=        mul_intrin(dx,dx) ;
-        r2=add_intrin(r2,mul_intrin(dy,dy));
-        r2=add_intrin(r2,mul_intrin(dz,dz));
-
-        Vec_t rinv=RSQRT_INTRIN(r2);
-        Vec_t r3inv=mul_intrin(mul_intrin(rinv,rinv),rinv);
-
-        Vec_t rdotn=            mul_intrin(sn0,dx);
-        rdotn=add_intrin(rdotn, mul_intrin(sn1,dy));
-        rdotn=add_intrin(rdotn, mul_intrin(sn2,dz));
-
-        sv=mul_intrin(sv,rdotn);
-        tv=add_intrin(tv,mul_intrin(r3inv,sv));
-      }
-      Vec_t oofp=set_intrin<Vec_t,Real_t>(OOFP);
-      tv=add_intrin(mul_intrin(tv,oofp),load_intrin<Vec_t>(&trg_value[0][t]));
-      store_intrin(&trg_value[0][t],tv);
-    }
+  template <class VecType, int digits> static void uKerEval(VecType (&u)[3], const VecType (&r)[3], const VecType (&f)[4], const void* ctx_ptr) {
+    VecType r2 = r[0]*r[0]+r[1]*r[1]+r[2]*r[2];
+    VecType rinv = sctl::approx_rsqrt<digits>(r2, r2 > VecType::Zero());
+    VecType rdotn = r[0]*f[0] + r[1]*f[1] + r[2]*f[2];
+    VecType rinv3 = rinv * rinv * rinv;
+    u[0] = FMA(rdotn * rinv3, f[3], u[0]);
   }
-
-  { // Add FLOPS
-    #ifndef __MIC__
-    Profile::Add_FLOP((long long)trg_cnt_*(long long)src_cnt_*(20+4*(NWTN_ITER)));
-    #endif
-  }
-  #undef SRC_BLK
-}
-
-template <class T, int newton_iter=0>
-void laplace_dbl_poten(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* v_trg, mem::MemoryManager* mem_mgr){
-  #define LAP_KER_NWTN(nwtn) if(newton_iter==nwtn) \
-        generic_kernel<Real_t, 4, 1, laplace_dbl_uKernel<Real_t,Vec_t, rsqrt_intrin##nwtn<Vec_t,Real_t> > > \
-            ((Real_t*)r_src, src_cnt, (Real_t*)v_src, dof, (Real_t*)r_trg, trg_cnt, (Real_t*)v_trg, mem_mgr)
-  #define LAPLACE_KERNEL LAP_KER_NWTN(0); LAP_KER_NWTN(1); LAP_KER_NWTN(2); LAP_KER_NWTN(3);
-
-  if(mem::TypeTraits<T>::ID()==mem::TypeTraits<float>::ID()){
-    typedef float Real_t;
-    #if defined __MIC__
-      #define Vec_t Real_t
-    #elif defined __AVX__
-      #define Vec_t __m256
-    #elif defined __SSE3__
-      #define Vec_t __m128
-    #else
-      #define Vec_t Real_t
-    #endif
-    LAPLACE_KERNEL;
-    #undef Vec_t
-  }else if(mem::TypeTraits<T>::ID()==mem::TypeTraits<double>::ID()){
-    typedef double Real_t;
-    #if defined __MIC__
-      #define Vec_t Real_t
-    #elif defined __AVX__
-      #define Vec_t __m256d
-    #elif defined __SSE3__
-      #define Vec_t __m128d
-    #else
-      #define Vec_t Real_t
-    #endif
-    LAPLACE_KERNEL;
-    #undef Vec_t
-  }else{
-    typedef T Real_t;
-    #define Vec_t Real_t
-    LAPLACE_KERNEL;
-    #undef Vec_t
-  }
-
-  #undef LAP_KER_NWTN
-  #undef LAPLACE_KERNEL
-}
+};
 
 
 // Laplace grdient kernel.
-template <class Real_t, class Vec_t=Real_t, Vec_t (*RSQRT_INTRIN)(Vec_t)=rsqrt_intrin0<Vec_t> >
-void laplace_grad_uKernel(Matrix<Real_t>& src_coord, Matrix<Real_t>& src_value, Matrix<Real_t>& trg_coord, Matrix<Real_t>& trg_value){
-  #define SRC_BLK 500
-  size_t VecLen=sizeof(Vec_t)/sizeof(Real_t);
-
-  //// Number of newton iterations
-  size_t NWTN_ITER=0;
-  if(RSQRT_INTRIN==(Vec_t (*)(Vec_t))rsqrt_intrin0<Vec_t,Real_t>) NWTN_ITER=0;
-  if(RSQRT_INTRIN==(Vec_t (*)(Vec_t))rsqrt_intrin1<Vec_t,Real_t>) NWTN_ITER=1;
-  if(RSQRT_INTRIN==(Vec_t (*)(Vec_t))rsqrt_intrin2<Vec_t,Real_t>) NWTN_ITER=2;
-  if(RSQRT_INTRIN==(Vec_t (*)(Vec_t))rsqrt_intrin3<Vec_t,Real_t>) NWTN_ITER=3;
-
-  Real_t nwtn_scal=1; // scaling factor for newton iterations
-  for(int i=0;i<NWTN_ITER;i++){
-    nwtn_scal=2*nwtn_scal*nwtn_scal*nwtn_scal;
+struct laplace_grad : public GenericKernel<laplace_grad> {
+  static const int FLOPS = 16;
+  template <class Real> static Real ScaleFactor() {
+    return 1.0/(4*const_pi<Real>());
   }
-  const Real_t OOFP = -1.0/(4*nwtn_scal*nwtn_scal*nwtn_scal*const_pi<Real_t>());
-
-  size_t src_cnt_=src_coord.Dim(1);
-  size_t trg_cnt_=trg_coord.Dim(1);
-  for(size_t sblk=0;sblk<src_cnt_;sblk+=SRC_BLK){
-    size_t src_cnt=src_cnt_-sblk;
-    if(src_cnt>SRC_BLK) src_cnt=SRC_BLK;
-    for(size_t t=0;t<trg_cnt_;t+=VecLen){
-      Vec_t tx=load_intrin<Vec_t>(&trg_coord[0][t]);
-      Vec_t ty=load_intrin<Vec_t>(&trg_coord[1][t]);
-      Vec_t tz=load_intrin<Vec_t>(&trg_coord[2][t]);
-      Vec_t tv0=zero_intrin<Vec_t>();
-      Vec_t tv1=zero_intrin<Vec_t>();
-      Vec_t tv2=zero_intrin<Vec_t>();
-      for(size_t s=sblk;s<sblk+src_cnt;s++){
-        Vec_t dx=sub_intrin(tx,bcast_intrin<Vec_t>(&src_coord[0][s]));
-        Vec_t dy=sub_intrin(ty,bcast_intrin<Vec_t>(&src_coord[1][s]));
-        Vec_t dz=sub_intrin(tz,bcast_intrin<Vec_t>(&src_coord[2][s]));
-        Vec_t sv=              bcast_intrin<Vec_t>(&src_value[0][s]) ;
-
-        Vec_t r2=        mul_intrin(dx,dx) ;
-        r2=add_intrin(r2,mul_intrin(dy,dy));
-        r2=add_intrin(r2,mul_intrin(dz,dz));
-
-        Vec_t rinv=RSQRT_INTRIN(r2);
-        Vec_t r3inv=mul_intrin(mul_intrin(rinv,rinv),rinv);
-
-        sv=mul_intrin(sv,r3inv);
-        tv0=add_intrin(tv0,mul_intrin(sv,dx));
-        tv1=add_intrin(tv1,mul_intrin(sv,dy));
-        tv2=add_intrin(tv2,mul_intrin(sv,dz));
-      }
-      Vec_t oofp=set_intrin<Vec_t,Real_t>(OOFP);
-      tv0=add_intrin(mul_intrin(tv0,oofp),load_intrin<Vec_t>(&trg_value[0][t]));
-      tv1=add_intrin(mul_intrin(tv1,oofp),load_intrin<Vec_t>(&trg_value[1][t]));
-      tv2=add_intrin(mul_intrin(tv2,oofp),load_intrin<Vec_t>(&trg_value[2][t]));
-      store_intrin(&trg_value[0][t],tv0);
-      store_intrin(&trg_value[1][t],tv1);
-      store_intrin(&trg_value[2][t],tv2);
-    }
+  template <class VecType, int digits> static void uKerEval(VecType (&u)[3], const VecType (&r)[3], const VecType (&f)[1], const void* ctx_ptr) {
+    VecType r2 = r[0]*r[0]+r[1]*r[1]+r[2]*r[2];
+    VecType rinv = sctl::approx_rsqrt<digits>(r2, r2 > VecType::Zero());
+    VecType f_rinv3 = rinv * rinv * rinv * f[0];
+    u[0] = FMA(r[0], f_rinv3, u[0]);
+    u[1] = FMA(r[1], f_rinv3, u[1]);
+    u[2] = FMA(r[2], f_rinv3, u[2]);
   }
-
-  { // Add FLOPS
-    #ifndef __MIC__
-    Profile::Add_FLOP((long long)trg_cnt_*(long long)src_cnt_*(19+4*(NWTN_ITER)));
-    #endif
-  }
-  #undef SRC_BLK
-}
-
-template <class T, int newton_iter=0>
-void laplace_grad(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt, T* v_trg, mem::MemoryManager* mem_mgr){
-  #define LAP_KER_NWTN(nwtn) if(newton_iter==nwtn) \
-        generic_kernel<Real_t, 1, 3, laplace_grad_uKernel<Real_t,Vec_t, rsqrt_intrin##nwtn<Vec_t,Real_t> > > \
-            ((Real_t*)r_src, src_cnt, (Real_t*)v_src, dof, (Real_t*)r_trg, trg_cnt, (Real_t*)v_trg, mem_mgr)
-  #define LAPLACE_KERNEL LAP_KER_NWTN(0); LAP_KER_NWTN(1); LAP_KER_NWTN(2); LAP_KER_NWTN(3);
-
-  if(mem::TypeTraits<T>::ID()==mem::TypeTraits<float>::ID()){
-    typedef float Real_t;
-    #if defined __MIC__
-      #define Vec_t Real_t
-    #elif defined __AVX__
-      #define Vec_t __m256
-    #elif defined __SSE3__
-      #define Vec_t __m128
-    #else
-      #define Vec_t Real_t
-    #endif
-    LAPLACE_KERNEL;
-    #undef Vec_t
-  }else if(mem::TypeTraits<T>::ID()==mem::TypeTraits<double>::ID()){
-    typedef double Real_t;
-    #if defined __MIC__
-      #define Vec_t Real_t
-    #elif defined __AVX__
-      #define Vec_t __m256d
-    #elif defined __SSE3__
-      #define Vec_t __m128d
-    #else
-      #define Vec_t Real_t
-    #endif
-    LAPLACE_KERNEL;
-    #undef Vec_t
-  }else{
-    typedef T Real_t;
-    #define Vec_t Real_t
-    LAPLACE_KERNEL;
-    #undef Vec_t
-  }
-
-  #undef LAP_KER_NWTN
-  #undef LAPLACE_KERNEL
-}
+};
 
 
 template<class T> const Kernel<T>& LaplaceKernel<T>::potential(){
-  static Kernel<T> potn_ker=BuildKernel<T, laplace_poten<T,1>, laplace_dbl_poten<T,1> >("laplace"     , 3, std::pair<int,int>(1,1),
+  static Kernel<T> potn_ker=BuildKernel<T, laplace_poten::Eval<T>, laplace_dbl_poten::Eval<T> >("laplace"     , 3, std::pair<int,int>(1,1),
       NULL,NULL,NULL, NULL,NULL,NULL, NULL,NULL, &laplace_vol_poten<T>);
   return potn_ker;
 }
 template<class T> const Kernel<T>& LaplaceKernel<T>::gradient(){
-  static Kernel<T> potn_ker=BuildKernel<T, laplace_poten<T,1>, laplace_dbl_poten<T,1> >("laplace"     , 3, std::pair<int,int>(1,1));
-  static Kernel<T> grad_ker=BuildKernel<T, laplace_grad <T,1>                         >("laplace_grad", 3, std::pair<int,int>(1,3),
+  static Kernel<T> potn_ker=BuildKernel<T, laplace_poten::Eval<T>, laplace_dbl_poten::Eval<T> >("laplace"     , 3, std::pair<int,int>(1,1));
+  static Kernel<T> grad_ker=BuildKernel<T, laplace_grad ::Eval<T>                             >("laplace_grad", 3, std::pair<int,int>(1,3),
       &potn_ker, &potn_ker, NULL, &potn_ker, &potn_ker, NULL, &potn_ker, NULL);
   return grad_ker;
 }
 
-template<> inline const Kernel<double>& LaplaceKernel<double>::potential(){
-  typedef double T;
-  static Kernel<T> potn_ker=BuildKernel<T, laplace_poten<T,2>, laplace_dbl_poten<T,2> >("laplace"     , 3, std::pair<int,int>(1,1),
-      NULL,NULL,NULL, NULL,NULL,NULL, NULL,NULL, &laplace_vol_poten<double>);
-  return potn_ker;
-}
-template<> inline const Kernel<double>& LaplaceKernel<double>::gradient(){
-  typedef double T;
-  static Kernel<T> potn_ker=BuildKernel<T, laplace_poten<T,2>, laplace_dbl_poten<T,2> >("laplace"     , 3, std::pair<int,int>(1,1));
-  static Kernel<T> grad_ker=BuildKernel<T, laplace_grad <T,2>                         >("laplace_grad", 3, std::pair<int,int>(1,3),
-      &potn_ker, &potn_ker, NULL, &potn_ker, &potn_ker, NULL, &potn_ker, NULL);
-  return grad_ker;
-}
 
 
 ////////////////////////////////////////////////////////////////////////////////
