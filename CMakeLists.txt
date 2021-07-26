@@ -79,6 +79,7 @@ set_target_properties(pvfmm PROPERTIES OUTPUT_NAME pvfmm)
 target_include_directories(
   pvfmm
   PUBLIC $<INSTALL_INTERFACE:include>
+         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/extern/SCTL/include/>
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
          ${CMAKE_BINARY_DIR} ${DEP_INC})
 target_link_libraries(pvfmm PUBLIC ${DEP_LIB} OpenMP::OpenMP_CXX MPI::MPI_CXX)
@@ -89,6 +90,7 @@ set_target_properties(pvfmmStatic PROPERTIES OUTPUT_NAME pvfmm)
 target_include_directories(
   pvfmmStatic
   PUBLIC $<INSTALL_INTERFACE:include>
+         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/extern/SCTL/include/>
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
          ${CMAKE_BINARY_DIR} ${DEP_INC})
 target_link_libraries(pvfmmStatic PUBLIC ${DEP_LIB} OpenMP::OpenMP_CXX
