@@ -8,6 +8,7 @@ set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_EXTENSIONS OFF)
 include(GNUInstallDirs)
+include(CheckCXXCompilerFlag)
 
 # compiler flags
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
@@ -21,11 +22,33 @@ elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
   # using Visual Studio C++
 endif()
 
+# Add all the SCTL relevant flags
+add_compile_options(-DSCTL_HAVE_BLAS -DSCTL_HAVE_LAPACK -DSCTL_HAVE_FFTW -I${PROJECT_SOURCE_DIR}/SCTL/include)
+
+# Check for Arm architecture and define the proper quad type depending
+check_cxx_compiler_flag("-march=armv8-a" Armv8-a_Target)
+if(Armv8-a_Target)
+  add_compile_options(-DSCTL_QUAD_T=_Float128)
+else()
+  add_compile_options(-DSCTL_QUAD_T=__float128)
+endif()
+
+# If requesting SVE type, check to make sure the compiler supports it
+if (DEFINED SCTL_SVE_SIZE)
+  # This is a bit too specific. I really just want to know if it supports SVE, not fix the architecture
+  check_cxx_compiler_flag("-march=armv8.2-a+sve -msve-vector-bits=${SCTL_SVE_SIZE}" Armv8.2-a+sve_Target)
+  if (Armv8.2-a+sve_Target)
+    add_compile_options(-march=armv8.2-a+sve -msve-vector-bits=${SCTL_SVE_SIZE} -DSCTL_SVE_SIZE=${SCTL_SVE_SIZE})
+  else()
+    message("Unable to enable fixed SVE size required for SVE extension")
+  endif()
+endif()
+
 set(MPI_CXX_SKIP_MPICXX
-    true
-    CACHE BOOL
-          "If true, the MPI-2 C++ bindings are disabled using definitions.")
-          
+  true
+  CACHE BOOL
+  "If true, the MPI-2 C++ bindings are disabled using definitions.")
+
 # required compiler features
 find_package(MPI REQUIRED)
 find_package(OpenMP REQUIRED)
@@ -41,7 +64,7 @@ else()
   find_package(FFTW REQUIRED)
   set(DEP_INC ${FFTW_INCLUDE_DIRS})
   set(DEP_LIB ${FFTW_FLOAT_OPENMP_LIB} ${FFTW_FLOAT_LIB}
-              ${FFTW_DOUBLE_OPENMP_LIB} ${FFTW_DOUBLE_LIB} 
+              ${FFTW_DOUBLE_OPENMP_LIB} ${FFTW_DOUBLE_LIB}
               ${BLAS_LIBRARIES}
               ${LAPACK_LIBRARIES})
 endif()
