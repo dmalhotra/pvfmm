@@ -2800,6 +2800,50 @@ inline void matmult_8x8x2(Real_t*& M_, Real_t*& IN0, Real_t*& IN1, Real_t*& OUT0
   }
 }
 
+#if  defined(__ARM_FEATURE_SVE) && SCTL_SVE_SIZE == 512
+template<>
+inline void matmult_8x8x2<double>(double*& M, double*& IN0, double*& IN1, double*& OUT0, double*& OUT1){
+  using vec_t = sctl::Vec<double, 8>;
+  using namespace sctl;
+
+  vec_t OUT0R = vec_t::Zero();
+  vec_t OUT0I = vec_t::Zero();
+  vec_t OUT1R = vec_t::Zero();
+  vec_t OUT1I = vec_t::Zero();
+  vec_t OUT0_low = vec_t::LoadAligned(OUT0);
+  vec_t OUT0_high = vec_t::LoadAligned(OUT0 + 8);
+  vec_t OUT1_low = vec_t::LoadAligned(OUT1);
+  vec_t OUT1_high = vec_t::LoadAligned(OUT1 + 8);
+
+  for (int i = 0; i < 8; ++i) {
+    vec_t M_low = vec_t::LoadAligned(M + 16 * i);
+    vec_t M_high = vec_t::LoadAligned(M + 16 * i + 8);
+    vec_t MR = vec_t::VData(svuzp1(M_low.get().v, M_high.get().v));
+    vec_t MI = vec_t::VData(svuzp2(M_low.get().v, M_high.get().v));
+
+    vec_t I0R = IN0[2 * i];
+    vec_t I0I = IN0[2 * i + 1];
+    vec_t I1R = IN1[2 * i];
+    vec_t I1I = IN1[2 * i + 1];
+
+    OUT0R += MR * I0R - MI * I0I;
+    OUT0I += MR * I0I + MI * I0R;
+    OUT1R += MR * I1R - MI * I1I;
+    OUT1I += MR * I1I + MI * I1R;
+  }
+
+  OUT0_low += unpack_low_intrin(OUT0R.get(), OUT0I.get());
+  OUT0_high += unpack_high_intrin(OUT0R.get(), OUT0I.get());
+  OUT1_low += unpack_low_intrin(OUT1R.get(), OUT1I.get());
+  OUT1_high += unpack_high_intrin(OUT1R.get(), OUT1I.get());
+
+  OUT0_low.StoreAligned(OUT0);
+  OUT0_high.StoreAligned(OUT0 + 8);
+  OUT1_low.StoreAligned(OUT1);
+  OUT1_high.StoreAligned(OUT1 + 8);
+}
+#endif
+
 #if defined(__AVX__) || defined(__SSE3__)
 template<>
 inline void matmult_8x8x2<double>(double*& M_, double*& IN0, double*& IN1, double*& OUT0, double*& OUT1){
