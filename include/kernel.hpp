@@ -186,6 +186,15 @@ struct StokesKernel{
 };
 
 template<class T>
+struct StokesKernelNew{
+  inline static const Kernel<T>& velocity();
+  inline static const Kernel<T>& pressure();
+  inline static const Kernel<T>& stress  ();
+  inline static const Kernel<T>& vel_grad();
+};
+
+
+template<class T>
 struct BiotSavartKernel{
   inline static const Kernel<T>& potential();
 };

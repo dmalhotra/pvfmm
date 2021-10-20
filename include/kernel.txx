@@ -1281,6 +1281,39 @@ template<class T> const Kernel<T>& LaplaceKernel<T>::gradient(){
   return grad_ker;
 }
 
+struct stokes_vel_new : public GenericKernel<stokes_vel_new> {
+  static const int FLOPS = 29;
+  template <class Real> static Real ScaleFactor() { return 1.0 / (8 * const_pi<Real>()); }
+  template <class VecType, int digits> static void uKerEval(VecType (&u)[3], const VecType (&r)[3], const VecType (&f)[3], const void* ctx_ptr) {
+      VecType r2 = r[0]*r[0]+r[1]*r[1]+r[2]*r[2];
+      VecType rinv = sctl::approx_rsqrt<digits>(r2, r2 > VecType::Zero());
+      VecType rinv2 = rinv*rinv;
+      VecType inner_prod = (f[0]*r[0] + f[1]*r[1] + f[2]*r[2]) * rinv2;
+      u[0] = FMA(rinv, f[0] + r[0] * inner_prod, u[0]);
+      u[1] = FMA(rinv, f[1] + r[1] * inner_prod, u[1]);
+      u[2] = FMA(rinv, f[2] + r[2] * inner_prod, u[2]);
+  }
+};
+
+
+struct stokes_sym_dip_new : public GenericKernel<stokes_sym_dip_new> {
+  static const int FLOPS = 35;
+  template <class Real> static Real ScaleFactor() { return -1.0 / (8 * const_pi<Real>()); }
+  template <class VecType, int digits> static void uKerEval(VecType (&k)[3], const VecType (&r)[3], const VecType (&v_src)[6], const void* ctx_ptr) {
+      VecType r2 = r[0]*r[0]+r[1]*r[1]+r[2]*r[2];
+      VecType rinv = sctl::approx_rsqrt<digits>(r2, r2 > VecType::Zero());
+      VecType rinv2 = rinv*rinv;
+      VecType rinv3 = rinv2*rinv;
+      VecType r_dot_f = (v_src[0]*r[0] + v_src[1]*r[1] + v_src[2]*r[2]);
+      VecType r_dot_n = (v_src[3]*r[0] + v_src[4]*r[1] + v_src[5]*r[2]);
+      VecType n_dot_f = (v_src[0]*v_src[3] + v_src[1]*v_src[1] + v_src[2]*v_src[2]);
+
+      VecType common = (n_dot_f - 3.0*r_dot_n*r_dot_f*rinv2)*rinv3;
+      k[0] += r[0] * common;
+      k[1] += r[1] * common;
+      k[2] += r[2] * common;
+  }
+};
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2250,6 +2283,24 @@ template<> inline const Kernel<double>& StokesKernel<double>::velocity(){
   return ker;
 }
 
+
+template<class T> const Kernel<T>& StokesKernelNew<T>::velocity(){
+  static Kernel<T> ker=BuildKernel<T, stokes_vel_new::Eval<T>, stokes_sym_dip_new::Eval<T>>("stokes_vel"   , 3, std::pair<int,int>(3,3),
+      NULL,NULL,NULL, NULL,NULL,NULL, NULL,NULL, &stokes_vol_poten<T>);
+  return ker;
+}
+template<class T> const Kernel<T>& StokesKernelNew<T>::pressure(){
+  static Kernel<T> ker=BuildKernel<T, stokes_press              >("stokes_press" , 3, std::pair<int,int>(3,1));
+  return ker;
+}
+template<class T> const Kernel<T>& StokesKernelNew<T>::stress(){
+  static Kernel<T> ker=BuildKernel<T, stokes_stress             >("stokes_stress", 3, std::pair<int,int>(3,9));
+  return ker;
+}
+template<class T> const Kernel<T>& StokesKernelNew<T>::vel_grad(){
+  static Kernel<T> ker=BuildKernel<T, stokes_grad               >("stokes_grad"  , 3, std::pair<int,int>(3,9));
+  return ker;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////                  BIOT-SAVART KERNEL                            ////////

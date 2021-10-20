@@ -21,6 +21,9 @@ elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
   # using Visual Studio C++
 endif()
 
+# Add all the SCTL relevant flags
+add_compile_options(-DSCTL_QUAD_T=__float128 -DSCTL_HAVE_BLAS -DSCTL_HAVE_LAPACK -DSCTL_HAVE_FFTW -I${PROJECT_SOURCE_DIR}/SCTL/include)
+
 set(MPI_CXX_SKIP_MPICXX
     true
     CACHE BOOL
