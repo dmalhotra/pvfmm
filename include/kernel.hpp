@@ -200,9 +200,21 @@ struct BiotSavartKernel{
 };
 
 template<class T>
+struct BiotSavartKernelNew{
+  inline static const Kernel<T>& potential();
+};
+
+
+template<class T>
 struct HelmholtzKernel{
   inline static const Kernel<T>& potential();
 };
+
+template<class T>
+struct HelmholtzKernelNew{
+  inline static const Kernel<T>& potential();
+};
+
 
 }//end namespace
 #ifdef __INTEL_OFFLOAD

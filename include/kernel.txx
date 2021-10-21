@@ -1333,7 +1333,7 @@ struct stokes_stress_new : public GenericKernel<stokes_stress_new> {
 };
 
 struct stokes_grad_new : public GenericKernel<stokes_grad_new> {
-  static const int FLOPS = 43;
+  static const int FLOPS = 94;
   template <class Real> static Real ScaleFactor() {
       return 1.0/(8.0*const_pi<Real>());
   }
@@ -1349,7 +1349,7 @@ struct stokes_grad_new : public GenericKernel<stokes_grad_new> {
     u[2] += (r[2] * f[0] - f[2] * r[0] + inner_prod * (-3.0 * r[2] * r[0] * rinv2)) * rinv3;
 
     u[3] += (r[0] * f[1] - f[0] * r[1] + inner_prod * (-3.0 * r[0] * r[1] * rinv2)) * rinv3;
-    u[4] += (inner_prod * (1.0 - 3.0 * r[1] * r[1] * rinv2)) * rinv3;
+    u[4] +=                        (inner_prod * (1.0 - 3.0 * r[1] * r[1] * rinv2)) * rinv3;
     u[5] += (r[2] * f[1] - f[2] * r[1] + inner_prod * (-3.0 * r[2] * r[1] * rinv2)) * rinv3;
 
     u[6] += (r[0] * f[2] - f[0] * r[2] + inner_prod * (-3.0 * r[0] * r[2] * rinv2)) * rinv3;
@@ -2484,6 +2484,22 @@ void biot_savart(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg_cnt
   #undef BIOTSAVART_KERNEL
 }
 
+
+struct biot_savart_new : public GenericKernel<biot_savart_new> {
+  static const int FLOPS = 24;
+  template <class Real> static Real ScaleFactor() { return 1.0 / (4 * const_pi<Real>()); }
+  template <class VecType, int digits> static void uKerEval(VecType (&u)[3], const VecType (&r)[3], const VecType (&f)[3], const void* ctx_ptr) {
+      VecType r2 = r[0]*r[0]+r[1]*r[1]+r[2]*r[2];
+      VecType rinv = sctl::approx_rsqrt<digits>(r2, r2 > VecType::Zero());
+      VecType rinv3 = rinv*rinv*rinv;
+
+      u[0] = FMA(rinv3, f[1]*r[2] - f[2]*r[1], u[0]);
+      u[1] = FMA(rinv3, f[2]*r[0] - f[0]*r[2], u[1]);
+      u[2] = FMA(rinv3, f[0]*r[1] - f[1]*r[0], u[2]);
+  }
+};
+
+
 template<class T> const Kernel<T>& BiotSavartKernel<T>::potential(){
   static Kernel<T> ker=BuildKernel<T, biot_savart<T,1> >("biot_savart", 3, std::pair<int,int>(3,3));
   return ker;
@@ -2491,6 +2507,11 @@ template<class T> const Kernel<T>& BiotSavartKernel<T>::potential(){
 template<> inline const Kernel<double>& BiotSavartKernel<double>::potential(){
   typedef double T;
   static Kernel<T> ker=BuildKernel<T, biot_savart<T,2> >("biot_savart", 3, std::pair<int,int>(3,3));
+  return ker;
+}
+
+template<class T> const Kernel<T>& BiotSavartKernelNew<T>::potential(){
+  static Kernel<T> ker = BuildKernel<T, biot_savart_new::Eval<T>>("biot_savart", 3, std::pair<int, int>(3, 3));
   return ker;
 }
 
@@ -2617,6 +2638,25 @@ void helmholtz_poten(T* r_src, int src_cnt, T* v_src, int dof, T* r_trg, int trg
   #undef HELMHOLTZ_KERNEL
 }
 
+
+struct helmholtz_poten_new : public GenericKernel<helmholtz_poten_new> {
+  static const int FLOPS = 20;
+  template <class Real> static Real ScaleFactor() { return 1.0 / (4.0 * const_pi<Real>()); }
+  template <class VecType, int digits> static void uKerEval(VecType (&u)[2], const VecType (&r)[3], const VecType (&f)[2], const void* ctx_ptr) {
+      static const VecType mu = 20.0 * const_pi<double>();
+      VecType r2 = r[0]*r[0]+r[1]*r[1]+r[2]*r[2];
+      VecType rinv = sctl::approx_rsqrt<digits>(r2, r2 > VecType::Zero());
+      VecType r_mag = rinv * r2;
+      VecType mu_r = mu * r_mag;
+      VecType G0, G1;
+      sincos(G1, G0, mu_r);
+
+      u[0] += (f[0] * G0 - f[1] * G1) * rinv;
+      u[1] += (f[1] * G1 + f[1] * G0) * rinv;
+  }
+};
+
+
 template<class T> const Kernel<T>& HelmholtzKernel<T>::potential(){
   static Kernel<T> ker=BuildKernel<T, helmholtz_poten<T,1> >("helmholtz"     , 3, std::pair<int,int>(2,2));
   return ker;
@@ -2626,5 +2666,11 @@ template<> inline const Kernel<double>& HelmholtzKernel<double>::potential(){
   static Kernel<T> ker=BuildKernel<T, helmholtz_poten<T,3> >("helmholtz"     , 3, std::pair<int,int>(2,2));
   return ker;
 }
+
+template<class T> const Kernel<T>& HelmholtzKernelNew<T>::potential(){
+  static Kernel<T> ker = BuildKernel<T, helmholtz_poten_new::Eval<T>>("helmholtz", 3, std::pair<int, int>(2, 2));
+  return ker;
+}
+
 
 }//end namespace
