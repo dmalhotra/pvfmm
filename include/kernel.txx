@@ -1295,6 +1295,69 @@ struct stokes_vel_new : public GenericKernel<stokes_vel_new> {
   }
 };
 
+struct stokes_press_new : public GenericKernel<stokes_press_new> {
+  static const int FLOPS = 16;
+  template <class Real> static Real ScaleFactor() {
+    return 1.0/(4.0*const_pi<Real>());
+  }
+  template <class VecType, int digits> static void uKerEval(VecType (&u)[1], const VecType (&r)[3], const VecType (&f)[3], const void* ctx_ptr) {
+    VecType r2 = r[0] * r[0] + r[1] * r[1] + r[2] * r[2];
+    VecType dot_sum = r[0] * f[0] + r[1] * f[1] + r[2] * f[2];
+    VecType rinv3 = sctl::approx_rsqrt<digits>(r2, r2 > VecType::Zero());
+    rinv3 = rinv3 * rinv3 * rinv3;
+    u[0] = FMA(dot_sum, rinv3, u[0]);
+  }
+};
+
+struct stokes_stress_new : public GenericKernel<stokes_stress_new> {
+  static const int FLOPS = 43;
+  template <class Real> static Real ScaleFactor() {
+      return -3.0/(4.0*const_pi<Real>());
+  }
+  template <class VecType, int digits> static void uKerEval(VecType (&u)[9], const VecType (&r)[3], const VecType (&f)[3], const void* ctx_ptr) {
+    VecType r2 = r[0] * r[0] + r[1] * r[1] + r[2] * r[2];
+    VecType rinv = sctl::approx_rsqrt<digits>(r2, r2 > VecType::Zero());
+    VecType rinv2 = rinv * rinv;
+    VecType inner_prod = (f[0] * r[0] + f[1] * r[1] + f[2] * r[2]) * rinv2 * rinv2 * rinv;
+
+    u[0] += inner_prod * r[0] * r[0];
+    u[1] += inner_prod * r[1] * r[0];
+    u[2] += inner_prod * r[2] * r[0];
+    u[3] += inner_prod * r[0] * r[1];
+    u[4] += inner_prod * r[1] * r[1];
+    u[5] += inner_prod * r[2] * r[1];
+    u[6] += inner_prod * r[0] * r[2];
+    u[7] += inner_prod * r[1] * r[2];
+    u[8] += inner_prod * r[2] * r[2];
+  }
+};
+
+struct stokes_grad_new : public GenericKernel<stokes_grad_new> {
+  static const int FLOPS = 43;
+  template <class Real> static Real ScaleFactor() {
+      return 1.0/(8.0*const_pi<Real>());
+  }
+  template <class VecType, int digits> static void uKerEval(VecType (&u)[9], const VecType (&r)[3], const VecType (&f)[3], const void* ctx_ptr) {
+    VecType r2 = r[0] * r[0] + r[1] * r[1] + r[2] * r[2];
+    VecType rinv = sctl::approx_rsqrt<digits>(r2, r2 > VecType::Zero());
+    VecType rinv2 = rinv * rinv;
+    VecType rinv3 = rinv2 * rinv;
+    VecType inner_prod = (f[0] * r[0] + f[1] * r[1] + f[2] * r[2]);
+
+    u[0] +=                        (inner_prod * (1.0 - 3.0 * r[0] * r[0] * rinv2)) * rinv3;  // 6
+    u[1] += (r[1] * f[0] - f[1] * r[0] + inner_prod * (-3.0 * r[1] * r[0] * rinv2)) * rinv3;  // 9
+    u[2] += (r[2] * f[0] - f[2] * r[0] + inner_prod * (-3.0 * r[2] * r[0] * rinv2)) * rinv3;
+
+    u[3] += (r[0] * f[1] - f[0] * r[1] + inner_prod * (-3.0 * r[0] * r[1] * rinv2)) * rinv3;
+    u[4] += (inner_prod * (1.0 - 3.0 * r[1] * r[1] * rinv2)) * rinv3;
+    u[5] += (r[2] * f[1] - f[2] * r[1] + inner_prod * (-3.0 * r[2] * r[1] * rinv2)) * rinv3;
+
+    u[6] += (r[0] * f[2] - f[0] * r[2] + inner_prod * (-3.0 * r[0] * r[2] * rinv2)) * rinv3;
+    u[7] += (r[1] * f[2] - f[1] * r[2] + inner_prod * (-3.0 * r[1] * r[2] * rinv2)) * rinv3;
+    u[8] +=                        (inner_prod * (1.0 - 3.0 * r[2] * r[2] * rinv2)) * rinv3;
+  }
+};
+
 
 struct stokes_sym_dip_new : public GenericKernel<stokes_sym_dip_new> {
   static const int FLOPS = 35;
@@ -2290,15 +2353,15 @@ template<class T> const Kernel<T>& StokesKernelNew<T>::velocity(){
   return ker;
 }
 template<class T> const Kernel<T>& StokesKernelNew<T>::pressure(){
-  static Kernel<T> ker=BuildKernel<T, stokes_press              >("stokes_press" , 3, std::pair<int,int>(3,1));
+  static Kernel<T> ker = BuildKernel<T, stokes_press_new::Eval<T>>("stokes_press", 3, std::pair<int, int>(3, 1));
   return ker;
 }
 template<class T> const Kernel<T>& StokesKernelNew<T>::stress(){
-  static Kernel<T> ker=BuildKernel<T, stokes_stress             >("stokes_stress", 3, std::pair<int,int>(3,9));
+  static Kernel<T> ker = BuildKernel<T, stokes_stress_new::Eval<T>>("stokes_stress", 3, std::pair<int, int>(3, 9));
   return ker;
 }
 template<class T> const Kernel<T>& StokesKernelNew<T>::vel_grad(){
-  static Kernel<T> ker=BuildKernel<T, stokes_grad               >("stokes_grad"  , 3, std::pair<int,int>(3,9));
+    static Kernel<T> ker = BuildKernel<T, stokes_grad_new::Eval<T>>("stokes_grad", 3, std::pair<int, int>(3, 9));
   return ker;
 }
 
