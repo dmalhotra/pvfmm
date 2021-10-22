@@ -2643,7 +2643,7 @@ struct helmholtz_poten_new : public GenericKernel<helmholtz_poten_new> {
   static const int FLOPS = 20;
   template <class Real> static Real ScaleFactor() { return 1.0 / (4.0 * const_pi<Real>()); }
   template <class VecType, int digits> static void uKerEval(VecType (&u)[2], const VecType (&r)[3], const VecType (&f)[2], const void* ctx_ptr) {
-      static const VecType mu = 20.0 * const_pi<double>();
+      const VecType mu = 20.0 * const_pi<double>();
       VecType r2 = r[0]*r[0]+r[1]*r[1]+r[2]*r[2];
       VecType rinv = sctl::approx_rsqrt<digits>(r2, r2 > VecType::Zero());
       VecType r_mag = rinv * r2;
@@ -2652,7 +2652,7 @@ struct helmholtz_poten_new : public GenericKernel<helmholtz_poten_new> {
       sincos(G1, G0, mu_r);
 
       u[0] += (f[0] * G0 - f[1] * G1) * rinv;
-      u[1] += (f[1] * G1 + f[1] * G0) * rinv;
+      u[1] += (f[0] * G1 + f[1] * G0) * rinv;
   }
 };
 

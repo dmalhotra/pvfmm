@@ -9,8 +9,8 @@ typedef std::vector<double> vec;
 
 void fmm_test(size_t N, int mult_order, MPI_Comm comm){
   // Set kernel.
-  const pvfmm::Kernel<double>& kernel_fn_old = pvfmm::BiotSavartKernel<double>::potential();
-  const pvfmm::Kernel<double>& kernel_fn_new = pvfmm::BiotSavartKernelNew<double>::potential();
+  const pvfmm::Kernel<double>& kernel_fn_old = pvfmm::HelmholtzKernel<double>::potential();
+  const pvfmm::Kernel<double>& kernel_fn_new = pvfmm::HelmholtzKernelNew<double>::potential();
 
   // Create target and source vectors.
   vec trg_coord = point_distrib<double>(RandUnif, N, comm);
