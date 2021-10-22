@@ -190,10 +190,12 @@ struct BiotSavartKernel{
   inline static const Kernel<T>& potential();
 };
 
+
 template<class T>
 struct HelmholtzKernel{
   inline static const Kernel<T>& potential();
 };
+
 
 }//end namespace
 #ifdef __INTEL_OFFLOAD
