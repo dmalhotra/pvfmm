@@ -91,7 +91,7 @@ target_include_directories(
   PUBLIC $<INSTALL_INTERFACE:include>
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/SCTL/include/>
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
-         ${CMAKE_BINARY_DIR} ${DEP_INC})
+         ${CMAKE_CURRENT_BINARY_DIR} ${DEP_INC})
 target_link_libraries(pvfmm PUBLIC ${DEP_LIB} OpenMP::OpenMP_CXX MPI::MPI_CXX)
 
 # static lib
@@ -102,14 +102,14 @@ target_include_directories(
   PUBLIC $<INSTALL_INTERFACE:include>
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/SCTL/include/>
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
-         ${CMAKE_BINARY_DIR} ${DEP_INC})
+         ${CMAKE_CURRENT_BINARY_DIR} ${DEP_INC})
 target_link_libraries(pvfmmStatic PUBLIC ${DEP_LIB} OpenMP::OpenMP_CXX
                                          MPI::MPI_CXX)
 
 # Config.cmake files
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file(
-  ${CMAKE_BINARY_DIR}/pvfmmConfigVersion.cmake
+  ${CMAKE_CURRENT_BINARY_DIR}/pvfmmConfigVersion.cmake
   VERSION ${PROJECT_VERSION}
   COMPATIBILITY AnyNewerVersion)
 
@@ -118,11 +118,11 @@ get_target_property(PVFMM_STATIC_NAME pvfmmStatic OUTPUT_NAME)
 
 configure_package_config_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/cmake/pvfmmConfig.cmake.in
-  ${CMAKE_BINARY_DIR}/pvfmmConfig.cmake INSTALL_DESTINATION
+  ${CMAKE_CURRENT_BINARY_DIR}/pvfmmConfig.cmake INSTALL_DESTINATION
   ${CMAKE_INSTALL_PREFIX}/share/pvfmm)
 
-install(FILES ${CMAKE_BINARY_DIR}/pvfmmConfig.cmake
-              ${CMAKE_BINARY_DIR}/pvfmmConfigVersion.cmake
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/pvfmmConfig.cmake
+              ${CMAKE_CURRENT_BINARY_DIR}/pvfmmConfigVersion.cmake
         DESTINATION ${CMAKE_INSTALL_PREFIX}/share/pvfmm)
 
 # install core library and headers
@@ -139,7 +139,7 @@ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/pvfmm/)
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/SCTL/include/
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/pvfmm/)
-install(FILES ${CMAKE_BINARY_DIR}/pvfmm_config.h
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/pvfmm_config.h
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/pvfmm/)
 
 add_subdirectory(examples)
