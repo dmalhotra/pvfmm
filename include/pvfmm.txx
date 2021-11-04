@@ -5,6 +5,12 @@
  * \brief This file contains the definitions of the wrapper functions for PVFMM.
  */
 
+#include <mpi_node.hpp>
+#include <fmm_tree.hpp>
+#include <fmm_pts.hpp>
+#include <vector.hpp>
+#include <parUtils.h>
+
 namespace pvfmm{
 
 template <class Real>

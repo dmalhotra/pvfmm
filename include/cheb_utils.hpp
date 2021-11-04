@@ -9,12 +9,13 @@
 
 #include <pvfmm_common.hpp>
 #include <vector.hpp>
-#include <kernel.hpp>
 
 #ifndef _PVFMM_CHEB_UTILS_HPP_
 #define _PVFMM_CHEB_UTILS_HPP_
 
 namespace pvfmm{
+
+template <class Real> class Kernel;
 
 /**
  * \brief Returns the sum of the absolute value of coeffecients of the highest

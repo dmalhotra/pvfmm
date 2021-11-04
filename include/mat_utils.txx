@@ -14,6 +14,7 @@
 #include <vector>
 
 #include <matrix.hpp>
+#include <math_utils.hpp>
 #include <device_wrapper.hpp>
 #if defined(PVFMM_HAVE_CUDA)
 #include <cuda_runtime_api.h>

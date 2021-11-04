@@ -9,6 +9,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <vector>
+#include <sctl.hpp>
 
 #include <mem_mgr.hpp>
 #include <profile.hpp>
@@ -1064,147 +1065,135 @@ void generic_kernel(Real_t* r_src, int src_cnt, Real_t* v_src, int dof, Real_t* 
   }
 }
 
-template <class uKernel> class GenericKernel {
-  template <class VecType, int D, int K0, int K1> static constexpr int get_DIM  (void (*uKer)(VecType (&u)[K1], const VecType (&r)[D], const VecType (&f)[K0], const void* ctx_ptr)) { return D; }
-  template <class VecType, int D, int K0, int K1> static constexpr int get_KDIM0(void (*uKer)(VecType (&u)[K1], const VecType (&r)[D], const VecType (&f)[K0], const void* ctx_ptr)) { return K0; }
-  template <class VecType, int D, int K0, int K1> static constexpr int get_KDIM1(void (*uKer)(VecType (&u)[K1], const VecType (&r)[D], const VecType (&f)[K0], const void* ctx_ptr)) { return K1; }
+template <class uKernel> template <class Real, int digits> void GenericKernel<uKernel>::Eval(Real* r_src, int src_cnt, Real* v_src, int dof, Real* r_trg, int trg_cnt, Real* v_trg, mem::MemoryManager* mem_mgr) {
+  static constexpr int digits_ = (digits==-1 ? (int)(sctl::TypeTraits<Real>::SigBits*0.3010299957) : digits); // log(2)/log(10) = 0.3010299957
+  static constexpr int VecLen = sctl::DefaultVecLen<Real>();
+  using RealVec = sctl::Vec<Real, VecLen>;
+  assert(dof==1);
 
-  static constexpr int DIM   = get_DIM  (uKernel::template uKerEval<sctl::Vec<double,1>,0>);
-  static constexpr int KDIM0 = get_KDIM0(uKernel::template uKerEval<sctl::Vec<double,1>,0>);
-  static constexpr int KDIM1 = get_KDIM1(uKernel::template uKerEval<sctl::Vec<double,1>,0>);
+  #define STACK_BUFF_SIZE 4096
+  alignas(sizeof(RealVec)) Real stack_buff[STACK_BUFF_SIZE];
+  Real* buff=nullptr;
 
-  public:
+  Matrix<Real> src_coord;
+  Matrix<Real> src_value;
+  Matrix<Real> trg_coord;
+  Matrix<Real> trg_value;
 
-  template <class Real, int digits = -1> static void Eval(Real* r_src, int src_cnt, Real* v_src, int dof, Real* r_trg, int trg_cnt, Real* v_trg, mem::MemoryManager* mem_mgr) {
-    static constexpr int digits_ = (digits==-1 ? (int)(sctl::TypeTraits<Real>::SigBits*0.3010299957) : digits); // log(2)/log(10) = 0.3010299957
-    static constexpr int VecLen = sctl::DefaultVecLen<Real>();
-    using RealVec = sctl::Vec<Real, VecLen>;
-    assert(dof==1);
+  const int src_cnt_ = ((src_cnt + VecLen-1)/VecLen)*VecLen; // count after zero padding
+  const int trg_cnt_ = ((trg_cnt + VecLen-1)/VecLen)*VecLen; // count after zero padding
+  { // Rearrange data in src_coord, src_coord, trg_coord, trg_value
+    int buff_size = src_cnt_*(DIM + KDIM0)+
+                    trg_cnt_*(DIM + KDIM1);
+    if (buff_size > STACK_BUFF_SIZE) { // Allocate buff
+      buff = mem::aligned_new<Real>(buff_size, mem_mgr);
+    }
 
-    #define STACK_BUFF_SIZE 4096
-    alignas(sizeof(RealVec)) Real stack_buff[STACK_BUFF_SIZE];
-    Real* buff=nullptr;
-
-    Matrix<Real> src_coord;
-    Matrix<Real> src_value;
-    Matrix<Real> trg_coord;
-    Matrix<Real> trg_value;
-
-    const int src_cnt_ = ((src_cnt + VecLen-1)/VecLen)*VecLen; // count after zero padding
-    const int trg_cnt_ = ((trg_cnt + VecLen-1)/VecLen)*VecLen; // count after zero padding
-    { // Rearrange data in src_coord, src_coord, trg_coord, trg_value
-      int buff_size = src_cnt_*(DIM + KDIM0)+
-                      trg_cnt_*(DIM + KDIM1);
-      if (buff_size > STACK_BUFF_SIZE) { // Allocate buff
-        buff = mem::aligned_new<Real>(buff_size, mem_mgr);
-      }
-
-      Real* buff_ptr = buff;
-      if (!buff_ptr) buff_ptr = (Real*)stack_buff;
-      src_coord.ReInit(  DIM, src_cnt_,buff_ptr,false);  buff_ptr+=DIM  *src_cnt_;
-      src_value.ReInit(KDIM0, src_cnt_,buff_ptr,false);  buff_ptr+=KDIM0*src_cnt_;
-      trg_coord.ReInit(  DIM, trg_cnt_,buff_ptr,false);  buff_ptr+=DIM  *trg_cnt_;
-      trg_value.ReInit(KDIM1, trg_cnt_,buff_ptr,false);//buff_ptr+=KDIM1*trg_cnt_;
-      { // Set src_coord
-        int i=0;
-        for(   ;i<src_cnt ;i++){
-          for(int j=0;j<DIM;j++){
-            src_coord[j][i]=r_src[i*DIM+j];
-          }
-        }
-        for(   ;i<src_cnt_;i++){
-          for(int j=0;j<DIM;j++){
-            src_coord[j][i]=0;
-          }
+    Real* buff_ptr = buff;
+    if (!buff_ptr) buff_ptr = (Real*)stack_buff;
+    src_coord.ReInit(  DIM, src_cnt_,buff_ptr,false);  buff_ptr+=DIM  *src_cnt_;
+    src_value.ReInit(KDIM0, src_cnt_,buff_ptr,false);  buff_ptr+=KDIM0*src_cnt_;
+    trg_coord.ReInit(  DIM, trg_cnt_,buff_ptr,false);  buff_ptr+=DIM  *trg_cnt_;
+    trg_value.ReInit(KDIM1, trg_cnt_,buff_ptr,false);//buff_ptr+=KDIM1*trg_cnt_;
+    { // Set src_coord
+      int i=0;
+      for(   ;i<src_cnt ;i++){
+        for(int j=0;j<DIM;j++){
+          src_coord[j][i]=r_src[i*DIM+j];
         }
       }
-      { // Set src_value
-        int i=0;
-        for(   ;i<src_cnt ;i++){
-          for(int j=0;j<KDIM0;j++){
-            src_value[j][i]=v_src[i*KDIM0+j];
-          }
-        }
-        for(   ;i<src_cnt_;i++){
-          for(int j=0;j<KDIM0;j++){
-            src_value[j][i]=0;
-          }
-        }
-      }
-      { // Set trg_coord
-        int i=0;
-        for(   ;i<trg_cnt ;i++){
-          for(int j=0;j<DIM;j++){
-            trg_coord[j][i]=r_trg[i*DIM+j];
-          }
-        }
-        for(   ;i<trg_cnt_;i++){
-          for(int j=0;j<DIM;j++){
-            trg_coord[j][i]=0;
-          }
-        }
-      }
-      { // Set trg_value
-        int i=0;
-        for(   ;i<trg_cnt_;i++){
-          for(int j=0;j<KDIM1;j++){
-            trg_value[j][i]=0;
-          }
+      for(   ;i<src_cnt_;i++){
+        for(int j=0;j<DIM;j++){
+          src_coord[j][i]=0;
         }
       }
     }
-
-    constexpr int SRC_BLK = 500;
-    const RealVec scale = RealVec(uKernel::template ScaleFactor<Real>());
-    for (int sblk = 0; sblk < src_cnt_; sblk += SRC_BLK){
-      int src_cnt = std::min<int>(src_cnt_-sblk, SRC_BLK);
-      for (int t = 0; t < trg_cnt_; t += VecLen) {
-        const RealVec tx = RealVec::LoadAligned(&trg_coord[0][t]);
-        const RealVec ty = RealVec::LoadAligned(&trg_coord[1][t]);
-        const RealVec tz = RealVec::LoadAligned(&trg_coord[2][t]);
-
-        RealVec tv[KDIM1];
-        for (int k = 0; k < KDIM1; k++) {
-          tv[k] = RealVec::Zero();
+    { // Set src_value
+      int i=0;
+      for(   ;i<src_cnt ;i++){
+        for(int j=0;j<KDIM0;j++){
+          src_value[j][i]=v_src[i*KDIM0+j];
         }
-
-        for (int s = sblk; s < sblk + src_cnt; s++) {
-          RealVec r[DIM];
-          r[0] = tx - RealVec::Load1(&src_coord[0][s]);
-          r[1] = ty - RealVec::Load1(&src_coord[1][s]);
-          r[2] = tz - RealVec::Load1(&src_coord[2][s]);
-
-          RealVec sv[KDIM0];
-          for (int k = 0; k < KDIM0; k++) {
-            sv[k] = RealVec::Load1(&src_value[k][s]);
-          }
-          uKernel::template uKerEval<RealVec, digits_>(tv, r, sv, nullptr);
-        }
-
-        for (int k = 0; k < KDIM1; k++) {
-          tv[k] = FMA(tv[k], scale, RealVec::LoadAligned(&trg_value[k][t]));
-          tv[k].StoreAligned(&trg_value[k][t]);
+      }
+      for(   ;i<src_cnt_;i++){
+        for(int j=0;j<KDIM0;j++){
+          src_value[j][i]=0;
         }
       }
     }
-    { // Add FLOPS
-      #ifndef __MIC__
-      Profile::Add_FLOP((long long)trg_cnt_*(long long)src_cnt_* uKernel::FLOPS);
-      #endif
+    { // Set trg_coord
+      int i=0;
+      for(   ;i<trg_cnt ;i++){
+        for(int j=0;j<DIM;j++){
+          trg_coord[j][i]=r_trg[i*DIM+j];
+        }
+      }
+      for(   ;i<trg_cnt_;i++){
+        for(int j=0;j<DIM;j++){
+          trg_coord[j][i]=0;
+        }
+      }
     }
-
-    { // Set v_trg
-      for(int i=0;i<trg_cnt ;i++){
+    { // Set trg_value
+      int i=0;
+      for(   ;i<trg_cnt_;i++){
         for(int j=0;j<KDIM1;j++){
-          v_trg[i*KDIM1+j]+=trg_value[j][i];
+          trg_value[j][i]=0;
         }
       }
-    }
-    if(buff){ // Free memory: buff
-      mem::aligned_delete<Real>(buff);
     }
   }
-};
+
+  constexpr int SRC_BLK = 500;
+  const RealVec scale = RealVec(uKernel::template ScaleFactor<Real>());
+  for (int sblk = 0; sblk < src_cnt_; sblk += SRC_BLK){
+    int src_cnt = std::min<int>(src_cnt_-sblk, SRC_BLK);
+    for (int t = 0; t < trg_cnt_; t += VecLen) {
+      const RealVec tx = RealVec::LoadAligned(&trg_coord[0][t]);
+      const RealVec ty = RealVec::LoadAligned(&trg_coord[1][t]);
+      const RealVec tz = RealVec::LoadAligned(&trg_coord[2][t]);
+
+      RealVec tv[KDIM1];
+      for (int k = 0; k < KDIM1; k++) {
+        tv[k] = RealVec::Zero();
+      }
+
+      for (int s = sblk; s < sblk + src_cnt; s++) {
+        RealVec r[DIM];
+        r[0] = tx - RealVec::Load1(&src_coord[0][s]);
+        r[1] = ty - RealVec::Load1(&src_coord[1][s]);
+        r[2] = tz - RealVec::Load1(&src_coord[2][s]);
+
+        RealVec sv[KDIM0];
+        for (int k = 0; k < KDIM0; k++) {
+          sv[k] = RealVec::Load1(&src_value[k][s]);
+        }
+        uKernel::template uKerEval<RealVec, digits_>(tv, r, sv, nullptr);
+      }
+
+      for (int k = 0; k < KDIM1; k++) {
+        tv[k] = FMA(tv[k], scale, RealVec::LoadAligned(&trg_value[k][t]));
+        tv[k].StoreAligned(&trg_value[k][t]);
+      }
+    }
+  }
+  { // Add FLOPS
+    #ifndef __MIC__
+    Profile::Add_FLOP((long long)trg_cnt_*(long long)src_cnt_* uKernel::FLOPS);
+    #endif
+  }
+
+  { // Set v_trg
+    for(int i=0;i<trg_cnt ;i++){
+      for(int j=0;j<KDIM1;j++){
+        v_trg[i*KDIM1+j]+=trg_value[j][i];
+      }
+    }
+  }
+  if(buff){ // Free memory: buff
+    mem::aligned_delete<Real>(buff);
+  }
+}
 
 
 ////////////////////////////////////////////////////////////////////////////////

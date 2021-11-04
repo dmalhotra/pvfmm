@@ -11,14 +11,9 @@
 #include <cmath>
 
 #include <pvfmm_common.hpp>
-#include <cheb_node.hpp>
-#include <mpi_node.hpp>
-#include <fmm_tree.hpp>
 #include <fmm_node.hpp>
+#include <cheb_node.hpp>
 #include <fmm_cheb.hpp>
-#include <fmm_pts.hpp>
-#include <vector.hpp>
-#include <parUtils.h>
 
 #ifndef _PVFMM_HPP_
 #define _PVFMM_HPP_

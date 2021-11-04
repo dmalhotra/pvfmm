@@ -83,6 +83,7 @@ T* aligned_new(size_t n_elem, const MemoryManager* mem_mgr){
     for(size_t i=0;i<n_elem;i++){
       T* Ai=new(A+i) T();
       assert(Ai==(A+i));
+      PVFMM_UNUSED(Ai);
     }
   }else{
     #ifndef PVFMM_NDEBUG

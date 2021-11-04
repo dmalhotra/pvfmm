@@ -17,6 +17,10 @@
 #ifndef _PVFMM_FMM_KERNEL_HPP_
 #define _PVFMM_FMM_KERNEL_HPP_
 
+namespace sctl {
+template <class Real, long N> class Vec;
+};
+
 namespace pvfmm{
 
 template <class T>
@@ -47,7 +51,7 @@ struct Kernel{
   /**
    * \brief Constructor.
    */
-  Kernel(Ker_t poten, Ker_t dbl_poten, const char* name, int dim_, std::pair<int,int> k_dim,
+  Kernel(Ker_t poten = nullptr, Ker_t dbl_poten = nullptr, const char* name = "", int dim_ = 0, std::pair<int,int> k_dim = std::make_pair<int,int>(0,0),
          size_t dev_poten=(size_t)NULL, size_t dev_dbl_poten=(size_t)NULL);
 
   /**
@@ -94,11 +98,6 @@ struct Kernel{
   mutable const Kernel<T>* k_l2l;
   mutable const Kernel<T>* k_l2t;
   mutable VolPoten vol_poten;
-
-  private:
-
-  Kernel();
-
 };
 
 template<typename T, void (*A)(T*, int, T*, int, T*, int, T*, mem::MemoryManager* mem_mgr),
@@ -163,6 +162,20 @@ Kernel<T> BuildKernel(const char* name, int dim, std::pair<int,int> k_dim,
 
   return K;
 }
+
+template <class uKernel> class GenericKernel {
+  template <class VecType, int D, int K0, int K1> static constexpr int get_DIM  (void (*uKer)(VecType (&u)[K1], const VecType (&r)[D], const VecType (&f)[K0], const void* ctx_ptr)) { return D; }
+  template <class VecType, int D, int K0, int K1> static constexpr int get_KDIM0(void (*uKer)(VecType (&u)[K1], const VecType (&r)[D], const VecType (&f)[K0], const void* ctx_ptr)) { return K0; }
+  template <class VecType, int D, int K0, int K1> static constexpr int get_KDIM1(void (*uKer)(VecType (&u)[K1], const VecType (&r)[D], const VecType (&f)[K0], const void* ctx_ptr)) { return K1; }
+
+  static constexpr int DIM   = get_DIM  (uKernel::template uKerEval<sctl::Vec<double,1>,0>);
+  static constexpr int KDIM0 = get_KDIM0(uKernel::template uKerEval<sctl::Vec<double,1>,0>);
+  static constexpr int KDIM1 = get_KDIM1(uKernel::template uKerEval<sctl::Vec<double,1>,0>);
+
+  public:
+
+  template <class Real, int digits = -1> static void Eval(Real* r_src, int src_cnt, Real* v_src, int dof, Real* r_trg, int trg_cnt, Real* v_trg, mem::MemoryManager* mem_mgr);
+};
 
 }//end namespace
 
