@@ -16,10 +16,10 @@ template <class Real> void test_particle_fmm(const Comm& comm) {
   Vector<Real>  sl_coord(N*DIM);
   Vector<Real>  dl_coord(N*DIM);
   Vector<Real>  dl_norml(N*DIM);
-  for (auto& a : trg_coord) a = drand48();
-  for (auto& a :  sl_coord) a = drand48();
-  for (auto& a :  dl_coord) a = drand48();
-  for (auto& a :  dl_norml) a = drand48();
+  for (auto& a : trg_coord) a = drand48()-0.5;
+  for (auto& a :  sl_coord) a = drand48()-0.5;
+  for (auto& a :  dl_coord) a = drand48()-0.5;
+  for (auto& a :  dl_norml) a = drand48()-0.5;
   Long n_sl  =  sl_coord.Dim()/DIM;
   Long n_dl  =  dl_coord.Dim()/DIM;
 
