@@ -8,8 +8,8 @@ AC_DEFUN([CHECK_OPENMP],
 
     XCFLAGS="$CFLAGS"
     XCXXFLAGS="$CXXFLAGS"
-    CFLAGS="$CFLAGS $1"
-    CXXFLAGS="$CXXFLAGS $1"
+    CFLAGS="$CFLAGS $1 -Wall"
+    CXXFLAGS="$CXXFLAGS $1 -Wall"
 
     AC_LINK_IFELSE([AC_LANG_PROGRAM([[
         #include <omp.h>

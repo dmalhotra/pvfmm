@@ -72,7 +72,6 @@ pvfmm_cpp_header_files = \
 									include/parUtils.h \
 									include/precomp_mat.hpp \
 									include/profile.hpp \
-									include/math_utils.hpp \
 									include/stacktrace.h \
 									include/tree.hpp \
 									include/tree_node.hpp \
@@ -87,7 +86,6 @@ pvfmm_cpp_header_files = \
 									include/interac_list.txx \
 									include/kernel.txx \
 									include/matrix.txx \
-									include/mat_utils.txx \
 									include/mem_mgr.txx \
 									include/mortonid.txx \
 									include/mpi_node.txx \
@@ -112,8 +110,6 @@ lib_libpvfmm_la_SOURCES = \
 									src/cheb_utils.cpp \
 									src/device_wrapper.cpp \
 									src/legendre_rule.cpp \
-									src/mat_utils.cpp \
-									src/math_utils.cpp \
 									src/mem_mgr.cpp \
 									src/mortonid.cpp \
 									src/profile.cpp \

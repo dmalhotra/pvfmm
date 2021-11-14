@@ -182,8 +182,8 @@ struct FFTW_t{
     Matrix<T> M(N1,2*N2);
     for(size_t j=0;j<N1;j++)
     for(size_t i=0;i<N2;i++){
-      M[j][2*i+0]=pvfmm::cos<T>(j*i*(1.0/N1)*2.0*const_pi<T>());
-      M[j][2*i+1]=pvfmm::sin<T>(j*i*(1.0/N1)*2.0*const_pi<T>());
+      M[j][2*i+0]=sctl::cos<T>(j*i*(1.0/N1)*2.0*sctl::const_pi<T>());
+      M[j][2*i+1]=sctl::sin<T>(j*i*(1.0/N1)*2.0*sctl::const_pi<T>());
     }
     return M;
   }
@@ -192,10 +192,10 @@ struct FFTW_t{
     Matrix<T> M(2*N1,2*N1);
     for(size_t i=0;i<N1;i++)
     for(size_t j=0;j<N1;j++){
-      M[2*i+0][2*j+0]=pvfmm::cos<T>(j*i*(1.0/N1)*2.0*const_pi<T>());
-      M[2*i+1][2*j+0]=pvfmm::sin<T>(j*i*(1.0/N1)*2.0*const_pi<T>());
-      M[2*i+0][2*j+1]=-pvfmm::sin<T>(j*i*(1.0/N1)*2.0*const_pi<T>());
-      M[2*i+1][2*j+1]= pvfmm::cos<T>(j*i*(1.0/N1)*2.0*const_pi<T>());
+      M[2*i+0][2*j+0]=sctl::cos<T>(j*i*(1.0/N1)*2.0*sctl::const_pi<T>());
+      M[2*i+1][2*j+0]=sctl::sin<T>(j*i*(1.0/N1)*2.0*sctl::const_pi<T>());
+      M[2*i+0][2*j+1]=-sctl::sin<T>(j*i*(1.0/N1)*2.0*sctl::const_pi<T>());
+      M[2*i+1][2*j+1]= sctl::cos<T>(j*i*(1.0/N1)*2.0*sctl::const_pi<T>());
     }
     return M;
   }
@@ -205,8 +205,8 @@ struct FFTW_t{
     Matrix<T> M(2*N2,N1);
     for(size_t i=0;i<N2;i++)
     for(size_t j=0;j<N1;j++){
-      M[2*i+0][j]=2*pvfmm::cos<T>(j*i*(1.0/N1)*2.0*const_pi<T>());
-      M[2*i+1][j]=2*pvfmm::sin<T>(j*i*(1.0/N1)*2.0*const_pi<T>());
+      M[2*i+0][j]=2*sctl::cos<T>(j*i*(1.0/N1)*2.0*sctl::const_pi<T>());
+      M[2*i+1][j]=2*sctl::sin<T>(j*i*(1.0/N1)*2.0*sctl::const_pi<T>());
     }
     if(N2>0){
       for(size_t j=0;j<N1;j++){

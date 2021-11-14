@@ -78,7 +78,7 @@ std::vector<Real_t> surface(int p, Real_t* c, Real_t alpha, int depth){
   for(size_t i=0;i<(n_/2)*3;i++)
     coord[cnt*3+i]=-coord[i];
 
-  Real_t r = 0.5*pvfmm::pow<Real_t>(0.5,depth);
+  Real_t r = 0.5*sctl::pow<Real_t>(0.5,depth);
   Real_t b = alpha*r;
   for(size_t i=0;i<n_;i++){
     coord[i*3+0]=(coord[i*3+0]+1.0)*b+c[0];
@@ -94,7 +94,7 @@ std::vector<Real_t> surface(int p, Real_t* c, Real_t alpha, int depth){
  */
 template <class Real_t>
 std::vector<Real_t> u_check_surf(int p, Real_t* c, int depth){
-  Real_t r=0.5*pvfmm::pow<Real_t>(0.5,depth);
+  Real_t r=0.5*sctl::pow<Real_t>(0.5,depth);
   Real_t coord[3]={(Real_t)(c[0]-r*(PVFMM_RAD1-1.0)),(Real_t)(c[1]-r*(PVFMM_RAD1-1.0)),(Real_t)(c[2]-r*(PVFMM_RAD1-1.0))};
   return surface(p,coord,(Real_t)PVFMM_RAD1,depth);
 }
@@ -105,7 +105,7 @@ std::vector<Real_t> u_check_surf(int p, Real_t* c, int depth){
  */
 template <class Real_t>
 std::vector<Real_t> u_equiv_surf(int p, Real_t* c, int depth){
-  Real_t r=0.5*pvfmm::pow<Real_t>(0.5,depth);
+  Real_t r=0.5*sctl::pow<Real_t>(0.5,depth);
   Real_t coord[3]={(Real_t)(c[0]-r*(PVFMM_RAD0-1.0)),(Real_t)(c[1]-r*(PVFMM_RAD0-1.0)),(Real_t)(c[2]-r*(PVFMM_RAD0-1.0))};
   return surface(p,coord,(Real_t)PVFMM_RAD0,depth);
 }
@@ -116,7 +116,7 @@ std::vector<Real_t> u_equiv_surf(int p, Real_t* c, int depth){
  */
 template <class Real_t>
 std::vector<Real_t> d_check_surf(int p, Real_t* c, int depth){
-  Real_t r=0.5*pvfmm::pow<Real_t>(0.5,depth);
+  Real_t r=0.5*sctl::pow<Real_t>(0.5,depth);
   Real_t coord[3]={(Real_t)(c[0]-r*(PVFMM_RAD0-1.0)),(Real_t)(c[1]-r*(PVFMM_RAD0-1.0)),(Real_t)(c[2]-r*(PVFMM_RAD0-1.0))};
   return surface(p,coord,(Real_t)PVFMM_RAD0,depth);
 }
@@ -127,7 +127,7 @@ std::vector<Real_t> d_check_surf(int p, Real_t* c, int depth){
  */
 template <class Real_t>
 std::vector<Real_t> d_equiv_surf(int p, Real_t* c, int depth){
-  Real_t r=0.5*pvfmm::pow<Real_t>(0.5,depth);
+  Real_t r=0.5*sctl::pow<Real_t>(0.5,depth);
   Real_t coord[3]={(Real_t)(c[0]-r*(PVFMM_RAD1-1.0)),(Real_t)(c[1]-r*(PVFMM_RAD1-1.0)),(Real_t)(c[2]-r*(PVFMM_RAD1-1.0))};
   return surface(p,coord,(Real_t)PVFMM_RAD1,depth);
 }
@@ -138,12 +138,12 @@ std::vector<Real_t> d_equiv_surf(int p, Real_t* c, int depth){
  */
 template <class Real_t>
 std::vector<Real_t> conv_grid(int p, Real_t* c, int depth){
-  Real_t r=pvfmm::pow<Real_t>(0.5,depth);
+  Real_t r=sctl::pow<Real_t>(0.5,depth);
   Real_t a=r*PVFMM_RAD0;
   Real_t coord[3]={c[0],c[1],c[2]};
   int n1=p*2;
-  int n2=pvfmm::pow<int>((Real_t)n1,2);
-  int n3=pvfmm::pow<int>((Real_t)n1,3);
+  int n2=sctl::pow<int>((Real_t)n1,2);
+  int n3=sctl::pow<int>((Real_t)n1,3);
   std::vector<Real_t> grid(n3*3);
   for(int i=0;i<n1;i++)
   for(int j=0;j<n1;j++)
@@ -336,9 +336,9 @@ Permutation<Real_t> equiv_surf_perm(size_t m, size_t p_indx, const Permutation<R
   if(p_indx==ReflecX || p_indx==ReflecY || p_indx==ReflecZ){ // Set P.perm
     for(int i=0;i<n_trg;i++)
     for(int j=0;j<n_trg;j++){
-      if(pvfmm::fabs<Real_t>(trg_coord[i*3+0]-trg_coord[j*3+0]*(p_indx==ReflecX?-1.0:1.0))<eps)
-      if(pvfmm::fabs<Real_t>(trg_coord[i*3+1]-trg_coord[j*3+1]*(p_indx==ReflecY?-1.0:1.0))<eps)
-      if(pvfmm::fabs<Real_t>(trg_coord[i*3+2]-trg_coord[j*3+2]*(p_indx==ReflecZ?-1.0:1.0))<eps){
+      if(sctl::fabs<Real_t>(trg_coord[i*3+0]-trg_coord[j*3+0]*(p_indx==ReflecX?-1.0:1.0))<eps)
+      if(sctl::fabs<Real_t>(trg_coord[i*3+1]-trg_coord[j*3+1]*(p_indx==ReflecY?-1.0:1.0))<eps)
+      if(sctl::fabs<Real_t>(trg_coord[i*3+2]-trg_coord[j*3+2]*(p_indx==ReflecZ?-1.0:1.0))<eps){
         for(int k=0;k<dof;k++){
           P.perm[j*dof+k]=i*dof+ker_perm.perm[k];
         }
@@ -347,9 +347,9 @@ Permutation<Real_t> equiv_surf_perm(size_t m, size_t p_indx, const Permutation<R
   }else if(p_indx==SwapXY || p_indx==SwapXZ){
     for(int i=0;i<n_trg;i++)
     for(int j=0;j<n_trg;j++){
-      if(pvfmm::fabs<Real_t>(trg_coord[i*3+0]-trg_coord[j*3+(p_indx==SwapXY?1:2)])<eps)
-      if(pvfmm::fabs<Real_t>(trg_coord[i*3+1]-trg_coord[j*3+(p_indx==SwapXY?0:1)])<eps)
-      if(pvfmm::fabs<Real_t>(trg_coord[i*3+2]-trg_coord[j*3+(p_indx==SwapXY?2:0)])<eps){
+      if(sctl::fabs<Real_t>(trg_coord[i*3+0]-trg_coord[j*3+(p_indx==SwapXY?1:2)])<eps)
+      if(sctl::fabs<Real_t>(trg_coord[i*3+1]-trg_coord[j*3+(p_indx==SwapXY?0:1)])<eps)
+      if(sctl::fabs<Real_t>(trg_coord[i*3+2]-trg_coord[j*3+(p_indx==SwapXY?2:0)])<eps){
         for(int k=0;k<dof;k++){
           P.perm[j*dof+k]=i*dof+ker_perm.perm[k];
         }
@@ -367,7 +367,7 @@ Permutation<Real_t> equiv_surf_perm(size_t m, size_t p_indx, const Permutation<R
     assert(dof==scal_exp->Dim());
     Vector<Real_t> scal(scal_exp->Dim());
     for(size_t i=0;i<scal.Dim();i++){
-      scal[i]=pvfmm::pow<Real_t>(2.0,(*scal_exp)[i]);
+      scal[i]=sctl::pow<Real_t>(2.0,(*scal_exp)[i]);
     }
     for(int j=0;j<n_trg;j++){
       for(int i=0;i<dof;i++){
@@ -491,7 +491,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
       Real_t eps=1, max_S=0;
       while(eps*(Real_t)0.5+(Real_t)1.0>1.0) eps*=0.5;
       for(size_t i=0;i<std::min(S.Dim(0),S.Dim(1));i++){
-        if(pvfmm::fabs<Real_t>(S[i][i])>max_S) max_S=pvfmm::fabs<Real_t>(S[i][i]);
+        if(sctl::fabs<Real_t>(S[i][i])>max_S) max_S=sctl::fabs<Real_t>(S[i][i]);
       }
       for(size_t i=0;i<S.Dim(0);i++) S[i][i]=(S[i][i]>eps*max_S*4?1.0/S[i][i]:0.0);
       M=V.Transpose()*S;//*U.Transpose();
@@ -543,7 +543,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
       Real_t eps=1, max_S=0;
       while(eps*(Real_t)0.5+(Real_t)1.0>1.0) eps*=0.5;
       for(size_t i=0;i<std::min(S.Dim(0),S.Dim(1));i++){
-        if(pvfmm::fabs<Real_t>(S[i][i])>max_S) max_S=pvfmm::fabs<Real_t>(S[i][i]);
+        if(sctl::fabs<Real_t>(S[i][i])>max_S) max_S=sctl::fabs<Real_t>(S[i][i]);
       }
       for(size_t i=0;i<S.Dim(0);i++) S[i][i]=(S[i][i]>eps*max_S*4?1.0/S[i][i]:0.0);
       M=V.Transpose()*S;//*U.Transpose();
@@ -582,7 +582,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
       size_t n_uc=check_surf.size()/3;
 
       // Coord of child's upward equivalent surface
-      Real_t s=pvfmm::pow<Real_t>(0.5,(level+2));
+      Real_t s=sctl::pow<Real_t>(0.5,(level+2));
       int* coord=interac_list.RelativeCoord(type,mat_indx);
       Real_t child_coord[3]={(coord[0]+1)*s,(coord[1]+1)*s,(coord[2]+1)*s};
       std::vector<Real_t> equiv_surf=u_equiv_surf(MultipoleOrder(),child_coord,level+1);
@@ -602,7 +602,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
       if(MultipoleOrder()==0) break;
       const int* ker_dim=kernel->k_l2l->ker_dim;
       // Coord of downward check surface
-      Real_t s=pvfmm::pow<Real_t>(0.5,level+1);
+      Real_t s=sctl::pow<Real_t>(0.5,level+1);
       int* coord=interac_list.RelativeCoord(type,mat_indx);
       Real_t c[3]={(coord[0]+1)*s,(coord[1]+1)*s,(coord[2]+1)*s};
       std::vector<Real_t> check_surf=d_check_surf(MultipoleOrder(),c,level);
@@ -641,7 +641,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
       std::vector<Real_t>& rel_trg_coord=mat->RelativeTrgCoord();
 
       // Coord of target points
-      Real_t r=pvfmm::pow<Real_t>(0.5,level);
+      Real_t r=sctl::pow<Real_t>(0.5,level);
       size_t n_trg=rel_trg_coord.size()/3;
       std::vector<Real_t> trg_coord(n_trg*3);
       for(size_t i=0;i<n_trg*PVFMM_COORD_DIM;i++) trg_coord[i]=rel_trg_coord[i]*r;
@@ -670,7 +670,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
       int n3_=n1*n1*(n1/2+1);
 
       //Compute the matrix.
-      Real_t s=pvfmm::pow<Real_t>(0.5,level);
+      Real_t s=sctl::pow<Real_t>(0.5,level);
       int* coord2=interac_list.RelativeCoord(type,mat_indx);
       Real_t coord_diff[3]={coord2[0]*s,coord2[1]*s,coord2[2]*s};
 
@@ -762,7 +762,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
       std::vector<Real_t>& rel_trg_coord=mat->RelativeTrgCoord();
 
       // Coord of target points
-      Real_t s=pvfmm::pow<Real_t>(0.5,level);
+      Real_t s=sctl::pow<Real_t>(0.5,level);
       size_t n_trg=rel_trg_coord.size()/3;
       std::vector<Real_t> trg_coord(n_trg*3);
       for(size_t j=0;j<n_trg*PVFMM_COORD_DIM;j++) trg_coord[j]=rel_trg_coord[j]*s;
@@ -988,7 +988,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
                 Real_t pt_coord[3]={corner_pts[k*PVFMM_COORD_DIM+0]-j0,
                                     corner_pts[k*PVFMM_COORD_DIM+1]-j1,
                                     corner_pts[k*PVFMM_COORD_DIM+2]-j2};
-                if(pvfmm::fabs<Real_t>(pt_coord[0]-0.5)>1.0 || pvfmm::fabs<Real_t>(pt_coord[1]-0.5)>1.0 || pvfmm::fabs<Real_t>(pt_coord[2]-0.5)>1.0){
+                if(sctl::fabs<Real_t>(pt_coord[0]-0.5)>1.0 || sctl::fabs<Real_t>(pt_coord[1]-0.5)>1.0 || sctl::fabs<Real_t>(pt_coord[2]-0.5)>1.0){
                   Matrix<Real_t> M_e2pt(n_surf*ker_dim[0],ker_dim[1]);
                   kernel->k_m2l->BuildMatrix(&up_equiv_surf[0], n_surf,
                                                   &pt_coord[0], 1, &(M_e2pt[0][0]));
@@ -2328,7 +2328,7 @@ void FMM_Pts<FMMNode>::Source2UpSetup(SetupData<Real_t>&  setup_data, FMMTree_t*
         Vector<Real_t>& scal_exp=ker->trg_scal;
         scal.ReInit(scal_exp.Dim());
         for(size_t i=0;i<scal.Dim();i++){
-          scal[i]=pvfmm::pow<Real_t>(2.0,-scal_exp[i]*l);
+          scal[i]=sctl::pow<Real_t>(2.0,-scal_exp[i]*l);
         }
       }
       for(size_t l=0;l<PVFMM_MAX_DEPTH;l++){ // scal[l*4+3]
@@ -2336,7 +2336,7 @@ void FMM_Pts<FMMNode>::Source2UpSetup(SetupData<Real_t>&  setup_data, FMMTree_t*
         Vector<Real_t>& scal_exp=ker->src_scal;
         scal.ReInit(scal_exp.Dim());
         for(size_t i=0;i<scal.Dim();i++){
-          scal[i]=pvfmm::pow<Real_t>(2.0,-scal_exp[i]*l);
+          scal[i]=sctl::pow<Real_t>(2.0,-scal_exp[i]*l);
         }
       }
     }
@@ -2352,7 +2352,7 @@ void FMM_Pts<FMMNode>::Source2UpSetup(SetupData<Real_t>&  setup_data, FMMTree_t*
       size_t b=(nodes_out.size()*(tid+1))/omp_p;
       for(size_t i=a;i<b;i++){
         FMMNode_t* tnode=(FMMNode_t*)nodes_out[i];
-        Real_t s=pvfmm::pow<Real_t>(0.5,tnode->Depth());
+        Real_t s=sctl::pow<Real_t>(0.5,tnode->Depth());
 
         size_t interac_cnt_=0;
         { // S2U_Type
@@ -3367,13 +3367,13 @@ void FMM_Pts<FMMNode>::V_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
           for(size_t i=0;i<nodes_in_ .size();i++){
             size_t depth=nodes_in_[i]->Depth()+1;
             for(size_t j=0;j<scal_dim0;j++){
-              fft_scl[blk0][i*scal_dim0+j]=pvfmm::pow<Real_t>(2.0, src_scal[j]*depth);
+              fft_scl[blk0][i*scal_dim0+j]=sctl::pow<Real_t>(2.0, src_scal[j]*depth);
             }
           }
           for(size_t i=0;i<nodes_out_.size();i++){
             size_t depth=nodes_out_[i]->Depth()+1;
             for(size_t j=0;j<scal_dim1;j++){
-              ifft_scl[blk0][i*scal_dim1+j]=pvfmm::pow<Real_t>(2.0, trg_scal[j]*depth);
+              ifft_scl[blk0][i*scal_dim1+j]=sctl::pow<Real_t>(2.0, trg_scal[j]*depth);
             }
           }
         }
@@ -4511,7 +4511,7 @@ void FMM_Pts<FMMNode>::X_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
           interac_cnt.push_back(0);
           continue;
         }
-        Real_t s=pvfmm::pow<Real_t>(0.5,tnode->Depth());
+        Real_t s=sctl::pow<Real_t>(0.5,tnode->Depth());
 
         size_t interac_cnt_=0;
         { // X_Type
@@ -4795,7 +4795,7 @@ void FMM_Pts<FMMNode>::W_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
       size_t b=(nodes_out.size()*(tid+1))/omp_p;
       for(size_t i=a;i<b;i++){
         FMMNode_t* tnode=(FMMNode_t*)nodes_out[i];
-        Real_t s=pvfmm::pow<Real_t>(0.5,tnode->Depth());
+        Real_t s=sctl::pow<Real_t>(0.5,tnode->Depth());
 
         size_t interac_cnt_=0;
         { // W_Type
@@ -5094,7 +5094,7 @@ void FMM_Pts<FMMNode>::U_ListSetup(SetupData<Real_t>& setup_data, FMMTree_t* tre
       size_t b=(nodes_out.size()*(tid+1))/omp_p;
       for(size_t i=a;i<b;i++){
         FMMNode_t* tnode=(FMMNode_t*)nodes_out[i];
-        Real_t s=pvfmm::pow<Real_t>(0.5,tnode->Depth());
+        Real_t s=sctl::pow<Real_t>(0.5,tnode->Depth());
 
         size_t interac_cnt_=0;
         { // U0_Type
@@ -5469,7 +5469,7 @@ void FMM_Pts<FMMNode>::Down2TargetSetup(SetupData<Real_t>&  setup_data, FMMTree_
         Vector<Real_t>& scal_exp=ker->trg_scal;
         scal.ReInit(scal_exp.Dim());
         for(size_t i=0;i<scal.Dim();i++){
-          scal[i]=pvfmm::pow<Real_t>(2.0,-scal_exp[i]*l);
+          scal[i]=sctl::pow<Real_t>(2.0,-scal_exp[i]*l);
         }
       }
       for(size_t l=0;l<PVFMM_MAX_DEPTH;l++){ // scal[l*4+1]
@@ -5477,7 +5477,7 @@ void FMM_Pts<FMMNode>::Down2TargetSetup(SetupData<Real_t>&  setup_data, FMMTree_
         Vector<Real_t>& scal_exp=ker->src_scal;
         scal.ReInit(scal_exp.Dim());
         for(size_t i=0;i<scal.Dim();i++){
-          scal[i]=pvfmm::pow<Real_t>(2.0,-scal_exp[i]*l);
+          scal[i]=sctl::pow<Real_t>(2.0,-scal_exp[i]*l);
         }
       }
     }
@@ -5493,7 +5493,7 @@ void FMM_Pts<FMMNode>::Down2TargetSetup(SetupData<Real_t>&  setup_data, FMMTree_
       size_t b=(nodes_out.size()*(tid+1))/omp_p;
       for(size_t i=a;i<b;i++){
         FMMNode_t* tnode=(FMMNode_t*)nodes_out[i];
-        Real_t s=pvfmm::pow<Real_t>(0.5,tnode->Depth());
+        Real_t s=sctl::pow<Real_t>(0.5,tnode->Depth());
 
         size_t interac_cnt_=0;
         { // D2T_Type

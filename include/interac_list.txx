@@ -101,8 +101,8 @@ void InteracList<Node_t>::BuildList(Node_t* n, Mat_Type t){
   if(interac_list.Dim()!=ListCount(t)) interac_list.ReInit(ListCount(t));
   interac_list.SetZero();
 
-  static const int n_collg=pvfmm::pow<unsigned int>(3,dim);
-  static const int n_child=pvfmm::pow<unsigned int>(2,dim);
+  static const int n_collg=sctl::pow<unsigned int>(3,dim);
+  static const int n_child=sctl::pow<unsigned int>(2,dim);
   int rel_coord[3];
 
   switch (t){
@@ -372,8 +372,8 @@ int InteracList<Node_t>::class_hash(int* c_){
  */
 template <class Node_t>
 void InteracList<Node_t>::InitList(int max_r, int min_r, int step, Mat_Type t){
-  size_t count=           pvfmm::pow<unsigned int>((max_r*2)/step+1,dim)
-                -(min_r>0?pvfmm::pow<unsigned int>((min_r*2)/step-1,dim):0);
+  size_t count=           sctl::pow<unsigned int>((max_r*2)/step+1,dim)
+                -(min_r>0?sctl::pow<unsigned int>((min_r*2)/step-1,dim):0);
   Matrix<int>& M=rel_coord[t];
   M.Resize(count,dim);
   hash_lut[t].assign(PVFMM_MAX_COORD_HASH, -1);

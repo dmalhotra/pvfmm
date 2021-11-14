@@ -123,12 +123,7 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
         MPI_Allreduce(loc_min_x, min_x, PVFMM_COORD_DIM, MPI_DOUBLE, MPI_MIN, comm);
         MPI_Allreduce(loc_max_x, max_x, PVFMM_COORD_DIM, MPI_DOUBLE, MPI_MAX, comm);
 
-        auto machine_eps = [](){
-          Real eps=1;
-          while(eps*(Real)0.5+(Real)1.0>1.0) eps*=0.5;
-          return eps;
-        };
-        Real eps=machine_eps()*64; // Points should be well within the box.
+        Real eps=sctl::machine_eps<Real>()*64; // Points should be well within the box.
         scale_x=1.0/(max_x[0]-min_x[0]+2*eps);
         for(size_t k=0;k<PVFMM_COORD_DIM;k++){
           scale_x=std::min(scale_x,(Real)(1.0/(max_x[k]-min_x[k]+2*eps)));
@@ -146,9 +141,9 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
     Real c1[PVFMM_COORD_DIM]={(Real)(0.5-x1[0])/s1, (Real)(0.5-x1[1])/s1, (Real)(0.5-x1[2])/s1};
 
     scale_x=0;
-    scale_x=std::max<Real>(scale_x, pvfmm::fabs<Real>(c0[0]-c1[0]));
-    scale_x=std::max<Real>(scale_x, pvfmm::fabs<Real>(c0[1]-c1[1]));
-    scale_x=std::max<Real>(scale_x, pvfmm::fabs<Real>(c0[2]-c1[2]));
+    scale_x=std::max<Real>(scale_x, sctl::fabs<Real>(c0[0]-c1[0]));
+    scale_x=std::max<Real>(scale_x, sctl::fabs<Real>(c0[1]-c1[1]));
+    scale_x=std::max<Real>(scale_x, sctl::fabs<Real>(c0[2]-c1[2]));
     scale_x=1.0/(scale_x+1/s0+1/s1);
 
     shift_x[0]=0.5-(c0[0]+c1[0])*scale_x/2.0;

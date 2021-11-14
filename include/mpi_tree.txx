@@ -1074,10 +1074,10 @@ void MPI_Tree<TreeNode>::Balance21_local(BoundaryType bndry){
     curr_node=this->PreorderNxt(curr_node);
   }
 
-  int n1=pvfmm::pow<unsigned int>(3,this->Dim());
-  int n2=pvfmm::pow<unsigned int>(2,this->Dim());
+  int n1=sctl::pow<unsigned int>(3,this->Dim());
+  int n2=sctl::pow<unsigned int>(2,this->Dim());
   for(int i=this->max_depth;i>0;i--){
-    Real_t s=pvfmm::pow<Real_t>(0.5,i);
+    Real_t s=sctl::pow<Real_t>(0.5,i);
     for(size_t j=0;j<node_lst[i].size();j++){
       curr_node=node_lst[i][j];
       Real_t* coord=curr_node->Coord();
@@ -1109,7 +1109,7 @@ void MPI_Tree<TreeNode>::Balance21_local(BoundaryType bndry){
                   }// */
                 }
               }
-              Real_t s1=pvfmm::pow<Real_t>(0.5,node->Depth()+1);
+              Real_t s1=sctl::pow<Real_t>(0.5,node->Depth()+1);
               Real_t* c1=node->Coord();
               int c_id=((c0[0]-c1[0])>s1?1:0)+
                        ((c0[1]-c1[1])>s1?2:0)+
@@ -1132,8 +1132,8 @@ void MPI_Tree<TreeNode>::Balance21_local(BoundaryType bndry){
 
 template <class TreeNode>
 void MPI_Tree<TreeNode>::SetColleagues(BoundaryType bndry, Node_t* node){
-  int n1=(int)pvfmm::pow<unsigned int>(3,this->Dim());
-  int n2=(int)pvfmm::pow<unsigned int>(2,this->Dim());
+  int n1=(int)sctl::pow<unsigned int>(3,this->Dim());
+  int n2=(int)sctl::pow<unsigned int>(2,this->Dim());
 
   if(node==NULL){
     Node_t* curr_node=this->PreorderFirst();
@@ -1193,7 +1193,7 @@ void MPI_Tree<TreeNode>::SetColleagues(BoundaryType bndry, Node_t* node){
     Node_t* root_node=this->RootNode();
     int d=node->Depth();
     Real_t* c0=node->Coord();
-    Real_t s=pvfmm::pow<Real_t>(0.5,d);
+    Real_t s=sctl::pow<Real_t>(0.5,d);
     Real_t c[PVFMM_COORD_DIM];
     int idx=0;
     for(int i=-1;i<=1;i++)

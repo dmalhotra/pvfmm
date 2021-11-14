@@ -34,7 +34,7 @@ void MPI_Node<T>::Initialize(TreeNode* parent_,int path2node_, TreeNode::NodeDat
   }
 
   //Initialize colleagues array.
-  int n=pvfmm::pow<unsigned int>(3,Dim());
+  int n=sctl::pow<unsigned int>(3,Dim());
   for(int i=0;i<n;i++) colleague[i]=NULL;
 
   //Set MPI_Node specific data.
@@ -125,7 +125,7 @@ void MPI_Node<T>::Subdivide(){
     }
 
     Real_t* c=this->Coord();
-    Real_t s=pvfmm::pow<Real_t>(0.5,this->Depth()+1);
+    Real_t s=sctl::pow<Real_t>(0.5,this->Depth()+1);
     for(size_t j=0;j<pt_coord.size();j++){
       if(!pt_coord[j] || !pt_coord[j]->Dim()) continue;
       Vector<Real_t>& coord=*pt_coord[j];
@@ -536,7 +536,7 @@ void MPI_Node<T>::VTU_Data(VTUData_t& vtu_data, std::vector<Node_t*>& nodes, int
       if(n->IsGhost() || !n->IsLeaf()) continue;
 
       Real_t* c=n->Coord();
-      Real_t s=pvfmm::pow<Real_t>(0.5,n->Depth());
+      Real_t s=sctl::pow<Real_t>(0.5,n->Depth());
       for(int i=0;i<8;i++){
         coord.push_back(c[0]+(i&1?1:0)*s);
         coord.push_back(c[1]+(i&2?1:0)*s);
