@@ -125,7 +125,8 @@ void Vector<T>::Swap(Vector<T>& v1){
 template <class T>
 void Vector<T>::ReInit(size_t dim_, T* data_, bool own_data_){
   if(own_data_ && own_data && dim_<=capacity){
-    if(dim!=dim_) FreeDevice(false); dim=dim_;
+    if(dim!=dim_) FreeDevice(false);
+    dim=dim_;
     if(data_) mem::copy<T>(data_ptr,data_,dim);
   }else{
     Vector<T> tmp(dim_,data_,own_data_);
@@ -192,7 +193,7 @@ void Vector<T>::Resize(size_t dim_){
 template <class T>
 void Vector<T>::SetZero(){
   if(dim>0)
-    memset(data_ptr,0,dim*sizeof(T));
+    ::memset(data_ptr,0,dim*sizeof(T));
 }
 
 template <class ValueType>
@@ -209,7 +210,8 @@ template <class T>
 Vector<T>& Vector<T>::operator=(const Vector<T>& V){
   if(this!=&V){
     if(dim!=V.dim) FreeDevice(false);
-    if(capacity<V.dim) ReInit(V.dim); dim=V.dim;
+    if(capacity<V.dim) ReInit(V.dim);
+    dim=V.dim;
     mem::copy<T>(data_ptr,V.data_ptr,dim);
   }
   return *this;
@@ -219,7 +221,8 @@ template <class T>
 Vector<T>& Vector<T>::operator=(const std::vector<T>& V){
   {
     if(dim!=V.size()) FreeDevice(false);
-    if(capacity<V.size()) ReInit(V.size()); dim=V.size();
+    if(capacity<V.size()) ReInit(V.size());
+    dim=V.size();
     mem::copy<T>(data_ptr,&V[0],dim);
   }
   return *this;

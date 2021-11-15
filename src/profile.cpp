@@ -90,6 +90,7 @@ void Profile::Toc(){
     PVFMM_ASSERT_WITH_MSG(!name.empty() && !comm.empty() && !sync.empty() && !max_mem.empty(),"Unbalanced extra Toc()");
     std::string name_=name.top();
     MPI_Comm* comm_=comm.top();
+    PVFMM_UNUSED(comm_);
     bool sync_=sync.top();
     //sync_=true;
 

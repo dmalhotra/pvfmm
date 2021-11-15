@@ -17,7 +17,7 @@ void CheckFMMOutput(pvfmm::FMM_Tree<FMM_Mat_t>* mytree, const pvfmm::Kernel<type
   MPI_Comm_rank(c1, &myrank);
   MPI_Comm_size(c1,&p);
 
-  typedef typename FMM_Mat_t::FMMData FMM_Data_t;
+  //typedef typename FMM_Mat_t::FMMData FMM_Data_t;
   typedef typename FMM_Mat_t::FMMNode_t FMMNode_t;
   typedef typename FMM_Mat_t::Real_t Real_t;
 
@@ -47,7 +47,7 @@ void CheckFMMOutput(pvfmm::FMM_Tree<FMM_Mat_t>* mytree, const pvfmm::Kernel<type
   std::vector<Real_t> trg_coord;
   std::vector<Real_t> trg_poten_fmm;
   long long trg_iter=0;
-  size_t step_size=1+glb_src_cnt*glb_src_cnt*1e-9/p;
+  size_t step_size=(size_t)(1+glb_src_cnt*glb_src_cnt*1e-9/p);
   n=static_cast<FMMNode_t*>(mytree->PreorderFirst());
   while(n!=NULL){
     if(n->IsLeaf() && !n->IsGhost()){
@@ -93,8 +93,8 @@ void CheckFMMOutput(pvfmm::FMM_Tree<FMM_Mat_t>* mytree, const pvfmm::Kernel<type
     Real_t max_=0;
     Real_t max_err=0;
     for(size_t i=0;i<trg_poten_fmm.size();i++){
-      Real_t err=fabs(glb_trg_poten_dir[i+(recv_disp[myrank]/3)*trg_dof]-trg_poten_fmm[i]);
-      Real_t max=fabs(glb_trg_poten_dir[i+(recv_disp[myrank]/3)*trg_dof]);
+      Real_t err=(Real_t)fabs(glb_trg_poten_dir[i+(recv_disp[myrank]/3)*trg_dof]-trg_poten_fmm[i]);
+      Real_t max=(Real_t)fabs(glb_trg_poten_dir[i+(recv_disp[myrank]/3)*trg_dof]);
       if(err>max_err) max_err=err;
       if(max>max_) max_=max;
     }
@@ -132,7 +132,7 @@ void CheckChebOutput(FMMTree_t* mytree, typename TestFn<typename FMMTree_t::Real
 
   int cheb_deg=nodes[0]->ChebDeg();
   std::vector<Real_t> cheb_nds=pvfmm::cheb_nodes<Real_t>(cheb_deg+1, 1);
-  for(size_t i=0;i<cheb_nds.size();i++) cheb_nds[i]=2.0*cheb_nds[i]-1.0;
+  for(size_t i=0;i<cheb_nds.size();i++) cheb_nds[i]=2*cheb_nds[i]-1;
   std::vector<Real_t> cheb_pts=pvfmm::cheb_nodes<Real_t>(cheb_deg+1, PVFMM_COORD_DIM);
   int n_pts=cheb_pts.size()/PVFMM_COORD_DIM;
   int omp_p=omp_get_max_threads();
@@ -141,7 +141,7 @@ void CheckChebOutput(FMMTree_t* mytree, typename TestFn<typename FMMTree_t::Real
   { // Determine glb_err_avg.
     std::vector<Real_t> err_avg(omp_p*dof*fn_dof,0);
     #pragma omp parallel for
-    for(size_t tid=0;tid<omp_p;tid++){
+    for(int tid=0;tid<omp_p;tid++){
       pvfmm::Vector<Real_t> out; out.SetZero();
       pvfmm::Vector<Real_t> fn_out(dof*fn_dof);
       for(size_t i=(nodes.size()*tid)/omp_p;i<(nodes.size()*(tid+1))/omp_p;i++){
@@ -149,26 +149,26 @@ void CheckChebOutput(FMMTree_t* mytree, typename TestFn<typename FMMTree_t::Real
         cheb_eval(cheb_coeff, cheb_deg, cheb_nds, cheb_nds, cheb_nds, out);
 
         Real_t* c=nodes[i]->Coord();
-        Real_t s=pow(2.0,-nodes[i]->Depth());
+        Real_t s=(Real_t)pow(2,-nodes[i]->Depth());
         Real_t s3=s*s*s;
-        for(size_t j=0;j<n_pts;j++){
+        for(int j=0;j<n_pts;j++){
           Real_t coord[3]={c[0]+s*cheb_pts[j*PVFMM_COORD_DIM+0],
                            c[1]+s*cheb_pts[j*PVFMM_COORD_DIM+1],
                            c[2]+s*cheb_pts[j*PVFMM_COORD_DIM+2]};
           fn_out.SetZero();
-          for(size_t k=0;k<dof;k++)
+          for(int k=0;k<dof;k++)
             fn_poten(coord,1,&fn_out[k*fn_dof]);
-          for(size_t k=0;k<dof*fn_dof;k++){
+          for(int k=0;k<dof*fn_dof;k++){
             Real_t err=out[n_pts*k+j]-fn_out[k];
             err_avg[tid*dof*fn_dof+k]+=err*s3;
           }
         }
       }
-      for(size_t k=0;k<dof*fn_dof;k++)
+      for(int k=0;k<dof*fn_dof;k++)
         err_avg[tid*dof*fn_dof+k]/=n_pts;
     }
-    for(size_t tid=1;tid<omp_p;tid++)
-      for(size_t k=0;k<dof*fn_dof;k++)
+    for(int tid=1;tid<omp_p;tid++)
+      for(int k=0;k<dof*fn_dof;k++)
         err_avg[k]+=err_avg[tid*dof*fn_dof+k];
     MPI_Allreduce(&err_avg[0], &glb_err_avg[0], dof*fn_dof, pvfmm::par::Mpi_datatype<Real_t>::value(), pvfmm::par::Mpi_datatype<Real_t>::sum(), c1);
   }
@@ -222,7 +222,7 @@ void CheckChebOutput(FMMTree_t* mytree, typename TestFn<typename FMMTree_t::Real
   std::vector<Real_t> max    (omp_p,0), l2    (omp_p,0);
   std::vector<Real_t> max_err(omp_p,0), l2_err(omp_p,0);
   #pragma omp parallel for
-  for(size_t tid=0;tid<omp_p;tid++){
+  for(int tid=0;tid<omp_p;tid++){
     pvfmm::Vector<Real_t> out; out.SetZero();
     pvfmm::Vector<Real_t> fn_out(dof*fn_dof);
     for(size_t i=(nodes.size()*tid)/omp_p;i<(nodes.size()*(tid+1))/omp_p;i++){
@@ -230,19 +230,19 @@ void CheckChebOutput(FMMTree_t* mytree, typename TestFn<typename FMMTree_t::Real
       cheb_eval(cheb_coeff, cheb_deg, cheb_nds, cheb_nds, cheb_nds, out);
 
       Real_t* c=nodes[i]->Coord();
-      Real_t s=pow(2.0,-nodes[i]->Depth());
+      Real_t s=(Real_t)pow(2,-nodes[i]->Depth());
       Real_t s3=s*s*s;
-      for(size_t j=0;j<n_pts;j++){
+      for(int j=0;j<n_pts;j++){
         Real_t coord[3]={c[0]+s*cheb_pts[j*PVFMM_COORD_DIM+0],
                          c[1]+s*cheb_pts[j*PVFMM_COORD_DIM+1],
                          c[2]+s*cheb_pts[j*PVFMM_COORD_DIM+2]};
         fn_out.SetZero();
-        for(size_t k=0;k<dof;k++)
+        for(int k=0;k<dof;k++)
           fn_poten(coord,1,&fn_out[k*fn_dof]);
-        for(size_t k=0;k<dof*fn_dof;k++){
+        for(int k=0;k<dof*fn_dof;k++){
           Real_t err=out[n_pts*k+j]-fn_out[k]-glb_err_avg[k];
-          if(fabs(fn_out[k])>max    [tid]) max    [tid]=fabs(fn_out[k]);
-          if(fabs(err      )>max_err[tid]) max_err[tid]=fabs(err      );
+          if(fabs(fn_out[k])>max    [tid]) max    [tid]=sctl::fabs<Real_t>(fn_out[k]);
+          if(fabs(err      )>max_err[tid]) max_err[tid]=sctl::fabs<Real_t>(err      );
           l2[tid]+=fn_out[k]*fn_out[k]*s3;
           l2_err[tid]+=err*err*s3;
         }
@@ -251,7 +251,7 @@ void CheckChebOutput(FMMTree_t* mytree, typename TestFn<typename FMMTree_t::Real
     l2    [tid]/=n_pts;
     l2_err[tid]/=n_pts;
   }
-  for(size_t tid=1;tid<omp_p;tid++){
+  for(int tid=1;tid<omp_p;tid++){
     if(max    [tid]>max    [0]) max    [0]=max    [tid];
     if(max_err[tid]>max_err[0]) max_err[0]=max_err[tid];
     l2    [0]+=l2    [tid];
@@ -291,9 +291,9 @@ std::vector<Real_t> point_distrib(DistribType dist_type, size_t N, MPI_Comm comm
       size_t start= myrank   *N_total/np;
       size_t end  =(myrank+1)*N_total/np;
       for(size_t i=start;i<end;i++){
-        coord.push_back(((Real_t)((i/  1    )%NN)+0.5)/NN);
-        coord.push_back(((Real_t)((i/ NN    )%NN)+0.5)/NN);
-        coord.push_back(((Real_t)((i/(NN*NN))%NN)+0.5)/NN);
+        coord.push_back((Real_t)(((i/  1    )%NN)+0.5)/NN);
+        coord.push_back((Real_t)(((i/ NN    )%NN)+0.5)/NN);
+        coord.push_back((Real_t)(((i/(NN*NN))%NN)+0.5)/NN);
       }
     }
     break;
@@ -311,8 +311,8 @@ std::vector<Real_t> point_distrib(DistribType dist_type, size_t N, MPI_Comm comm
     break;
   case RandGaus:
     {
-      Real_t e=2.7182818284590452;
-      Real_t log_e=log(e);
+      Real_t e=sctl::const_e<Real_t>();
+      Real_t log_e=sctl::log(e);
       size_t N_total=N;
       size_t start= myrank   *N_total/np;
       size_t end  =(myrank+1)*N_total/np;
@@ -320,9 +320,9 @@ std::vector<Real_t> point_distrib(DistribType dist_type, size_t N, MPI_Comm comm
       for(size_t i=start*3;i<end*3;i++){
         Real_t y=-1;
         while(y<=0 || y>=1){
-          Real_t r1=sqrt(-2*log(drand48())/log_e)*cos(2*M_PI*drand48());
-          Real_t r2=pow(0.5,i*10/N_total);
-          y=0.5+r1*r2;
+          Real_t r1=(Real_t)(sqrt(-2*log(drand48())/log_e)*cos(2*M_PI*drand48()));
+          Real_t r2=(Real_t)pow(0.5,i*10/N_total);
+          y=(Real_t)0.5+r1*r2;
         }
         coord.push_back(y);
       }
@@ -336,15 +336,15 @@ std::vector<Real_t> point_distrib(DistribType dist_type, size_t N, MPI_Comm comm
       size_t N_local=end-start;
       coord.resize(N_local*3);
 
-      const Real_t r=0.45;
+      const Real_t r=(Real_t)0.45;
       const Real_t center[3]={0.5,0.5,0.5};
       for(size_t i=0;i<N_local;i++){
         Real_t* y=&coord[i*3];
-        Real_t phi=2*M_PI*drand48();
-        Real_t theta=M_PI*drand48();
-        y[0]=center[0]+0.25*r*sin(theta)*cos(phi);
-        y[1]=center[1]+0.25*r*sin(theta)*sin(phi);
-        y[2]=center[2]+r*cos(theta);
+        Real_t phi=(Real_t)(2*M_PI*drand48());
+        Real_t theta=(Real_t)(M_PI*drand48());
+        y[0]=center[0]+(Real_t)(0.25*r*sin(theta)*cos(phi));
+        y[1]=center[1]+(Real_t)(0.25*r*sin(theta)*sin(phi));
+        y[2]=center[2]+r*(Real_t)cos(theta);
       }
     }
     break;
@@ -361,13 +361,15 @@ std::vector<Real_t> point_distrib(DistribType dist_type, size_t N, MPI_Comm comm
         Real_t* y=&coord[i*3];
         Real_t r=1;
         while(r>0.5 || r==0){
-          y[0]=drand48(); y[1]=drand48(); y[2]=drand48();
-          r=sqrt((y[0]-center[0])*(y[0]-center[0])
+          y[0]=(Real_t)drand48();
+          y[1]=(Real_t)drand48();
+          y[2]=(Real_t)drand48();
+          r=(Real_t)sqrt((y[0]-center[0])*(y[0]-center[0])
                 +(y[1]-center[1])*(y[1]-center[1])
                 +(y[2]-center[2])*(y[2]-center[2]));
-          y[0]=center[0]+0.45*(y[0]-center[0])/r;
-          y[1]=center[1]+0.45*(y[1]-center[1])/r;
-          y[2]=center[2]+0.45*(y[2]-center[2])/r;
+          y[0]=center[0]+(Real_t)0.45*(y[0]-center[0])/r;
+          y[1]=center[1]+(Real_t)0.45*(y[1]-center[1])/r;
+          y[2]=center[2]+(Real_t)0.45*(y[2]-center[2])/r;
         }
       }
     }

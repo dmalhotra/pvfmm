@@ -18,12 +18,12 @@ namespace mat{
 
   template <class T>
   void gemm(char TransA, char TransB,  int M,  int N,  int K,  T alpha,  T *A,  int lda,  T *B,  int ldb,  T beta, T *C,  int ldc) {
-    sctl::mat::gemm(TransA, TransB, M, N, K, alpha, A, lda, B, ldb, beta, C, ldc);
+    sctl::mat::gemm(TransA, TransB, M, N, K, alpha, sctl::Ptr2Itr<T>(A,M*K), lda, sctl::Ptr2Itr<T>(B,K*N), ldb, beta, sctl::Ptr2Itr<T>(C,M*N), ldc);
   }
 
   template <class T>
   void cublasgemm(char TransA, char TransB,  int M,  int N,  int K,  T alpha,  T *A,  int lda,  T *B,  int ldb,  T beta, T *C,  int ldc) {
-    sctl::mat::cublasgemm(TransA, TransB, M, N, K, alpha, A, lda, B, ldb, beta, C, ldc);
+    sctl::mat::cublasgemm(TransA, TransB, M, N, K, alpha, sctl::Ptr2Itr<T>(A,M*K), lda, sctl::Ptr2Itr<T>(B,K*N), ldb, beta, sctl::Ptr2Itr<T>(C,M*N), ldc);
   }
 
   template <class T>

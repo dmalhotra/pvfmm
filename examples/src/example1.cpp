@@ -104,12 +104,12 @@ void fmm_test(size_t N, int mult_order, MPI_Comm comm){
     vec trg_sample_value;
     size_t n_trg_sample=0;
     { // Sample target points for verifications.
-      size_t n_skip=N*n_trg/1e9;
+      size_t n_skip=(size_t)(N*n_trg/1e9);
       if(!n_skip) n_skip=1;
       for(size_t i=0;i<n_trg;i=i+n_skip){
         for(size_t j=0;j<PVFMM_COORD_DIM;j++)
           trg_sample_coord.push_back(trg_coord[i*PVFMM_COORD_DIM+j]);
-        for(size_t j=0;j<kernel_fn.ker_dim[1];j++)
+        for(int j=0;j<kernel_fn.ker_dim[1];j++)
           trg_sample_value.push_back(trg_value[i*kernel_fn.ker_dim[1]+j]);
         n_trg_sample++;
       }

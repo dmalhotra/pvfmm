@@ -56,7 +56,7 @@ void fmm_test(int ker, size_t N, size_t M, Real_t b, int dist, int mult_order, i
     std::vector<Real_t> src_coord, src_value;
     src_coord=point_distrib<Real_t>((dist==0?UnifGrid:(dist==1?RandSphr:RandElps)),N,comm);
     for(size_t i=0;i<src_coord.size();i++) src_coord[i]*=b;
-    for(size_t i=0;i<src_coord.size()*mykernel->ker_dim[0]/PVFMM_COORD_DIM;i++) src_value.push_back(drand48()-0.5);
+    for(size_t i=0;i<src_coord.size()*mykernel->ker_dim[0]/PVFMM_COORD_DIM;i++) src_value.push_back((Real_t)(drand48()-0.5));
     tree_data.pt_coord=src_coord;
     tree_data.pt_value=src_value;
     //tree_data.src_coord=src_coord;
@@ -216,8 +216,8 @@ int main(int argc, char **argv){
 
   // Run FMM with above options.
   pvfmm::Profile::Tic("FMM_Test",&comm,true);
-  if(sp) fmm_test<float >(ker, N,M,b, dist,m,d,comm);
-  else   fmm_test<double>(ker, N,M,b, dist,m,d,comm);
+  if(sp) fmm_test<float >(ker, N,M,(float)b, dist,m,d,comm);
+  else   fmm_test<double>(ker, N,M,       b, dist,m,d,comm);
   pvfmm::Profile::Toc();
 
   //Output Profiling results.

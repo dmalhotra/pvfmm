@@ -22,12 +22,12 @@ void fn_input_t1(const Real_t* coord, int n, Real_t* out){ //Input function
   for(int i=0;i<n;i++){
     const Real_t* c=&coord[i*PVFMM_COORD_DIM];
     {
-      Real_t r_2=(c[0]-0.5)*(c[0]-0.5)+(c[1]-0.5)*(c[1]-0.5)+(c[2]-0.0)*(c[2]-0.0);
-      out[i*dof+0]=(2*a*r_2+3)*2*a*exp(a*r_2);
+      Real_t r_2=(c[0]-(Real_t)0.5)*(c[0]-(Real_t)0.5)+(c[1]-(Real_t)0.5)*(c[1]-(Real_t)0.5)+(c[2]-(Real_t)0.0)*(c[2]-(Real_t)0.0);
+      out[i*dof+0]=(2*a*r_2+3)*2*a*sctl::exp(a*r_2);
     }
     {
-      Real_t r_2=(c[0]-0.5)*(c[0]-0.5)+(c[1]-0.5)*(c[1]-0.5)+(c[2]-1.0)*(c[2]-1.0);
-      out[i*dof+0]+=(2*a*r_2+3)*2*a*exp(a*r_2);
+      Real_t r_2=(c[0]-(Real_t)0.5)*(c[0]-(Real_t)0.5)+(c[1]-(Real_t)0.5)*(c[1]-(Real_t)0.5)+(c[2]-(Real_t)1.0)*(c[2]-(Real_t)1.0);
+      out[i*dof+0]+=(2*a*r_2+3)*2*a*sctl::exp(a*r_2);
     }
   }
 }
@@ -38,12 +38,12 @@ void fn_poten_t1(const Real_t* coord, int n, Real_t* out){ //Output potential
   for(int i=0;i<n;i++){
     const Real_t* c=&coord[i*PVFMM_COORD_DIM];
     {
-      Real_t r_2=(c[0]-0.5)*(c[0]-0.5)+(c[1]-0.5)*(c[1]-0.5)+(c[2]-0.0)*(c[2]-0.0);
-      out[i*dof+0]=-exp(a*r_2);
+      Real_t r_2=(c[0]-(Real_t)0.5)*(c[0]-(Real_t)0.5)+(c[1]-(Real_t)0.5)*(c[1]-(Real_t)0.5)+(c[2]-(Real_t)0.0)*(c[2]-(Real_t)0.0);
+      out[i*dof+0]=-sctl::exp(a*r_2);
     }
     {
-      Real_t r_2=(c[0]-0.5)*(c[0]-0.5)+(c[1]-0.5)*(c[1]-0.5)+(c[2]-1.0)*(c[2]-1.0);
-      out[i*dof+0]+=-exp(a*r_2);
+      Real_t r_2=(c[0]-(Real_t)0.5)*(c[0]-(Real_t)0.5)+(c[1]-(Real_t)0.5)*(c[1]-(Real_t)0.5)+(c[2]-(Real_t)1.0)*(c[2]-(Real_t)1.0);
+      out[i*dof+0]+=-sctl::exp(a*r_2);
     }
   }
 }
@@ -54,16 +54,16 @@ void fn_grad_t1(const Real_t* coord, int n, Real_t* out){ //Output gradient
   for(int i=0;i<n;i++){
     const Real_t* c=&coord[i*PVFMM_COORD_DIM];
     {
-      Real_t r_2=(c[0]-0.5)*(c[0]-0.5)+(c[1]-0.5)*(c[1]-0.5)+(c[2]-0.0)*(c[2]-0.0);
-      out[i*dof+0]=-2*a*exp(a*r_2)*(c[0]-0.5);
-      out[i*dof+1]=-2*a*exp(a*r_2)*(c[1]-0.5);
-      out[i*dof+2]=-2*a*exp(a*r_2)*(c[2]-0.0);
+      Real_t r_2=(c[0]-(Real_t)0.5)*(c[0]-(Real_t)0.5)+(c[1]-(Real_t)0.5)*(c[1]-(Real_t)0.5)+(c[2]-(Real_t)0.0)*(c[2]-(Real_t)0.0);
+      out[i*dof+0]=-2*a*sctl::exp(a*r_2)*(c[0]-(Real_t)0.5);
+      out[i*dof+1]=-2*a*sctl::exp(a*r_2)*(c[1]-(Real_t)0.5);
+      out[i*dof+2]=-2*a*sctl::exp(a*r_2)*(c[2]-(Real_t)0.0);
     }
     {
-      Real_t r_2=(c[0]-0.5)*(c[0]-0.5)+(c[1]-0.5)*(c[1]-0.5)+(c[2]-1.0)*(c[2]-1.0);
-      out[i*dof+0]+=-2*a*exp(a*r_2)*(c[0]-0.5);
-      out[i*dof+1]+=-2*a*exp(a*r_2)*(c[1]-0.5);
-      out[i*dof+2]+=-2*a*exp(a*r_2)*(c[2]-1.0);
+      Real_t r_2=(c[0]-(Real_t)0.5)*(c[0]-(Real_t)0.5)+(c[1]-(Real_t)0.5)*(c[1]-(Real_t)0.5)+(c[2]-(Real_t)1.0)*(c[2]-(Real_t)1.0);
+      out[i*dof+0]+=-2*a*sctl::exp(a*r_2)*(c[0]-(Real_t)0.5);
+      out[i*dof+1]+=-2*a*sctl::exp(a*r_2)*(c[1]-(Real_t)0.5);
+      out[i*dof+2]+=-2*a*sctl::exp(a*r_2)*(c[2]-(Real_t)1.0);
     }
   }
 }
@@ -75,38 +75,38 @@ void fn_grad_t1(const Real_t* coord, int n, Real_t* out){ //Output gradient
 template <class Real_t>
 void fn_input_t2(const Real_t* coord, int n, Real_t* out){ //Input function
   int dof=1;
-  Real_t R=0.1;
+  Real_t R=(Real_t)0.1;
   for(int i=0;i<n;i++){
     const Real_t* c=&coord[i*PVFMM_COORD_DIM];
     {
-      Real_t r_2=(c[0]-0.5)*(c[0]-0.5)+(c[1]-0.5)*(c[1]-0.5)+(c[2]-0.5)*(c[2]-0.5);
-      out[i*dof+0]=(sqrt(r_2)<R?1:0);
+      Real_t r_2=(c[0]-(Real_t)0.5)*(c[0]-(Real_t)0.5)+(c[1]-(Real_t)0.5)*(c[1]-(Real_t)0.5)+(c[2]-(Real_t)0.5)*(c[2]-(Real_t)0.5);
+      out[i*dof+0]=(sctl::sqrt(r_2)<R?1:0);
     }
   }
 }
 template <class Real_t>
 void fn_poten_t2(const Real_t* coord, int n, Real_t* out){ //Output potential
   int dof=1;
-  Real_t R=0.1;
+  Real_t R=(Real_t)0.1;
   for(int i=0;i<n;i++){
     const Real_t* c=&coord[i*PVFMM_COORD_DIM];
     {
-      Real_t r_2=(c[0]-0.5)*(c[0]-0.5)+(c[1]-0.5)*(c[1]-0.5)+(c[2]-0.5)*(c[2]-0.5);
-      out[i*dof+0]=(sqrt(r_2)<R? (R*R-r_2)/6 + R*R/3 : pow(R,3)/(3*sqrt(r_2)) );
+      Real_t r_2=(c[0]-(Real_t)0.5)*(c[0]-(Real_t)0.5)+(c[1]-(Real_t)0.5)*(c[1]-(Real_t)0.5)+(c[2]-(Real_t)0.5)*(c[2]-(Real_t)0.5);
+      out[i*dof+0]=(sctl::sqrt(r_2)<R? (R*R-r_2)/6 + R*R/3 : sctl::pow(R,3)/(3*sctl::sqrt(r_2)) );
     }
   }
 }
 template <class Real_t>
 void fn_grad_t2(const Real_t* coord, int n, Real_t* out){ //Output gradient
   int dof=3;
-  Real_t R=0.1;
+  Real_t R=(Real_t)0.1;
   for(int i=0;i<n;i++){
     const Real_t* c=&coord[i*PVFMM_COORD_DIM];
     {
-      Real_t r_2=(c[0]-0.5)*(c[0]-0.5)+(c[1]-0.5)*(c[1]-0.5)+(c[2]-0.5)*(c[2]-0.5);
-      out[i*dof+0]=(sqrt(r_2)<R? -r_2/3 : -pow(R,3)/(3*sqrt(r_2)) )*(c[0]-0.5)/r_2;
-      out[i*dof+1]=(sqrt(r_2)<R? -r_2/3 : -pow(R,3)/(3*sqrt(r_2)) )*(c[1]-0.5)/r_2;
-      out[i*dof+2]=(sqrt(r_2)<R? -r_2/3 : -pow(R,3)/(3*sqrt(r_2)) )*(c[2]-0.5)/r_2;
+      Real_t r_2=(c[0]-(Real_t)0.5)*(c[0]-(Real_t)0.5)+(c[1]-(Real_t)0.5)*(c[1]-(Real_t)0.5)+(c[2]-(Real_t)0.5)*(c[2]-(Real_t)0.5);
+      out[i*dof+0]=(sctl::sqrt(r_2)<R? -r_2/3 : -sctl::pow(R,3)/(3*sctl::sqrt(r_2)) )*(c[0]-(Real_t)0.5)/r_2;
+      out[i*dof+1]=(sctl::sqrt(r_2)<R? -r_2/3 : -sctl::pow(R,3)/(3*sctl::sqrt(r_2)) )*(c[1]-(Real_t)0.5)/r_2;
+      out[i*dof+2]=(sctl::sqrt(r_2)<R? -r_2/3 : -sctl::pow(R,3)/(3*sctl::sqrt(r_2)) )*(c[2]-(Real_t)0.5)/r_2;
     }
   }
 }
@@ -122,10 +122,10 @@ void fn_input_t3(const Real_t* coord, int n, Real_t* out){ //Input function
   for(int i=0;i<n;i++){
     const Real_t* c=&coord[i*PVFMM_COORD_DIM];
     {
-      Real_t r_2=(c[0]-0.5)*(c[0]-0.5)+(c[1]-0.5)*(c[1]-0.5)+(c[2]-0.5)*(c[2]-0.5);
-      out[i*dof+0]=                                        0+2*L*exp(-L*r_2)*(c[0]-0.5);
-      out[i*dof+1]= 4*L*L*(c[2]-0.5)*(5-2*L*r_2)*exp(-L*r_2)+2*L*exp(-L*r_2)*(c[1]-0.5);
-      out[i*dof+2]=-4*L*L*(c[1]-0.5)*(5-2*L*r_2)*exp(-L*r_2)+2*L*exp(-L*r_2)*(c[2]-0.5);
+      Real_t r_2=(c[0]-(Real_t)0.5)*(c[0]-(Real_t)0.5)+(c[1]-(Real_t)0.5)*(c[1]-(Real_t)0.5)+(c[2]-(Real_t)0.5)*(c[2]-(Real_t)0.5);
+      out[i*dof+0]=                                        0+2*L*sctl::exp(-L*r_2)*(c[0]-(Real_t)0.5);
+      out[i*dof+1]= 4*L*L*(c[2]-(Real_t)0.5)*(5-2*L*r_2)*sctl::exp(-L*r_2)+2*L*sctl::exp(-L*r_2)*(c[1]-(Real_t)0.5);
+      out[i*dof+2]=-4*L*L*(c[1]-(Real_t)0.5)*(5-2*L*r_2)*sctl::exp(-L*r_2)+2*L*sctl::exp(-L*r_2)*(c[2]-(Real_t)0.5);
     }
   }
 }
@@ -136,10 +136,10 @@ void fn_poten_t3(const Real_t* coord, int n, Real_t* out){ //Output potential
   for(int i=0;i<n;i++){
     const Real_t* c=&coord[i*PVFMM_COORD_DIM];
     {
-      Real_t r_2=(c[0]-0.5)*(c[0]-0.5)+(c[1]-0.5)*(c[1]-0.5)+(c[2]-0.5)*(c[2]-0.5);
+      Real_t r_2=(c[0]-(Real_t)0.5)*(c[0]-(Real_t)0.5)+(c[1]-(Real_t)0.5)*(c[1]-(Real_t)0.5)+(c[2]-(Real_t)0.5)*(c[2]-(Real_t)0.5);
       out[i*dof+0]= 0;
-      out[i*dof+1]= 2*L*(c[2]-0.5)*exp(-L*r_2);
-      out[i*dof+2]=-2*L*(c[1]-0.5)*exp(-L*r_2);
+      out[i*dof+1]= 2*L*(c[2]-(Real_t)0.5)*sctl::exp(-L*r_2);
+      out[i*dof+2]=-2*L*(c[1]-(Real_t)0.5)*sctl::exp(-L*r_2);
     }
   }
 }
@@ -155,10 +155,10 @@ void fn_input_t4(const Real_t* coord, int n, Real_t* out){ //Input function
   for(int i=0;i<n;i++){
     const Real_t* c=&coord[i*PVFMM_COORD_DIM];
     {
-      Real_t r_2=(c[0]-0.5)*(c[0]-0.5)+(c[1]-0.5)*(c[1]-0.5)+(c[2]-0.5)*(c[2]-0.5);
-      out[i*dof+0]=-4*L*exp(-L*r_2)*(1 - L*((c[1]-0.5)*(c[1]-0.5) + (c[2]-0.5)*(c[2]-0.5)));
-      out[i*dof+1]=-4*L*exp(-L*r_2)*     L* (c[0]-0.5)*(c[1]-0.5);
-      out[i*dof+2]=-4*L*exp(-L*r_2)*     L* (c[0]-0.5)*(c[2]-0.5);
+      Real_t r_2=(c[0]-(Real_t)0.5)*(c[0]-(Real_t)0.5)+(c[1]-(Real_t)0.5)*(c[1]-(Real_t)0.5)+(c[2]-(Real_t)0.5)*(c[2]-(Real_t)0.5);
+      out[i*dof+0]=-4*L*sctl::exp(-L*r_2)*(1 - L*((c[1]-(Real_t)0.5)*(c[1]-(Real_t)0.5) + (c[2]-(Real_t)0.5)*(c[2]-(Real_t)0.5)));
+      out[i*dof+1]=-4*L*sctl::exp(-L*r_2)*     L* (c[0]-(Real_t)0.5)*(c[1]-(Real_t)0.5);
+      out[i*dof+2]=-4*L*sctl::exp(-L*r_2)*     L* (c[0]-(Real_t)0.5)*(c[2]-(Real_t)0.5);
     }
   }
 }
@@ -169,10 +169,10 @@ void fn_poten_t4(const Real_t* coord, int n, Real_t* out){ //Output potential
   for(int i=0;i<n;i++){
     const Real_t* c=&coord[i*PVFMM_COORD_DIM];
     {
-      Real_t r_2=(c[0]-0.5)*(c[0]-0.5)+(c[1]-0.5)*(c[1]-0.5)+(c[2]-0.5)*(c[2]-0.5);
+      Real_t r_2=(c[0]-(Real_t)0.5)*(c[0]-(Real_t)0.5)+(c[1]-(Real_t)0.5)*(c[1]-(Real_t)0.5)+(c[2]-(Real_t)0.5)*(c[2]-(Real_t)0.5);
       out[i*dof+0]= 0;
-      out[i*dof+1]= 2*L*(c[2]-0.5)*exp(-L*r_2);
-      out[i*dof+2]=-2*L*(c[1]-0.5)*exp(-L*r_2);
+      out[i*dof+1]= 2*L*(c[2]-(Real_t)0.5)*sctl::exp(-L*r_2);
+      out[i*dof+2]=-2*L*(c[1]-(Real_t)0.5)*sctl::exp(-L*r_2);
     }
   }
 }
@@ -185,12 +185,12 @@ template <class Real_t>
 void fn_input_t5(const Real_t* coord, int n, Real_t* out){
   int dof=2;
   Real_t a=-160;
-  Real_t mu=(20.0*M_PI);
+  Real_t mu=(Real_t)(20.0*M_PI);
   for(int i=0;i<n;i++){
     const Real_t* c=&coord[i*PVFMM_COORD_DIM];
     {
-      Real_t r_2=(c[0]-0.5)*(c[0]-0.5)+(c[1]-0.5)*(c[1]-0.5)+(c[2]-0.5)*(c[2]-0.5);
-      out[i*dof+0]=((2*a*r_2+3)*2*a*exp(a*r_2)+mu*mu*exp(a*r_2));
+      Real_t r_2=(c[0]-(Real_t)0.5)*(c[0]-(Real_t)0.5)+(c[1]-(Real_t)0.5)*(c[1]-(Real_t)0.5)+(c[2]-(Real_t)0.5)*(c[2]-(Real_t)0.5);
+      out[i*dof+0]=((2*a*r_2+3)*2*a*sctl::exp(a*r_2)+mu*mu*sctl::exp(a*r_2));
       out[i*dof+1]=0;
     }
   }
@@ -202,8 +202,8 @@ void fn_poten_t5(const Real_t* coord, int n, Real_t* out){
   for(int i=0;i<n;i++){
     const Real_t* c=&coord[i*PVFMM_COORD_DIM];
     {
-      Real_t r_2=(c[0]-0.5)*(c[0]-0.5)+(c[1]-0.5)*(c[1]-0.5)+(c[2]-0.5)*(c[2]-0.5);
-      out[i*dof+0]=-exp(a*r_2);
+      Real_t r_2=(c[0]-(Real_t)0.5)*(c[0]-(Real_t)0.5)+(c[1]-(Real_t)0.5)*(c[1]-(Real_t)0.5)+(c[2]-(Real_t)0.5)*(c[2]-(Real_t)0.5);
+      out[i*dof+0]=-sctl::exp(a*r_2);
       out[i*dof+1]=0;
     }
   }
@@ -338,7 +338,7 @@ void fmm_test(int test_case, size_t N, size_t M, bool unif, int mult_order, int 
     while(node!=NULL){
       if(node->IsLeaf() && !node->IsGhost()){
         Real_t* c=node->Coord();
-        Real_t s=pow(0.5,node->Depth()+1);
+        Real_t s=(Real_t)sctl::pow(0.5,node->Depth()+1);
         pt_coord.push_back(c[0]+s);
         pt_coord.push_back(c[1]+s);
         pt_coord.push_back(c[2]+s);
@@ -410,7 +410,7 @@ void fmm_test(int test_case, size_t N, size_t M, bool unif, int mult_order, int 
           node_cnt++;
       }
       for(size_t i=0;i<nlist.size();i++){
-        nlist[i]->NodeCost()=(tt*100000000)/node_cnt;
+        nlist[i]->NodeCost()=(long long)(tt*100000000)/node_cnt;
       }
 
       { //Output max, min tree size.
@@ -515,8 +515,8 @@ int main(int argc, char **argv){
     pvfmm::Matrix<double> A(N,N);
     pvfmm::Matrix<double> B(N,N);
     pvfmm::Matrix<double> C(N,N);
-    for(int i=0;i<N;i++)
-    for(int j=0;j<N;j++){
+    for(size_t i=0;i<N;i++)
+    for(size_t j=0;j<N;j++){
       A[i][j]=i+j;
       B[i][j]=i-j;
     }
@@ -563,8 +563,8 @@ int main(int argc, char **argv){
 
   // Run FMM with above options.
   pvfmm::Profile::Tic("FMM_Test",&comm,true);
-  if(sp) fmm_test<float >(test, N,M,unif, m,q, d, adap,tol, comm);
-  else   fmm_test<double>(test, N,M,unif, m,q, d, adap,tol, comm);
+  if(sp) fmm_test<float >(test, N,M,unif, m,q, d, adap,(float)tol, comm);
+  else   fmm_test<double>(test, N,M,unif, m,q, d, adap,       tol, comm);
   pvfmm::Profile::Toc();
 
   //Output Profiling results.

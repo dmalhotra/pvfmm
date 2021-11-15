@@ -223,7 +223,7 @@ Permutation<Real_t> cheb_perm(size_t q, size_t p_indx, const Permutation<Real_t>
 
   Permutation<Real_t> P0(n3*dof);
   if(scal_exp && p_indx==Scaling){ // Set level-by-level scaling
-    assert(dof==scal_exp->Dim());
+    assert(dof==(int)scal_exp->Dim());
     Vector<Real_t> scal(scal_exp->Dim());
     for(size_t i=0;i<scal.Dim();i++){
       scal[i]=sctl::pow<Real_t>(2.0,(*scal_exp)[i]);
@@ -245,7 +245,7 @@ Permutation<Real_t> cheb_perm(size_t q, size_t p_indx, const Permutation<Real_t>
     for(int j=0;j<dof;j++)
     for(int i=0;i<n3;i++){
       size_t x[3]={i%(q+1), (i/(q+1))%(q+1), i/(q+1)/(q+1)};
-      P0.scal[i+n3*j]*=(x[p_indx-ReflecX]%2?-1.0:1.0);
+      P0.scal[i+n3*j]*=(x[p_indx-ReflecX]%2?-1:1);
     }
   }
 
@@ -293,7 +293,7 @@ Permutation<Real_t> cheb_perm(size_t q, size_t p_indx, const Permutation<Real_t>
 template <class FMMNode>
 Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_Type type, Perm_Type perm_indx){
   //int dim=3; //Only supporting 3D
-  Real_t eps=1e-10;
+  Real_t eps=(Real_t)1e-10;
 
   //Check if the matrix already exists.
   Permutation<Real_t>& P_ = FMM_Pts<FMMNode>::PrecompPerm(type, perm_indx);
@@ -327,10 +327,10 @@ Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_Type t
         assert(ker_perm0.Dim()==ker_perm1.Dim());
         if(ker_perm0.Dim()>0 && sctl::fabs<Real_t>(ker_perm0.scal[0]-ker_perm1.scal[0])>eps){
           for(size_t i=0;i<ker_perm0.Dim();i++){
-            ker_perm0.scal[i]*=-1.0;
+            ker_perm0.scal[i]*=-1;
           }
           for(size_t i=0;i<ker_perm.Dim();i++){
-            ker_perm.scal[i]*=-1.0;
+            ker_perm.scal[i]*=-1;
           }
         }
         for(size_t i=0;i<ker_perm0.Dim();i++){
@@ -373,10 +373,10 @@ Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_Type t
         assert(ker_perm0.Dim()==ker_perm1.Dim());
         if(ker_perm0.Dim()>0 && sctl::fabs<Real_t>(ker_perm0.scal[0]-ker_perm1.scal[0])>eps){
           for(size_t i=0;i<ker_perm0.Dim();i++){
-            ker_perm0.scal[i]*=-1.0;
+            ker_perm0.scal[i]*=-1;
           }
           for(size_t i=0;i<ker_perm.Dim();i++){
-            ker_perm.scal[i]*=-1.0;
+            ker_perm.scal[i]*=-1;
           }
         }
         for(size_t i=0;i<ker_perm0.Dim();i++){
@@ -533,6 +533,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
         M_s2c.SetZero();
         M_s2c_local.SetZero();
         size_t cnt_done=0;
+        PVFMM_UNUSED(cnt_done);
         #pragma omp parallel for schedule(dynamic)
         for(size_t i=myrank;i<n_uc;i+=np){
           std::vector<Real_t> M_=cheb_integ(cheb_deg, &uc_coord[i*3], r, *this->kernel->k_s2m);
@@ -598,6 +599,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
         M_s2t.SetZero();
         M_s2t_local.SetZero();
         size_t cnt_done=0;
+        PVFMM_UNUSED(cnt_done);
         #pragma omp parallel for schedule(dynamic)
         for(size_t i=myrank;i<n_trg;i+=np){
           std::vector<Real_t> s2t=cheb_integ(cheb_deg, &trg_coord[i*3], (Real_t)(s*2.0), *this->kernel->k_s2t);
@@ -648,6 +650,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
         M_s2t.SetZero();
         M_s2t_local.SetZero();
         size_t cnt_done=0;
+        PVFMM_UNUSED(cnt_done);
         #pragma omp parallel for schedule(dynamic)
         for(size_t i=myrank;i<n_trg;i+=np){
           std::vector<Real_t> s2t=cheb_integ(cheb_deg, &trg_coord[i*3], s, *this->kernel->k_s2t);
@@ -698,6 +701,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
         M_s2t.SetZero();
         M_s2t_local.SetZero();
         size_t cnt_done=0;
+        PVFMM_UNUSED(cnt_done);
         #pragma omp parallel for schedule(dynamic)
         for(size_t i=myrank;i<n_trg;i+=np){
           std::vector<Real_t> s2t=cheb_integ(cheb_deg, &trg_coord[i*3], (Real_t)(s*0.5), *this->kernel->k_s2t);
@@ -763,6 +767,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
         M_xs2c.SetZero();
         M_xs2c_local.SetZero();
         size_t cnt_done=0;
+        PVFMM_UNUSED(cnt_done);
         #pragma omp parallel for schedule(dynamic)
         for(size_t i=myrank;i<n_trg;i+=np){
           std::vector<Real_t> M_=cheb_integ(cheb_deg, &trg_coord[i*3], s, *this->kernel->k_s2l);
@@ -1066,7 +1071,7 @@ void FMM_Cheb<FMMNode>::PostProcessing(FMMTree_t* tree, std::vector<FMMNode_t*>&
     Vector<Real_t>& up_equiv=((FMMData*)tree->RootNode()->FMMData())->upward_equiv;
     Matrix<Real_t> avg_density(1,ker_dim[0]); avg_density.SetZero();
     for(size_t i0=0;i0<up_equiv.Dim();i0+=ker_dim[0]){
-      for(size_t i1=0;i1<ker_dim[0];i1++){
+      for(int i1=0;i1<ker_dim[0];i1++){
         avg_density[0][i1]+=up_equiv[i0+i1];
       }
     }
@@ -1091,7 +1096,7 @@ void FMM_Cheb<FMMNode>::PostProcessing(FMMTree_t* tree, std::vector<FMMNode_t*>&
         if(cheb_out.Dim()>0){
           Real_t* c = nodes[i]->Coord();
           Real_t s = sctl::pow<Real_t>(0.5,nodes[i]->Depth());
-          for(size_t j=0;j<Npts;j++){
+          for(int j=0;j<Npts;j++){
             for(size_t k=0;k<PVFMM_COORD_DIM;k++){
               node_pts[j*PVFMM_COORD_DIM+k] = c[k] + node_pts0[j*PVFMM_COORD_DIM+k] * s;
             }
@@ -1109,7 +1114,7 @@ void FMM_Cheb<FMMNode>::PostProcessing(FMMTree_t* tree, std::vector<FMMNode_t*>&
 
           assert(cheb_out.Dim() == vol_poten_coeff.Dim());
           cheb_approx<Real_t, Real_t>(&vol_poten[0], cheb_deg, ker_dim[1], &vol_poten_coeff[0]);
-          for(int j=0;j<vol_poten_coeff.Dim();j++) cheb_out[j]-=vol_poten_coeff[j];
+          for(size_t j=0;j<vol_poten_coeff.Dim();j++) cheb_out[j]-=vol_poten_coeff[j];
         }
       }
     }
@@ -1138,7 +1143,7 @@ void FMM_Cheb<FMMNode>::PostProcessing(FMMTree_t* tree, std::vector<FMMNode_t*>&
         std::vector<Real_t>& rel_coord=tmp_vec;
         rel_coord.resize(PVFMM_COORD_DIM*trg_cnt);
         for(size_t j=0;j<trg_cnt;j++) for(int k=0;k<PVFMM_COORD_DIM;k++)
-          rel_coord[j*PVFMM_COORD_DIM+k]=(trg_coord[j*PVFMM_COORD_DIM+k]-c[k])*scale-1.0;
+          rel_coord[j*PVFMM_COORD_DIM+k]=(trg_coord[j*PVFMM_COORD_DIM+k]-c[k])*scale-1;
         cheb_eval(cheb_out, cheb_deg, rel_coord, trg_value);
       }
     }

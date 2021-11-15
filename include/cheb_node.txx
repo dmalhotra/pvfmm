@@ -60,7 +60,7 @@ void Cheb_Node<Real_t>::Initialize(TreeNode* parent_, int path2node_, TreeNode::
       assert(n_ptr*data_dof==this->cheb_value.Dim());
       points2cheb<Real_t>(cheb_deg,&(this->cheb_coord[0]),&(this->cheb_value[0]),
           this->cheb_coord.Dim()/this->Dim(),data_dof,this->Coord(),
-          1.0/(1UL<<this->Depth()), cheb_coeff);
+          1/(Real_t)(1UL<<this->Depth()), cheb_coeff);
     }
   }
 }
@@ -321,20 +321,21 @@ void Cheb_Node<Real_t>::Curl(){
 template <class Real_t>
 void Cheb_Node<Real_t>::read_val(std::vector<Real_t> x,std::vector<Real_t> y, std::vector<Real_t> z, int nx, int ny, int nz, Real_t* val, bool show_ghost/*=true*/){
   if(cheb_deg<0) return;
-  Real_t s=0.5*sctl::pow<Real_t>(0.5,this->Depth());
+  Real_t s=(Real_t)0.5*sctl::pow<Real_t>(0.5,this->Depth());
   Real_t s_inv=1/s;
   if(this->IsLeaf()){
     if(cheb_coeff.Dim()!=(size_t)((cheb_deg+1)*(cheb_deg+2)*(cheb_deg+3))/6*data_dof
-        || (this->IsGhost() && !show_ghost)) return; Vector<Real_t> out;
+        || (this->IsGhost() && !show_ghost)) return;
+    Vector<Real_t> out;
     std::vector<Real_t> x_=x;
     std::vector<Real_t> y_=y;
     std::vector<Real_t> z_=z;
     for(size_t i=0;i<x.size();i++)
-      x_[i]=(x[i]-this->Coord()[0])*s_inv-1.0;
+      x_[i]=(x[i]-this->Coord()[0])*s_inv-1;
     for(size_t i=0;i<y.size();i++)
-      y_[i]=(y[i]-this->Coord()[1])*s_inv-1.0;
+      y_[i]=(y[i]-this->Coord()[1])*s_inv-1;
     for(size_t i=0;i<z.size();i++)
-      z_[i]=(z[i]-this->Coord()[2])*s_inv-1.0;
+      z_[i]=(z[i]-this->Coord()[2])*s_inv-1;
     cheb_eval(cheb_coeff, cheb_deg, x_, y_, z_, out);
 
     for(int l=0;l<data_dof;l++)

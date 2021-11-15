@@ -107,7 +107,7 @@ T cheb_approx(T* fn_v, int cheb_deg, int dof, T* out, mem::MemoryManager* mem_mg
       std::vector<Y> p(d*d);
       cheb_poly(cheb_deg,&x[0],d,&p[0]);
       for(int i=d;i<d*d;i++)
-        p[i]=p[i]*2.0;
+        p[i]=p[i]*2;
       for(int i=0;i<d*d;i++)
         p[i]=p[i]/d;
       Matrix<Y> Mp1(d,d,&p[0],false);
@@ -613,9 +613,9 @@ void points2cheb(int deg, T* coord, T* val, int n, int dim, T* node_coord, T nod
   //Map coordinates to unit cube
   std::vector<T> coord_(n*3);
   for(int i=0;i<n;i++){
-    coord_[i*3  ]=(coord[i*3  ]-node_coord[0])*2.0/node_size-1.0;
-    coord_[i*3+1]=(coord[i*3+1]-node_coord[1])*2.0/node_size-1.0;
-    coord_[i*3+2]=(coord[i*3+2]-node_coord[2])*2.0/node_size-1.0;
+    coord_[i*3  ]=(coord[i*3  ]-node_coord[0])*2/node_size-1;
+    coord_[i*3+1]=(coord[i*3+1]-node_coord[1])*2/node_size-1;
+    coord_[i*3+2]=(coord[i*3+2]-node_coord[2])*2/node_size-1;
   }
 
   //Compute the matrix M
@@ -670,12 +670,12 @@ void quad_rule(int n, T* x, T* w){
 
   { //Chebyshev quadrature nodes and weights
     for(int i=0;i<n;i++){
-      x_[i]=-sctl::cos<T>((T)(2.0*i+1.0)/(2.0*n)*sctl::const_pi<T>());
+      x_[i]=-sctl::cos<T>((2*i+1)*sctl::const_pi<T>()/(2*n));
       w_[i]=0;//sctl::sqrt<T>(1.0-x_[i]*x_[i])*sctl::const_pi<T>()/n;
     }
     Matrix<T> M(n,n);
     cheb_poly(n-1, &x_[0], n, &M[0][0]);
-    for(size_t i=0;i<n;i++) M[0][i]/=2.0;
+    for(int i=0;i<n;i++) M[0][i]/=2;
 
     std::vector<T> w_sample(n,0);
     for(long i=0;i<n;i+=2) w_sample[i]=-((T)2.0/(i+1)/(i-1));
@@ -723,13 +723,13 @@ void quad_rule(int n, T* x, T* w){
     //  }
     //}
 
-    for(size_t i=0;i<n;i++)
-    for(size_t j=0;j<n;j++){
+    for(int i=0;i<n;i++)
+    for(int j=0;j<n;j++){
       M[i][j]*=w_sample[i];
     }
 
-    for(size_t i=0;i<n;i++)
-    for(size_t j=0;j<n;j++){
+    for(int i=0;i<n;i++)
+    for(int j=0;j<n;j++){
       w_[j]+=M[i][j]*2/n;
     }
   }
@@ -767,24 +767,24 @@ std::vector<T> integ_pyramid(int m, T* s, T r, int nx, const Kernel<T>& kernel, 
   std::vector<T> x_;
   { //  Build stack along X-axis.
     x_.push_back(s[0]);
-    x_.push_back(sctl::fabs<T>(1.0-s[0])+s[0]);
-    x_.push_back(sctl::fabs<T>(1.0-s[1])+s[0]);
-    x_.push_back(sctl::fabs<T>(1.0+s[1])+s[0]);
-    x_.push_back(sctl::fabs<T>(1.0-s[2])+s[0]);
-    x_.push_back(sctl::fabs<T>(1.0+s[2])+s[0]);
+    x_.push_back(sctl::fabs<T>(1-s[0])+s[0]);
+    x_.push_back(sctl::fabs<T>(1-s[1])+s[0]);
+    x_.push_back(sctl::fabs<T>(1+s[1])+s[0]);
+    x_.push_back(sctl::fabs<T>(1-s[2])+s[0]);
+    x_.push_back(sctl::fabs<T>(1+s[2])+s[0]);
     std::sort(x_.begin(),x_.end());
-    for(int i=0;i<x_.size();i++){
+    for(size_t i=0;i<x_.size();i++){
       if(x_[i]<-1.0) x_[i]=-1.0;
       if(x_[i]> 1.0) x_[i]= 1.0;
     }
 
     std::vector<T> x_new;
-    T x_jump=sctl::fabs<T>(1.0-s[0]);
-    if(sctl::fabs<T>(1.0-s[1])>eps) x_jump=std::min(x_jump,(T)sctl::fabs<T>(1.0-s[1]));
-    if(sctl::fabs<T>(1.0+s[1])>eps) x_jump=std::min(x_jump,(T)sctl::fabs<T>(1.0+s[1]));
-    if(sctl::fabs<T>(1.0-s[2])>eps) x_jump=std::min(x_jump,(T)sctl::fabs<T>(1.0-s[2]));
-    if(sctl::fabs<T>(1.0+s[2])>eps) x_jump=std::min(x_jump,(T)sctl::fabs<T>(1.0+s[2]));
-    for(int k=0; k<x_.size()-1; k++){
+    T x_jump=sctl::fabs<T>(1-s[0]);
+    if(sctl::fabs<T>(1-s[1])>eps) x_jump=std::min(x_jump,(T)sctl::fabs<T>(1-s[1]));
+    if(sctl::fabs<T>(1+s[1])>eps) x_jump=std::min(x_jump,(T)sctl::fabs<T>(1+s[1]));
+    if(sctl::fabs<T>(1-s[2])>eps) x_jump=std::min(x_jump,(T)sctl::fabs<T>(1-s[2]));
+    if(sctl::fabs<T>(1+s[2])>eps) x_jump=std::min(x_jump,(T)sctl::fabs<T>(1+s[2]));
+    for(size_t k=0; k<x_.size()-1; k++){
       T x0=x_[k];
       T x1=x_[k+1];
 
@@ -804,14 +804,14 @@ std::vector<T> integ_pyramid(int m, T* s, T r, int nx, const Kernel<T>& kernel, 
         T z1=s[2]+(x1-s[0]); if(z1<-1.0) z1=-1.0; if(z1> 1.0) z1= 1.0;
         A1=(y1-y0)*(z1-z0);
       }
-      T V=0.5*(A0+A1)*(x1-x0);
+      T V=(T)0.5*(A0+A1)*(x1-x0);
       if(V<eps) continue;
 
       if(!x_new.size()) x_new.push_back(x0);
       x_jump=std::max(x_jump,x0-s[0]);
       while(s[0]+x_jump*1.5<x1){
         x_new.push_back(s[0]+x_jump);
-        x_jump*=2.0;
+        x_jump*=2;
       }
       if(x_new.back()+eps<x1) x_new.push_back(x1);
     }
@@ -824,7 +824,7 @@ std::vector<T> integ_pyramid(int m, T* s, T r, int nx, const Kernel<T>& kernel, 
   Vector<T> I1   (   m *m *k_dim,mem::aligned_new<T>(   m *m *k_dim,&mem_mgr),false);
   Vector<T> I2   (m *m *m *k_dim,mem::aligned_new<T>(m *m *m *k_dim,&mem_mgr),false); I2.SetZero();
   if(x_.size()>1)
-  for(int k=0; k<x_.size()-1; k++){
+  for(size_t k=0; k<x_.size()-1; k++){
     T x0=x_[k];
     T x1=x_[k+1];
 
@@ -833,7 +833,7 @@ std::vector<T> integ_pyramid(int m, T* s, T r, int nx, const Kernel<T>& kernel, 
       std::vector<T> qw(nx);
       quad_rule(nx,&qp[0],&qw[0]);
       for(int i=0; i<nx; i++)
-        qp_x[i]=(x1-x0)*qp[i]/2.0+(x1+x0)/2.0;
+        qp_x[i]=(x1-x0)*qp[i]/2+(x1+x0)/2;
       qw_x=qw;
     }
     cheb_poly(m-1,&qp_x[0],nx,&p_x[0]);
@@ -849,7 +849,7 @@ std::vector<T> integ_pyramid(int m, T* s, T r, int nx, const Kernel<T>& kernel, 
         std::vector<T> qw(ny);
         quad_rule(ny,&qp[0],&qw[0]);
         for(int j=0; j<ny; j++)
-          qp_y[j]=(y1-y0)*qp[j]/2.0+(y1+y0)/2.0;
+          qp_y[j]=(y1-y0)*qp[j]/2+(y1+y0)/2;
         qw_y=qw;
       }
       { // Set qp_z
@@ -857,7 +857,7 @@ std::vector<T> integ_pyramid(int m, T* s, T r, int nx, const Kernel<T>& kernel, 
         std::vector<T> qw(nz);
         quad_rule(nz,&qp[0],&qw[0]);
         for(int j=0; j<nz; j++)
-          qp_z[j]=(z1-z0)*qp[j]/2.0+(z1+z0)/2.0;
+          qp_z[j]=(z1-z0)*qp[j]/2+(z1+z0)/2;
         qw_z=qw;
       }
       cheb_poly(m-1,&qp_y[0],ny,&p_y[0]);
@@ -869,9 +869,9 @@ std::vector<T> integ_pyramid(int m, T* s, T r, int nx, const Kernel<T>& kernel, 
           size_t indx0=i0*nz*3;
           for(int i1=0; i1<nz; i1++){
             size_t indx1=indx0+i1*3;
-            trg[indx1+perm[0]]=(s[0]-qp_x[i ])*r*0.5*perm[1];
-            trg[indx1+perm[2]]=(s[1]-qp_y[i0])*r*0.5*perm[3];
-            trg[indx1+perm[4]]=(s[2]-qp_z[i1])*r*0.5*perm[5];
+            trg[indx1+perm[0]]=(s[0]-qp_x[i ])*r*(T)0.5*perm[1];
+            trg[indx1+perm[2]]=(s[1]-qp_y[i0])*r*(T)0.5*perm[3];
+            trg[indx1+perm[4]]=(s[2]-qp_z[i1])*r*(T)0.5*perm[5];
           }
         }
         {
@@ -933,7 +933,7 @@ std::vector<T> integ_pyramid(int m, T* s, T r, int nx, const Kernel<T>& kernel, 
     }
   }
   for(int i=0;i<m*m*m*k_dim;i++)
-    I2[i]=I2[i]*r*r*r/64.0;
+    I2[i]=I2[i]*r*r*r/64;
 
   if(x_.size()>1)
   Profile::Add_FLOP(( 2*ny*nz*m*k_dim
@@ -954,9 +954,9 @@ std::vector<T> integ(int m, T* s, T r, int n, const Kernel<T>& kernel){//*
   //Compute integrals over pyramids in all directions.
   int k_dim=kernel.ker_dim[0]*kernel.ker_dim[1];
   T s_[3];
-  s_[0]=s[0]*2.0/r-1.0;
-  s_[1]=s[1]*2.0/r-1.0;
-  s_[2]=s[2]*2.0/r-1.0;
+  s_[0]=s[0]*2/r-1;
+  s_[1]=s[1]*2/r-1;
+  s_[2]=s[2]*2/r-1;
 
   T s1[3];
   int perm[6];
@@ -998,7 +998,7 @@ std::vector<T> integ(int m, T* s, T r, int n, const Kernel<T>& kernel){//*
       for(int j=0;j<m;j++){
         for(int k=0;k<m;k++){
           U[kk*m*m*m + k*m*m + j*m + i]+=U_[0][kk*m*m*m + i*m*m + j*m + k];
-          U[kk*m*m*m + k*m*m + j*m + i]+=U_[1][kk*m*m*m + i*m*m + j*m + k]*(i%2?-1.0:1.0);
+          U[kk*m*m*m + k*m*m + j*m + i]+=U_[1][kk*m*m*m + i*m*m + j*m + k]*(i%2?-1:1);
         }
       }
     }
@@ -1009,7 +1009,7 @@ std::vector<T> integ(int m, T* s, T r, int n, const Kernel<T>& kernel){//*
       for(int j=0; j<m; j++){
         for(int k=0; k<m; k++){
           U[kk*m*m*m + k*m*m + i*m + j]+=U_[2][kk*m*m*m + i*m*m + j*m + k];
-          U[kk*m*m*m + k*m*m + i*m + j]+=U_[3][kk*m*m*m + i*m*m + j*m + k]*(i%2?-1.0:1.0);
+          U[kk*m*m*m + k*m*m + i*m + j]+=U_[3][kk*m*m*m + i*m*m + j*m + k]*(i%2?-1:1);
         }
       }
     }
@@ -1020,7 +1020,7 @@ std::vector<T> integ(int m, T* s, T r, int n, const Kernel<T>& kernel){//*
       for(int j=0; j<m; j++){
         for(int k=0; k<m; k++){
           U[kk*m*m*m + i*m*m + k*m + j]+=U_[4][kk*m*m*m + i*m*m + j*m + k];
-          U[kk*m*m*m + i*m*m + k*m + j]+=U_[5][kk*m*m*m + i*m*m + j*m + k]*(i%2?-1.0:1.0);
+          U[kk*m*m*m + i*m*m + k*m + j]+=U_[5][kk*m*m*m + i*m*m + j*m + k]*(i%2?-1:1);
         }
       }
     }
@@ -1082,16 +1082,16 @@ std::vector<T> cheb_integ(int m, T* s_, T r_, const Kernel<T>& kernel){
 
 template <class T>
 std::vector<T> cheb_nodes(int deg, int dim){
-  unsigned int d=deg+1;
+  int d=deg+1;
   std::vector<T> x(d);
   for(int i=0;i<d;i++)
-    x[i]=-sctl::cos<T>((i+(T)0.5)*sctl::const_pi<T>()/d)*0.5+0.5;
+    x[i]=-sctl::cos<T>((i+(T)0.5)*sctl::const_pi<T>()/d)*(T)0.5+(T)0.5;
   if(dim==1) return x;
 
-  unsigned int n1=sctl::pow<unsigned int>(d,dim);
+  int n1=sctl::pow<int>(d,dim);
   std::vector<T> y(n1*dim);
   for(int i=0;i<dim;i++){
-    unsigned int n2=sctl::pow<unsigned int>(d,i);
+    int n2=sctl::pow<int>(d,i);
     for(int j=0;j<n1;j++){
       y[j*dim+i]=x[(j/n2)%d];
     }

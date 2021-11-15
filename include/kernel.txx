@@ -67,7 +67,7 @@ void Kernel<T>::Initialize(bool verbose) const{
   init=true;
 
   T eps=1.0;
-  while(eps+(T)1.0>1.0) eps*=0.5;
+  while(eps+(T)1.0>1.0) eps*=(T)0.5;
 
   T scal=1.0;
   if(ker_dim[0]*ker_dim[1]>0){ // Determine scaling
@@ -83,9 +83,9 @@ void Kernel<T>::Initialize(bool verbose) const{
       for(size_t i=0;i<N/2;i++){
         T x,y,z,r;
         do{
-          x=(drand48()-0.5);
-          y=(drand48()-0.5);
-          z=(drand48()-0.5);
+          x=(T)(drand48()-0.5);
+          y=(T)(drand48()-0.5);
+          z=(T)(drand48()-0.5);
           r=sctl::sqrt<T>(x*x+y*y+z*z);
         }while(r<0.25);
         trg_coord1[i*PVFMM_COORD_DIM+0]=x*scal;
@@ -95,30 +95,30 @@ void Kernel<T>::Initialize(bool verbose) const{
       for(size_t i=N/2;i<N;i++){
         T x,y,z,r;
         do{
-          x=(drand48()-0.5);
-          y=(drand48()-0.5);
-          z=(drand48()-0.5);
+          x=(T)(drand48()-0.5);
+          y=(T)(drand48()-0.5);
+          z=(T)(drand48()-0.5);
           r=sctl::sqrt<T>(x*x+y*y+z*z);
         }while(r<0.25);
-        trg_coord1[i*PVFMM_COORD_DIM+0]=x*1.0/scal;
-        trg_coord1[i*PVFMM_COORD_DIM+1]=y*1.0/scal;
-        trg_coord1[i*PVFMM_COORD_DIM+2]=z*1.0/scal;
+        trg_coord1[i*PVFMM_COORD_DIM+0]=x*1/scal;
+        trg_coord1[i*PVFMM_COORD_DIM+1]=y*1/scal;
+        trg_coord1[i*PVFMM_COORD_DIM+2]=z*1/scal;
       }
       for(size_t i=0;i<N;i++){
         BuildMatrix(&src_coord [          0], 1,
                     &trg_coord1[i*PVFMM_COORD_DIM], 1, &(M1[i][0]));
-        for(size_t j=0;j<ker_dim[0]*ker_dim[1];j++){
+        for(int j=0;j<ker_dim[0]*ker_dim[1];j++){
           abs_sum+=sctl::fabs<T>(M1[i][j]);
         }
       }
       if(abs_sum>sctl::sqrt<T>(eps) || scal<eps) break;
-      scal=scal*0.5;
+      scal=scal*(T)0.5;
     }
 
     std::vector<T> trg_coord2(N*PVFMM_COORD_DIM);
     Matrix<T> M2(N,ker_dim[0]*ker_dim[1]);
     for(size_t i=0;i<N*PVFMM_COORD_DIM;i++){
-      trg_coord2[i]=trg_coord1[i]*0.5;
+      trg_coord2[i]=trg_coord1[i]*(T)0.5;
     }
     for(size_t i=0;i<N;i++){
       BuildMatrix(&src_coord [          0], 1,
@@ -126,7 +126,7 @@ void Kernel<T>::Initialize(bool verbose) const{
     }
 
     T max_val=0;
-    for(size_t i=0;i<ker_dim[0]*ker_dim[1];i++){
+    for(int i=0;i<ker_dim[0]*ker_dim[1];i++){
       T dot11=0, dot22=0;
       for(size_t j=0;j<N;j++){
         dot11+=M1[j][i]*M1[j][i];
@@ -136,7 +136,7 @@ void Kernel<T>::Initialize(bool verbose) const{
       max_val=std::max<T>(max_val,dot22);
     }
     if(scale_invar)
-    for(size_t i=0;i<ker_dim[0]*ker_dim[1];i++){
+    for(int i=0;i<ker_dim[0]*ker_dim[1];i++){
       T dot11=0, dot12=0, dot22=0;
       for(size_t j=0;j<N;j++){
         dot11+=M1[j][i]*M1[j][i];
@@ -147,7 +147,7 @@ void Kernel<T>::Initialize(bool verbose) const{
          dot22>max_val*eps ){
         T s=dot12/dot11;
         M_scal[0][i]=sctl::log<T>(s)/sctl::log<T>(2.0);
-        T err=sctl::sqrt<T>(0.5*(dot22/dot11)/(s*s)-0.5);
+        T err=sctl::sqrt<T>(((dot22/dot11)/(s*s)-1)*(T)0.5);
         if(err>eps_){
           scale_invar=false;
           M_scal[0][i]=0.0;
@@ -170,8 +170,8 @@ void Kernel<T>::Initialize(bool verbose) const{
 
       Matrix<T> M(ker_dim[0]*ker_dim[1]+1,ker_dim[0]+ker_dim[1]); M.SetZero();
       M[ker_dim[0]*ker_dim[1]][0]=1;
-      for(size_t i0=0;i0<ker_dim[0];i0++)
-      for(size_t i1=0;i1<ker_dim[1];i1++){
+      for(int i0=0;i0<ker_dim[0];i0++)
+      for(int i1=0;i1<ker_dim[1];i1++){
         size_t j=i0*ker_dim[1]+i1;
         if(b[j][0]>0){
           M[j][ 0+        i0]=1;
@@ -180,15 +180,15 @@ void Kernel<T>::Initialize(bool verbose) const{
       }
       Matrix<T> x=M.pinv()*b;
 
-      for(size_t i=0;i<ker_dim[0];i++){
+      for(int i=0;i<ker_dim[0];i++){
         src_scal[i]=x[i][0];
       }
-      for(size_t i=0;i<ker_dim[1];i++){
+      for(int i=0;i<ker_dim[1];i++){
         trg_scal[i]=x[ker_dim[0]+i][0];
       }
 
-      for(size_t i0=0;i0<ker_dim[0];i0++)
-      for(size_t i1=0;i1<ker_dim[1];i1++){
+      for(int i0=0;i0<ker_dim[0];i0++)
+      for(int i1=0;i1<ker_dim[1];i1++){
         if(M_scal[i0][i1]>=0){
           if(sctl::fabs<T>(src_scal[i0]+trg_scal[i1]-M_scal[i0][i1])>eps_){
             scale_invar=false;
@@ -212,9 +212,9 @@ void Kernel<T>::Initialize(bool verbose) const{
     for(size_t i=0;i<N/2;i++){
       T x,y,z,r;
       do{
-        x=(drand48()-0.5);
-        y=(drand48()-0.5);
-        z=(drand48()-0.5);
+        x=(T)(drand48()-0.5);
+        y=(T)(drand48()-0.5);
+        z=(T)(drand48()-0.5);
         r=sctl::sqrt<T>(x*x+y*y+z*z);
       }while(r<0.25);
       trg_coord1[i*PVFMM_COORD_DIM+0]=x*scal;
@@ -224,14 +224,14 @@ void Kernel<T>::Initialize(bool verbose) const{
     for(size_t i=N/2;i<N;i++){
       T x,y,z,r;
       do{
-        x=(drand48()-0.5);
-        y=(drand48()-0.5);
-        z=(drand48()-0.5);
+        x=(T)(drand48()-0.5);
+        y=(T)(drand48()-0.5);
+        z=(T)(drand48()-0.5);
         r=sctl::sqrt<T>(x*x+y*y+z*z);
       }while(r<0.25);
-      trg_coord1[i*PVFMM_COORD_DIM+0]=x*1.0/scal;
-      trg_coord1[i*PVFMM_COORD_DIM+1]=y*1.0/scal;
-      trg_coord1[i*PVFMM_COORD_DIM+2]=z*1.0/scal;
+      trg_coord1[i*PVFMM_COORD_DIM+0]=x*1/scal;
+      trg_coord1[i*PVFMM_COORD_DIM+1]=y*1/scal;
+      trg_coord1[i*PVFMM_COORD_DIM+2]=z*1/scal;
     }
 
     for(size_t p_type=0;p_type<C_Perm;p_type++){ // For each symmetry transform
@@ -298,18 +298,18 @@ void Kernel<T>::Initialize(bool verbose) const{
         std::vector<T> norm2(ker_dim[0]*ker_dim[1]);
         {
           for(size_t k=0;k<N;k++)
-          for(size_t i=0;i<ker_dim[0]*ker_dim[1];i++)
-          for(size_t j=0;j<ker_dim[0]*ker_dim[1];j++){
+          for(int i=0;i<ker_dim[0]*ker_dim[1];i++)
+          for(int j=0;j<ker_dim[0]*ker_dim[1];j++){
             dot11[i][j]+=M1[k][i]*M1[k][j];
             dot12[i][j]+=M1[k][i]*M2[k][j];
             dot22[i][j]+=M2[k][i]*M2[k][j];
           }
-          for(size_t i=0;i<ker_dim[0]*ker_dim[1];i++){
+          for(int i=0;i<ker_dim[0]*ker_dim[1];i++){
             norm1[i]=sctl::sqrt<T>(dot11[i][i]);
             norm2[i]=sctl::sqrt<T>(dot22[i][i]);
           }
-          for(size_t i=0;i<ker_dim[0]*ker_dim[1];i++)
-          for(size_t j=0;j<ker_dim[0]*ker_dim[1];j++){
+          for(int i=0;i<ker_dim[0]*ker_dim[1];i++)
+          for(int j=0;j<ker_dim[0]*ker_dim[1];j++){
             dot11[i][j]/=(norm1[i]*norm1[j]);
             dot12[i][j]/=(norm1[i]*norm2[j]);
             dot22[i][j]/=(norm2[i]*norm2[j]);
@@ -319,13 +319,13 @@ void Kernel<T>::Initialize(bool verbose) const{
         long long flag=1;
         M11.Resize(ker_dim[0],ker_dim[1]); M11.SetZero();
         M22.Resize(ker_dim[0],ker_dim[1]); M22.SetZero();
-        for(size_t i=0;i<ker_dim[0]*ker_dim[1];i++){
+        for(int i=0;i<ker_dim[0]*ker_dim[1];i++){
           if(norm1[i]>eps_ && M11[0][i]==0){
-            for(size_t j=0;j<ker_dim[0]*ker_dim[1];j++){
-              if(sctl::fabs<T>(norm1[i]-norm1[j])<eps_ && sctl::fabs<T>(sctl::fabs<T>(dot11[i][j])-1.0)<eps_){
+            for(int j=0;j<ker_dim[0]*ker_dim[1];j++){
+              if(sctl::fabs<T>(norm1[i]-norm1[j])<eps_ && sctl::fabs<T>(sctl::fabs<T>(dot11[i][j])-1)<eps_){
                 M11[0][j]=(dot11[i][j]>0?flag:-flag);
               }
-              if(sctl::fabs<T>(norm1[i]-norm2[j])<eps_ && sctl::fabs<T>(sctl::fabs<T>(dot12[i][j])-1.0)<eps_){
+              if(sctl::fabs<T>(norm1[i]-norm2[j])<eps_ && sctl::fabs<T>(sctl::fabs<T>(dot12[i][j])-1)<eps_){
                 M22[0][j]=(dot12[i][j]>0?flag:-flag);
               }
             }
@@ -606,13 +606,13 @@ void Kernel<T>::Initialize(bool verbose) const{
       std::cout<<"Scaling Matrix :\n";
       Matrix<T> Src(ker_dim[0],1);
       Matrix<T> Trg(1,ker_dim[1]);
-      for(size_t i=0;i<ker_dim[0];i++) Src[i][0]=sctl::pow<T>(2.0,src_scal[i]);
-      for(size_t i=0;i<ker_dim[1];i++) Trg[0][i]=sctl::pow<T>(2.0,trg_scal[i]);
+      for(int i=0;i<ker_dim[0];i++) Src[i][0]=sctl::pow<T>(2.0,src_scal[i]);
+      for(int i=0;i<ker_dim[1];i++) Trg[0][i]=sctl::pow<T>(2.0,trg_scal[i]);
       std::cout<<Src*Trg;
     }
     if(ker_dim[0]*ker_dim[1]>0){ // Accuracy of multipole expansion
       std::cout<<"Multipole Error: ";
-      for(T rad=1.0; rad>1.0e-2; rad*=0.5){
+      for(T rad=1; rad>1.0e-2; rad*=(T)0.5){
         int m=8; // multipole order
 
         std::vector<T> equiv_surf;
@@ -628,13 +628,13 @@ void Kernel<T>::Initialize(bool verbose) const{
                 T y=((T)2*i1-(m-1))/(m-1)/3;
                 T z=((T)2*i2-(m-1))/(m-1)/3;
 
-                equiv_surf.push_back(x*PVFMM_RAD0*rad);
-                equiv_surf.push_back(y*PVFMM_RAD0*rad);
-                equiv_surf.push_back(z*PVFMM_RAD0*rad);
+                equiv_surf.push_back(x*(T)PVFMM_RAD0*rad);
+                equiv_surf.push_back(y*(T)PVFMM_RAD0*rad);
+                equiv_surf.push_back(z*(T)PVFMM_RAD0*rad);
 
-                check_surf.push_back(x*PVFMM_RAD1*rad);
-                check_surf.push_back(y*PVFMM_RAD1*rad);
-                check_surf.push_back(z*PVFMM_RAD1*rad);
+                check_surf.push_back(x*(T)PVFMM_RAD1*rad);
+                check_surf.push_back(y*(T)PVFMM_RAD1*rad);
+                check_surf.push_back(z*(T)PVFMM_RAD1*rad);
               }
             }
           }
@@ -647,19 +647,19 @@ void Kernel<T>::Initialize(bool verbose) const{
         std::vector<T> src_coord;
         std::vector<T> trg_coord;
         for(size_t i=0;i<n_src*PVFMM_COORD_DIM;i++){
-          src_coord.push_back((2*drand48()-1)/3*rad);
+          src_coord.push_back((2*(T)drand48()-1)/3*rad);
         }
         for(size_t i=0;i<n_trg;i++){
           T x,y,z,r;
           do{
-            x=(drand48()-0.5);
-            y=(drand48()-0.5);
-            z=(drand48()-0.5);
+            x=(T)(drand48()-0.5);
+            y=(T)(drand48()-0.5);
+            z=(T)(drand48()-0.5);
             r=sctl::sqrt<T>(x*x+y*y+z*z);
           }while(r==0.0);
-          trg_coord.push_back(x/r*sctl::sqrt<T>((T)PVFMM_COORD_DIM)*rad*(1.0+drand48()));
-          trg_coord.push_back(y/r*sctl::sqrt<T>((T)PVFMM_COORD_DIM)*rad*(1.0+drand48()));
-          trg_coord.push_back(z/r*sctl::sqrt<T>((T)PVFMM_COORD_DIM)*rad*(1.0+drand48()));
+          trg_coord.push_back(x/r*sctl::sqrt<T>((T)PVFMM_COORD_DIM)*rad*(T)(1+drand48()));
+          trg_coord.push_back(y/r*sctl::sqrt<T>((T)PVFMM_COORD_DIM)*rad*(T)(1+drand48()));
+          trg_coord.push_back(z/r*sctl::sqrt<T>((T)PVFMM_COORD_DIM)*rad*(T)(1+drand48()));
         }
 
         Matrix<T> M_s2c(n_src*ker_dim[0],n_check*ker_dim[1]);
@@ -674,11 +674,11 @@ void Kernel<T>::Initialize(bool verbose) const{
           Matrix<T> U,S,V;
           M_e2c.SVD(U,S,V);
           T eps=1, max_S=0;
-          while(eps*(T)0.5+(T)1.0>1.0) eps*=0.5;
+          while(eps*(T)0.5+(T)1>1) eps*=(T)0.5;
           for(size_t i=0;i<std::min(S.Dim(0),S.Dim(1));i++){
             if(sctl::fabs<T>(S[i][i])>max_S) max_S=sctl::fabs<T>(S[i][i]);
           }
-          for(size_t i=0;i<S.Dim(0);i++) S[i][i]=(S[i][i]>eps*max_S*4?1.0/S[i][i]:0.0);
+          for(size_t i=0;i<S.Dim(0);i++) S[i][i]=(S[i][i]>eps*max_S*4?1/S[i][i]:0);
           M_c2e0=V.Transpose()*S;
           M_c2e1=U.Transpose();
         }
@@ -706,7 +706,7 @@ void Kernel<T>::Initialize(bool verbose) const{
     }
     if(ker_dim[0]*ker_dim[1]>0){ // Accuracy of local expansion
       std::cout<<"Local-exp Error: ";
-      for(T rad=1.0; rad>1.0e-2; rad*=0.5){
+      for(T rad=1; rad>1.0e-2; rad*=(T)0.5){
         int m=8; // multipole order
 
         std::vector<T> equiv_surf;
@@ -722,13 +722,13 @@ void Kernel<T>::Initialize(bool verbose) const{
                 T y=((T)2*i1-(m-1))/(m-1)/3;
                 T z=((T)2*i2-(m-1))/(m-1)/3;
 
-                equiv_surf.push_back(x*PVFMM_RAD1*rad);
-                equiv_surf.push_back(y*PVFMM_RAD1*rad);
-                equiv_surf.push_back(z*PVFMM_RAD1*rad);
+                equiv_surf.push_back(x*(T)PVFMM_RAD1*rad);
+                equiv_surf.push_back(y*(T)PVFMM_RAD1*rad);
+                equiv_surf.push_back(z*(T)PVFMM_RAD1*rad);
 
-                check_surf.push_back(x*PVFMM_RAD0*rad);
-                check_surf.push_back(y*PVFMM_RAD0*rad);
-                check_surf.push_back(z*PVFMM_RAD0*rad);
+                check_surf.push_back(x*(T)PVFMM_RAD0*rad);
+                check_surf.push_back(y*(T)PVFMM_RAD0*rad);
+                check_surf.push_back(z*(T)PVFMM_RAD0*rad);
               }
             }
           }
@@ -741,19 +741,19 @@ void Kernel<T>::Initialize(bool verbose) const{
         std::vector<T> src_coord;
         std::vector<T> trg_coord;
         for(size_t i=0;i<n_trg*PVFMM_COORD_DIM;i++){
-          trg_coord.push_back((2*drand48()-1)/3*rad);
+          trg_coord.push_back((2*(T)drand48()-1)/3*rad);
         }
         for(size_t i=0;i<n_src;i++){
           T x,y,z,r;
           do{
-            x=(drand48()-0.5);
-            y=(drand48()-0.5);
-            z=(drand48()-0.5);
+            x=(T)(drand48()-0.5);
+            y=(T)(drand48()-0.5);
+            z=(T)(drand48()-0.5);
             r=sctl::sqrt<T>(x*x+y*y+z*z);
           }while(r==0.0);
-          src_coord.push_back(x/r*sctl::sqrt<T>((T)PVFMM_COORD_DIM)*rad*(1.0+drand48()));
-          src_coord.push_back(y/r*sctl::sqrt<T>((T)PVFMM_COORD_DIM)*rad*(1.0+drand48()));
-          src_coord.push_back(z/r*sctl::sqrt<T>((T)PVFMM_COORD_DIM)*rad*(1.0+drand48()));
+          src_coord.push_back(x/r*sctl::sqrt<T>((T)PVFMM_COORD_DIM)*rad*(T)(1+drand48()));
+          src_coord.push_back(y/r*sctl::sqrt<T>((T)PVFMM_COORD_DIM)*rad*(T)(1+drand48()));
+          src_coord.push_back(z/r*sctl::sqrt<T>((T)PVFMM_COORD_DIM)*rad*(T)(1+drand48()));
         }
 
         Matrix<T> M_s2c(n_src*ker_dim[0],n_check*ker_dim[1]);
@@ -768,11 +768,11 @@ void Kernel<T>::Initialize(bool verbose) const{
           Matrix<T> U,S,V;
           M_e2c.SVD(U,S,V);
           T eps=1, max_S=0;
-          while(eps*(T)0.5+(T)1.0>1.0) eps*=0.5;
+          while(eps*(T)0.5+(T)1>1) eps*=(T)0.5;
           for(size_t i=0;i<std::min(S.Dim(0),S.Dim(1));i++){
             if(sctl::fabs<T>(S[i][i])>max_S) max_S=sctl::fabs<T>(S[i][i]);
           }
-          for(size_t i=0;i<S.Dim(0);i++) S[i][i]=(S[i][i]>eps*max_S*4?1.0/S[i][i]:0.0);
+          for(size_t i=0;i<S.Dim(0);i++) S[i][i]=(S[i][i]>eps*max_S*4?1/S[i][i]:0);
           M_c2e0=V.Transpose()*S;
           M_c2e1=U.Transpose();
         }
@@ -803,8 +803,8 @@ void Kernel<T>::Initialize(bool verbose) const{
       std::vector<T> equiv_surf;
       std::vector<T> check_surf;
       std::vector<T> trg_coord;
-      for(size_t i=0;i<m*PVFMM_COORD_DIM;i++){
-        trg_coord.push_back(drand48()+1.0);
+      for(int i=0;i<m*PVFMM_COORD_DIM;i++){
+        trg_coord.push_back((T)drand48()+1);
       }
       for(int i0=0;i0<m;i0++){
         for(int i1=0;i1<m;i1++){
@@ -817,13 +817,13 @@ void Kernel<T>::Initialize(bool verbose) const{
               T y=((T)2*i1-(m-1))/(m-1)/2;
               T z=((T)2*i2-(m-1))/(m-1)/2;
 
-              equiv_surf.push_back(x*PVFMM_RAD1+1.5);
-              equiv_surf.push_back(y*PVFMM_RAD1+1.5);
-              equiv_surf.push_back(z*PVFMM_RAD1+1.5);
+              equiv_surf.push_back((T)(x*PVFMM_RAD1+1.5));
+              equiv_surf.push_back((T)(y*PVFMM_RAD1+1.5));
+              equiv_surf.push_back((T)(z*PVFMM_RAD1+1.5));
 
-              check_surf.push_back(x*PVFMM_RAD0+1.5);
-              check_surf.push_back(y*PVFMM_RAD0+1.5);
-              check_surf.push_back(z*PVFMM_RAD0+1.5);
+              check_surf.push_back((T)(x*PVFMM_RAD0+1.5));
+              check_surf.push_back((T)(y*PVFMM_RAD0+1.5));
+              check_surf.push_back((T)(z*PVFMM_RAD0+1.5));
             }
           }
         }
@@ -840,14 +840,14 @@ void Kernel<T>::Initialize(bool verbose) const{
         #pragma omp parallel for schedule(dynamic)
         for(size_t i=0;i<n_check;i++){ // Compute near-interaction for operator M_near
           std::vector<T> M_=cheb_integ<T>(0, &check_surf[i*3], 3.0, *this);
-          for(size_t j=0; j<ker_dim[0]; j++)
+          for(int j=0; j<ker_dim[0]; j++)
             for(int k=0; k<ker_dim[1]; k++)
               M_near[j][i*ker_dim[1]+k] = M_[j+k*ker_dim[0]];
         }
         #pragma omp parallel for schedule(dynamic)
         for(size_t i=0;i<n_trg;i++){ // Compute near-interaction for targets T_near
           std::vector<T> M_=cheb_integ<T>(0, &trg_coord[i*3], 3.0, *this);
-          for(size_t j=0; j<ker_dim[0]; j++)
+          for(int j=0; j<ker_dim[0]; j++)
             for(int k=0; k<ker_dim[1]; k++)
               T_near[j][i*ker_dim[1]+k] = M_[j+k*ker_dim[0]];
         }
@@ -879,11 +879,11 @@ void Kernel<T>::Initialize(bool verbose) const{
           Matrix<T> U,S,V;
           M_e2c.SVD(U,S,V);
           T eps=1, max_S=0;
-          while(eps*(T)0.5+(T)1.0>1.0) eps*=0.5;
+          while(eps*(T)0.5+(T)1>1) eps*=(T)0.5;
           for(size_t i=0;i<std::min(S.Dim(0),S.Dim(1));i++){
             if(sctl::fabs<T>(S[i][i])>max_S) max_S=sctl::fabs<T>(S[i][i]);
           }
-          for(size_t i=0;i<S.Dim(0);i++) S[i][i]=(S[i][i]>eps*max_S*4?1.0/S[i][i]:0.0);
+          for(size_t i=0;i<S.Dim(0);i++) S[i][i]=(S[i][i]>eps*max_S*4?1/S[i][i]:0);
           M_c2e0=V.Transpose()*S;
           M_c2e1=U.Transpose();
         }
@@ -949,7 +949,7 @@ template <class T>
 void Kernel<T>::BuildMatrix(T* r_src, int src_cnt,
                  T* r_trg, int trg_cnt, T* k_out) const{
   int dim=3; //Only supporting 3D
-  memset(k_out, 0, src_cnt*ker_dim[0]*trg_cnt*ker_dim[1]*sizeof(T));
+  ::memset(k_out, 0, src_cnt*ker_dim[0]*trg_cnt*ker_dim[1]*sizeof(T));
   #pragma omp parallel for
   for(int i=0;i<src_cnt;i++) //TODO Optimize this.
     for(int j=0;j<ker_dim[0];j++){
@@ -1207,7 +1207,7 @@ template <class uKernel> template <class Real, int digits> void GenericKernel<uK
 struct laplace_poten : public GenericKernel<laplace_poten> {
   static const int FLOPS = 9;
   template <class Real> static Real ScaleFactor() {
-    return 1.0/(4*sctl::const_pi<Real>());
+    return 1/(4*sctl::const_pi<Real>());
   }
   template <class VecType, int digits> static void uKerEval(VecType (&u)[1], const VecType (&r)[3], const VecType (&f)[1], const void* ctx_ptr) {
     VecType r2 = r[0]*r[0]+r[1]*r[1]+r[2]*r[2];
@@ -1229,7 +1229,7 @@ template <class Real> void laplace_vol_poten(const Real* coord, int n, Real* out
 struct laplace_dbl_poten : public GenericKernel<laplace_dbl_poten> {
   static const int FLOPS = 17;
   template <class Real> static Real ScaleFactor() {
-    return 1.0/(4*sctl::const_pi<Real>());
+    return 1/(4*sctl::const_pi<Real>());
   }
   template <class VecType, int digits> static void uKerEval(VecType (&u)[3], const VecType (&r)[3], const VecType (&f)[4], const void* ctx_ptr) {
     VecType r2 = r[0]*r[0]+r[1]*r[1]+r[2]*r[2];
@@ -1245,7 +1245,7 @@ struct laplace_dbl_poten : public GenericKernel<laplace_dbl_poten> {
 struct laplace_grad : public GenericKernel<laplace_grad> {
   static const int FLOPS = 16;
   template <class Real> static Real ScaleFactor() {
-    return 1.0/(4*sctl::const_pi<Real>());
+    return 1/(4*sctl::const_pi<Real>());
   }
   template <class VecType, int digits> static void uKerEval(VecType (&u)[3], const VecType (&r)[3], const VecType (&f)[1], const void* ctx_ptr) {
     VecType r2 = r[0]*r[0]+r[1]*r[1]+r[2]*r[2];
@@ -1277,7 +1277,7 @@ template<class T> const Kernel<T>& LaplaceKernel<T>::gradient(){
 
 struct stokes_vel : public GenericKernel<stokes_vel> {
   static const int FLOPS = 29;
-  template <class Real> static Real ScaleFactor() { return 1.0 / (8 * sctl::const_pi<Real>()); }
+  template <class Real> static Real ScaleFactor() { return 1 / (8 * sctl::const_pi<Real>()); }
   template <class VecType, int digits> static void uKerEval(VecType (&u)[3], const VecType (&r)[3], const VecType (&f)[3], const void* ctx_ptr) {
       VecType r2 = r[0]*r[0]+r[1]*r[1]+r[2]*r[2];
       VecType rinv = sctl::approx_rsqrt<digits>(r2, r2 > VecType::Zero());
@@ -1292,7 +1292,7 @@ struct stokes_vel : public GenericKernel<stokes_vel> {
 struct stokes_press : public GenericKernel<stokes_press> {
   static const int FLOPS = 16;
   template <class Real> static Real ScaleFactor() {
-    return 1.0/(4.0*sctl::const_pi<Real>());
+    return 1/(4*sctl::const_pi<Real>());
   }
   template <class VecType, int digits> static void uKerEval(VecType (&u)[1], const VecType (&r)[3], const VecType (&f)[3], const void* ctx_ptr) {
     VecType r2 = r[0] * r[0] + r[1] * r[1] + r[2] * r[2];
@@ -1306,7 +1306,7 @@ struct stokes_press : public GenericKernel<stokes_press> {
 struct stokes_stress : public GenericKernel<stokes_stress> {
   static const int FLOPS = 43;
   template <class Real> static Real ScaleFactor() {
-      return -3.0/(4.0*sctl::const_pi<Real>());
+      return -3/(4*sctl::const_pi<Real>());
   }
   template <class VecType, int digits> static void uKerEval(VecType (&u)[9], const VecType (&r)[3], const VecType (&f)[3], const void* ctx_ptr) {
     VecType r2 = r[0] * r[0] + r[1] * r[1] + r[2] * r[2];
@@ -1329,7 +1329,7 @@ struct stokes_stress : public GenericKernel<stokes_stress> {
 struct stokes_grad : public GenericKernel<stokes_grad> {
   static const int FLOPS = 94;
   template <class Real> static Real ScaleFactor() {
-      return 1.0/(8.0*sctl::const_pi<Real>());
+      return 1/(8*sctl::const_pi<Real>());
   }
   template <class VecType, int digits> static void uKerEval(VecType (&u)[9], const VecType (&r)[3], const VecType (&f)[3], const void* ctx_ptr) {
     VecType r2 = r[0] * r[0] + r[1] * r[1] + r[2] * r[2];
@@ -1356,7 +1356,7 @@ struct stokes_grad : public GenericKernel<stokes_grad> {
 
 struct stokes_sym_dip : public GenericKernel<stokes_sym_dip> {
   static const int FLOPS = 35;
-  template <class Real> static Real ScaleFactor() { return -1.0 / (8 * sctl::const_pi<Real>()); }
+  template <class Real> static Real ScaleFactor() { return -1 / (8 * sctl::const_pi<Real>()); }
   template <class VecType, int digits> static void uKerEval(VecType (&k)[3], const VecType (&r)[3], const VecType (&v_src)[6], const void* ctx_ptr) {
       VecType r2 = r[0]*r[0]+r[1]*r[1]+r[2]*r[2];
       VecType rinv = sctl::approx_rsqrt<digits>(r2, r2 > VecType::Zero());
@@ -1413,7 +1413,7 @@ template<class T> const Kernel<T>& StokesKernel<T>::vel_grad(){
 
 struct biot_savart : public GenericKernel<biot_savart> {
   static const int FLOPS = 24;
-  template <class Real> static Real ScaleFactor() { return 1.0 / (4 * sctl::const_pi<Real>()); }
+  template <class Real> static Real ScaleFactor() { return 1 / (4 * sctl::const_pi<Real>()); }
   template <class VecType, int digits> static void uKerEval(VecType (&u)[3], const VecType (&r)[3], const VecType (&f)[3], const void* ctx_ptr) {
       VecType r2 = r[0]*r[0]+r[1]*r[1]+r[2]*r[2];
       VecType rinv = sctl::approx_rsqrt<digits>(r2, r2 > VecType::Zero());
@@ -1438,9 +1438,9 @@ template<class T> const Kernel<T>& BiotSavartKernel<T>::potential(){
 
 struct helmholtz_poten : public GenericKernel<helmholtz_poten> {
   static const int FLOPS = 20;
-  template <class Real> static Real ScaleFactor() { return 1.0 / (4.0 * sctl::const_pi<Real>()); }
+  template <class Real> static Real ScaleFactor() { return 1 / (4 * sctl::const_pi<Real>()); }
   template <class VecType, int digits> static void uKerEval(VecType (&u)[2], const VecType (&r)[3], const VecType (&f)[2], const void* ctx_ptr) {
-      const VecType mu = (typename VecType::ScalarType)(20.0 * sctl::const_pi<double>());
+      const VecType mu = (typename VecType::ScalarType)(20 * sctl::const_pi<double>());
       VecType r2 = r[0]*r[0]+r[1]*r[1]+r[2]*r[2];
       VecType rinv = sctl::approx_rsqrt<digits>(r2, r2 > VecType::Zero());
       VecType r_mag = rinv * r2;

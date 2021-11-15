@@ -55,7 +55,7 @@ inline MortonId::MortonId(T* coord, uint8_t depth_): depth(depth_){
 template <class T>
 inline void MortonId::GetCoord(T* coord){
   static PVFMM_MID_UINT_T max_int=((PVFMM_MID_UINT_T)1)<<(PVFMM_MAX_DEPTH);
-  static T s=1.0/((T)max_int);
+  static T s=1/((T)max_int);
   coord[0]=x*s;
   coord[1]=y*s;
   coord[2]=z*s;

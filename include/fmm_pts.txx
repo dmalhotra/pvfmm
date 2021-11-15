@@ -56,34 +56,34 @@ std::vector<Real_t> surface(int p, Real_t* c, Real_t alpha, int depth){
   size_t cnt=1;
   for(int i=0;i<p-1;i++)
     for(int j=0;j<p-1;j++){
-      coord[cnt*3  ]=-1.0;
-      coord[cnt*3+1]=(2.0*(i+1)-p+1)/(p-1);
-      coord[cnt*3+2]=(2.0*j-p+1)/(p-1);
+      coord[cnt*3  ]=-1;
+      coord[cnt*3+1]=(2*(i+1)-p+1)/(Real_t)(p-1);
+      coord[cnt*3+2]=(2*j-p+1)/(Real_t)(p-1);
       cnt++;
     }
   for(int i=0;i<p-1;i++)
     for(int j=0;j<p-1;j++){
-      coord[cnt*3  ]=(2.0*i-p+1)/(p-1);
-      coord[cnt*3+1]=-1.0;
-      coord[cnt*3+2]=(2.0*(j+1)-p+1)/(p-1);
+      coord[cnt*3  ]=(2*i-p+1)/(Real_t)(p-1);
+      coord[cnt*3+1]=-1;
+      coord[cnt*3+2]=(2*(j+1)-p+1)/(Real_t)(p-1);
       cnt++;
     }
   for(int i=0;i<p-1;i++)
     for(int j=0;j<p-1;j++){
-      coord[cnt*3  ]=(2.0*(i+1)-p+1)/(p-1);
-      coord[cnt*3+1]=(2.0*j-p+1)/(p-1);
-      coord[cnt*3+2]=-1.0;
+      coord[cnt*3  ]=(2*(i+1)-p+1)/(Real_t)(p-1);
+      coord[cnt*3+1]=(2*j-p+1)/(Real_t)(p-1);
+      coord[cnt*3+2]=-1;
       cnt++;
     }
   for(size_t i=0;i<(n_/2)*3;i++)
     coord[cnt*3+i]=-coord[i];
 
-  Real_t r = 0.5*sctl::pow<Real_t>(0.5,depth);
+  Real_t r = (Real_t)0.5*sctl::pow<Real_t>(0.5,depth);
   Real_t b = alpha*r;
   for(size_t i=0;i<n_;i++){
-    coord[i*3+0]=(coord[i*3+0]+1.0)*b+c[0];
-    coord[i*3+1]=(coord[i*3+1]+1.0)*b+c[1];
-    coord[i*3+2]=(coord[i*3+2]+1.0)*b+c[2];
+    coord[i*3+0]=(coord[i*3+0]+1)*b+c[0];
+    coord[i*3+1]=(coord[i*3+1]+1)*b+c[1];
+    coord[i*3+2]=(coord[i*3+2]+1)*b+c[2];
   }
   return coord;
 }
@@ -94,7 +94,7 @@ std::vector<Real_t> surface(int p, Real_t* c, Real_t alpha, int depth){
  */
 template <class Real_t>
 std::vector<Real_t> u_check_surf(int p, Real_t* c, int depth){
-  Real_t r=0.5*sctl::pow<Real_t>(0.5,depth);
+  Real_t r=(Real_t)0.5*sctl::pow<Real_t>(0.5,depth);
   Real_t coord[3]={(Real_t)(c[0]-r*(PVFMM_RAD1-1.0)),(Real_t)(c[1]-r*(PVFMM_RAD1-1.0)),(Real_t)(c[2]-r*(PVFMM_RAD1-1.0))};
   return surface(p,coord,(Real_t)PVFMM_RAD1,depth);
 }
@@ -105,7 +105,7 @@ std::vector<Real_t> u_check_surf(int p, Real_t* c, int depth){
  */
 template <class Real_t>
 std::vector<Real_t> u_equiv_surf(int p, Real_t* c, int depth){
-  Real_t r=0.5*sctl::pow<Real_t>(0.5,depth);
+  Real_t r=(Real_t)0.5*sctl::pow<Real_t>(0.5,depth);
   Real_t coord[3]={(Real_t)(c[0]-r*(PVFMM_RAD0-1.0)),(Real_t)(c[1]-r*(PVFMM_RAD0-1.0)),(Real_t)(c[2]-r*(PVFMM_RAD0-1.0))};
   return surface(p,coord,(Real_t)PVFMM_RAD0,depth);
 }
@@ -116,7 +116,7 @@ std::vector<Real_t> u_equiv_surf(int p, Real_t* c, int depth){
  */
 template <class Real_t>
 std::vector<Real_t> d_check_surf(int p, Real_t* c, int depth){
-  Real_t r=0.5*sctl::pow<Real_t>(0.5,depth);
+  Real_t r=(Real_t)0.5*sctl::pow<Real_t>(0.5,depth);
   Real_t coord[3]={(Real_t)(c[0]-r*(PVFMM_RAD0-1.0)),(Real_t)(c[1]-r*(PVFMM_RAD0-1.0)),(Real_t)(c[2]-r*(PVFMM_RAD0-1.0))};
   return surface(p,coord,(Real_t)PVFMM_RAD0,depth);
 }
@@ -127,7 +127,7 @@ std::vector<Real_t> d_check_surf(int p, Real_t* c, int depth){
  */
 template <class Real_t>
 std::vector<Real_t> d_equiv_surf(int p, Real_t* c, int depth){
-  Real_t r=0.5*sctl::pow<Real_t>(0.5,depth);
+  Real_t r=(Real_t)0.5*sctl::pow<Real_t>(0.5,depth);
   Real_t coord[3]={(Real_t)(c[0]-r*(PVFMM_RAD1-1.0)),(Real_t)(c[1]-r*(PVFMM_RAD1-1.0)),(Real_t)(c[2]-r*(PVFMM_RAD1-1.0))};
   return surface(p,coord,(Real_t)PVFMM_RAD1,depth);
 }
@@ -139,11 +139,11 @@ std::vector<Real_t> d_equiv_surf(int p, Real_t* c, int depth){
 template <class Real_t>
 std::vector<Real_t> conv_grid(int p, Real_t* c, int depth){
   Real_t r=sctl::pow<Real_t>(0.5,depth);
-  Real_t a=r*PVFMM_RAD0;
+  Real_t a=r*(Real_t)PVFMM_RAD0;
   Real_t coord[3]={c[0],c[1],c[2]};
   int n1=p*2;
-  int n2=sctl::pow<int>((Real_t)n1,2);
-  int n3=sctl::pow<int>((Real_t)n1,3);
+  int n2=sctl::pow<int>(n1,2);
+  int n3=sctl::pow<int>(n1,3);
   std::vector<Real_t> grid(n3*3);
   for(int i=0;i<n1;i++)
   for(int j=0;j<n1;j++)
@@ -325,7 +325,7 @@ void FMM_Pts<FMMNode>::Initialize(int mult_order, const MPI_Comm& comm_, const K
 
 template <class Real_t>
 Permutation<Real_t> equiv_surf_perm(size_t m, size_t p_indx, const Permutation<Real_t>& ker_perm, const Vector<Real_t>* scal_exp=NULL){
-  Real_t eps=1e-10;
+  Real_t eps=(Real_t)1e-10;
   int dof=ker_perm.Dim();
 
   Real_t c[3]={-0.5,-0.5,-0.5};
@@ -336,9 +336,9 @@ Permutation<Real_t> equiv_surf_perm(size_t m, size_t p_indx, const Permutation<R
   if(p_indx==ReflecX || p_indx==ReflecY || p_indx==ReflecZ){ // Set P.perm
     for(int i=0;i<n_trg;i++)
     for(int j=0;j<n_trg;j++){
-      if(sctl::fabs<Real_t>(trg_coord[i*3+0]-trg_coord[j*3+0]*(p_indx==ReflecX?-1.0:1.0))<eps)
-      if(sctl::fabs<Real_t>(trg_coord[i*3+1]-trg_coord[j*3+1]*(p_indx==ReflecY?-1.0:1.0))<eps)
-      if(sctl::fabs<Real_t>(trg_coord[i*3+2]-trg_coord[j*3+2]*(p_indx==ReflecZ?-1.0:1.0))<eps){
+      if(sctl::fabs<Real_t>(trg_coord[i*3+0]-trg_coord[j*3+0]*(p_indx==ReflecX?-1:1))<eps)
+      if(sctl::fabs<Real_t>(trg_coord[i*3+1]-trg_coord[j*3+1]*(p_indx==ReflecY?-1:1))<eps)
+      if(sctl::fabs<Real_t>(trg_coord[i*3+2]-trg_coord[j*3+2]*(p_indx==ReflecZ?-1:1))<eps){
         for(int k=0;k<dof;k++){
           P.perm[j*dof+k]=i*dof+ker_perm.perm[k];
         }
@@ -364,7 +364,7 @@ Permutation<Real_t> equiv_surf_perm(size_t m, size_t p_indx, const Permutation<R
   }
 
   if(scal_exp && p_indx==Scaling){ // Set level-by-level scaling
-    assert(dof==scal_exp->Dim());
+    assert(dof==(int)scal_exp->Dim());
     Vector<Real_t> scal(scal_exp->Dim());
     for(size_t i=0;i<scal.Dim();i++){
       scal[i]=sctl::pow<Real_t>(2.0,(*scal_exp)[i]);
@@ -489,11 +489,11 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
       Matrix<Real_t> U,S,V;
       M_e2c.SVD(U,S,V);
       Real_t eps=1, max_S=0;
-      while(eps*(Real_t)0.5+(Real_t)1.0>1.0) eps*=0.5;
+      while(eps*(Real_t)0.5+(Real_t)1>1) eps*=(Real_t)0.5;
       for(size_t i=0;i<std::min(S.Dim(0),S.Dim(1));i++){
         if(sctl::fabs<Real_t>(S[i][i])>max_S) max_S=sctl::fabs<Real_t>(S[i][i]);
       }
-      for(size_t i=0;i<S.Dim(0);i++) S[i][i]=(S[i][i]>eps*max_S*4?1.0/S[i][i]:0.0);
+      for(size_t i=0;i<S.Dim(0);i++) S[i][i]=(S[i][i]>eps*max_S*4?1/S[i][i]:0);
       M=V.Transpose()*S;//*U.Transpose();
       break;
     }
@@ -541,11 +541,11 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
       Matrix<Real_t> U,S,V;
       M_e2c.SVD(U,S,V);
       Real_t eps=1, max_S=0;
-      while(eps*(Real_t)0.5+(Real_t)1.0>1.0) eps*=0.5;
+      while(eps*(Real_t)0.5+(Real_t)1.0>1.0) eps*=(Real_t)0.5;
       for(size_t i=0;i<std::min(S.Dim(0),S.Dim(1));i++){
         if(sctl::fabs<Real_t>(S[i][i])>max_S) max_S=sctl::fabs<Real_t>(S[i][i]);
       }
-      for(size_t i=0;i<S.Dim(0);i++) S[i][i]=(S[i][i]>eps*max_S*4?1.0/S[i][i]:0.0);
+      for(size_t i=0;i<S.Dim(0);i++) S[i][i]=(S[i][i]>eps*max_S*4?1/S[i][i]:0);
       M=V.Transpose()*S;//*U.Transpose();
       break;
     }
@@ -716,7 +716,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
       size_t mat_cnt =interac_list.ListCount( V_Type);
       for(size_t k=0;k<mat_cnt;k++) Precomp(level, V_Type, k);
 
-      const size_t chld_cnt=1UL<<PVFMM_COORD_DIM;
+      constexpr int chld_cnt=1UL<<PVFMM_COORD_DIM;
       size_t n1=MultipoleOrder()*2;
       size_t M_dim=n1*n1*(n1/2+1);
       size_t n3=n1*n1*n1;
@@ -747,7 +747,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
 
       // Build matrix ker_dim0 x ker_dim1 x M_dim x 8 x 8
       M.Resize(ker_dim[0]*ker_dim[1]*M_dim, 2*chld_cnt*chld_cnt);
-      for(int j=0;j<ker_dim[0]*ker_dim[1]*M_dim;j++){
+      for(size_t j=0;j<ker_dim[0]*ker_dim[1]*M_dim;j++){
         for(size_t k=0;k<chld_cnt*chld_cnt;k++){
           M[j][k*2+0]=M_ptr[k][j*2+0]/n3;
           M[j][k*2+1]=M_ptr[k][j*2+1]/n3;
@@ -813,7 +813,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
             #pragma omp parallel for schedule(dynamic)
             for(size_t i=0;i<n_surf;i++){
               std::vector<Real_t> M_=cheb_integ<Real_t>(0, &uc_coord[i*3], 1.0, *kernel->k_m2m);
-              for(size_t j=0; j<ker_dim[0]; j++)
+              for(int j=0; j<ker_dim[0]; j++)
                 for(int k=0; k<ker_dim[1]; k++)
                   M_s2c[j][i*ker_dim[1]+k] = M_[j+k*ker_dim[0]];
             }
@@ -825,7 +825,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
           for(size_t i=0;i<M_s2e.Dim(0);i++){ // Normalize each row to 1
             Real_t s=0;
             for(size_t j=0;j<M_s2e.Dim(1);j++) s+=M_s2e[i][j];
-            s=1.0/s;
+            s=1/s;
             for(size_t j=0;j<M_s2e.Dim(1);j++) M_s2e[i][j]*=s;
           }
 
@@ -835,7 +835,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
           for(size_t i=0;i<n_surf*ker_dim[0];i++)
             M_equiv_zero_avg[i][i]=1;
           for(size_t i=0;i<n_surf;i++)
-            for(size_t k=0;k<ker_dim[0];k++)
+            for(int k=0;k<ker_dim[0];k++)
               for(size_t j=0;j<n_surf*ker_dim[0];j++)
                 M_equiv_zero_avg[i*ker_dim[0]+k][j]-=M_s2e[k][j];
         }
@@ -845,8 +845,8 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
             M_check_zero_avg[i][i]+=1;
           for(size_t i=0;i<n_surf;i++)
             for(size_t j=0;j<n_surf;j++)
-              for(size_t k=0;k<ker_dim[1];k++)
-                M_check_zero_avg[i*ker_dim[1]+k][j*ker_dim[1]+k]-=1.0/n_surf;
+              for(int k=0;k<ker_dim[1];k++)
+                M_check_zero_avg[i*ker_dim[1]+k][j*ker_dim[1]+k]-=1/n_surf;
         }
 
         size_t mat_cnt_m2m=interac_list.ListCount(U2U_Type);
@@ -856,8 +856,8 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
             Permutation<Real_t> Pr = this->interac_list.Perm_R(abs(level), D2D_Type, 0);
             Permutation<Real_t> Pc = this->interac_list.Perm_C(abs(level), D2D_Type, 0);
             { // Invert scaling because level<0
-              for(long i=0;i<Pr.Dim();i++) Pr.scal[i]=1.0/Pr.scal[i];
-              for(long i=0;i<Pc.Dim();i++) Pc.scal[i]=1.0/Pc.scal[i];
+              for(size_t i=0;i<Pr.Dim();i++) Pr.scal[i]=1/Pr.scal[i];
+              for(size_t i=0;i<Pc.Dim();i++) Pc.scal[i]=1/Pc.scal[i];
             }
             M_l2l[-level] = M_check_zero_avg * Pr * this->Precomp(level, D2D_Type, this->interac_list.InteracClass(D2D_Type, 0)) * Pc * M_check_zero_avg;
             assert(M_l2l[-level].Dim(0)>0 && M_l2l[-level].Dim(1)>0);
@@ -868,8 +868,8 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
             this->Precomp(level-1, U2U_Type, mat_indx);
             Permutation<Real_t> Pr = this->interac_list.Perm_R(abs(level-1), U2U_Type, mat_indx);
             Permutation<Real_t> Pc = this->interac_list.Perm_C(abs(level-1), U2U_Type, mat_indx);
-            for(long i=0;i<Pr.Dim();i++) Pr.scal[i]=1.0/Pr.scal[i];
-            for(long i=0;i<Pc.Dim();i++) Pc.scal[i]=1.0/Pc.scal[i];
+            for(size_t i=0;i<Pr.Dim();i++) Pr.scal[i]=1/Pr.scal[i];
+            for(size_t i=0;i<Pc.Dim();i++) Pc.scal[i]=1/Pc.scal[i];
             Matrix<Real_t> M = Pr * this->Precomp(level-1, U2U_Type, this->interac_list.InteracClass(U2U_Type, mat_indx)) * Pc;
             assert(M.Dim(0)>0 && M.Dim(1)>0);
 
@@ -936,7 +936,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
             #pragma omp parallel for schedule(dynamic)
             for(size_t i=0;i<n_surf;i++){ // Compute near-interaction part
               std::vector<Real_t> M_=cheb_integ<Real_t>(0, &dc_coord[i*3], 3.0, *kernel->k_m2l);
-              for(size_t j=0; j<ker_dim[0]; j++)
+              for(int j=0; j<ker_dim[0]; j++)
                 for(int k=0; k<ker_dim[1]; k++)
                   M_near[j][i*ker_dim[1]+k] = M_[j+k*ker_dim[0]];
             }
@@ -948,7 +948,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
           }
           { // Add far-field corection to M
             for(size_t i=0;i<n_surf;i++)
-              for(size_t k=0;k<ker_dim[0];k++)
+              for(int k=0;k<ker_dim[0];k++)
                 for(size_t j=0;j<n_surf*ker_dim[1];j++)
                   M[i*ker_dim[0]+k][j]+=M_far[k][j];
           }
@@ -988,7 +988,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
                 Real_t pt_coord[3]={corner_pts[k*PVFMM_COORD_DIM+0]-j0,
                                     corner_pts[k*PVFMM_COORD_DIM+1]-j1,
                                     corner_pts[k*PVFMM_COORD_DIM+2]-j2};
-                if(sctl::fabs<Real_t>(pt_coord[0]-0.5)>1.0 || sctl::fabs<Real_t>(pt_coord[1]-0.5)>1.0 || sctl::fabs<Real_t>(pt_coord[2]-0.5)>1.0){
+                if(sctl::fabs<Real_t>(pt_coord[0]-(Real_t)0.5)>1 || sctl::fabs<Real_t>(pt_coord[1]-(Real_t)0.5)>1 || sctl::fabs<Real_t>(pt_coord[2]-(Real_t)0.5)>1){
                   Matrix<Real_t> M_e2pt(n_surf*ker_dim[0],ker_dim[1]);
                   kernel->k_m2l->BuildMatrix(&up_equiv_surf[0], n_surf,
                                                   &pt_coord[0], 1, &(M_e2pt[0][0]));
@@ -1002,7 +1002,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
               Matrix<Real_t> M_analytic(ker_dim[0],n_corner*ker_dim[1]); M_analytic.SetZero();
               kernel->k_m2l->vol_poten(&corner_pts[0],n_corner,&M_analytic[0][0]);
               for(size_t j=0;j<n_surf;j++)
-              for(size_t k=0;k<ker_dim[0];k++)
+              for(int k=0;k<ker_dim[0];k++)
               for(size_t i=0;i<M_err.Dim(1);i++){
                 M_err[j*ker_dim[0]+k][i]-=M_analytic[k][i];
               }
@@ -1011,7 +1011,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
 
           Matrix<Real_t> M_grad(M_err.Dim(0),n_surf*ker_dim[1]);
           for(size_t i=0;i<M_err.Dim(0);i++)
-          for(size_t k=0;k<ker_dim[1];k++)
+          for(int k=0;k<ker_dim[1];k++)
           for(size_t j=0;j<n_surf;j++){
             M_grad[i][j*ker_dim[1]+k]=  M_err[i][0*ker_dim[1]+k]
                                       +(M_err[i][1*ker_dim[1]+k]-M_err[i][0*ker_dim[1]+k])*dn_check_surf[j*PVFMM_COORD_DIM+0]
@@ -1490,7 +1490,7 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& n
 
     if(keep_data){ // Copy to dev_buffer
       if(dev_buffer.Dim()<buff_size*sizeof(Real_t)){ // Resize dev_buffer
-        dev_buffer.ReInit(buff_size*sizeof(Real_t)*1.05);
+        dev_buffer.ReInit((size_t)(buff_size*sizeof(Real_t)*1.05));
       }
 
       #pragma omp parallel for
@@ -1502,12 +1502,12 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& n
     }
 
     if(buff.Dim(0)*buff.Dim(1)<buff_size){ // Resize buff
-      buff.ReInit(1,buff_size*1.05);
+      buff.ReInit(1,(size_t)(buff_size*1.05));
     }
 
     if(keep_data){ // Copy to buff (from dev_buffer)
       #pragma omp parallel for
-      for(size_t tid=0;tid<omp_p;tid++){
+      for(int tid=0;tid<omp_p;tid++){
         size_t a=(buff_size*(tid+0))/omp_p;
         size_t b=(buff_size*(tid+1))/omp_p;
         mem::copy<Real_t>(buff.Begin()+a,((Real_t*)dev_buffer.Begin())+a,(b-a));
@@ -2342,7 +2342,7 @@ void FMM_Pts<FMMNode>::Source2UpSetup(SetupData<Real_t>&  setup_data, FMMTree_t*
     }
 
     #pragma omp parallel for
-    for(size_t tid=0;tid<omp_p;tid++){
+    for(int tid=0;tid<omp_p;tid++){
       std::vector<size_t>& in_node    =in_node_[tid]    ;
       std::vector<size_t>& scal_idx   =scal_idx_[tid]   ;
       std::vector<Real_t>& coord_shift=coord_shift_[tid];
@@ -2367,11 +2367,11 @@ void FMM_Pts<FMMNode>::Source2UpSetup(SetupData<Real_t>&  setup_data, FMMTree_t*
             { // set coord_shift
               const int* rel_coord=interac_list.RelativeCoord(type,j);
               const Real_t* scoord=snode->Coord();
-              const Real_t* tcoord=tnode->Coord();
+              //const Real_t* tcoord=tnode->Coord();
               Real_t shift[PVFMM_COORD_DIM];
-              shift[0]=rel_coord[0]*0.5*s-(scoord[0]+0.5*s)+(0+0.5*s);
-              shift[1]=rel_coord[1]*0.5*s-(scoord[1]+0.5*s)+(0+0.5*s);
-              shift[2]=rel_coord[2]*0.5*s-(scoord[2]+0.5*s)+(0+0.5*s);
+              shift[0]=rel_coord[0]*(Real_t)0.5*s-(scoord[0]+(Real_t)0.5*s)+(0+(Real_t)0.5*s);
+              shift[1]=rel_coord[1]*(Real_t)0.5*s-(scoord[1]+(Real_t)0.5*s)+(0+(Real_t)0.5*s);
+              shift[2]=rel_coord[2]*(Real_t)0.5*s-(scoord[2]+(Real_t)0.5*s)+(0+(Real_t)0.5*s);
               coord_shift.push_back(shift[0]);
               coord_shift.push_back(shift[1]);
               coord_shift.push_back(shift[2]);
@@ -2390,12 +2390,12 @@ void FMM_Pts<FMMNode>::Source2UpSetup(SetupData<Real_t>&  setup_data, FMMTree_t*
         pvfmm::Vector<ElemType>& vec=interac_data.in_node;
 
         std::vector<size_t> vec_dsp(omp_p+1,0);
-        for(size_t tid=0;tid<omp_p;tid++){
+        for(int tid=0;tid<omp_p;tid++){
           vec_dsp[tid+1]=vec_dsp[tid]+vec_[tid].size();
         }
         vec.ReInit(vec_dsp[omp_p]);
         #pragma omp parallel for
-        for(size_t tid=0;tid<omp_p;tid++){
+        for(int tid=0;tid<omp_p;tid++){
           memcpy(&vec[0]+vec_dsp[tid],&vec_[tid][0],vec_[tid].size()*sizeof(ElemType));
         }
       }
@@ -2405,12 +2405,12 @@ void FMM_Pts<FMMNode>::Source2UpSetup(SetupData<Real_t>&  setup_data, FMMTree_t*
         pvfmm::Vector<ElemType>& vec=interac_data.scal_idx;
 
         std::vector<size_t> vec_dsp(omp_p+1,0);
-        for(size_t tid=0;tid<omp_p;tid++){
+        for(int tid=0;tid<omp_p;tid++){
           vec_dsp[tid+1]=vec_dsp[tid]+vec_[tid].size();
         }
         vec.ReInit(vec_dsp[omp_p]);
         #pragma omp parallel for
-        for(size_t tid=0;tid<omp_p;tid++){
+        for(int tid=0;tid<omp_p;tid++){
           memcpy(&vec[0]+vec_dsp[tid],&vec_[tid][0],vec_[tid].size()*sizeof(ElemType));
         }
       }
@@ -2420,12 +2420,12 @@ void FMM_Pts<FMMNode>::Source2UpSetup(SetupData<Real_t>&  setup_data, FMMTree_t*
         pvfmm::Vector<ElemType>& vec=interac_data.coord_shift;
 
         std::vector<size_t> vec_dsp(omp_p+1,0);
-        for(size_t tid=0;tid<omp_p;tid++){
+        for(int tid=0;tid<omp_p;tid++){
           vec_dsp[tid+1]=vec_dsp[tid]+vec_[tid].size();
         }
         vec.ReInit(vec_dsp[omp_p]);
         #pragma omp parallel for
-        for(size_t tid=0;tid<omp_p;tid++){
+        for(int tid=0;tid<omp_p;tid++){
           memcpy(&vec[0]+vec_dsp[tid],&vec_[tid][0],vec_[tid].size()*sizeof(ElemType));
         }
       }
@@ -2435,12 +2435,12 @@ void FMM_Pts<FMMNode>::Source2UpSetup(SetupData<Real_t>&  setup_data, FMMTree_t*
         pvfmm::Vector<ElemType>& vec=interac_data.interac_cnt;
 
         std::vector<size_t> vec_dsp(omp_p+1,0);
-        for(size_t tid=0;tid<omp_p;tid++){
+        for(int tid=0;tid<omp_p;tid++){
           vec_dsp[tid+1]=vec_dsp[tid]+vec_[tid].size();
         }
         vec.ReInit(vec_dsp[omp_p]);
         #pragma omp parallel for
-        for(size_t tid=0;tid<omp_p;tid++){
+        for(int tid=0;tid<omp_p;tid++){
           memcpy(&vec[0]+vec_dsp[tid],&vec_[tid][0],vec_[tid].size()*sizeof(ElemType));
         }
       }
@@ -2617,14 +2617,14 @@ void FMM_Pts<FMMNode>::FFT_UpEquiv(size_t dof, size_t m, size_t ker_dim0, Vector
         // Rearrange upward equivalent data.
         for(size_t k=0;k<n;k++){
           size_t idx=map[k];
-          for(int j1=0;j1<dof;j1++)
-          for(int j0=0;j0<(int)chld_cnt;j0++)
-          for(int i=0;i<ker_dim0;i++)
+          for(size_t j1=0;j1<dof;j1++)
+          for(size_t j0=0;j0<chld_cnt;j0++)
+          for(size_t i=0;i<ker_dim0;i++)
             upward_equiv_fft[idx+(j0+(i+j1*ker_dim0)*chld_cnt)*n3]=upward_equiv[j0][ker_dim0*(n*j1+k)+i]*fft_scal[ker_dim0*node_idx+i];
         }
 
         // Compute FFT.
-        for(int i=0;i<dof;i++)
+        for(size_t i=0;i<dof;i++)
           FFTW_t<Real_t>::fft_execute_dft_r2c(vlist_fftplan, (Real_t*)&upward_equiv_fft[i*  n3 *ker_dim0*chld_cnt],
                                       (typename FFTW_t<Real_t>::cplx*)&buffer          [i*2*n3_*ker_dim0*chld_cnt]);
 
@@ -2637,7 +2637,7 @@ void FMM_Pts<FMMNode>::FFT_UpEquiv(size_t dof, size_t m, size_t ker_dim0, Vector
         #endif
         #endif
 
-        for(int i=0;i<ker_dim0*dof;i++)
+        for(size_t i=0;i<ker_dim0*dof;i++)
         for(size_t j=0;j<n3_;j++)
         for(size_t k=0;k<chld_cnt;k++){
           upward_equiv_fft[2*(chld_cnt*(n3_*i+j)+k)+0]=buffer[2*(n3_*(chld_cnt*i+k)+j)+0];
@@ -2703,7 +2703,7 @@ void FMM_Pts<FMMNode>::FFT_Check2Equiv(size_t dof, size_t m, size_t ker_dim1, Ve
         Vector<Real_t> dnward_equiv(ker_dim1*n*dof*chld_cnt,&output_data[0] + ifft_vec[node_idx],false);
 
         //De-interleave data.
-        for(int i=0;i<ker_dim1*dof;i++)
+        for(size_t i=0;i<ker_dim1*dof;i++)
         for(size_t j=0;j<n3_;j++)
         for(size_t k=0;k<chld_cnt;k++){
           buffer0[2*(n3_*(ker_dim1*dof*k+i)+j)+0]=dnward_check_fft[2*(chld_cnt*(n3_*i+j)+k)+0];
@@ -2711,7 +2711,7 @@ void FMM_Pts<FMMNode>::FFT_Check2Equiv(size_t dof, size_t m, size_t ker_dim1, Ve
         }
 
         // Compute FFT.
-        for(int i=0;i<dof;i++)
+        for(size_t i=0;i<dof;i++)
           FFTW_t<Real_t>::fft_execute_dft_c2r(vlist_ifftplan, (typename FFTW_t<Real_t>::cplx*)&buffer0[i*2*n3_*ker_dim1*chld_cnt],
                                                                                      (Real_t*)&buffer1[i*  n3 *ker_dim1*chld_cnt]);
         //Compute flops.
@@ -2726,9 +2726,9 @@ void FMM_Pts<FMMNode>::FFT_Check2Equiv(size_t dof, size_t m, size_t ker_dim1, Ve
         // Rearrange downward check data.
         for(size_t k=0;k<n;k++){
           size_t idx=map[k];
-          for(int j1=0;j1<dof;j1++)
-          for(int j0=0;j0<(int)chld_cnt;j0++)
-          for(int i=0;i<ker_dim1;i++)
+          for(size_t j1=0;j1<dof;j1++)
+          for(size_t j0=0;j0<chld_cnt;j0++)
+          for(size_t i=0;i<ker_dim1;i++)
             dnward_equiv[ker_dim1*(n*(dof*j0+j1)+k)+i]+=buffer1[idx+(i+(j1+j0*dof)*ker_dim1)*n3]*ifft_scal[ker_dim1*node_idx+i];
         }
       }
@@ -3168,8 +3168,8 @@ void VListHadamard(size_t dof, size_t M_dim, size_t ker_dim0, size_t ker_dim1, V
     size_t a=( pid   *M_dim)/omp_p;
     size_t b=((pid+1)*M_dim)/omp_p;
 
-    for(int in_dim=0;in_dim<ker_dim0;in_dim++)
-    for(int ot_dim=0;ot_dim<ker_dim1;ot_dim++)
+    for(size_t in_dim=0;in_dim<ker_dim0;in_dim++)
+    for(size_t ot_dim=0;ot_dim<ker_dim1;ot_dim++)
     for(size_t     blk1=0;     blk1<blk1_cnt;    blk1++)
     for(size_t        k=a;        k<       b;       k++)
     for(size_t mat_indx=0; mat_indx< mat_cnt;mat_indx++){
@@ -3250,7 +3250,6 @@ void FMM_Pts<FMMNode>::V_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
   for(size_t i=0;i<nodes_out.size();i++) output_vector.push_back(&((FMMData*)((FMMNode*)((FMMNode*)nodes_out[i])->Child(0))->FMMData())->dnward_equiv);
 
   /////////////////////////////////////////////////////////////////////////////
-  Real_t eps=1e-10;
 
   size_t n_in =nodes_in .size();
   size_t n_out=nodes_out.size();
@@ -3263,7 +3262,7 @@ void FMM_Pts<FMMNode>::V_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
   Matrix<char>& interac_data=setup_data.interac_data;
   if(n_out>0 && n_in >0){ // Build precomp_data, interac_data
 
-    size_t precomp_offset=0;
+    //size_t precomp_offset=0;
     Mat_Type& interac_type=setup_data.interac_type[0];
     size_t mat_cnt=this->interac_list.ListCount(interac_type);
     Matrix<size_t> precomp_data_offset;
@@ -3488,7 +3487,7 @@ void FMM_Pts<FMMNode>::V_List     (SetupData<Real_t>&  setup_data, bool device){
   }
 
   Profile::Tic("Host2Device",&this->comm,false,25);
-  int level=setup_data.level;
+  //int level=setup_data.level;
   size_t buff_size=*((size_t*)&setup_data.interac_data[0][0]);
   typename Vector<char>::Device          buff;
   //typename Matrix<char>::Device  precomp_data;
@@ -3856,7 +3855,7 @@ void FMM_Pts<FMMNode>::PtSetup(SetupData<Real_t>& setup_data, void* data_){
         if(intdata.scal[i].Dim()) memcpy(&buff[0][pkd_data.scal_offset[i]], &intdata.scal[i][0], intdata.scal[i].Dim()*sizeof(Real_t));
       }
       for(size_t i=0;i<4;i++){
-        if(intdata.M[i].Dim(0)*intdata.M[i].Dim(1)) memcpy(&buff[0][pkd_data.M_offset[i]], &intdata.M[i][0][0], intdata.M[i].Dim(0)*intdata.M[i].Dim(1)*sizeof(Real_t));
+        if(intdata.M[i].Dim(0) && intdata.M[i].Dim(1)) memcpy(&buff[0][pkd_data.M_offset[i]], &intdata.M[i][0][0], intdata.M[i].Dim(0)*intdata.M[i].Dim(1)*sizeof(Real_t));
       }
     }
   }
@@ -4042,7 +4041,7 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
       int omp_p=omp_get_max_threads();
 
       #pragma omp parallel for
-      for(size_t tid=0;tid<omp_p;tid++){
+      for(int tid=0;tid<omp_p;tid++){
 
         Matrix<Real_t> src_coord, src_value;
         Matrix<Real_t> srf_coord, srf_value;
@@ -4115,7 +4114,7 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
             }
             assert(interac_cnt<=vcnt);
             for(size_t k=0;k<6;k++){
-              if(vbuff[k].Dim(0)*vbuff[k].Dim(1)){
+              if(vbuff[k].Dim(0) && vbuff[k].Dim(1)){
                 vbuff[k].ReInit(interac_cnt,vbuff[k].Dim(1),vbuff[k][0],false);
               }
             }
@@ -4200,8 +4199,8 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
                 srf_coord.ReInit(1, data.srf_coord.cnt[src], &data.srf_coord.ptr[0][0][data.srf_coord.dsp[src]], false);
                 srf_value.ReInit(1, data.srf_value.cnt[src], &data.srf_value.ptr[0][0][data.srf_value.dsp[src]], false);
 
-                Real_t* vbuff2_ptr=(vbuff[2].Dim(0)*vbuff[2].Dim(1)?vbuff[2][interac_idx]:src_value[0]);
-                Real_t* vbuff3_ptr=(vbuff[3].Dim(0)*vbuff[3].Dim(1)?vbuff[3][interac_idx]:trg_value[0]);
+                Real_t* vbuff2_ptr=(vbuff[2].Dim(0) && vbuff[2].Dim(1)?vbuff[2][interac_idx]:src_value[0]);
+                Real_t* vbuff3_ptr=(vbuff[3].Dim(0) && vbuff[3].Dim(1)?vbuff[3][interac_idx]:trg_value[0]);
 
                 if(src_coord.Dim(1)){
                   { // coord_shift
@@ -4497,7 +4496,7 @@ void FMM_Pts<FMMNode>::X_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
     size_t m=this->MultipoleOrder();
     size_t Nsrf=(6*(m-1)*(m-1)+2);
     #pragma omp parallel for
-    for(size_t tid=0;tid<omp_p;tid++){
+    for(int tid=0;tid<omp_p;tid++){
       std::vector<size_t>& in_node    =in_node_[tid]    ;
       std::vector<size_t>& scal_idx   =scal_idx_[tid]   ;
       std::vector<Real_t>& coord_shift=coord_shift_[tid];
@@ -4526,11 +4525,11 @@ void FMM_Pts<FMMNode>::X_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
             { // set coord_shift
               const int* rel_coord=interac_list.RelativeCoord(type,j);
               const Real_t* scoord=snode->Coord();
-              const Real_t* tcoord=tnode->Coord();
+              //const Real_t* tcoord=tnode->Coord();
               Real_t shift[PVFMM_COORD_DIM];
-              shift[0]=rel_coord[0]*0.5*s-(scoord[0]+1.0*s)+(0+0.5*s);
-              shift[1]=rel_coord[1]*0.5*s-(scoord[1]+1.0*s)+(0+0.5*s);
-              shift[2]=rel_coord[2]*0.5*s-(scoord[2]+1.0*s)+(0+0.5*s);
+              shift[0]=rel_coord[0]*(Real_t)0.5*s-(scoord[0]+1*s)+(0+(Real_t)0.5*s);
+              shift[1]=rel_coord[1]*(Real_t)0.5*s-(scoord[1]+1*s)+(0+(Real_t)0.5*s);
+              shift[2]=rel_coord[2]*(Real_t)0.5*s-(scoord[2]+1*s)+(0+(Real_t)0.5*s);
               coord_shift.push_back(shift[0]);
               coord_shift.push_back(shift[1]);
               coord_shift.push_back(shift[2]);
@@ -4549,12 +4548,12 @@ void FMM_Pts<FMMNode>::X_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
         pvfmm::Vector<ElemType>& vec=interac_data.in_node;
 
         std::vector<size_t> vec_dsp(omp_p+1,0);
-        for(size_t tid=0;tid<omp_p;tid++){
+        for(int tid=0;tid<omp_p;tid++){
           vec_dsp[tid+1]=vec_dsp[tid]+vec_[tid].size();
         }
         vec.ReInit(vec_dsp[omp_p]);
         #pragma omp parallel for
-        for(size_t tid=0;tid<omp_p;tid++){
+        for(int tid=0;tid<omp_p;tid++){
           memcpy(&vec[0]+vec_dsp[tid],&vec_[tid][0],vec_[tid].size()*sizeof(ElemType));
         }
       }
@@ -4564,12 +4563,12 @@ void FMM_Pts<FMMNode>::X_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
         pvfmm::Vector<ElemType>& vec=interac_data.scal_idx;
 
         std::vector<size_t> vec_dsp(omp_p+1,0);
-        for(size_t tid=0;tid<omp_p;tid++){
+        for(int tid=0;tid<omp_p;tid++){
           vec_dsp[tid+1]=vec_dsp[tid]+vec_[tid].size();
         }
         vec.ReInit(vec_dsp[omp_p]);
         #pragma omp parallel for
-        for(size_t tid=0;tid<omp_p;tid++){
+        for(int tid=0;tid<omp_p;tid++){
           memcpy(&vec[0]+vec_dsp[tid],&vec_[tid][0],vec_[tid].size()*sizeof(ElemType));
         }
       }
@@ -4579,12 +4578,12 @@ void FMM_Pts<FMMNode>::X_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
         pvfmm::Vector<ElemType>& vec=interac_data.coord_shift;
 
         std::vector<size_t> vec_dsp(omp_p+1,0);
-        for(size_t tid=0;tid<omp_p;tid++){
+        for(int tid=0;tid<omp_p;tid++){
           vec_dsp[tid+1]=vec_dsp[tid]+vec_[tid].size();
         }
         vec.ReInit(vec_dsp[omp_p]);
         #pragma omp parallel for
-        for(size_t tid=0;tid<omp_p;tid++){
+        for(int tid=0;tid<omp_p;tid++){
           memcpy(&vec[0]+vec_dsp[tid],&vec_[tid][0],vec_[tid].size()*sizeof(ElemType));
         }
       }
@@ -4594,12 +4593,12 @@ void FMM_Pts<FMMNode>::X_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
         pvfmm::Vector<ElemType>& vec=interac_data.interac_cnt;
 
         std::vector<size_t> vec_dsp(omp_p+1,0);
-        for(size_t tid=0;tid<omp_p;tid++){
+        for(int tid=0;tid<omp_p;tid++){
           vec_dsp[tid+1]=vec_dsp[tid]+vec_[tid].size();
         }
         vec.ReInit(vec_dsp[omp_p]);
         #pragma omp parallel for
-        for(size_t tid=0;tid<omp_p;tid++){
+        for(int tid=0;tid<omp_p;tid++){
           memcpy(&vec[0]+vec_dsp[tid],&vec_[tid][0],vec_[tid].size()*sizeof(ElemType));
         }
       }
@@ -4785,7 +4784,7 @@ void FMM_Pts<FMMNode>::W_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
     size_t m=this->MultipoleOrder();
     size_t Nsrf=(6*(m-1)*(m-1)+2);
     #pragma omp parallel for
-    for(size_t tid=0;tid<omp_p;tid++){
+    for(int tid=0;tid<omp_p;tid++){
       std::vector<size_t>& in_node    =in_node_[tid]    ;
       std::vector<size_t>& scal_idx   =scal_idx_[tid]   ;
       std::vector<Real_t>& coord_shift=coord_shift_[tid];
@@ -4811,12 +4810,12 @@ void FMM_Pts<FMMNode>::W_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
             scal_idx.push_back(snode->Depth());
             { // set coord_shift
               const int* rel_coord=interac_list.RelativeCoord(type,j);
-              const Real_t* scoord=snode->Coord();
+              //const Real_t* scoord=snode->Coord();
               const Real_t* tcoord=tnode->Coord();
               Real_t shift[PVFMM_COORD_DIM];
-              shift[0]=rel_coord[0]*0.25*s-(0+0.25*s)+(tcoord[0]+0.5*s);
-              shift[1]=rel_coord[1]*0.25*s-(0+0.25*s)+(tcoord[1]+0.5*s);
-              shift[2]=rel_coord[2]*0.25*s-(0+0.25*s)+(tcoord[2]+0.5*s);
+              shift[0]=rel_coord[0]*(Real_t)0.25*s-(0+(Real_t)0.25*s)+(tcoord[0]+(Real_t)0.5*s);
+              shift[1]=rel_coord[1]*(Real_t)0.25*s-(0+(Real_t)0.25*s)+(tcoord[1]+(Real_t)0.5*s);
+              shift[2]=rel_coord[2]*(Real_t)0.25*s-(0+(Real_t)0.25*s)+(tcoord[2]+(Real_t)0.5*s);
               coord_shift.push_back(shift[0]);
               coord_shift.push_back(shift[1]);
               coord_shift.push_back(shift[2]);
@@ -4835,12 +4834,12 @@ void FMM_Pts<FMMNode>::W_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
         pvfmm::Vector<ElemType>& vec=interac_data.in_node;
 
         std::vector<size_t> vec_dsp(omp_p+1,0);
-        for(size_t tid=0;tid<omp_p;tid++){
+        for(int tid=0;tid<omp_p;tid++){
           vec_dsp[tid+1]=vec_dsp[tid]+vec_[tid].size();
         }
         vec.ReInit(vec_dsp[omp_p]);
         #pragma omp parallel for
-        for(size_t tid=0;tid<omp_p;tid++){
+        for(int tid=0;tid<omp_p;tid++){
           memcpy(&vec[0]+vec_dsp[tid],&vec_[tid][0],vec_[tid].size()*sizeof(ElemType));
         }
       }
@@ -4850,12 +4849,12 @@ void FMM_Pts<FMMNode>::W_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
         pvfmm::Vector<ElemType>& vec=interac_data.scal_idx;
 
         std::vector<size_t> vec_dsp(omp_p+1,0);
-        for(size_t tid=0;tid<omp_p;tid++){
+        for(int tid=0;tid<omp_p;tid++){
           vec_dsp[tid+1]=vec_dsp[tid]+vec_[tid].size();
         }
         vec.ReInit(vec_dsp[omp_p]);
         #pragma omp parallel for
-        for(size_t tid=0;tid<omp_p;tid++){
+        for(int tid=0;tid<omp_p;tid++){
           memcpy(&vec[0]+vec_dsp[tid],&vec_[tid][0],vec_[tid].size()*sizeof(ElemType));
         }
       }
@@ -4865,12 +4864,12 @@ void FMM_Pts<FMMNode>::W_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
         pvfmm::Vector<ElemType>& vec=interac_data.coord_shift;
 
         std::vector<size_t> vec_dsp(omp_p+1,0);
-        for(size_t tid=0;tid<omp_p;tid++){
+        for(int tid=0;tid<omp_p;tid++){
           vec_dsp[tid+1]=vec_dsp[tid]+vec_[tid].size();
         }
         vec.ReInit(vec_dsp[omp_p]);
         #pragma omp parallel for
-        for(size_t tid=0;tid<omp_p;tid++){
+        for(int tid=0;tid<omp_p;tid++){
           memcpy(&vec[0]+vec_dsp[tid],&vec_[tid][0],vec_[tid].size()*sizeof(ElemType));
         }
       }
@@ -4880,12 +4879,12 @@ void FMM_Pts<FMMNode>::W_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
         pvfmm::Vector<ElemType>& vec=interac_data.interac_cnt;
 
         std::vector<size_t> vec_dsp(omp_p+1,0);
-        for(size_t tid=0;tid<omp_p;tid++){
+        for(int tid=0;tid<omp_p;tid++){
           vec_dsp[tid+1]=vec_dsp[tid]+vec_[tid].size();
         }
         vec.ReInit(vec_dsp[omp_p]);
         #pragma omp parallel for
-        for(size_t tid=0;tid<omp_p;tid++){
+        for(int tid=0;tid<omp_p;tid++){
           memcpy(&vec[0]+vec_dsp[tid],&vec_[tid][0],vec_[tid].size()*sizeof(ElemType));
         }
       }
@@ -5084,7 +5083,7 @@ void FMM_Pts<FMMNode>::U_ListSetup(SetupData<Real_t>& setup_data, FMMTree_t* tre
     size_t m=this->MultipoleOrder();
     size_t Nsrf=(6*(m-1)*(m-1)+2);
     #pragma omp parallel for
-    for(size_t tid=0;tid<omp_p;tid++){
+    for(int tid=0;tid<omp_p;tid++){
       std::vector<size_t>& in_node    =in_node_[tid]    ;
       std::vector<size_t>& scal_idx   =scal_idx_[tid]   ;
       std::vector<Real_t>& coord_shift=coord_shift_[tid];
@@ -5111,9 +5110,9 @@ void FMM_Pts<FMMNode>::U_ListSetup(SetupData<Real_t>& setup_data, FMMTree_t* tre
               const Real_t* scoord=snode->Coord();
               const Real_t* tcoord=tnode->Coord();
               Real_t shift[PVFMM_COORD_DIM];
-              shift[0]=rel_coord[0]*0.5*s-(scoord[0]+1.0*s)+(tcoord[0]+0.5*s);
-              shift[1]=rel_coord[1]*0.5*s-(scoord[1]+1.0*s)+(tcoord[1]+0.5*s);
-              shift[2]=rel_coord[2]*0.5*s-(scoord[2]+1.0*s)+(tcoord[2]+0.5*s);
+              shift[0]=rel_coord[0]*(Real_t)0.5*s-(scoord[0]+1*s)+(tcoord[0]+(Real_t)0.5*s);
+              shift[1]=rel_coord[1]*(Real_t)0.5*s-(scoord[1]+1*s)+(tcoord[1]+(Real_t)0.5*s);
+              shift[2]=rel_coord[2]*(Real_t)0.5*s-(scoord[2]+1*s)+(tcoord[2]+(Real_t)0.5*s);
               coord_shift.push_back(shift[0]);
               coord_shift.push_back(shift[1]);
               coord_shift.push_back(shift[2]);
@@ -5135,9 +5134,9 @@ void FMM_Pts<FMMNode>::U_ListSetup(SetupData<Real_t>& setup_data, FMMTree_t* tre
               const Real_t* scoord=snode->Coord();
               const Real_t* tcoord=tnode->Coord();
               Real_t shift[PVFMM_COORD_DIM];
-              shift[0]=rel_coord[0]*1.0*s-(scoord[0]+0.5*s)+(tcoord[0]+0.5*s);
-              shift[1]=rel_coord[1]*1.0*s-(scoord[1]+0.5*s)+(tcoord[1]+0.5*s);
-              shift[2]=rel_coord[2]*1.0*s-(scoord[2]+0.5*s)+(tcoord[2]+0.5*s);
+              shift[0]=rel_coord[0]*1*s-(scoord[0]+(Real_t)0.5*s)+(tcoord[0]+(Real_t)0.5*s);
+              shift[1]=rel_coord[1]*1*s-(scoord[1]+(Real_t)0.5*s)+(tcoord[1]+(Real_t)0.5*s);
+              shift[2]=rel_coord[2]*1*s-(scoord[2]+(Real_t)0.5*s)+(tcoord[2]+(Real_t)0.5*s);
               coord_shift.push_back(shift[0]);
               coord_shift.push_back(shift[1]);
               coord_shift.push_back(shift[2]);
@@ -5159,9 +5158,9 @@ void FMM_Pts<FMMNode>::U_ListSetup(SetupData<Real_t>& setup_data, FMMTree_t* tre
               const Real_t* scoord=snode->Coord();
               const Real_t* tcoord=tnode->Coord();
               Real_t shift[PVFMM_COORD_DIM];
-              shift[0]=rel_coord[0]*0.25*s-(scoord[0]+0.25*s)+(tcoord[0]+0.5*s);
-              shift[1]=rel_coord[1]*0.25*s-(scoord[1]+0.25*s)+(tcoord[1]+0.5*s);
-              shift[2]=rel_coord[2]*0.25*s-(scoord[2]+0.25*s)+(tcoord[2]+0.5*s);
+              shift[0]=rel_coord[0]*(Real_t)0.25*s-(scoord[0]+(Real_t)0.25*s)+(tcoord[0]+(Real_t)0.5*s);
+              shift[1]=rel_coord[1]*(Real_t)0.25*s-(scoord[1]+(Real_t)0.25*s)+(tcoord[1]+(Real_t)0.5*s);
+              shift[2]=rel_coord[2]*(Real_t)0.25*s-(scoord[2]+(Real_t)0.25*s)+(tcoord[2]+(Real_t)0.5*s);
               coord_shift.push_back(shift[0]);
               coord_shift.push_back(shift[1]);
               coord_shift.push_back(shift[2]);
@@ -5184,9 +5183,9 @@ void FMM_Pts<FMMNode>::U_ListSetup(SetupData<Real_t>& setup_data, FMMTree_t* tre
               const Real_t* scoord=snode->Coord();
               const Real_t* tcoord=tnode->Coord();
               Real_t shift[PVFMM_COORD_DIM];
-              shift[0]=rel_coord[0]*0.5*s-(scoord[0]+1.0*s)+(tcoord[0]+0.5*s);
-              shift[1]=rel_coord[1]*0.5*s-(scoord[1]+1.0*s)+(tcoord[1]+0.5*s);
-              shift[2]=rel_coord[2]*0.5*s-(scoord[2]+1.0*s)+(tcoord[2]+0.5*s);
+              shift[0]=rel_coord[0]*(Real_t)0.5*s-(scoord[0]+1*s)+(tcoord[0]+(Real_t)0.5*s);
+              shift[1]=rel_coord[1]*(Real_t)0.5*s-(scoord[1]+1*s)+(tcoord[1]+(Real_t)0.5*s);
+              shift[2]=rel_coord[2]*(Real_t)0.5*s-(scoord[2]+1*s)+(tcoord[2]+(Real_t)0.5*s);
               coord_shift.push_back(shift[0]);
               coord_shift.push_back(shift[1]);
               coord_shift.push_back(shift[2]);
@@ -5210,9 +5209,9 @@ void FMM_Pts<FMMNode>::U_ListSetup(SetupData<Real_t>& setup_data, FMMTree_t* tre
               const Real_t* scoord=snode->Coord();
               const Real_t* tcoord=tnode->Coord();
               Real_t shift[PVFMM_COORD_DIM];
-              shift[0]=rel_coord[0]*0.25*s-(scoord[0]+0.25*s)+(tcoord[0]+0.5*s);
-              shift[1]=rel_coord[1]*0.25*s-(scoord[1]+0.25*s)+(tcoord[1]+0.5*s);
-              shift[2]=rel_coord[2]*0.25*s-(scoord[2]+0.25*s)+(tcoord[2]+0.5*s);
+              shift[0]=rel_coord[0]*(Real_t)0.25*s-(scoord[0]+(Real_t)0.25*s)+(tcoord[0]+(Real_t)0.5*s);
+              shift[1]=rel_coord[1]*(Real_t)0.25*s-(scoord[1]+(Real_t)0.25*s)+(tcoord[1]+(Real_t)0.5*s);
+              shift[2]=rel_coord[2]*(Real_t)0.25*s-(scoord[2]+(Real_t)0.25*s)+(tcoord[2]+(Real_t)0.5*s);
               coord_shift.push_back(shift[0]);
               coord_shift.push_back(shift[1]);
               coord_shift.push_back(shift[2]);
@@ -5231,12 +5230,12 @@ void FMM_Pts<FMMNode>::U_ListSetup(SetupData<Real_t>& setup_data, FMMTree_t* tre
         pvfmm::Vector<ElemType>& vec=interac_data.in_node;
 
         std::vector<size_t> vec_dsp(omp_p+1,0);
-        for(size_t tid=0;tid<omp_p;tid++){
+        for(int tid=0;tid<omp_p;tid++){
           vec_dsp[tid+1]=vec_dsp[tid]+vec_[tid].size();
         }
         vec.ReInit(vec_dsp[omp_p]);
         #pragma omp parallel for
-        for(size_t tid=0;tid<omp_p;tid++){
+        for(int tid=0;tid<omp_p;tid++){
           memcpy(&vec[0]+vec_dsp[tid],&vec_[tid][0],vec_[tid].size()*sizeof(ElemType));
         }
       }
@@ -5246,12 +5245,12 @@ void FMM_Pts<FMMNode>::U_ListSetup(SetupData<Real_t>& setup_data, FMMTree_t* tre
         pvfmm::Vector<ElemType>& vec=interac_data.scal_idx;
 
         std::vector<size_t> vec_dsp(omp_p+1,0);
-        for(size_t tid=0;tid<omp_p;tid++){
+        for(int tid=0;tid<omp_p;tid++){
           vec_dsp[tid+1]=vec_dsp[tid]+vec_[tid].size();
         }
         vec.ReInit(vec_dsp[omp_p]);
         #pragma omp parallel for
-        for(size_t tid=0;tid<omp_p;tid++){
+        for(int tid=0;tid<omp_p;tid++){
           memcpy(&vec[0]+vec_dsp[tid],&vec_[tid][0],vec_[tid].size()*sizeof(ElemType));
         }
       }
@@ -5261,12 +5260,12 @@ void FMM_Pts<FMMNode>::U_ListSetup(SetupData<Real_t>& setup_data, FMMTree_t* tre
         pvfmm::Vector<ElemType>& vec=interac_data.coord_shift;
 
         std::vector<size_t> vec_dsp(omp_p+1,0);
-        for(size_t tid=0;tid<omp_p;tid++){
+        for(int tid=0;tid<omp_p;tid++){
           vec_dsp[tid+1]=vec_dsp[tid]+vec_[tid].size();
         }
         vec.ReInit(vec_dsp[omp_p]);
         #pragma omp parallel for
-        for(size_t tid=0;tid<omp_p;tid++){
+        for(int tid=0;tid<omp_p;tid++){
           memcpy(&vec[0]+vec_dsp[tid],&vec_[tid][0],vec_[tid].size()*sizeof(ElemType));
         }
       }
@@ -5276,12 +5275,12 @@ void FMM_Pts<FMMNode>::U_ListSetup(SetupData<Real_t>& setup_data, FMMTree_t* tre
         pvfmm::Vector<ElemType>& vec=interac_data.interac_cnt;
 
         std::vector<size_t> vec_dsp(omp_p+1,0);
-        for(size_t tid=0;tid<omp_p;tid++){
+        for(int tid=0;tid<omp_p;tid++){
           vec_dsp[tid+1]=vec_dsp[tid]+vec_[tid].size();
         }
         vec.ReInit(vec_dsp[omp_p]);
         #pragma omp parallel for
-        for(size_t tid=0;tid<omp_p;tid++){
+        for(int tid=0;tid<omp_p;tid++){
           memcpy(&vec[0]+vec_dsp[tid],&vec_[tid][0],vec_[tid].size()*sizeof(ElemType));
         }
       }
@@ -5483,7 +5482,7 @@ void FMM_Pts<FMMNode>::Down2TargetSetup(SetupData<Real_t>&  setup_data, FMMTree_
     }
 
     #pragma omp parallel for
-    for(size_t tid=0;tid<omp_p;tid++){
+    for(int tid=0;tid<omp_p;tid++){
       std::vector<size_t>& in_node    =in_node_[tid]    ;
       std::vector<size_t>& scal_idx   =scal_idx_[tid]   ;
       std::vector<Real_t>& coord_shift=coord_shift_[tid];
@@ -5507,12 +5506,12 @@ void FMM_Pts<FMMNode>::Down2TargetSetup(SetupData<Real_t>&  setup_data, FMMTree_
             scal_idx.push_back(snode->Depth());
             { // set coord_shift
               const int* rel_coord=interac_list.RelativeCoord(type,j);
-              const Real_t* scoord=snode->Coord();
+              //const Real_t* scoord=snode->Coord();
               const Real_t* tcoord=tnode->Coord();
               Real_t shift[PVFMM_COORD_DIM];
-              shift[0]=rel_coord[0]*0.5*s-(0+0.5*s)+(tcoord[0]+0.5*s);
-              shift[1]=rel_coord[1]*0.5*s-(0+0.5*s)+(tcoord[1]+0.5*s);
-              shift[2]=rel_coord[2]*0.5*s-(0+0.5*s)+(tcoord[2]+0.5*s);
+              shift[0]=rel_coord[0]*(Real_t)0.5*s-(0+(Real_t)0.5*s)+(tcoord[0]+(Real_t)0.5*s);
+              shift[1]=rel_coord[1]*(Real_t)0.5*s-(0+(Real_t)0.5*s)+(tcoord[1]+(Real_t)0.5*s);
+              shift[2]=rel_coord[2]*(Real_t)0.5*s-(0+(Real_t)0.5*s)+(tcoord[2]+(Real_t)0.5*s);
               coord_shift.push_back(shift[0]);
               coord_shift.push_back(shift[1]);
               coord_shift.push_back(shift[2]);
@@ -5531,12 +5530,12 @@ void FMM_Pts<FMMNode>::Down2TargetSetup(SetupData<Real_t>&  setup_data, FMMTree_
         pvfmm::Vector<ElemType>& vec=interac_data.in_node;
 
         std::vector<size_t> vec_dsp(omp_p+1,0);
-        for(size_t tid=0;tid<omp_p;tid++){
+        for(int tid=0;tid<omp_p;tid++){
           vec_dsp[tid+1]=vec_dsp[tid]+vec_[tid].size();
         }
         vec.ReInit(vec_dsp[omp_p]);
         #pragma omp parallel for
-        for(size_t tid=0;tid<omp_p;tid++){
+        for(int tid=0;tid<omp_p;tid++){
           memcpy(&vec[0]+vec_dsp[tid],&vec_[tid][0],vec_[tid].size()*sizeof(ElemType));
         }
       }
@@ -5546,12 +5545,12 @@ void FMM_Pts<FMMNode>::Down2TargetSetup(SetupData<Real_t>&  setup_data, FMMTree_
         pvfmm::Vector<ElemType>& vec=interac_data.scal_idx;
 
         std::vector<size_t> vec_dsp(omp_p+1,0);
-        for(size_t tid=0;tid<omp_p;tid++){
+        for(int tid=0;tid<omp_p;tid++){
           vec_dsp[tid+1]=vec_dsp[tid]+vec_[tid].size();
         }
         vec.ReInit(vec_dsp[omp_p]);
         #pragma omp parallel for
-        for(size_t tid=0;tid<omp_p;tid++){
+        for(int tid=0;tid<omp_p;tid++){
           memcpy(&vec[0]+vec_dsp[tid],&vec_[tid][0],vec_[tid].size()*sizeof(ElemType));
         }
       }
@@ -5561,12 +5560,12 @@ void FMM_Pts<FMMNode>::Down2TargetSetup(SetupData<Real_t>&  setup_data, FMMTree_
         pvfmm::Vector<ElemType>& vec=interac_data.coord_shift;
 
         std::vector<size_t> vec_dsp(omp_p+1,0);
-        for(size_t tid=0;tid<omp_p;tid++){
+        for(int tid=0;tid<omp_p;tid++){
           vec_dsp[tid+1]=vec_dsp[tid]+vec_[tid].size();
         }
         vec.ReInit(vec_dsp[omp_p]);
         #pragma omp parallel for
-        for(size_t tid=0;tid<omp_p;tid++){
+        for(int tid=0;tid<omp_p;tid++){
           memcpy(&vec[0]+vec_dsp[tid],&vec_[tid][0],vec_[tid].size()*sizeof(ElemType));
         }
       }
@@ -5576,12 +5575,12 @@ void FMM_Pts<FMMNode>::Down2TargetSetup(SetupData<Real_t>&  setup_data, FMMTree_
         pvfmm::Vector<ElemType>& vec=interac_data.interac_cnt;
 
         std::vector<size_t> vec_dsp(omp_p+1,0);
-        for(size_t tid=0;tid<omp_p;tid++){
+        for(int tid=0;tid<omp_p;tid++){
           vec_dsp[tid+1]=vec_dsp[tid]+vec_[tid].size();
         }
         vec.ReInit(vec_dsp[omp_p]);
         #pragma omp parallel for
-        for(size_t tid=0;tid<omp_p;tid++){
+        for(int tid=0;tid<omp_p;tid++){
           memcpy(&vec[0]+vec_dsp[tid],&vec_[tid][0],vec_[tid].size()*sizeof(ElemType));
         }
       }
@@ -5627,7 +5626,7 @@ void FMM_Pts<FMMNode>::PostProcessing(FMMTree_t* tree, std::vector<FMMNode_t*>& 
     Vector<Real_t>& up_equiv=((FMMData*)tree->RootNode()->FMMData())->upward_equiv;
     Matrix<Real_t> avg_density(1,ker_dim[0]); avg_density.SetZero();
     for(size_t i0=0;i0<up_equiv.Dim();i0+=ker_dim[0]){
-      for(size_t i1=0;i1<ker_dim[0];i1++){
+      for(int i1=0;i1<ker_dim[0];i1++){
         avg_density[0][i1]+=up_equiv[i0+i1];
       }
     }

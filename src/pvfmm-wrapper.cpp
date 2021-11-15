@@ -57,14 +57,14 @@ template<typename Real> static void* PVFMMCreateContext(Real box_size, int n, in
     MPI_Comm_rank(ctx->comm, &myrank);
 
     std::vector<Real> coord;
-    size_t NN=ceil(pow((Real)np*ctx->max_pts,1.0/3.0));
+    size_t NN=(size_t)ceil(pow((Real)np*ctx->max_pts,1.0/3.0));
     size_t N_total=NN*NN*NN;
     size_t start= myrank   *N_total/np;
     size_t end  =(myrank+1)*N_total/np;
     for(size_t i=start;i<end;i++){
-      coord.push_back(((Real)((i/  1    )%NN)+0.5)/NN);
-      coord.push_back(((Real)((i/ NN    )%NN)+0.5)/NN);
-      coord.push_back(((Real)((i/(NN*NN))%NN)+0.5)/NN);
+      coord.push_back((Real)(((i/  1    )%NN)+0.5)/NN);
+      coord.push_back((Real)(((i/ NN    )%NN)+0.5)/NN);
+      coord.push_back((Real)(((i/(NN*NN))%NN)+0.5)/NN);
     }
     ctx->tree_data.pt_coord=coord;
   }
@@ -84,8 +84,8 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
   size_t omp_p=omp_get_max_threads();
 
   typedef pvfmm::FMM_Node<pvfmm::MPI_Node<Real> > Node_t;
-  typedef pvfmm::FMM_Pts<Node_t> Mat_t;
-  typedef pvfmm::FMM_Tree<Mat_t> Tree_t;
+  //typedef pvfmm::FMM_Pts<Node_t> Mat_t;
+  //typedef pvfmm::FMM_Tree<Mat_t> Tree_t;
 
   assert(ctx_);
   PVFMMContext<Real>* ctx=(PVFMMContext<Real>*)ctx_;
@@ -101,7 +101,8 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
       Real& scale_x=*scale_xr;
       Real* shift_x= shift_xr;
 
-      if(n_src>0){ // Compute bounding box
+      assert(n_src>0);
+      { // Compute bounding box
         double loc_min_x[PVFMM_COORD_DIM];
         double loc_max_x[PVFMM_COORD_DIM];
         assert(n_src>0);
@@ -124,13 +125,13 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
         MPI_Allreduce(loc_max_x, max_x, PVFMM_COORD_DIM, MPI_DOUBLE, MPI_MAX, comm);
 
         Real eps=sctl::machine_eps<Real>()*64; // Points should be well within the box.
-        scale_x=1.0/(max_x[0]-min_x[0]+2*eps);
+        scale_x=1/(Real)(max_x[0]-min_x[0]+2*eps);
         for(size_t k=0;k<PVFMM_COORD_DIM;k++){
           scale_x=std::min(scale_x,(Real)(1.0/(max_x[k]-min_x[k]+2*eps)));
         }
         if(scale_x*0.0!=0.0) scale_x=1.0; // fix for scal_x=inf
         for(size_t k=0;k<PVFMM_COORD_DIM;k++){
-          shift_x[k]=-min_x[k]*scale_x+eps;
+          shift_x[k]=(Real)-min_x[k]*scale_x+eps;
         }
       }
     };
@@ -144,13 +145,13 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
     scale_x=std::max<Real>(scale_x, sctl::fabs<Real>(c0[0]-c1[0]));
     scale_x=std::max<Real>(scale_x, sctl::fabs<Real>(c0[1]-c1[1]));
     scale_x=std::max<Real>(scale_x, sctl::fabs<Real>(c0[2]-c1[2]));
-    scale_x=1.0/(scale_x+1/s0+1/s1);
+    scale_x=1/(scale_x+1/s0+1/s1);
 
-    shift_x[0]=0.5-(c0[0]+c1[0])*scale_x/2.0;
-    shift_x[1]=0.5-(c0[1]+c1[1])*scale_x/2.0;
-    shift_x[2]=0.5-(c0[2]+c1[2])*scale_x/2.0;
+    shift_x[0]=(Real)0.5-(c0[0]+c1[0])*scale_x/2;
+    shift_x[1]=(Real)0.5-(c0[1]+c1[1])*scale_x/2;
+    shift_x[2]=(Real)0.5-(c0[2]+c1[2])*scale_x/2;
   }else{
-    scale_x=1.0/ctx->box_size;
+    scale_x=1/ctx->box_size;
     shift_x[0]=0;
     shift_x[1]=0;
     shift_x[2]=0;
@@ -166,11 +167,11 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
     trg_scal .ReInit(ctx->ker->trg_scal.Dim());
     surf_scal.ReInit(PVFMM_COORD_DIM+src_scal.Dim());
     for(size_t i=0;i<src_scal.Dim();i++){
-      src_scal [i]=pow(scale_x, src_scal_exp[i]);
+      src_scal [i]=sctl::pow(scale_x, src_scal_exp[i]);
       surf_scal[i]=scale_x*src_scal[i];
     }
     for(size_t i=0;i<trg_scal.Dim();i++){
-      trg_scal[i]=pow(scale_x, trg_scal_exp[i]);
+      trg_scal[i]=sctl::pow(scale_x, trg_scal_exp[i]);
     }
     for(size_t i=src_scal.Dim();i<surf_scal.Dim();i++){
       surf_scal[i]=1;
@@ -220,18 +221,18 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
           for(size_t i=a;i<b;i++){
             for(size_t j=0;j<PVFMM_COORD_DIM;j++){
               src_coord[i*PVFMM_COORD_DIM+j]=src_pos[i*PVFMM_COORD_DIM+j]*scale_x+shift_x[j];
-              while(src_coord[i*PVFMM_COORD_DIM+j]< 0.0) src_coord[i*PVFMM_COORD_DIM+j]+=1.0;
-              while(src_coord[i*PVFMM_COORD_DIM+j]>=1.0) src_coord[i*PVFMM_COORD_DIM+j]-=1.0;
+              while(src_coord[i*PVFMM_COORD_DIM+j]< 0.0) src_coord[i*PVFMM_COORD_DIM+j]+=1;
+              while(src_coord[i*PVFMM_COORD_DIM+j]>=1.0) src_coord[i*PVFMM_COORD_DIM+j]-=1;
             }
             pt_mid[i]=pvfmm::MortonId(&src_coord[i*PVFMM_COORD_DIM]);
           }
           if(src_value.Dim()) for(size_t i=a;i<b;i++){
-            for(size_t j=0;j<ker_dim[0];j++){
+            for(int j=0;j<ker_dim[0];j++){
               src_value[i*ker_dim[0]+j]=sl_den[i*ker_dim[0]+j]*src_scal[j];
             }
           }
           if(surf_value.Dim()) for(size_t i=a;i<b;i++){
-            for(size_t j=0;j<ker_dim[0]+PVFMM_COORD_DIM;j++){
+            for(int j=0;j<ker_dim[0]+PVFMM_COORD_DIM;j++){
               surf_value[i*(ker_dim[0]+PVFMM_COORD_DIM)+j]=dl_den[i*(ker_dim[0]+PVFMM_COORD_DIM)+j]*surf_scal[j];
             }
           }
@@ -305,8 +306,8 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
           for(size_t i=a;i<b;i++){
             for(size_t j=0;j<PVFMM_COORD_DIM;j++){
               trg_coord[i*PVFMM_COORD_DIM+j]=trg_pos[i*PVFMM_COORD_DIM+j]*scale_x+shift_x[j];
-              while(trg_coord[i*PVFMM_COORD_DIM+j]< 0.0) trg_coord[i*PVFMM_COORD_DIM+j]+=1.0;
-              while(trg_coord[i*PVFMM_COORD_DIM+j]>=1.0) trg_coord[i*PVFMM_COORD_DIM+j]-=1.0;
+              while(trg_coord[i*PVFMM_COORD_DIM+j]< 0.0) trg_coord[i*PVFMM_COORD_DIM+j]+=1;
+              while(trg_coord[i*PVFMM_COORD_DIM+j]>=1.0) trg_coord[i*PVFMM_COORD_DIM+j]-=1;
             }
             pt_mid[i]=pvfmm::MortonId(&trg_coord[i*PVFMM_COORD_DIM]);
           }
@@ -350,8 +351,8 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
   if(setup){ // Optional stuff (redistribute, adaptive refine ...)
     auto print_tree_stats = [](void* ctx_) { //Output max tree depth.
       typedef pvfmm::FMM_Node<pvfmm::MPI_Node<Real> > Node_t;
-      typedef pvfmm::FMM_Pts<Node_t> Mat_t;
-      typedef pvfmm::FMM_Tree<Mat_t> Tree_t;
+      //typedef pvfmm::FMM_Pts<Node_t> Mat_t;
+      //typedef pvfmm::FMM_Tree<Mat_t> Tree_t;
 
       PVFMMContext<Real>* ctx=(PVFMMContext<Real>*)ctx_;
 
@@ -400,6 +401,7 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
       if(!myrank) std::cout<<"Number of Leaf Nodes: "<<nleaf_glb<<'\n';
       if(!myrank) std::cout<<"Tree Depth: "<<maxdepth_glb<<'\n';
     };
+    PVFMM_UNUSED(print_tree_stats);
     //print_tree_stats<Real>(ctx_);
     ctx->tree->InitFMM_Tree(true, ctx->bndry);
     //print_tree_stats<Real>(ctx_);
@@ -437,7 +439,7 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
       size_t a=((tid+0)*n_trg)/omp_p;
       size_t b=((tid+1)*n_trg)/omp_p;
       for(size_t i=a;i<b;i++){
-        for(size_t k=0;k<ker_dim[1];k++){
+        for(int k=0;k<ker_dim[1];k++){
           trg_val[i*ker_dim[1]+k]=trg_value[i*ker_dim[1]+k]*trg_scal[k];
         }
       }

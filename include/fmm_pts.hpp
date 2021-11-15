@@ -111,9 +111,8 @@ class FMM_Pts{
   /**
    * \brief Constructor.
    */
-  FMM_Pts(mem::MemoryManager* mem_mgr_=NULL): mem_mgr(mem_mgr_),
-             vprecomp_fft_flag(false), vlist_fft_flag(false),
-               vlist_ifft_flag(false), mat(NULL), kernel(NULL), m2c(NULL){};
+  FMM_Pts(mem::MemoryManager* mem_mgr_=NULL): vprecomp_fft_flag(false), vlist_fft_flag(false), vlist_ifft_flag(false),
+             mem_mgr(mem_mgr_), kernel(NULL), mat(NULL), m2c(NULL){};
 
   /**
    * \brief Virtual destructor.
@@ -218,15 +217,18 @@ class FMM_Pts{
   virtual Permutation<Real_t>& PrecompPerm(Mat_Type type, Perm_Type perm_indx);
 
   virtual Matrix<Real_t>& Precomp(int level, Mat_Type type, size_t mat_indx);
-  typename FFTW_t<Real_t>::plan vprecomp_fftplan; bool vprecomp_fft_flag;
+  typename FFTW_t<Real_t>::plan vprecomp_fftplan;
+  bool vprecomp_fft_flag;
 
   void FFT_UpEquiv(size_t dof, size_t m, size_t ker_dim0, Vector<size_t>& fft_vec, Vector<Real_t>& fft_scl,
       Vector<Real_t>& input_data, Vector<Real_t>& output_data, Vector<Real_t>& buffer_);
-  typename FFTW_t<Real_t>::plan vlist_fftplan; bool vlist_fft_flag;
+  typename FFTW_t<Real_t>::plan vlist_fftplan;
+  bool vlist_fft_flag;
 
   void FFT_Check2Equiv(size_t dof, size_t m, size_t ker_dim0, Vector<size_t>& ifft_vec, Vector<Real_t>& ifft_scl,
       Vector<Real_t>& input_data, Vector<Real_t>& output_data, Vector<Real_t>& buffer_);
-  typename FFTW_t<Real_t>::plan vlist_ifftplan; bool vlist_ifft_flag;
+  typename FFTW_t<Real_t>::plan vlist_ifftplan;
+  bool vlist_ifft_flag;
 
   mem::MemoryManager* mem_mgr;
   InteracList<FMMNode> interac_list;

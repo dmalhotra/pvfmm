@@ -216,8 +216,8 @@ void Matrix<T>::Resize(size_t i, size_t j){
 
 template <class T>
 void Matrix<T>::SetZero(){
-  if(dim[0]*dim[1])
-    memset(data_ptr,0,dim[0]*dim[1]*sizeof(T));
+  if(dim[0] && dim[1])
+    ::memset(data_ptr,0,dim[0]*dim[1]*sizeof(T));
 }
 
 template <class ValueType>
@@ -491,7 +491,7 @@ void Matrix<T>::SVD(Matrix<T>& tU, Matrix<T>& tS, Matrix<T>& tVT){
   if(INFO!=0) std::cout<<INFO<<'\n';
   assert(INFO==0);
 
-  for(size_t i=1;i<k;i++){
+  for(int i=1;i<k;i++){
     tS[i][i]=tS[0][i];
     tS[0][i]=0;
   }
@@ -502,7 +502,7 @@ template <class T>
 Matrix<T> Matrix<T>::pinv(T eps){
   if(eps<0){
     eps=1.0;
-    while(eps+(T)1.0>1.0) eps*=0.5;
+    while(eps+(T)1>1) eps*=(T)0.5;
     eps=sctl::sqrt<T>(eps);
   }
   Matrix<T> M_r(dim[1],dim[0]);

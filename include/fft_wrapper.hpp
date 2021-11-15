@@ -63,8 +63,8 @@ struct FFTW_t{
       N1*=p.dim[i];
       N2*=p.M[i].Dim(1)/2;
     }
-    assert(idist==N1);
-    assert(odist==N2);
+    assert(idist==(int)N1);
+    assert(odist==(int)N2);
 
     return p;
   }
@@ -79,7 +79,7 @@ struct FFTW_t{
 
     plan p;
     p.howmany=howmany;
-    for(size_t i=0;i<rank-1;i++){ // c2c
+    for(int i=0;i<rank-1;i++){ // c2c
       p.dim.push_back(n[i]);
       p.M.push_back(fft_c2c(n[i]));
     }
@@ -93,8 +93,8 @@ struct FFTW_t{
       N1*=p.dim[i];
       N2*=p.M[i].Dim(0)/2;
     }
-    assert(idist==N2);
-    assert(odist==N1);
+    assert(idist==(int)N2);
+    assert(odist==(int)N1);
 
     return p;
   }
@@ -127,7 +127,7 @@ struct FFTW_t{
     }
     { // howmany
       transpose<cplx>(N2/p.howmany, p.howmany, (cplx*)buff);
-      mem::copy<T>(out,buff,2*N2);
+      mem::copy<T>((T*)out,buff,2*N2);
     }
   }
 
@@ -141,7 +141,7 @@ struct FFTW_t{
     T* buff=&buff_[0];
 
     { // howmany
-      mem::copy<T>(buff,in,2*N2);
+      mem::copy<T>(buff,(T*)in,2*N2);
       transpose<cplx>(p.howmany, N2/p.howmany, (cplx*)buff);
     }
     for(size_t i=0;i<p.dim.size()-1;i++){ // c2c

@@ -249,7 +249,7 @@ void MemoryManager::print() const{
 void MemoryManager::test(){
   size_t M=2000000000;
   { // With memory manager
-    size_t N=M*sizeof(double)*1.1;
+    size_t N=(size_t)(M*sizeof(double)*1.1);
     double tt;
     double* tmp;
 

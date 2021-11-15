@@ -14,9 +14,9 @@ namespace pvfmm{
 
 void MortonId::NbrList(std::vector<MortonId>& nbrs, uint8_t level, int periodic) const{
   nbrs.clear();
-  static unsigned int dim=3;
-  static unsigned int nbr_cnt=sctl::pow<unsigned int>(3,dim);
-  static PVFMM_MID_UINT_T maxCoord=(((PVFMM_MID_UINT_T)1)<<(PVFMM_MAX_DEPTH));
+  constexpr int dim=3;
+  constexpr int nbr_cnt=sctl::pow<dim,int>(3);
+  constexpr PVFMM_MID_UINT_T maxCoord=(((PVFMM_MID_UINT_T)1)<<(PVFMM_MAX_DEPTH));
 
   PVFMM_MID_UINT_T mask=maxCoord-(((PVFMM_MID_UINT_T)1)<<(PVFMM_MAX_DEPTH-level));
   PVFMM_MID_UINT_T pX=x & mask;
@@ -41,9 +41,12 @@ void MortonId::NbrList(std::vector<MortonId>& nbrs, uint8_t level, int periodic)
         nbrs.push_back(mid_tmp);
       }
     }else{
-      if(newX<0) newX+=maxCoord; if(newX>=(PVFMM_MID_INT_T)maxCoord) newX-=maxCoord;
-      if(newY<0) newY+=maxCoord; if(newY>=(PVFMM_MID_INT_T)maxCoord) newY-=maxCoord;
-      if(newZ<0) newZ+=maxCoord; if(newZ>=(PVFMM_MID_INT_T)maxCoord) newZ-=maxCoord;
+      if(newX<0) newX+=maxCoord;
+      if(newX>=(PVFMM_MID_INT_T)maxCoord) newX-=maxCoord;
+      if(newY<0) newY+=maxCoord;
+      if(newY>=(PVFMM_MID_INT_T)maxCoord) newY-=maxCoord;
+      if(newZ<0) newZ+=maxCoord;
+      if(newZ>=(PVFMM_MID_INT_T)maxCoord) newZ-=maxCoord;
       mid_tmp.x=newX; mid_tmp.y=newY; mid_tmp.z=newZ;
       mid_tmp.depth=level;
       nbrs.push_back(mid_tmp);
