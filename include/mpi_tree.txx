@@ -82,6 +82,8 @@ inline int p2oLocal(Vector<MortonId> & nodes, Vector<MortonId>& leaves,
     assert(b-a<=maxNumPts || leaves_lst[i].GetDepth()==maxDepth-1);
     if(i==leaves_lst.size()-1) assert(b==nodes.Dim() && a<nodes.Dim());
     if(i==0) assert(a==0);
+    PVFMM_UNUSED(a);
+    PVFMM_UNUSED(b);
   }
 #endif
   if(complete)

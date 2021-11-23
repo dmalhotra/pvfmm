@@ -236,6 +236,7 @@ void FMM_Pts<FMMNode>::Initialize(int mult_order, const MPI_Comm& comm_, const K
   assert(kernel!=NULL);
 
   bool save_precomp=false;
+  if (mat)  delete mat;
   mat=new PrecompMat<Real_t>(ScaleInvar());
   if(this->mat_fname.size()==0){// && !this->ScaleInvar()){
     std::stringstream st;
