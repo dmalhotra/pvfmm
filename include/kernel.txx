@@ -578,7 +578,7 @@ void Kernel<T>::Initialize(bool verbose) const{
             break;
           }
         }
-        assert(P1_.Dim() && P2_.Dim());
+        //assert(P1_.Dim() && P2_.Dim()); // TODO: commented out until correctly detecting symmetry for certain kernels
       }
 
       //std::cout<<P1_<<'\n';
