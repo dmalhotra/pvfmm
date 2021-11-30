@@ -123,7 +123,8 @@ void* MemoryManager::malloc(const size_t n_elem, const size_t type_size) const{
     size+=2+alignment;
     char* p = (char*)DeviceWrapper::host_malloc(size);
     base = (char*)((uintptr_t)(p+2+alignment) & ~(uintptr_t)alignment);
-    ((uint16_t*)base)[-1] = (uint16_t)(base-p);
+    const uint16_t base_offset = (uint16_t)(base-p);
+    *(uint16_t*)(p+(base_offset-sizeof(uint16_t))) = base_offset;
   }
 
   { // Check out-of-bounds write

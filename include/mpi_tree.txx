@@ -175,7 +175,8 @@ inline int points2Octree(const Vector<MortonId>& pt_mid, Vector<MortonId>& nodes
     size_t i=0;
     std::vector<MortonId> node_lst;
     if(myrank){
-      while(i<node_cnt && nodes_local[i].getDFD(maxDepth)<first_node) i++; assert(i);
+      while(i<node_cnt && nodes_local[i].getDFD(maxDepth)<first_node) i++;
+      assert(i);
       last_node=nodes_local[i>0?i-1:0].NextId(); // Next MortonId in the tree after first_node.
 
       while(first_node<last_node){ // Complete nodes between first_node and last_node.
