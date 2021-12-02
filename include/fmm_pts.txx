@@ -436,7 +436,7 @@ Permutation<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::PrecompPerm(Mat_Type ty
   }
 
   //Save the matrix for future use.
-  #pragma omp critical (PRECOMP_MATRIX_PTS)
+  #pragma omp critical(PVFMM_PRECOMP_MATRIX_PTS)
   {
     if(P_.Dim()==0) P_=P;
   }
@@ -690,7 +690,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
       Real_t *fftw_in, *fftw_out;
       fftw_in  = mem::aligned_new<Real_t>(  n3 *ker_dim[0]*ker_dim[1]*sizeof(Real_t));
       fftw_out = mem::aligned_new<Real_t>(2*n3_*ker_dim[0]*ker_dim[1]*sizeof(Real_t));
-      #pragma omp critical (FFTW_PLAN)
+      #pragma omp critical(PVFMM_FFTW_PLAN)
       {
         if (!vprecomp_fft_flag){
           vprecomp_fftplan = FFTW_t<Real_t>::fft_plan_many_dft_r2c(PVFMM_COORD_DIM, nnn, ker_dim[0]*ker_dim[1],
@@ -1116,7 +1116,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
   }
 
   //Save the matrix for future use.
-  #pragma omp critical (PRECOMP_MATRIX_PTS)
+  #pragma omp critical(PVFMM_PRECOMP_MATRIX_PTS)
   if(M_.Dim(0)==0 && M_.Dim(1)==0){
     M_=M;
     /*

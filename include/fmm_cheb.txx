@@ -470,7 +470,7 @@ Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_Type t
   }
 
   //Save the matrix for future use.
-  #pragma omp critical (PRECOMP_MATRIX_PTS)
+  #pragma omp critical(PVFMM_PRECOMP_MATRIX_PTS)
   if(P_.Dim()==0){ P_=P;}
 
   return P_;
@@ -538,7 +538,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
         for(size_t i=myrank;i<n_uc;i+=np){
           std::vector<Real_t> M_=cheb_integ(cheb_deg, &uc_coord[i*3], r, *this->kernel->k_s2m);
           #ifdef PVFMM_VERBOSE
-          #pragma omp critical
+          #pragma omp critical(PVFMM_PRECOMP)
           if(!myrank){
             cnt_done++;
             std::cout<<"\r Progress: "<<(100*progress*n_uc+100*cnt_done*np)/(class_count*n_uc)<<"% "<<std::flush;
@@ -571,7 +571,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
         M_trg=M_trg.Transpose();
         cheb_approx<Real_t,Real_t>(M_s2t[j],cheb_deg,this->kernel->k_l2t->ker_dim[1],M[j]);
       }
-      #pragma omp critical (PRECOMP_MATRIX_PTS)
+      #pragma omp critical(PVFMM_PRECOMP_MATRIX_PTS)
       {
         M_s2t.Resize(0,0);
       }
@@ -604,7 +604,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
         for(size_t i=myrank;i<n_trg;i+=np){
           std::vector<Real_t> s2t=cheb_integ(cheb_deg, &trg_coord[i*3], (Real_t)(s*2.0), *this->kernel->k_s2t);
           #ifdef PVFMM_VERBOSE
-          #pragma omp critical
+          #pragma omp critical(PVFMM_PRECOMP)
           if(!myrank){
             cnt_done++;
             std::cout<<"\r Progress: "<<(100*progress*n_trg+100*cnt_done*np)/(class_count*n_trg)<<"% "<<std::flush;
@@ -655,7 +655,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
         for(size_t i=myrank;i<n_trg;i+=np){
           std::vector<Real_t> s2t=cheb_integ(cheb_deg, &trg_coord[i*3], s, *this->kernel->k_s2t);
           #ifdef PVFMM_VERBOSE
-          #pragma omp critical
+          #pragma omp critical(PVFMM_PRECOMP)
           if(!myrank){
             cnt_done++;
             std::cout<<"\r Progress: "<<(100*progress*n_trg+100*cnt_done*np)/(class_count*n_trg)<<"% "<<std::flush;
@@ -706,7 +706,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
         for(size_t i=myrank;i<n_trg;i+=np){
           std::vector<Real_t> s2t=cheb_integ(cheb_deg, &trg_coord[i*3], (Real_t)(s*0.5), *this->kernel->k_s2t);
           #ifdef PVFMM_VERBOSE
-          #pragma omp critical
+          #pragma omp critical(PVFMM_PRECOMP)
           if(!myrank){
             cnt_done++;
             std::cout<<"\r Progress: "<<(100*progress*n_trg+100*cnt_done*np)/(class_count*n_trg)<<"% "<<std::flush;
@@ -744,7 +744,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
         M_trg=M_trg.Transpose();
         cheb_approx<Real_t,Real_t>(M_s2t[j],cheb_deg,this->kernel->k_m2t->ker_dim[1],M[j]);
       }
-      #pragma omp critical (PRECOMP_MATRIX_PTS)
+      #pragma omp critical(PVFMM_PRECOMP_MATRIX_PTS)
       {
         M_s2t.Resize(0,0);
       }
@@ -772,7 +772,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
         for(size_t i=myrank;i<n_trg;i+=np){
           std::vector<Real_t> M_=cheb_integ(cheb_deg, &trg_coord[i*3], s, *this->kernel->k_s2l);
           #ifdef PVFMM_VERBOSE
-          #pragma omp critical
+          #pragma omp critical(PVFMM_PRECOMP)
           if(!myrank){
             cnt_done++;
             std::cout<<"\r Progress: "<<(100*progress*n_trg+100*cnt_done*np)/(class_count*n_trg)<<"% "<<std::flush;
@@ -796,7 +796,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
   }
 
   //Save the matrix for future use.
-  #pragma omp critical (PRECOMP_MATRIX_PTS)
+  #pragma omp critical(PVFMM_PRECOMP_MATRIX_PTS)
   if(M_.Dim(0)==0 && M_.Dim(1)==0){ M_=M;}
 
   return M_;

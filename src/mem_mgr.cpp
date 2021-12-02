@@ -85,9 +85,12 @@ void* MemoryManager::malloc(const size_t n_elem, const size_t type_size) const{
   size=(uintptr_t)(size+alignment) & ~(uintptr_t)alignment;
   char* base=NULL;
 
-  mutex_lock.lock();
+  size_t n_indx;
+  #pragma omp critical(PVFMM_MEM_MGR_CRIT)
+  {
+  //mutex_lock.lock();
   std::multimap<size_t, size_t>::iterator it=free_map.lower_bound(size);
-  size_t n_indx=(it!=free_map.end()?it->second:0);
+  n_indx=(it!=free_map.end()?it->second:0);
   if(n_indx){ // Allocate from buff
     size_t n_free_indx=(it->first>size?new_node():0);
     MemNode& n=node_buff[n_indx-1];
@@ -118,7 +121,8 @@ void* MemoryManager::malloc(const size_t n_elem, const size_t type_size) const{
     free_map.erase(it);
     base = n.mem_ptr;
   }
-  mutex_lock.unlock();
+  //mutex_lock.unlock();
+  }
   if(!base){ // Use system malloc
     size+=2+alignment;
     char* p = (char*)DeviceWrapper::host_malloc(size);
@@ -189,7 +193,9 @@ void MemoryManager::free(void* p) const{
     #endif
   }
 
-  mutex_lock.lock();
+  #pragma omp critical(PVFMM_MEM_MGR_CRIT)
+  {
+  //mutex_lock.lock();
   MemNode& n=node_buff[n_indx-1];
   assert(!n.free && n.size>0 && n.mem_ptr==base);
   if(n.prev!=0 && node_buff[n.prev-1].free){
@@ -219,12 +225,15 @@ void MemoryManager::free(void* p) const{
   }
   n.free=true; // Insert n to free_map
   n.it=free_map.insert(std::make_pair(n.size,n_indx));
-  mutex_lock.unlock();
+  //mutex_lock.unlock();
+  }
 }
 
 void MemoryManager::print() const{
   if(!buff_size) return;
-  mutex_lock.lock();
+  #pragma omp critical(PVFMM_MEM_MGR_CRIT)
+  {
+  //mutex_lock.lock();
 
   size_t size=0;
   size_t largest_size=0;
@@ -244,7 +253,8 @@ void MemoryManager::print() const{
   std::cout<<"|  allocated="<<round(size*1000.0/buff_size)/10<<"%";
   std::cout<<"  largest_free="<<round(largest_size*1000.0/buff_size)/10<<"%\n";
 
-  mutex_lock.unlock();
+  //mutex_lock.unlock();
+  }
 }
 
 void MemoryManager::test(){
@@ -289,7 +299,9 @@ void MemoryManager::test(){
 void MemoryManager::Check() const{
   #ifndef PVFMM_NDEBUG
   //print();
-  mutex_lock.lock();
+  #pragma omp critical(PVFMM_MEM_MGR_CRIT)
+  {
+  //mutex_lock.lock();
   MemNode* curr_node=&node_buff[n_dummy_indx-1];
   while(curr_node->next){
     if(curr_node->free){
@@ -301,7 +313,8 @@ void MemoryManager::Check() const{
     }
     curr_node=&node_buff[curr_node->next-1];
   }
-  mutex_lock.unlock();
+  //mutex_lock.unlock();
+  }
   #endif
 }
 

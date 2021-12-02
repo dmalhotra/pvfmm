@@ -20,6 +20,7 @@
 /src/.deps/
 /src/.dirstamp
 /src/*.o
+/src/*.lo
 /stamp-h1
 
 m4/libtool.m4

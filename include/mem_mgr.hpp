@@ -15,7 +15,7 @@
 #include <vector>
 #include <stack>
 #include <map>
-#include <mutex>
+//#include <mutex>
 
 #include <pvfmm_common.hpp>
 
@@ -123,7 +123,7 @@ class MemoryManager{
     mutable std::vector<MemNode> node_buff;         // storage for MemNode objects, this can only grow.
     mutable std::stack<size_t> node_stack;          // stack of available free MemNodes from node_buff.
     mutable std::multimap<size_t, size_t> free_map; // pair (MemNode.size, MemNode_id) for all free MemNodes.
-    mutable std::mutex mutex_lock;
+    //mutable std::mutex mutex_lock;
 };
 
 /** A global MemoryManager object. This is the default for aligned_new and

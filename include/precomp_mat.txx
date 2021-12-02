@@ -46,7 +46,7 @@ template <class T>
 Matrix<T>& PrecompMat<T>::Mat(int l, Mat_Type type, size_t indx){
   int level=(scale_invar?0:l+PVFMM_PRECOMP_MIN_DEPTH);
   assert(level*Type_Count+type<(int)mat.size());
-  //#pragma omp critical (PrecompMAT)
+  //#pragma omp critical(PVFMM_PrecompMAT)
   if(indx>=mat[level*Type_Count+type].size()){
     mat[level*Type_Count+type].resize(indx+1);
     assert(false); //TODO: this is not thread safe.
@@ -58,7 +58,7 @@ template <class T>
 Permutation<T>& PrecompMat<T>::Perm_R(int l, Mat_Type type, size_t indx){
   int level=l+PVFMM_PRECOMP_MIN_DEPTH;
   assert(level*Type_Count+type<(int)perm_r.size());
-  //#pragma omp critical (PrecompMAT)
+  //#pragma omp critical(PVFMM_PrecompMAT)
   if(indx>=perm_r[level*Type_Count+type].size()){
     perm_r[level*Type_Count+type].resize(indx+1);
     assert(false); //TODO: this is not thread safe.
@@ -70,7 +70,7 @@ template <class T>
 Permutation<T>& PrecompMat<T>::Perm_C(int l, Mat_Type type, size_t indx){
   int level=l+PVFMM_PRECOMP_MIN_DEPTH;
   assert(level*Type_Count+type<(int)perm_c.size());
-  //#pragma omp critical (PrecompMAT)
+  //#pragma omp critical(PVFMM_PrecompMAT)
   if(indx>=perm_c[level*Type_Count+type].size()){
     perm_c[level*Type_Count+type].resize(indx+1);
     assert(false); //TODO: this is not thread safe.

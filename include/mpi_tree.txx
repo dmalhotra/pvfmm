@@ -1668,7 +1668,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
           }
         }
         if(shared){
-          #pragma omp critical (ADD_SHARED)
+          #pragma omp critical(PVFMM_ADD_SHARED)
           {
             for(size_t j=0;j<comm_data.usr_cnt;j++)
             if(comm_data.usr_pid[j]!=(size_t)rank){

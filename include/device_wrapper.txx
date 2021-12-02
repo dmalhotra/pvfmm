@@ -323,7 +323,7 @@ namespace DeviceWrapper{
     if(PVFMM_have_mic) abort();// Cannot be called from MIC.
 
     int idx;
-    #pragma omp critical
+    #pragma omp critical(PVFMM_DEVICE_WRAPPER_CRIT)
     {
       if(lock_idx==PVFMM_NUM_LOCKS-1){
         int wait_lock_idx=-1;

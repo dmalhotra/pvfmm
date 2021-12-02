@@ -94,7 +94,7 @@ T cheb_approx(T* fn_v, int cheb_deg, int dof, T* out, mem::MemoryManager* mem_mg
   // Precompute
   Matrix<Y>* Mp=NULL;
   static std::vector<Matrix<Y> > precomp;
-  #pragma omp critical (CHEB_APPROX)
+  #pragma omp critical(PVFMM_CHEB_APPROX)
   {
     if(precomp.size()<=(size_t)d){
       precomp .resize(d+1);
@@ -269,7 +269,7 @@ T gll2cheb(T* fn_v, int deg, int dof, T* out){//*
   static std::vector<Matrix<Y> > precomp_;
   Matrix<Y>* Mp ;
   Matrix<Y>* Mp_;
-  #pragma omp critical (GLL_TO_CHEB)
+  #pragma omp critical(PVFMM_GLL_TO_CHEB)
   {
     if(precomp.size()<=(size_t)d){
       precomp .resize(d+1);
@@ -653,7 +653,7 @@ void quad_rule(int n, T* x, T* w){
   assert(n<10000);
 
   bool done=false;
-  #pragma omp critical (QUAD_RULE)
+  #pragma omp critical(PVFMM_QUAD_RULE)
   if(x_lst[n].Dim()>0){
     Vector<T>& x_=x_lst[n];
     Vector<T>& w_=w_lst[n];
@@ -740,7 +740,7 @@ void quad_rule(int n, T* x, T* w){
     //}
   }
 
-  #pragma omp critical (QUAD_RULE)
+  #pragma omp critical(PVFMM_QUAD_RULE)
   { // Set x_lst, w_lst
     x_lst[n]=x_;
     w_lst[n]=w_;
@@ -1106,7 +1106,7 @@ void cheb_diff(const Vector<T>& A, int deg, int diff_dim, Vector<T>& B, mem::Mem
 
   // Precompute
   static Matrix<T> M;
-  #pragma omp critical (CHEB_DIFF1)
+  #pragma omp critical(PVFMM_CHEB_DIFF1)
   if(M.Dim(0)!=(size_t)d){
     M.Resize(d,d);
     for(size_t i=0;i<d;i++){
