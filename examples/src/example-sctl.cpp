@@ -16,18 +16,18 @@ template <class Real> void test_particle_fmm(const Comm& comm) {
   Vector<Real>  sl_coord(N*DIM);
   Vector<Real>  dl_coord(N*DIM);
   Vector<Real>  dl_norml(N*DIM);
-  for (auto& a : trg_coord) a = drand48()-0.5;
-  for (auto& a :  sl_coord) a = drand48()-0.5;
-  for (auto& a :  dl_coord) a = drand48()-0.5;
-  for (auto& a :  dl_norml) a = drand48()-0.5;
+  for (auto& a : trg_coord) a = (Real)(drand48()-0.5);
+  for (auto& a :  sl_coord) a = (Real)(drand48()-0.5);
+  for (auto& a :  dl_coord) a = (Real)(drand48()-0.5);
+  for (auto& a :  dl_norml) a = (Real)(drand48()-0.5);
   Long n_sl  =  sl_coord.Dim()/DIM;
   Long n_dl  =  dl_coord.Dim()/DIM;
 
   // Set source charges.
   Vector<Real> sl_den(n_sl*kernel_sl.SrcDim());
   Vector<Real> dl_den(n_dl*kernel_dl.SrcDim());
-  for (auto& a : sl_den) a = drand48() - 0.5;
-  for (auto& a : dl_den) a = drand48() - 0.5;
+  for (auto& a : sl_den) a = (Real)(drand48() - 0.5);
+  for (auto& a : dl_den) a = (Real)(drand48() - 0.5);
 
   ParticleFMM<Real,DIM> fmm(comm);
   fmm.SetAccuracy(10);
