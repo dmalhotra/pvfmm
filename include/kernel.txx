@@ -1204,7 +1204,7 @@ template <class uKernel> template <class Real, int digits> void GenericKernel<uK
  * \brief Green's function for the Poisson's equation. Kernel tensor
  * dimension = 1x1.
  */
-struct laplace_poten : public GenericKernel<laplace_poten> {
+struct laplace_poten_ {
   static const int FLOPS = 9;
   template <class Real> static Real ScaleFactor() {
     return 1/(4*sctl::const_pi<Real>());
@@ -1215,6 +1215,7 @@ struct laplace_poten : public GenericKernel<laplace_poten> {
     u[0] = FMA(rinv, f[0], u[0]);
   }
 };
+struct laplace_poten : public GenericKernel<laplace_poten_> {};
 
 template <class Real> void laplace_vol_poten(const Real* coord, int n, Real* out){
   for(int i=0;i<n;i++){
@@ -1226,7 +1227,7 @@ template <class Real> void laplace_vol_poten(const Real* coord, int n, Real* out
 
 
 // Laplace double layer potential.
-struct laplace_dbl_poten : public GenericKernel<laplace_dbl_poten> {
+struct laplace_dbl_poten_ {
   static const int FLOPS = 17;
   template <class Real> static Real ScaleFactor() {
     return 1/(4*sctl::const_pi<Real>());
@@ -1239,10 +1240,11 @@ struct laplace_dbl_poten : public GenericKernel<laplace_dbl_poten> {
     u[0] = FMA(rdotn * rinv3, f[3], u[0]);
   }
 };
+struct laplace_dbl_poten : public GenericKernel<laplace_dbl_poten_> {};
 
 
 // Laplace grdient kernel.
-struct laplace_grad : public GenericKernel<laplace_grad> {
+struct laplace_grad_ {
   static const int FLOPS = 16;
   template <class Real> static Real ScaleFactor() {
     return 1/(4*sctl::const_pi<Real>());
@@ -1256,6 +1258,7 @@ struct laplace_grad : public GenericKernel<laplace_grad> {
     u[2] = FMA(r[2], f_rinv3, u[2]);
   }
 };
+struct laplace_grad : public GenericKernel<laplace_grad_> {};
 
 
 template<class T> const Kernel<T>& LaplaceKernel<T>::potential(){
@@ -1275,7 +1278,7 @@ template<class T> const Kernel<T>& LaplaceKernel<T>::gradient(){
 ////////                   STOKES KERNEL                                ////////
 ////////////////////////////////////////////////////////////////////////////////
 
-struct stokes_vel : public GenericKernel<stokes_vel> {
+struct stokes_vel_ {
   static const int FLOPS = 29;
   template <class Real> static Real ScaleFactor() { return 1 / (8 * sctl::const_pi<Real>()); }
   template <class VecType, int digits> static void uKerEval(VecType (&u)[3], const VecType (&r)[3], const VecType (&f)[3], const void* ctx_ptr) {
@@ -1288,8 +1291,9 @@ struct stokes_vel : public GenericKernel<stokes_vel> {
       u[2] = FMA(rinv, f[2] + r[2] * inner_prod, u[2]);
   }
 };
+struct stokes_vel : public GenericKernel<stokes_vel_> {};
 
-struct stokes_press : public GenericKernel<stokes_press> {
+struct stokes_press_ {
   static const int FLOPS = 16;
   template <class Real> static Real ScaleFactor() {
     return 1/(4*sctl::const_pi<Real>());
@@ -1302,8 +1306,9 @@ struct stokes_press : public GenericKernel<stokes_press> {
     u[0] = FMA(dot_sum, rinv3, u[0]);
   }
 };
+struct stokes_press : public GenericKernel<stokes_press_> {};
 
-struct stokes_stress : public GenericKernel<stokes_stress> {
+struct stokes_stress_ {
   static const int FLOPS = 43;
   template <class Real> static Real ScaleFactor() {
       return -3/(4*sctl::const_pi<Real>());
@@ -1325,8 +1330,9 @@ struct stokes_stress : public GenericKernel<stokes_stress> {
     u[8] += inner_prod * r[2] * r[2];
   }
 };
+struct stokes_stress : public GenericKernel<stokes_stress_> {};
 
-struct stokes_grad : public GenericKernel<stokes_grad> {
+struct stokes_grad_ {
   static const int FLOPS = 94;
   template <class Real> static Real ScaleFactor() {
       return 1/(8*sctl::const_pi<Real>());
@@ -1353,8 +1359,9 @@ struct stokes_grad : public GenericKernel<stokes_grad> {
     u[8] +=                        (inner_prod * (one - three * r[2] * r[2] * rinv2)) * rinv3;
   }
 };
+struct stokes_grad  : public GenericKernel<stokes_grad_> {};
 
-struct stokes_sym_dip : public GenericKernel<stokes_sym_dip> {
+struct stokes_sym_dip_ {
   static const int FLOPS = 35;
   template <class Real> static Real ScaleFactor() { return -1 / (8 * sctl::const_pi<Real>()); }
   template <class VecType, int digits> static void uKerEval(VecType (&k)[3], const VecType (&r)[3], const VecType (&v_src)[6], const void* ctx_ptr) {
@@ -1373,6 +1380,7 @@ struct stokes_sym_dip : public GenericKernel<stokes_sym_dip> {
       k[2] += r[2] * common;
   }
 };
+struct stokes_sym_dip : public GenericKernel<stokes_sym_dip_> {};
 
 template <class Real_t>
 void stokes_vol_poten(const Real_t* coord, int n, Real_t* out){
@@ -1411,7 +1419,7 @@ template<class T> const Kernel<T>& StokesKernel<T>::vel_grad(){
 ////////                   BIOT-SAVART KERNEL                           ////////
 ////////////////////////////////////////////////////////////////////////////////
 
-struct biot_savart : public GenericKernel<biot_savart> {
+struct biot_savart_ {
   static const int FLOPS = 24;
   template <class Real> static Real ScaleFactor() { return 1 / (4 * sctl::const_pi<Real>()); }
   template <class VecType, int digits> static void uKerEval(VecType (&u)[3], const VecType (&r)[3], const VecType (&f)[3], const void* ctx_ptr) {
@@ -1424,6 +1432,7 @@ struct biot_savart : public GenericKernel<biot_savart> {
       u[2] = FMA(rinv3, f[0]*r[1] - f[1]*r[0], u[2]);
   }
 };
+struct biot_savart : public GenericKernel<biot_savart_> {};
 
 
 template<class T> const Kernel<T>& BiotSavartKernel<T>::potential(){
@@ -1436,7 +1445,7 @@ template<class T> const Kernel<T>& BiotSavartKernel<T>::potential(){
 ////////                   HELMHOLTZ KERNEL                             ////////
 ////////////////////////////////////////////////////////////////////////////////
 
-struct helmholtz_poten : public GenericKernel<helmholtz_poten> {
+struct helmholtz_poten_ {
   static const int FLOPS = 20;
   template <class Real> static Real ScaleFactor() { return 1 / (4 * sctl::const_pi<Real>()); }
   template <class VecType, int digits> static void uKerEval(VecType (&u)[2], const VecType (&r)[3], const VecType (&f)[2], const void* ctx_ptr) {
@@ -1452,6 +1461,7 @@ struct helmholtz_poten : public GenericKernel<helmholtz_poten> {
       u[1] += (f[0] * G1 + f[1] * G0) * rinv;
   }
 };
+struct helmholtz_poten : public GenericKernel<helmholtz_poten_> {};
 
 
 template<class T> const Kernel<T>& HelmholtzKernel<T>::potential(){

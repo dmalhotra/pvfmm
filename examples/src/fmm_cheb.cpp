@@ -223,7 +223,7 @@ void fmm_test(int test_case, size_t N, size_t M, bool unif, int mult_order, int 
   void (*fn_grad_ )(const Real_t* , int , Real_t*)=NULL;
   const pvfmm::Kernel<Real_t>* mykernel=NULL;
   const pvfmm::Kernel<Real_t>* mykernel_grad=NULL;;
-  pvfmm::BoundaryType bndry;
+  pvfmm::BoundaryType bndry=pvfmm::FreeSpace;
 
   switch (test_case){
     case 1:

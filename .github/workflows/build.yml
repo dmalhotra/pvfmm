@@ -1,0 +1,53 @@
+name: Build
+
+on:
+  push:
+    branches: [ develop ]
+  pull_request:
+    branches: [ develop ]
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build-matrix:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macOS-latest]
+        compiler: [g++-10, clang++]
+        exclude:
+          - os: macOS-latest
+            compiler: clang++
+    runs-on: ${{ matrix.os }}
+    env:
+      OMPI_CXX: ${{ matrix.compiler }}
+
+    steps:
+    - uses: actions/checkout@main
+
+    - name: Init submodule
+      run: git submodule init && git submodule update
+
+    - name: Setup macOS
+      if: runner.os == 'macOS'
+      run: brew install open-mpi openblas fftw autoconf automake libtool
+
+    - name: Setup Linux
+      if: runner.os == 'Linux'
+      run: sudo apt-get install -y openmpi-bin openmpi-common libopenmpi-dev libopenblas-dev libfftw3-dev
+
+    - name: Autogen
+      run: ./autogen.sh
+
+    - name: Configure macOS
+      if: runner.os == 'macOS'
+      run: ./configure F77="gfortran-10" --with-openmp-flag="fopenmp" --with-fftw=$(brew --prefix fftw) --with-blas="-L$(brew --prefix openblas)/lib -lopenblas" --with-lapack="-L$(brew --prefix openblas)/lib -lopenblas"
+
+    - name: Configure Linux
+      if: runner.os == 'Linux'
+      run: ./configure
+
+    - name: Build
+      run: make all-examples -j
+

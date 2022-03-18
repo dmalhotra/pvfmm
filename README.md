@@ -1,4 +1,6 @@
-# PVFMM [![Build Status](https://travis-ci.org/dmalhotra/pvfmm.svg?branch=develop)](https://travis-ci.org/dmalhotra/pvfmm)
+# PVFMM [![Build Status](https://github.com/dmalhotra/pvfmm/actions/workflows/build.yml/badge.svg)](https://github.com/dmalhotra/pvfmm/actions/workflows/build.yml)
+[![Stable Version](https://badgen.net/github/tag/dmalhotra/pvfmm)](https://github.com/dmalhotra/pvfmm/tags)
+[![Latest Release](https://img.shields.io/github/v/release/dmalhotra/pvfmm?color=%233D9970)](https://github.com/dmalhotra/pvfmm/releases)
 
 
 ### What is PVFMM?

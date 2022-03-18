@@ -15,7 +15,7 @@
 
 namespace pvfmm{
 
-template <class Real> class Kernel;
+template <class Real> struct Kernel;
 
 /**
  * \brief Returns the sum of the absolute value of coeffecients of the highest

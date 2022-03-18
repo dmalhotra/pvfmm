@@ -112,6 +112,9 @@ if $USE_OPENMP; then
       gnu)
       CHECK_OPENMP(-fopenmp)
       ;;
+      clang)
+      CHECK_OPENMP(-fopenmp)
+      ;;
       intel)
       CHECK_OPENMP(-openmp)
       CHECK_OPENMP(-qopenmp)
@@ -230,6 +233,7 @@ Compiler/linker flags/libs/defs:
   - LDFLAGS ........ : ${LDFLAGS}
   - LIBS ........... : ${LIBS}
     - BLAS ......... : ${BLAS_LIBS}
+    - LAPACK ....... : ${LAPACK_LIBS}
     - FFTW ......... : ${FFTW_LIB} ${FFTWF_LIB}
     - X11 .......... : ${X_LIBS}
 
