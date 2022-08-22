@@ -46,11 +46,11 @@ void fmm_test(size_t N, int mult_order, int cheb_deg, double tol, MPI_Comm comm)
   // Run FMM
   std::vector<double> trg_value;
   size_t n_trg=trg_coord.size()/PVFMM_COORD_DIM;
-  pvfmm::ChebFMM_Evaluate(tree, trg_value, n_trg);
+  pvfmm::ChebFMM_Evaluate(trg_value, tree, n_trg);
 
   // Re-run FMM
   tree->ClearFMMData();
-  pvfmm::ChebFMM_Evaluate(tree, trg_value, n_trg);
+  pvfmm::ChebFMM_Evaluate(trg_value, tree, n_trg);
 
   {// Check error
     std::vector<double> trg_value_(n_trg*kernel_fn.ker_dim[1]);
