@@ -88,7 +88,7 @@ struct SameType<U, U>{
  * \brief Computes Chebyshev approximation from function values at cheb node points.
  */
 template <class T, class Y>
-T cheb_approx(T* fn_v, int cheb_deg, int dof, T* out, mem::MemoryManager* mem_mgr){
+T cheb_approx(const T* fn_v, int cheb_deg, int dof, T* out, mem::MemoryManager* mem_mgr){
   int d=cheb_deg+1;
 
   // Precompute
@@ -125,7 +125,7 @@ T cheb_approx(T* fn_v, int cheb_deg, int dof, T* out, mem::MemoryManager* mem_mg
 
   Vector<Y> fn_v_in;
   if(SameType<T,Y>()()){ // Initialize fn_v_in
-    fn_v_in.ReInit(d*d*d*dof,fn_v,false);
+    fn_v_in.ReInit(d*d*d*dof,(T*)fn_v,false);
   }else{
     fn_v_in.ReInit(d*d*d*dof,buff1,false);
     for(size_t i=0;i<fn_v_in.Dim();i++) fn_v_in[i]=fn_v[i];

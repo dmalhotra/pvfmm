@@ -1232,7 +1232,7 @@ struct laplace_dbl_poten_ {
   template <class Real> static Real ScaleFactor() {
     return 1/(4*sctl::const_pi<Real>());
   }
-  template <class VecType, int digits> static void uKerEval(VecType (&u)[3], const VecType (&r)[3], const VecType (&f)[4], const void* ctx_ptr) {
+  template <class VecType, int digits> static void uKerEval(VecType (&u)[1], const VecType (&r)[3], const VecType (&f)[4], const void* ctx_ptr) {
     VecType r2 = r[0]*r[0]+r[1]*r[1]+r[2]*r[2];
     VecType rinv = sctl::approx_rsqrt<digits>(r2, r2 > VecType::Zero());
     VecType rdotn = r[0]*f[0] + r[1]*f[1] + r[2]*f[2];

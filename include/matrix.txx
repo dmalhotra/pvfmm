@@ -401,8 +401,8 @@ void Matrix<T>::ColPerm(const Permutation<T>& P){
 #define PVFMM_B1 128
 #define PVFMM_B2 32
 template <class T>
-Matrix<T> Matrix<T>::Transpose(){
-  Matrix<T>& M=*this;
+Matrix<T> Matrix<T>::Transpose() const{
+  const Matrix<T>& M=*this;
   size_t d0=M.dim[0];
   size_t d1=M.dim[1];
   Matrix<T> M_r(d1,d0,NULL);
@@ -438,7 +438,7 @@ template <class T>
 void Matrix<T>::Transpose(Matrix<T>& M_r, const Matrix<T>& M){
   size_t d0=M.dim[0];
   size_t d1=M.dim[1];
-  M_r.Resize(d1, d0);
+  if (M_r.Dim(0)!=d1 || M_r.Dim(1)!=d0) M_r.Resize(d1, d0);
 
   const size_t blk0=((d0+PVFMM_B1-1)/PVFMM_B1);
   const size_t blk1=((d1+PVFMM_B1-1)/PVFMM_B1);

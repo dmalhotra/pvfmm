@@ -2,6 +2,229 @@
 #include <pvfmm.hpp>
 #include <pvfmm.h>
 
+#ifdef __cplusplus
+extern "C" { // Volume FM
+#endif
+
+void* PVFMM_CreateVolumeFMMF(int m, int q, enum PVFMMKernel kernel, MPI_Comm comm) {
+  const pvfmm::Kernel<float>* ker = nullptr;
+  if (kernel == PVFMMLaplacePotential   ) ker = &pvfmm::LaplaceKernel   <float>::potential();
+  if (kernel == PVFMMLaplaceGradient    ) ker = &pvfmm::LaplaceKernel   <float>::gradient();
+  if (kernel == PVFMMStokesPressure     ) ker = &pvfmm::StokesKernel    <float>::pressure();
+  if (kernel == PVFMMStokesVelocity     ) ker = &pvfmm::StokesKernel    <float>::velocity();
+  if (kernel == PVFMMStokesVelocityGrad ) ker = &pvfmm::StokesKernel    <float>::vel_grad();
+  if (kernel == PVFMMBiotSavartPotential) ker = &pvfmm::BiotSavartKernel<float>::potential();
+
+  pvfmm::ChebFMM<float>* matrices = new pvfmm::ChebFMM<float>;
+  matrices->Initialize(m, q, comm, ker);
+  return (void*)matrices;
+}
+
+void* PVFMM_CreateVolumeTreeF(int cheb_deg, int data_dim, void (*fn_ptr)(const float* coord, long n, float* out, void* ctx), void* fn_ctx, float* trg_coord, long n_trg, MPI_Comm comm, float tol, int max_pts, bool periodic, int init_depth) {
+  const int COORD_DIM = 3;
+  std::vector<float> trg_coord_(n_trg*COORD_DIM);
+  #pragma omp parallel for schedule(static)
+  for (long i = 0; i < n_trg*COORD_DIM; i++) trg_coord_[i] = trg_coord[i];
+
+  std::function<void(const float*,int,float*)> fn_ptr_ = [&fn_ctx,&fn_ptr](const float* coord, int n, float* out) {
+    fn_ptr(coord, n, out, fn_ctx);
+  };
+
+  auto* tree = ChebFMM_CreateTree(cheb_deg, data_dim, fn_ptr_, trg_coord_, comm, tol, max_pts, periodic?pvfmm::Periodic:pvfmm::FreeSpace, init_depth);
+  //tree->Write2File("vis",4);
+
+  return (void*)tree;
+}
+
+void* PVFMM_CreateVolumeTreeFromCoeffF(long n_nodes, int cheb_deg, int data_dim, const float* node_coord, const float* fn_coeff, const float* trg_coord, long n_trg, MPI_Comm comm, bool periodic) {
+  const int COORD_DIM = 3;
+  std::vector<float> node_coord_(n_nodes*COORD_DIM), fn_coeff_(n_nodes*data_dim*(cheb_deg+1)*(cheb_deg+2)*(cheb_deg+3)/6), trg_coord_(n_trg*COORD_DIM);
+  #pragma omp parallel for schedule(static)
+  for (long i = 0; i < (long)node_coord_.size(); i++) node_coord_[i] = node_coord[i];
+  #pragma omp parallel for schedule(static)
+  for (long i = 0; i < (long)fn_coeff_.size(); i++) fn_coeff_[i] = fn_coeff[i];
+  #pragma omp parallel for schedule(static)
+  for (long i = 0; i < (long)trg_coord_.size(); i++) trg_coord_[i] = trg_coord[i];
+
+  auto* tree = ChebFMM_CreateTree(cheb_deg, node_coord_, fn_coeff_, trg_coord_, comm, periodic?pvfmm::Periodic:pvfmm::FreeSpace);
+  //tree->Write2File("vis",4);
+
+  return (void*)tree;
+}
+
+void PVFMM_EvaluateVolumeFMMF(float* trg_val, void* tree, void* fmm, long loc_size) {
+  auto* tree_ = (pvfmm::ChebFMM_Tree<float>*)tree;
+  tree_->SetupFMM((pvfmm::ChebFMM<float>*)fmm);
+
+  std::vector<float> trg_val_;
+  ChebFMM_Evaluate(trg_val_, tree_, loc_size);
+  for (long i = 0; i < (long)trg_val_.size(); i++) trg_val[i] = trg_val_[i];
+}
+
+void PVFMMDestroyVolumeFMMF(void** ctx) {
+  if(!ctx[0]) return;
+  delete (pvfmm::ChebFMM<float>*)ctx[0];
+  ctx[0]=NULL;
+}
+
+void PVFMMDestroyVolumeTreeF(void** ctx) {
+  if(!ctx[0]) return;
+  delete (pvfmm::ChebFMM_Tree<float>*)ctx[0];
+  ctx[0]=NULL;
+}
+
+long PVFMM_GetLeafCountF(void* tree) {
+  std::vector<float> node_coord_;
+  ChebFMM_GetLeafCoord(node_coord_, (pvfmm::ChebFMM_Tree<float>*)tree);
+  return (long)node_coord_.size()/3;
+}
+
+void PVFMM_GetLeafCoordF(float* node_coord, void* tree) {
+  std::vector<float> node_coord_;
+  ChebFMM_GetLeafCoord(node_coord_, (pvfmm::ChebFMM_Tree<float>*)tree);
+  #pragma omp parallel for schedule(static)
+  for (long i = 0; i < (long)node_coord_.size(); i++) node_coord[i] = node_coord_[i];
+}
+
+void PVFMM_GetPotentialCoeffF(float* coeff, void* tree) {
+  std::vector<float> coeff_;
+  ChebFMM_GetPotentialCoeff(coeff_, (pvfmm::ChebFMM_Tree<float>*)tree);
+  #pragma omp parallel for schedule(static)
+  for (long i = 0; i < (long)coeff_.size(); i++) coeff[i] = coeff_[i];
+}
+
+void PVFMM_Coeff2NodesF(float* node_val, long Nleaf, int ChebDeg, int dof, const float* coeff) {
+  std::vector<float> node_val_, coeff_(Nleaf*dof*(ChebDeg+1)*(ChebDeg+2)*(ChebDeg+3)/6);
+  #pragma omp parallel for schedule(static)
+  for (long i = 0; i < (long)coeff_.size(); i++) coeff_[i] = coeff[i];
+  pvfmm::ChebFMM_Coeff2Nodes(node_val_, ChebDeg, dof, coeff_);
+  #pragma omp parallel for schedule(static)
+  for (long i = 0; i < (long)node_val_.size(); i++) node_val[i] = node_val_[i];
+}
+
+void PVFMM_Nodes2CoeffF(float* coeff, long Nleaf, int ChebDeg, int dof, const float* node_val) {
+  std::vector<float> node_val_(Nleaf*(ChebDeg+1)*(ChebDeg+1)*(ChebDeg+1)*dof), coeff_;
+  #pragma omp parallel for schedule(static)
+  for (long i = 0; i < (long)node_val_.size(); i++) node_val_[i] = node_val[i];
+  pvfmm::ChebFMM_Nodes2Coeff(coeff_, ChebDeg, dof, node_val_);
+  #pragma omp parallel for schedule(static)
+  for (long i = 0; i < (long)coeff_.size(); i++) coeff[i] = coeff_[i];
+}
+
+
+
+
+void* PVFMM_CreateVolumeFMMD(int m, int q, enum PVFMMKernel kernel, MPI_Comm comm) {
+  const pvfmm::Kernel<double>* ker = nullptr;
+  if (kernel == PVFMMLaplacePotential   ) ker = &pvfmm::LaplaceKernel   <double>::potential();
+  if (kernel == PVFMMLaplaceGradient    ) ker = &pvfmm::LaplaceKernel   <double>::gradient();
+  if (kernel == PVFMMStokesPressure     ) ker = &pvfmm::StokesKernel    <double>::pressure();
+  if (kernel == PVFMMStokesVelocity     ) ker = &pvfmm::StokesKernel    <double>::velocity();
+  if (kernel == PVFMMStokesVelocityGrad ) ker = &pvfmm::StokesKernel    <double>::vel_grad();
+  if (kernel == PVFMMBiotSavartPotential) ker = &pvfmm::BiotSavartKernel<double>::potential();
+
+  pvfmm::ChebFMM<double>* matrices = new pvfmm::ChebFMM<double>;
+  matrices->Initialize(m, q, comm, ker);
+  return (void*)matrices;
+}
+
+void* PVFMM_CreateVolumeTreeD(int cheb_deg, int data_dim, void (*fn_ptr)(const double* coord, long n, double* out, void* ctx), void* fn_ctx, double* trg_coord, long n_trg, MPI_Comm comm, double tol, int max_pts, bool periodic, int init_depth) {
+  const int COORD_DIM = 3;
+  std::vector<double> trg_coord_(n_trg*COORD_DIM);
+  #pragma omp parallel for schedule(static)
+  for (long i = 0; i < n_trg*COORD_DIM; i++) trg_coord_[i] = trg_coord[i];
+
+  std::function<void(const double*,int,double*)> fn_ptr_ = [&fn_ctx,&fn_ptr](const double* coord, int n, double* out) {
+    fn_ptr(coord, n, out, fn_ctx);
+  };
+
+  auto* tree = ChebFMM_CreateTree(cheb_deg, data_dim, fn_ptr_, trg_coord_, comm, tol, max_pts, periodic?pvfmm::Periodic:pvfmm::FreeSpace, init_depth);
+  //tree->Write2File("vis",4);
+
+  return (void*)tree;
+}
+
+void* PVFMM_CreateVolumeTreeFromCoeffD(long n_nodes, int cheb_deg, int data_dim, const double* node_coord, const double* fn_coeff, const double* trg_coord, long n_trg, MPI_Comm comm, bool periodic) {
+  const int COORD_DIM = 3;
+  std::vector<double> node_coord_(n_nodes*COORD_DIM), fn_coeff_(n_nodes*data_dim*(cheb_deg+1)*(cheb_deg+2)*(cheb_deg+3)/6), trg_coord_(n_trg*COORD_DIM);
+  #pragma omp parallel for schedule(static)
+  for (long i = 0; i < (long)node_coord_.size(); i++) node_coord_[i] = node_coord[i];
+  #pragma omp parallel for schedule(static)
+  for (long i = 0; i < (long)fn_coeff_.size(); i++) fn_coeff_[i] = fn_coeff[i];
+  #pragma omp parallel for schedule(static)
+  for (long i = 0; i < (long)trg_coord_.size(); i++) trg_coord_[i] = trg_coord[i];
+
+  auto* tree = ChebFMM_CreateTree(cheb_deg, node_coord_, fn_coeff_, trg_coord_, comm, periodic?pvfmm::Periodic:pvfmm::FreeSpace);
+  //tree->Write2File("vis",4);
+
+  return (void*)tree;
+}
+
+void PVFMM_EvaluateVolumeFMMD(double* trg_val, void* tree, void* fmm, long loc_size) {
+  auto* tree_ = (pvfmm::ChebFMM_Tree<double>*)tree;
+  tree_->SetupFMM((pvfmm::ChebFMM<double>*)fmm);
+
+  std::vector<double> trg_val_;
+  ChebFMM_Evaluate(trg_val_, tree_, loc_size);
+  for (long i = 0; i < (long)trg_val_.size(); i++) trg_val[i] = trg_val_[i];
+}
+
+void PVFMMDestroyVolumeFMMD(void** ctx) {
+  if(!ctx[0]) return;
+  delete (pvfmm::ChebFMM<double>*)ctx[0];
+  ctx[0]=NULL;
+}
+
+void PVFMMDestroyVolumeTreeD(void** ctx) {
+  if(!ctx[0]) return;
+  delete (pvfmm::ChebFMM_Tree<double>*)ctx[0];
+  ctx[0]=NULL;
+}
+
+long PVFMM_GetLeafCountD(void* tree) {
+  std::vector<double> node_coord_;
+  ChebFMM_GetLeafCoord(node_coord_, (pvfmm::ChebFMM_Tree<double>*)tree);
+  return (long)node_coord_.size()/3;
+}
+
+void PVFMM_GetLeafCoordD(double* node_coord, void* tree) {
+  std::vector<double> node_coord_;
+  ChebFMM_GetLeafCoord(node_coord_, (pvfmm::ChebFMM_Tree<double>*)tree);
+  #pragma omp parallel for schedule(static)
+  for (long i = 0; i < (long)node_coord_.size(); i++) node_coord[i] = node_coord_[i];
+}
+
+void PVFMM_GetPotentialCoeffD(double* coeff, void* tree) {
+  std::vector<double> coeff_;
+  ChebFMM_GetPotentialCoeff(coeff_, (pvfmm::ChebFMM_Tree<double>*)tree);
+  #pragma omp parallel for schedule(static)
+  for (long i = 0; i < (long)coeff_.size(); i++) coeff[i] = coeff_[i];
+}
+
+void PVFMM_Coeff2NodesD(double* node_val, long Nleaf, int ChebDeg, int dof, const double* coeff) {
+  std::vector<double> node_val_, coeff_(Nleaf*dof*(ChebDeg+1)*(ChebDeg+2)*(ChebDeg+3)/6);
+  #pragma omp parallel for schedule(static)
+  for (long i = 0; i < (long)coeff_.size(); i++) coeff_[i] = coeff[i];
+  pvfmm::ChebFMM_Coeff2Nodes(node_val_, ChebDeg, dof, coeff_);
+  #pragma omp parallel for schedule(static)
+  for (long i = 0; i < (long)node_val_.size(); i++) node_val[i] = node_val_[i];
+}
+
+void PVFMM_Nodes2CoeffD(double* coeff, long Nleaf, int ChebDeg, int dof, const double* node_val) {
+  std::vector<double> node_val_(Nleaf*(ChebDeg+1)*(ChebDeg+1)*(ChebDeg+1)*dof), coeff_;
+  #pragma omp parallel for schedule(static)
+  for (long i = 0; i < (long)node_val_.size(); i++) node_val_[i] = node_val[i];
+  pvfmm::ChebFMM_Nodes2Coeff(coeff_, ChebDeg, dof, node_val_);
+  #pragma omp parallel for schedule(static)
+  for (long i = 0; i < (long)coeff_.size(); i++) coeff[i] = coeff_[i];
+}
+
+#ifdef __cplusplus
+}
+#endif
+
+
+
 template<typename Real> struct PVFMMContext{
   typedef pvfmm::FMM_Node<pvfmm::MPI_Node<Real> > Node_t;
   typedef pvfmm::FMM_Pts<Node_t> Mat_t;
@@ -461,7 +684,6 @@ template<typename Real> static void PVFMMDestroyContext(void** ctx){
   delete (PVFMMContext<Real>*)ctx[0];
   ctx[0]=NULL;
 }
-
 
 #ifdef __cplusplus
 extern "C" {

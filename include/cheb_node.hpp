@@ -8,6 +8,7 @@
 #include <vector>
 #include <cstdlib>
 #include <stdint.h>
+#include <functional>
 
 #include <pvfmm_common.hpp>
 #include <tree_node.hpp>
@@ -44,20 +45,24 @@ class Cheb_Node: public MPI_Node<Real_t>{
 
     Function_t(FunctionInterface<Real_t>* fn): fn_ptr_(NULL), fn_(fn){}
 
+    Function_t(const std::function<void(const Real_t*,int,Real_t*)>& std_fn): fn_ptr_(nullptr), fn_(nullptr), std_fn_(std_fn) {}
+
     void operator()(const Real_t* coord, int n, Real_t* out){
       if(fn_ptr_) fn_ptr_(coord, n, out);
       else if(fn_) (*fn_)(coord, n, out);
+      else if(std_fn_) std_fn_(coord, n, out);
       else assert(false);
     }
 
     bool IsEmpty(){
-      return (fn_ptr_==NULL && fn_==NULL);
+      return (fn_ptr_==NULL && fn_==NULL && !std_fn_);
     }
 
     private:
 
     FnPtr_t fn_ptr_;
     FunctionInterface<Real_t>* fn_;
+    std::function<void(const Real_t*,int,Real_t*)> std_fn_;
   };
 
   /**

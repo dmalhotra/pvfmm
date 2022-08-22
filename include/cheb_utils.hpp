@@ -20,19 +20,53 @@ template <class Real> struct Kernel;
 /**
  * \brief Returns the sum of the absolute value of coeffecients of the highest
  * order polynomial as an estimate of error.
+ *
+ * \param[in] cheb_coeff The coefficient array of size
+ * dof*(deg+1)*(deg+2)*(deg+3)/6.
+ *
+ * \param[in] deg The degree of the Chebyshev approximation.
+ *
+ * \param[in] dof The number of real scalar values associated with each
+ * Chebyshev node point.
+ *
+ * \return The estimated truction error.
  */
 template <class T>
 T cheb_err(T* cheb_coeff, int deg, int dof);
 
 /**
- * \brief Computes Chebyshev approximation from function values at cheb node points.
+ * \brief Computes Chebyshev approximation from function values at cheb node
+ * points.
+ *
+ * \param[in] fn_v The array of function values on a tensor product Chebyshev
+ * grid (first kind nodes) of size dof*(deg+1)^3.
+ *
+ * \param[in] deg The degree of the Chebyshev approximation.
+ *
+ * \param[in] dof The number of real scalar values associated with each
+ * Chebyshev node point.
+ *
+ * \param[out] cheb_coeff The coefficient array of size
+ * dof*(deg+1)*(deg+2)*(deg+3)/6.
+ *
+ * \return Estimate of the truncation error.
  */
 template <class T, class Y>
-T cheb_approx(T* fn_v, int d, int dof, T* out, mem::MemoryManager* mem_mgr=NULL);
+T cheb_approx(const T* fn_v, int deg, int dof, T* cheb_coeff, mem::MemoryManager* mem_mgr=NULL);
 
 /**
  * \brief Evaluates polynomial values from input coefficients at points on
- * a regular grid defined by in_x, in_y, in_z vectors.
+ * a tensor product grid defined by in_x, in_y, in_z vectors.
+ *
+ * \param[in] coeff_ The vector of Chebshev coefficients.
+ *
+ * \param[in] cheb_deg The degree of the Chebyshev approximation.
+ *
+ * \param[in] in_x The nodes in [0,1] in the X-direction.
+ *
+ * \param[in] in_y The nodes in [0,1] in the Y-direction.
+ *
+ * \param[in] in_z The nodes in [0,1] in the Z-direction.
  */
 template <class T>
 void cheb_eval(const Vector<T>& coeff_, int cheb_deg, const std::vector<T>& in_x, const std::vector<T>& in_y, const std::vector<T>& in_z, Vector<T>& out, mem::MemoryManager* mem_mgr=NULL);
@@ -47,10 +81,15 @@ void cheb_eval(Vector<T>& coeff_, int cheb_deg, std::vector<T>& coord, Vector<T>
 /**
  * \brief Computes a least squares solution for Chebyshev approximation over a
  * cube from point samples.
+ *
  * \param[in] deg Maximum degree of the polynomial.
+ *
  * \param[in] coord Coordinates of points (x,y,z interleaved).
+ *
  * \param[in] node_coord Coordinates of the octant.
+ *
  * \param[in] node_size Length of the side of the octant.
+ *
  * \param[out] cheb_coeff Output coefficients.
  */
 template <class T>

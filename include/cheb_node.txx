@@ -246,7 +246,7 @@ void Cheb_Node<Real_t>::VTU_Data(VTUData_t& vtu_data, std::vector<Node_t*>& node
       }
 
       {// Set point values.
-        if(gridval.Dim()!=n->data_dof*gridpt_cnt*gridpt_cnt*gridpt_cnt)
+        if(gridval.Dim()!=(size_t)n->data_dof*gridpt_cnt*gridpt_cnt*gridpt_cnt)
           gridval.ReInit(n->data_dof*gridpt_cnt*gridpt_cnt*gridpt_cnt);
         std::vector<Real_t> x(gridpt_cnt);
         std::vector<Real_t> y(gridpt_cnt);

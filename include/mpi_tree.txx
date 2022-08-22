@@ -1001,7 +1001,7 @@ void MPI_Tree<TreeNode>::Balance21(BoundaryType bndry) {
   if(redist){
     int i=0;
     std::vector<MortonId> mins=GetMins();
-    while(new_mins[i]<mins[myrank] && i<num_proc) i++; //TODO: Use binary search.
+    while(i<num_proc && new_mins[i]<mins[myrank]) i++; //TODO: Use binary search.
     for(;i<num_proc;i++){
       Node_t* n=FindNode(new_mins[i], true);
       if(n->IsGhost()) break;

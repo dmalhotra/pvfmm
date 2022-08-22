@@ -116,7 +116,7 @@ class Matrix{
   void RowPerm(const Permutation<T>& P);
   void ColPerm(const Permutation<T>& P);
 
-  Matrix<T> Transpose();
+  Matrix<T> Transpose() const;
 
   static void Transpose(Matrix<T>& M_r, const Matrix<T>& M);
 
