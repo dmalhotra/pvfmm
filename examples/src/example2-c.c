@@ -61,10 +61,10 @@ void test1(void* fmm, int kdim0, int kdim1, int cheb_deg, const MPI_Comm comm) {
   fn_poten(trg_coord, Nt, trg_value_ref, NULL);
 
   // Build volume tree
-  void* tree = PVFMM_CreateVolumeTreeD(cheb_deg, kdim0, fn_input, NULL, trg_coord, Nt, comm, 1e-6, 100, false, 0);
+  void* tree = PVFMMCreateVolumeTreeD(cheb_deg, kdim0, fn_input, NULL, trg_coord, Nt, comm, 1e-6, 100, false, 0);
 
   // Evaluate FMM
-  PVFMM_EvaluateVolumeFMMD(trg_value, tree, fmm, Nt);
+  PVFMMEvaluateVolumeFMMD(trg_value, tree, fmm, Nt);
 
   { // Print error
     double max_err = 0, max_val = 0;
@@ -113,8 +113,8 @@ void test2(void* fmm, int kdim0, int kdim1, int cheb_deg, const MPI_Comm comm) {
     double* dens_coeff = (double*)malloc(Nleaf_loc*Ncoef*kdim0*sizeof(double));
     GetChebNodes(cheb_coord, Nleaf_loc, cheb_deg, depth, leaf_coord);
     fn_input(cheb_coord, Nleaf_loc*Ncheb, dens_value, NULL);
-    PVFMM_Nodes2CoeffD(dens_coeff, Nleaf_loc, cheb_deg, kdim0, dens_value);
-    tree = PVFMM_CreateVolumeTreeFromCoeffD(Nleaf_loc, cheb_deg, kdim0, leaf_coord, dens_coeff, NULL, 0, comm, false);
+    PVFMMNodes2CoeffD(dens_coeff, Nleaf_loc, cheb_deg, kdim0, dens_value);
+    tree = PVFMMCreateVolumeTreeFromCoeffD(Nleaf_loc, cheb_deg, kdim0, leaf_coord, dens_coeff, NULL, 0, comm, false);
 
     free(leaf_coord);
     free(cheb_coord);
@@ -123,20 +123,20 @@ void test2(void* fmm, int kdim0, int kdim1, int cheb_deg, const MPI_Comm comm) {
   }
 
   // Evaluate FMM
-  PVFMM_EvaluateVolumeFMMD(NULL, tree, fmm, 0);
+  PVFMMEvaluateVolumeFMMD(NULL, tree, fmm, 0);
 
   // Get potential at Chebyshev nodes
-  const long Nleaf = PVFMM_GetLeafCountD(tree);
+  const long Nleaf = PVFMMGetLeafCountD(tree);
   double* potn_coeff = (double*)malloc(Nleaf*Ncoef*kdim1*sizeof(double));
   double* potn_value = (double*)malloc(Nleaf*Ncheb*kdim1*sizeof(double));
-  PVFMM_GetPotentialCoeffD(potn_coeff, tree);
-  PVFMM_Coeff2NodesD(potn_value, Nleaf, cheb_deg, kdim1, potn_coeff);
+  PVFMMGetPotentialCoeffD(potn_coeff, tree);
+  PVFMMCoeff2NodesD(potn_value, Nleaf, cheb_deg, kdim1, potn_coeff);
 
   // Get reference solution at Chebyshev nodes
   double* leaf_coord = (double*)malloc(Nleaf*3*sizeof(double));
   double* cheb_coord = (double*)malloc(Nleaf*Ncheb*3*sizeof(double));
   double* potn_value_ref = (double*)malloc(Nleaf*Ncheb*kdim1*sizeof(double));
-  PVFMM_GetLeafCoordD(leaf_coord, tree);
+  PVFMMGetLeafCoordD(leaf_coord, tree);
   GetChebNodes(cheb_coord, Nleaf, cheb_deg, depth, leaf_coord);
   fn_poten(cheb_coord, Nleaf*Ncheb, potn_value_ref, NULL);
 
@@ -167,7 +167,7 @@ int main(int argc, char** argv) {
   const int mult_order = 10, cheb_deg = 14, kdim0 = 3, kdim1 = 3;
 
   // Build FMM translation operators
-  void* fmm = PVFMM_CreateVolumeFMMD(mult_order, cheb_deg, PVFMMStokesVelocity, comm);
+  void* fmm = PVFMMCreateVolumeFMMD(mult_order, cheb_deg, PVFMMStokesVelocity, comm);
 
   //test1(fmm, kdim0, kdim1, cheb_deg, comm);
   test2(fmm, kdim0, kdim1, cheb_deg, comm);

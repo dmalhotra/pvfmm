@@ -29,14 +29,16 @@ enum PVFMMKernel{
  *
  * \param[in] m the multipole order (positive, even integer).
  *
+ * \param[in] q the degree of the Chebyshev polynomials.
+ *
  * \param[in] kernel the kernel function.
  *
  * \param[in] comm the MPI communicator.
  *
  * \return the volume FMM context pointer.
  */
-void* PVFMM_CreateVolumeFMMD(int m, int q, enum PVFMMKernel kernel, MPI_Comm comm);
-void* PVFMM_CreateVolumeFMMF(int m, int q, enum PVFMMKernel kernel, MPI_Comm comm);
+void* PVFMMCreateVolumeFMMD(int m, int q, enum PVFMMKernel kernel, MPI_Comm comm);
+void* PVFMMCreateVolumeFMMF(int m, int q, enum PVFMMKernel kernel, MPI_Comm comm);
 
 /**
  * \brief Construct a piecewise Chebyshev volume discretization in [0,1]^3.  It
@@ -64,7 +66,7 @@ void* PVFMM_CreateVolumeFMMF(int m, int q, enum PVFMMKernel kernel, MPI_Comm com
  *
  * \param[in] max_ptr the maximum number of target points per leaf node.
  *
- * \param[in] bndry the type of boundary conditions (FreeSpace or Periodic)
+ * \param[in] periodic whether to use periodic boundary conditions.
  *
  * \param[in] init_depth the depth of the initial tree defore adaptive
  * refinement. If zero then the depth is the minimum depth so that the number
@@ -73,8 +75,8 @@ void* PVFMM_CreateVolumeFMMF(int m, int q, enum PVFMMKernel kernel, MPI_Comm com
  * \return the pointer to the constructed tree. It must be destroyed using
  * PVFMMDestroyVolumeTreeD to free the resources.
  */
-void* PVFMM_CreateVolumeTreeD(int cheb_deg, int data_dim, void (*fn_ptr)(const double* coord, long n, double* out, void* ctx), void* fn_ctx, double* trg_coord, long n_trg, MPI_Comm comm, double tol, int max_pts, bool periodic, int init_depth);
-void* PVFMM_CreateVolumeTreeF(int cheb_deg, int data_dim, void (*fn_ptr)(const float* coord, long n, float* out, void* ctx), void* fn_ctx, float* trg_coord, long n_trg, MPI_Comm comm, float tol, int max_pts, bool periodic, int init_depth);
+void* PVFMMCreateVolumeTreeD(int cheb_deg, int data_dim, void (*fn_ptr)(const double* coord, long n, double* out, void* ctx), void* fn_ctx, double* trg_coord, long n_trg, MPI_Comm comm, double tol, int max_pts, bool periodic, int init_depth);
+void* PVFMMCreateVolumeTreeF(int cheb_deg, int data_dim, void (*fn_ptr)(const float* coord, long n, float* out, void* ctx), void* fn_ctx, float* trg_coord, long n_trg, MPI_Comm comm, float tol, int max_pts, bool periodic, int init_depth);
 
 /**
  * \brief Construct a piecewise Chebyshev volume discretization in [0,1]^3.  It
@@ -83,7 +85,9 @@ void* PVFMM_CreateVolumeTreeF(int cheb_deg, int data_dim, void (*fn_ptr)(const f
  *
  * \param[in] Nleaf the number of leaf nodes.
  *
- * \param[in] cheb_deg the degree of the Chebyshev polynomials.
+ * \param[in] cheb_deg the degree of the Chebyshev polynomials. The number of
+ * coefficients in each leaf node is
+ * data_dim*(cheb_deg+1)(cheb_deg+2)(cheb_deg+3)/6.
  *
  * \param[in] leaf_coord A vector of points [x1 y1 z1 ...  xn yn zn] where each
  * point corresponds to a leaf node in the tree.
@@ -97,13 +101,13 @@ void* PVFMM_CreateVolumeTreeF(int cheb_deg, int data_dim, void (*fn_ptr)(const f
  *
  * \param[in] comm MPI communicator.
  *
- * \param[in] bndry the type of boundary conditions (FreeSpace or Periodic)
+ * \param[in] periodic whether to use periodic boundary conditions.
  *
  * \return the pointer to the constructed tree. It must be destroyed using
  * PVFMMDestroyVolumeTreeD to free the resources.
  */
-void* PVFMM_CreateVolumeTreeFromCoeffD(long Nleaf, int cheb_deg, int data_dim, const double* leaf_coord, const double* fn_coeff, const double* trg_coord, long n_trg, MPI_Comm comm, bool periodic);
-void* PVFMM_CreateVolumeTreeFromCoeffF(long Nleaf, int cheb_deg, int data_dim, const float* leaf_coord, const float* fn_coeff, const float* trg_coord, long n_trg, MPI_Comm comm, bool periodic);
+void* PVFMMCreateVolumeTreeFromCoeffD(long Nleaf, int cheb_deg, int data_dim, const double* leaf_coord, const double* fn_coeff, const double* trg_coord, long n_trg, MPI_Comm comm, bool periodic);
+void* PVFMMCreateVolumeTreeFromCoeffF(long Nleaf, int cheb_deg, int data_dim, const float* leaf_coord, const float* fn_coeff, const float* trg_coord, long n_trg, MPI_Comm comm, bool periodic);
 
 
 
@@ -120,8 +124,8 @@ void* PVFMM_CreateVolumeTreeFromCoeffF(long Nleaf, int cheb_deg, int data_dim, c
  * \param[in] loc_size the local size of the output vector (used to partition
  * it among the MPI ranks).
  */
-void PVFMM_EvaluateVolumeFMMD(double* trg_val, void* tree, void* fmm, long loc_size);
-void PVFMM_EvaluateVolumeFMMF(float* trg_val, void* tree, void* fmm, long loc_size);
+void PVFMMEvaluateVolumeFMMD(double* trg_val, void* tree, const void* fmm, long loc_size);
+void PVFMMEvaluateVolumeFMMF(float* trg_val, void* tree, const void* fmm, long loc_size);
 
 
 /**
@@ -152,8 +156,8 @@ void PVFMMDestroyVolumeTreeF(void** ctx);
  *
  * \return the number of leaf nodes.
  */
-long PVFMM_GetLeafCountD(void* tree);
-long PVFMM_GetLeafCountF(void* tree);
+long PVFMMGetLeafCountD(const void* tree);
+long PVFMMGetLeafCountF(const void* tree);
 
 /**
  * \brief Get the leaf node coordinates.
@@ -163,8 +167,8 @@ long PVFMM_GetLeafCountF(void* tree);
  *
  * \param[in] tree the pointer to the Chebyshev tree.
  */
-void PVFMM_GetLeafCoordD(double* leaf_coord, void* tree);
-void PVFMM_GetLeafCoordF(float* leaf_coord, void* tree);
+void PVFMMGetLeafCoordD(double* leaf_coord, const void* tree);
+void PVFMMGetLeafCoordF(float* leaf_coord, const void* tree);
 
 /**
  * \brief Get the Chebyshev coefficients for the potential.
@@ -175,8 +179,8 @@ void PVFMM_GetLeafCoordF(float* leaf_coord, void* tree);
  *
  * \param[in] tree the pointer to the Chebyshev tree.
  */
-void PVFMM_GetPotentialCoeffD(double* coeff, void* tree);
-void PVFMM_GetPotentialCoeffF(float* coeff, void* tree);
+void PVFMMGetPotentialCoeffD(double* coeff, const void* tree);
+void PVFMMGetPotentialCoeffF(float* coeff, const void* tree);
 
 /**
  * \brief Evaluate Chebyshev coefficients at tensor product Chebyshev nodes of
@@ -192,8 +196,8 @@ void PVFMM_GetPotentialCoeffF(float* coeff, void* tree);
  *
  * \param[in] coeff the array of Chebyshev coefficients.
  */
-void PVFMM_Coeff2NodesD(double* node_val, long Nleaf, int ChebDeg, int dof, const double* coeff);
-void PVFMM_Coeff2NodesF(float* node_val, long Nleaf, int ChebDeg, int dof, const float* coeff);
+void PVFMMCoeff2NodesD(double* node_val, long Nleaf, int ChebDeg, int dof, const double* coeff);
+void PVFMMCoeff2NodesF(float* node_val, long Nleaf, int ChebDeg, int dof, const float* coeff);
 
 /**
  * \brief Convert function values on tensor product Chebyshev nodes (first
@@ -209,8 +213,8 @@ void PVFMM_Coeff2NodesF(float* node_val, long Nleaf, int ChebDeg, int dof, const
  *
  * \param[in] node_val the function values at tensor product Chebyshev nodes.
  */
-void PVFMM_Nodes2CoeffD(double* coeff, long Nleaf, int ChebDeg, int dof, const double* node_val);
-void PVFMM_Nodes2CoeffF(float* coeff, long Nleaf, int ChebDeg, int dof, const float* node_val);
+void PVFMMNodes2CoeffD(double* coeff, long Nleaf, int ChebDeg, int dof, const double* node_val);
+void PVFMMNodes2CoeffF(float* coeff, long Nleaf, int ChebDeg, int dof, const float* node_val);
 
 #ifdef __cplusplus
 }

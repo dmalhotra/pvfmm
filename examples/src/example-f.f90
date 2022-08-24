@@ -34,7 +34,7 @@ end
 subroutine BiotSavart(Xs, Vs, Ns, Xt, Vt, Nt)
   implicit none
   integer*8 Ns, Nt, s, t
-  real*8 :: Xs(Ns * 3), Vs(Ns * 3), Xt(Nt * 3), Vt(Nt * 3), Vt_ref(Nt * 3)
+  real*8 :: Xs(Ns * 3), Vs(Ns * 3), Xt(Nt * 3), Vt(Nt * 3)
   real*8 :: oofp, X(3), rinv, rinv3
 
   oofp = 1/(16*atan(1.0))
