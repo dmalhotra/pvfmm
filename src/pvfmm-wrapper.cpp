@@ -243,7 +243,7 @@ void pvfmmcreatevolumetreef_(void** ctx, const int32_t* cheb_deg, const int32_t*
 
   const MPI_Comm comm = MPI_Comm_f2c(*fcomm);
   auto* tree = ChebFMM_CreateTree(*cheb_deg, *data_dim, fn_ptr_, trg_coord_, comm, *tol, *max_pts, (*periodic)==0?pvfmm::FreeSpace:pvfmm::Periodic, *init_depth);
-  tree->Write2File("vis",4);
+  //tree->Write2File("vis",4);
 
   (*ctx) = (void*)tree;
 }
@@ -305,7 +305,7 @@ void pvfmmcreatevolumetreed_(void** ctx, const int32_t* cheb_deg, const int32_t*
 
   const MPI_Comm comm = MPI_Comm_f2c(*fcomm);
   auto* tree = ChebFMM_CreateTree(*cheb_deg, *data_dim, fn_ptr_, trg_coord_, comm, *tol, *max_pts, (*periodic)==0?pvfmm::FreeSpace:pvfmm::Periodic, *init_depth);
-  tree->Write2File("vis",4);
+  //tree->Write2File("vis",4);
 
   (*ctx) = (void*)tree;
 }
