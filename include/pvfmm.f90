@@ -71,6 +71,97 @@ interface ! Volume FMM
 
 
   !> Construct a piecewise Chebyshev volume discretization in [0,1]^3.  It
+  !! first constructs a uniform tree of depth init_depth and then adaptively
+  !! refines each leaf node until the tails of the Chebyshev coefficients in each
+  !! leaf node are smaller than tol and the number of target points in each leaf
+  !! node are less than max_pts. It further refines the tree to satisfy the 2:1
+  !! balance constraint.
+  !!
+  !! @param[in] cheb_deg the degree of the Chebyshev polynomials. The number of
+  !! coefficients in each leaf node is
+  !! data_dim*(cheb_deg+1)(cheb_deg+2)(cheb_deg+3)/6.
+  !!
+  !! @param[in] data_dim the number of scalar values per point in the evaluation
+  !! of the input function pointer (fn_ptr).
+  !!
+  !! @param[in] fn_ptr the input function pointer.
+  !!
+  !! @param[in] trg_coord the target coordinate vector with values: [x1 y1 z1 ...
+  !! xn yn zn] where (x1 y1 z1) are the coordinates of the first target point.
+  !!
+  !! @param[in] comm MPI communicator.
+  !!
+  !! @param[in] tol the tolerance for adaptive refinement.
+  !!
+  !! @param[in] max_ptr the maximum number of target points per leaf node.
+  !!
+  !! @param[in] periodic whether to use periodic boundary conditions.
+  !!
+  !! @param[in] init_depth the depth of the initial tree defore adaptive
+  !! refinement. If zero then the depth is the minimum depth so that the number
+  !! of leaf nodes is greater than the size of the MPI communicator.
+  !!
+  !! @param[out] tree the pointer to the constructed tree. It must be destroyed using
+  !! PVFMMDestroyVolumeTreeD to free the resources.
+  subroutine PVFMMCreateVolumeTreeD(tree, cheb_deg, data_dim, fn_ptr,&
+      trg_coord, n_trg, comm, tol, max_pts, periodic, init_depth)&
+      bind(C, name="pvfmmcreatevolumetreed_")
+    use iso_c_binding
+    implicit none
+    type(c_ptr), intent(out) :: tree ! tree context
+    integer(c_int32_t), intent(in) :: cheb_deg
+    integer(c_int32_t), intent(in) :: data_dim
+
+    interface
+      subroutine fn_ptr(coord, n, val) bind(C)
+        use iso_c_binding
+        implicit none
+        real(c_double), intent(in) :: coord(n*3)
+        real(c_double), intent(out) :: val(n*3)
+        integer(c_int64_t) :: n
+      end subroutine fn_ptr
+    end interface
+
+    real(c_double), intent(in) :: trg_coord(*)
+    integer(c_int64_t), intent(in) :: n_trg
+    integer(c_int), intent(in) :: comm ! MPI communicator
+    real(c_double), intent(in) :: tol
+    integer(c_int32_t), intent(in) :: max_pts
+    integer(c_int32_t), intent(in) :: periodic
+    integer(c_int32_t), intent(in) :: init_depth
+  end subroutine
+
+  subroutine PVFMMCreateVolumeTreeF(tree, cheb_deg, data_dim, fn_ptr,&
+      trg_coord, n_trg, comm, tol, max_pts, periodic, init_depth)&
+      bind(C, name="pvfmmcreatevolumetreef_")
+    use iso_c_binding
+    implicit none
+    type(c_ptr), intent(out) :: tree ! tree context
+    integer(c_int32_t), intent(in) :: cheb_deg
+    integer(c_int32_t), intent(in) :: data_dim
+
+    interface
+      subroutine fn_ptr(coord, n, val) bind(C)
+        use iso_c_binding
+        implicit none
+        real(c_float), intent(in) :: coord(n*3)
+        real(c_float), intent(out) :: val(n*3)
+        integer(c_int64_t) :: n
+      end subroutine fn_ptr
+    end interface
+
+    real(c_float), intent(in) :: trg_coord(*)
+    integer(c_int64_t), intent(in) :: n_trg
+    integer(c_int), intent(in) :: comm ! MPI communicator
+    real(c_float), intent(in) :: tol
+    integer(c_int32_t), intent(in) :: max_pts
+    integer(c_int32_t), intent(in) :: periodic
+    integer(c_int32_t), intent(in) :: init_depth
+  end subroutine
+
+
+
+  !> Construct a piecewise Chebyshev volume discretization in [0,1]^3.  It
   !! first constructs a tree with the given leaf node coordinates and then adds
   !! the Chebyshev coefficient to each leaf node.
   !!

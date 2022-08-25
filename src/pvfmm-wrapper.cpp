@@ -231,9 +231,22 @@ void pvfmmdestroyvolumefmmf_(void** ctx) {
   PVFMMDestroyVolumeFMMF(ctx);
 }
 
-//void pvfmmcreatevolumetreef_(vod** ctx, const int32_t* cheb_deg, const int32_t* data_dim, void (*fn_ptr)(const float* coord, long n, float* out, void* ctx), const void** fn_ctx, const float* trg_coord, const int64_t* n_trg, const MPI_Fint* fcomm, const float* tol, const int32_t* max_pts, const int32_t* periodic, const int32_t* init_depth) {
-// TODO
-//}
+void pvfmmcreatevolumetreef_(void** ctx, const int32_t* cheb_deg, const int32_t* data_dim, void (*fn_ptr)(const float* coord, const int64_t* n, float* out), const float* trg_coord, const int64_t* n_trg, const MPI_Fint* fcomm, const float* tol, const int32_t* max_pts, const int32_t* periodic, const int32_t* init_depth) {
+  const int COORD_DIM = 3;
+  std::vector<float> trg_coord_((*n_trg)*COORD_DIM);
+  #pragma omp parallel for schedule(static)
+  for (long i = 0; i < (*n_trg)*COORD_DIM; i++) trg_coord_[i] = trg_coord[i];
+
+  std::function<void(const float*,int,float*)> fn_ptr_ = [&fn_ptr](const float* coord, int64_t n, float* out) {
+    fn_ptr(coord, &n, out);
+  };
+
+  const MPI_Comm comm = MPI_Comm_f2c(*fcomm);
+  auto* tree = ChebFMM_CreateTree(*cheb_deg, *data_dim, fn_ptr_, trg_coord_, comm, *tol, *max_pts, (*periodic)==0?pvfmm::FreeSpace:pvfmm::Periodic, *init_depth);
+  tree->Write2File("vis",4);
+
+  (*ctx) = (void*)tree;
+}
 
 void pvfmmcreatevolumetreefromcoefff_(void** ctx, const int64_t* n_nodes, const int32_t* cheb_deg, const int32_t* data_dim, const float* node_coord, const float* fn_coeff, const float* trg_coord, const int64_t* n_trg, const MPI_Fint* fcomm, const int32_t* periodic) {
   const MPI_Comm comm = MPI_Comm_f2c(*fcomm);
@@ -280,9 +293,22 @@ void pvfmmdestroyvolumefmmd_(void** ctx) {
   PVFMMDestroyVolumeFMMD(ctx);
 }
 
-//void pvfmmcreatevolumetreed_(vod** ctx, const int32_t* cheb_deg, const int32_t* data_dim, void (*fn_ptr)(const double* coord, long n, double* out, void* ctx), const void** fn_ctx, const double* trg_coord, const int64_t* n_trg, const MPI_Fint* fcomm, const double* tol, const int32_t* max_pts, const int32_t* periodic, const int32_t* init_depth) {
-// TODO
-//}
+void pvfmmcreatevolumetreed_(void** ctx, const int32_t* cheb_deg, const int32_t* data_dim, void (*fn_ptr)(const double* coord, const int64_t* n, double* out), const double* trg_coord, const int64_t* n_trg, const MPI_Fint* fcomm, const double* tol, const int32_t* max_pts, const int32_t* periodic, const int32_t* init_depth) {
+  const int COORD_DIM = 3;
+  std::vector<double> trg_coord_((*n_trg)*COORD_DIM);
+  #pragma omp parallel for schedule(static)
+  for (long i = 0; i < (*n_trg)*COORD_DIM; i++) trg_coord_[i] = trg_coord[i];
+
+  std::function<void(const double*,int,double*)> fn_ptr_ = [&fn_ptr](const double* coord, int64_t n, double* out) {
+    fn_ptr(coord, &n, out);
+  };
+
+  const MPI_Comm comm = MPI_Comm_f2c(*fcomm);
+  auto* tree = ChebFMM_CreateTree(*cheb_deg, *data_dim, fn_ptr_, trg_coord_, comm, *tol, *max_pts, (*periodic)==0?pvfmm::FreeSpace:pvfmm::Periodic, *init_depth);
+  tree->Write2File("vis",4);
+
+  (*ctx) = (void*)tree;
+}
 
 void pvfmmcreatevolumetreefromcoeffd_(void** ctx, const int64_t* n_nodes, const int32_t* cheb_deg, const int32_t* data_dim, const double* node_coord, const double* fn_coeff, const double* trg_coord, const int64_t* n_trg, const MPI_Fint* fcomm, const int32_t* periodic) {
   const MPI_Comm comm = MPI_Comm_f2c(*fcomm);

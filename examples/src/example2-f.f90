@@ -19,7 +19,7 @@ program main
   comm = MPI_COMM_WORLD
   call PVFMMCreateVolumeFMMD(fmm_ctx, multipole_order, cheb_deg, kernel, comm)
 
-  ! Evaluate FMM
+  call test1(fmm_ctx, kdim0, kdim1, cheb_deg, comm)
   call test2(fmm_ctx, kdim0, kdim1, cheb_deg, comm)
 
   ! Destroy FMM context
@@ -85,6 +85,70 @@ subroutine GetChebNodes(cheb_coord, Nleaf, cheb_deg, depth, leaf_coord)
   enddo
 endsubroutine
 
+!> Build volume tree using function pointer
+subroutine test1(fmm, kdim0, kdim1, cheb_deg, comm)
+  use iso_c_binding
+  implicit none
+  include 'mpif.h'
+  include 'pvfmm.f90'
+  type (c_ptr) :: fmm, tree
+  integer*4 kdim0, kdim1, cheb_deg
+  integer :: comm, ierr, mpi_rank
+
+  integer*8 Nt, i
+  real*8, allocatable :: trg_coord(:), trg_value(:), trg_value_ref(:)
+  real*8 tol, max_err, max_val, max_err_glb, max_val_glb
+
+  interface
+    subroutine fn_input(coord, n, val)
+      implicit none
+      real*8, intent(in) :: coord(n*3)
+      real*8, intent(out) :: val(n*3)
+      integer*8 :: n
+    end subroutine fn_input
+  end interface
+
+  call MPI_Comm_rank(comm, mpi_rank, ierr)
+  call srand(mpi_rank)
+
+  tol=1e-6
+  Nt = 100
+  allocate (trg_coord(Nt*3))
+  allocate (trg_value(Nt*kdim1))
+  allocate (trg_value_ref(Nt*kdim1))
+  do i = 1, Nt*3
+    trg_coord(i) = rand()
+  enddo
+  call fn_poten(trg_coord, Nt, trg_value_ref)
+
+  ! Build volume tree
+  call PVFMMCreateVolumeTreeD(tree, cheb_deg, kdim0, fn_input, trg_coord, Nt, comm, tol, 100, 0, 0);
+
+  ! Evaluate FMM
+  call PVFMMEvaluateVolumeFMMD(trg_value, tree, fmm, Nt);
+
+  ! Print error
+  max_err = 0
+  max_val = 0;
+  do i = 1, Nt*kdim1
+    max_err = max(max_err, abs(trg_value(i)-trg_value_ref(i)))
+    max_val = max(max_val, abs(trg_value_ref(i)))
+  enddo
+  call MPI_Reduce(max_err, max_err_glb, 1, MPI_DOUBLE, MPI_SUM, 0, comm, ierr)
+  call MPI_Reduce(max_val, max_val_glb, 1, MPI_DOUBLE, MPI_SUM, 0, comm, ierr)
+  if (mpi_rank .eq. 0) then
+    print*, "Maximum relative error = ", max_err_glb/max_val_glb
+  end if
+
+  ! Free resources
+  call PVFMMDestroyVolumeTreeD(tree);
+  deallocate (trg_coord)
+  deallocate (trg_value)
+  deallocate (trg_value_ref)
+end subroutine
+
+
+!> Build volume tree from Chebyshev coefficients
 subroutine test2(fmm, kdim0, kdim1, cheb_deg, comm)
   use iso_c_binding
   implicit none

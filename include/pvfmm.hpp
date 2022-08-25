@@ -63,7 +63,7 @@ template <class Real> using ChebFn       = typename ChebFMM_Node<Real>::Function
  * delete to free the resources.
  */
 template <class Real>
-ChebFMM_Tree<Real>* ChebFMM_CreateTree(int cheb_deg, int data_dim, ChebFn<Real> fn_ptr, std::vector<Real>& trg_coord, MPI_Comm& comm,
+ChebFMM_Tree<Real>* ChebFMM_CreateTree(int cheb_deg, int data_dim, ChebFn<Real> fn_ptr, std::vector<Real>& trg_coord, MPI_Comm comm,
                                       Real tol=1e-6, int max_pts=100, BoundaryType bndry=FreeSpace, int init_depth=0);
 
 
@@ -92,7 +92,7 @@ ChebFMM_Tree<Real>* ChebFMM_CreateTree(int cheb_deg, int data_dim, ChebFn<Real> 
  * delete to free the resources.
  */
 template <class Real>
-ChebFMM_Tree<Real>* ChebFMM_CreateTree(int cheb_deg, std::vector<Real>& leaf_coord, std::vector<Real>& fn_coeff, std::vector<Real>& trg_coord, MPI_Comm& comm, BoundaryType bndry);
+ChebFMM_Tree<Real>* ChebFMM_CreateTree(int cheb_deg, std::vector<Real>& leaf_coord, std::vector<Real>& fn_coeff, std::vector<Real>& trg_coord, MPI_Comm comm, BoundaryType bndry);
 
 
 /**
@@ -170,7 +170,7 @@ namespace pvfmm{ // Particle FMM interface
  * \brief Manages all the precomputed matrices and implements all the
  * translation operations in FMM. An instance of PtFMM must be created and
  * initialized with the kernel function to be used:
- * PtFMM::Initialize(int mult_order, const MPI_Comm& comm, const Kernel<Real_t>* kernel, const Kernel<Real_t>* aux_kernel=NULL);
+ * PtFMM::Initialize(int mult_order, MPI_Comm comm, const Kernel<Real_t>* kernel, const Kernel<Real_t>* aux_kernel=NULL);
  *
  * mult_order    [in]: the multipole order to be used (even number 2,4,6,8,10,12)
  * comm          [in]: MPI communicator.
@@ -231,7 +231,7 @@ template <class Real> using PtFMM_Data = typename PtFMM_Node<Real>::NodeData;
 template <class Real>
 PtFMM_Tree<Real>* PtFMM_CreateTree(const std::vector<Real>& sl_coord, const std::vector<Real>& sl_density,
                                    const std::vector<Real>& dl_coord, const std::vector<Real>& dl_density,
-                                   const std::vector<Real>& trg_coord, const MPI_Comm& comm, int max_pts=100,
+                                   const std::vector<Real>& trg_coord, MPI_Comm comm, int max_pts=100,
                                    BoundaryType bndry=FreeSpace, int init_depth=0);
 
 /**
@@ -261,7 +261,7 @@ PtFMM_Tree<Real>* PtFMM_CreateTree(const std::vector<Real>& sl_coord, const std:
  */
 template <class Real>
 PtFMM_Tree<Real>* PtFMM_CreateTree(const std::vector<Real>& sl_coord, const std::vector<Real>& sl_density,
-                                   const std::vector<Real>& trg_coord, const MPI_Comm& comm, int max_pts=100,
+                                   const std::vector<Real>& trg_coord, MPI_Comm comm, int max_pts=100,
                                    BoundaryType bndry=FreeSpace, int init_depth=0);
 
 /**

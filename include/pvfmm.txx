@@ -14,7 +14,7 @@
 namespace pvfmm{
 
 template <class Real>
-inline ChebFMM_Tree<Real>* ChebFMM_CreateTree(int cheb_deg, int data_dim, ChebFn<Real> fn_ptr, std::vector<Real>& trg_coord, MPI_Comm& comm,
+inline ChebFMM_Tree<Real>* ChebFMM_CreateTree(int cheb_deg, int data_dim, ChebFn<Real> fn_ptr, std::vector<Real>& trg_coord, MPI_Comm comm,
                                               Real tol, int max_pts, BoundaryType bndry, int init_depth){
   int np, myrank;
   MPI_Comm_size(comm, &np);
@@ -57,7 +57,7 @@ inline ChebFMM_Tree<Real>* ChebFMM_CreateTree(int cheb_deg, int data_dim, ChebFn
 }
 
 template <class Real>
-inline ChebFMM_Tree<Real>* ChebFMM_CreateTree(int cheb_deg, std::vector<Real>& node_coord, std::vector<Real>& fn_coeff, std::vector<Real>& trg_coord, MPI_Comm& comm, BoundaryType bndry){
+inline ChebFMM_Tree<Real>* ChebFMM_CreateTree(int cheb_deg, std::vector<Real>& node_coord, std::vector<Real>& fn_coeff, std::vector<Real>& trg_coord, MPI_Comm comm, BoundaryType bndry){
   int np, myrank;
   MPI_Comm_size(comm, &np);
   MPI_Comm_rank(comm, &myrank);
@@ -215,7 +215,7 @@ void ChebFMM_Nodes2Coeff(std::vector<Real>& coeff, int ChebDeg, int dof, const s
 template <class Real>
 inline PtFMM_Tree<Real>* PtFMM_CreateTree(const std::vector<Real>&  src_coord, const std::vector<Real>&  src_value,
                                           const std::vector<Real>& surf_coord, const std::vector<Real>& surf_value,
-                                          const std::vector<Real>& trg_coord, const MPI_Comm& comm, int max_pts,
+                                          const std::vector<Real>& trg_coord, MPI_Comm comm, int max_pts,
                                           BoundaryType bndry, int init_depth){
   int np, myrank;
   MPI_Comm_size(comm, &np);
@@ -246,7 +246,7 @@ inline PtFMM_Tree<Real>* PtFMM_CreateTree(const std::vector<Real>&  src_coord, c
 
 template <class Real>
 inline PtFMM_Tree<Real>* PtFMM_CreateTree(const std::vector<Real>& src_coord, const std::vector<Real>&  src_value,
-                                          const std::vector<Real>& trg_coord, const MPI_Comm& comm, int max_pts,
+                                          const std::vector<Real>& trg_coord, MPI_Comm& comm, int max_pts,
                                           BoundaryType bndry, int init_depth){
   std::vector<Real> surf_coord;
   std::vector<Real> surf_value;
