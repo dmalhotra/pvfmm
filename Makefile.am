@@ -94,12 +94,65 @@ pvfmm_cpp_header_files = \
 									include/parUtils.txx \
 									include/precomp_mat.txx \
 									include/tree.txx \
-									include/vector.txx
+									include/vector.txx \
+									SCTL/include/sctl.hpp
 
 lib_libpvfmm_la_HEADERS = \
 									$(pvfmm_cpp_header_files) \
 									include/pvfmm.f90 \
 									include/pvfmm.h
+
+subdirheadersdir = $(includedir)/pvfmm/sctl
+
+subdirheaders_HEADERS = \
+												SCTL/include/sctl/blas.h \
+												SCTL/include/sctl/boundary_integral.hpp \
+												SCTL/include/sctl/boundary_integral.txx \
+												SCTL/include/sctl/boundary_quadrature.hpp \
+												SCTL/include/sctl/cheb_utils.hpp \
+												SCTL/include/sctl/comm.hpp \
+												SCTL/include/sctl/comm.txx \
+												SCTL/include/sctl/common.hpp \
+												SCTL/include/sctl/fft_wrapper.hpp \
+												SCTL/include/sctl/fmm-wrapper.hpp \
+												SCTL/include/sctl/fmm-wrapper.txx \
+												SCTL/include/sctl/intrin-wrapper.hpp \
+												SCTL/include/sctl/kernel_functions.hpp \
+												SCTL/include/sctl/lagrange-interp.hpp \
+												SCTL/include/sctl/lagrange-interp.txx \
+												SCTL/include/sctl/lapack.h \
+												SCTL/include/sctl/legendre_rule.hpp \
+												SCTL/include/sctl/mat_utils.hpp \
+												SCTL/include/sctl/mat_utils.txx \
+												SCTL/include/sctl/math_utils.hpp \
+												SCTL/include/sctl/math_utils.txx \
+												SCTL/include/sctl/matrix.hpp \
+												SCTL/include/sctl/matrix.txx \
+												SCTL/include/sctl/mem_mgr.hpp \
+												SCTL/include/sctl/mem_mgr.txx \
+												SCTL/include/sctl/morton.hpp \
+												SCTL/include/sctl/ode-solver.hpp \
+												SCTL/include/sctl/ode-solver.txx \
+												SCTL/include/sctl/ompUtils.hpp \
+												SCTL/include/sctl/ompUtils.txx \
+												SCTL/include/sctl/parallel_solver.hpp \
+												SCTL/include/sctl/profile.hpp \
+												SCTL/include/sctl/profile.txx \
+												SCTL/include/sctl/quadrule.hpp \
+												SCTL/include/sctl/slender_element.hpp \
+												SCTL/include/sctl/slender_element.txx \
+												SCTL/include/sctl/sph_harm.hpp \
+												SCTL/include/sctl/sph_harm.txx \
+												SCTL/include/sctl/stacktrace.h \
+												SCTL/include/sctl/tensor.hpp \
+												SCTL/include/sctl/tree.hpp \
+												SCTL/include/sctl/tree.txx \
+												SCTL/include/sctl/vec-test.hpp \
+												SCTL/include/sctl/vec.hpp \
+												SCTL/include/sctl/vector.hpp \
+												SCTL/include/sctl/vector.txx \
+												SCTL/include/sctl/vtudata.hpp \
+												SCTL/include/sctl/vtudata.txx
 
 #nodist_lib_libpvfmm_la_HEADERS = \
 #									include/pvfmm_config.h
