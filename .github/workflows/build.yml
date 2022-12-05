@@ -14,7 +14,7 @@ jobs:
   build-matrix:
     strategy:
       matrix:
-        os: [ubuntu-latest, macOS-latest]
+        os: [ubuntu-20.04, macOS-latest]
         compiler: [g++-10, clang++]
         exclude:
           - os: macOS-latest
