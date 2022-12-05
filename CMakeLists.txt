@@ -83,6 +83,16 @@ configure_file(pvfmm_config.h.in pvfmm_config.h @ONLY)
 # part 1, core library
 file(GLOB pvfmm_SRC "src/*.cpp")
 
+option(PVFMM_ENABLE_CUDA "PVFMM_ENABLE_CUDA" OFF)
+if (PVFMM_ENABLE_CUDA)
+  enable_language(CUDA)
+  find_package(CUDAToolkit)
+  file(GLOB pvfmm_SRC_CUDA "src/*.cu")
+  list(APPEND pvfmm_SRC "${pvfmm_SRC_CUDA}")
+  list(APPEND DEP_LIB "${CUDA_CUBLAS_LIBRARIES}")
+  set(PVFMM_DEFINES "PVFMM_HAVE_CUDA;SCTL_HAVE_CUDA")
+endif()
+
 # shared lib
 add_library(pvfmm SHARED ${pvfmm_SRC})
 set_target_properties(pvfmm PROPERTIES OUTPUT_NAME pvfmm)
@@ -93,6 +103,7 @@ target_include_directories(
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
          ${CMAKE_CURRENT_BINARY_DIR} ${DEP_INC})
 target_link_libraries(pvfmm PUBLIC ${DEP_LIB} OpenMP::OpenMP_CXX MPI::MPI_CXX)
+target_compile_definitions(pvfmm PUBLIC "${PVFMM_DEFINES}")
 
 # static lib
 add_library(pvfmmStatic STATIC ${pvfmm_SRC})
@@ -103,8 +114,8 @@ target_include_directories(
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/SCTL/include/>
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
          ${CMAKE_CURRENT_BINARY_DIR} ${DEP_INC})
-target_link_libraries(pvfmmStatic PUBLIC ${DEP_LIB} OpenMP::OpenMP_CXX
-                                         MPI::MPI_CXX)
+target_link_libraries(pvfmmStatic PUBLIC ${DEP_LIB} OpenMP::OpenMP_CXX MPI::MPI_CXX)
+target_compile_definitions(pvfmmStatic PUBLIC "${PVFMM_DEFINES}")
 
 # Config.cmake files
 include(CMakePackageConfigHelpers)
