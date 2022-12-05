@@ -189,6 +189,9 @@ if NVCC_OK
 .cu.o :
 	$(NVCC_PVFMM) $(NVCCFLAGS_PVFMM) -c $< -o $@
 
+.cu.lo :
+	$(LIBTOOL) --tag=CC --mode=compile $(NVCC_PVFMM) $(NVCCFLAGS_PVFMM) -c $< -o $@
+
 endif
 
 

@@ -145,6 +145,10 @@ EOF
    AC_DEFINE(HAVE_CUDA,1,[Define if we have CUDA])
 fi
 
+if test "x$ac_compile_nvcc" != "xyes"; then
+   ac_compile_nvcc=no
+fi
+
 
 # Announcing the new variables
 AC_SUBST([NVCC])

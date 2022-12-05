@@ -28,14 +28,24 @@ AC_PROG_MAKE_SET
 #AC_PROG_RANLIB
 ##AM_PROG_AR
 
+# Check for CUDA
+AX_CHECK_CUDA
+
 # automake 1.12 seems to require AM_PROG_AR, but automake 1.11 doesn't
 # recognize it
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
+
+if test "x${ac_compile_nvcc}" = xyes; then
+  CC_save=$CC
+  CC=$NVCC
+fi
+
 LT_INIT
 AC_PROG_LIBTOOL
 
-# Check for CUDA
-AX_CHECK_CUDA
+if test "x${ac_compile_nvcc}" = xyes; then
+  CC=$CC_save
+fi
 
 # Checks for documentation build tools
 AC_CHECK_PROG([doxygen_ok], [doxygen], [yes], [no])
@@ -132,7 +142,7 @@ if $USE_OPENMP; then
 
   # Error: OpenMP not available.
   if test "$cv_openmp" = no; then
-    AC_MSG_ERROR([Don't know how to enable OpenMP. 
+    AC_MSG_ERROR([Don't know how to enable OpenMP.
 		  Please specify the OpenMP flag using: --with-openmp-flag=<flag>.]);
   fi
 fi
@@ -226,6 +236,7 @@ External libs:
   - BLAS ........... : ${acx_blas_ok}
   - LAPACK ......... : ${acx_lapack_ok}
   - FFTW ........... : ${acx_fftw_ok}
+  - CUDA ........... : ${ac_compile_nvcc}
 
 Compiler/linker flags/libs/defs:
   - MPICXX ......... : ${MPICXX}

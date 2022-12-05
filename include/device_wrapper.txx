@@ -400,7 +400,7 @@ namespace DeviceWrapper{
 
     // Create new streams
     stream.resize(num_stream);
-    for (int i = 0; i < num_stream; i++) {
+    for (size_t i = 0; i < num_stream; i++) {
       error = cudaStreamCreate(&(stream[i]));
     }
 
@@ -413,18 +413,22 @@ namespace DeviceWrapper{
 
     // Set cuBLAS to use stream[0]
     status = cublasSetStream(handle, stream[0]);
+    PVFMM_UNUSED(status);
+    PVFMM_UNUSED(error);
   }
 
   inline void CUDA_Lock::finalize () {
     if(stream.size()==0) return;
-    for (int i = 0; i < stream.size(); i++) {
+    for (size_t i = 0; i < stream.size(); i++) {
       cudaError_t error = cudaStreamDestroy(stream[i]);
+      PVFMM_UNUSED(error);
     }
     cublasStatus_t status = cublasDestroy(handle);
+    PVFMM_UNUSED(status);
   }
 
   inline cudaStream_t *CUDA_Lock::acquire_stream (int idx) {
-    if (stream.size()<=idx) init(idx+1);
+    if (stream.size()<=(size_t)idx) init(idx+1);
     return &(stream[idx]);
   }
 
@@ -434,8 +438,9 @@ namespace DeviceWrapper{
   }
 
   inline void CUDA_Lock::wait (int idx) {
-    if (stream.size()<=idx) init(idx+1);
+    if (stream.size()<=(size_t)idx) init(idx+1);
     cudaError_t error = cudaStreamSynchronize(stream[idx]);
+    PVFMM_UNUSED(error);
   }
 #endif
 
