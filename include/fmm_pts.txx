@@ -1073,9 +1073,6 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
 
           int xlow,xhigh,ylow,yhigh,zlow,zhigh;
           switch(mat_indx){
-          case BoundaryType::FreeSpace :
-            xlow=0;xhigh=0;ylow=0;yhigh=0;zlow=0;zhigh=0;
-            break;
           case BoundaryType::PX :
             xlow=-2;xhigh=2;
             ylow=0;yhigh=0;
@@ -1090,6 +1087,9 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
             xlow=-2;xhigh=2;
             ylow=-2;yhigh=2;
             zlow=-2;zhigh=2;
+            break;
+          default:
+            xlow=0;xhigh=0;ylow=0;yhigh=0;zlow=0;zhigh=0;
             break;
           }
 
