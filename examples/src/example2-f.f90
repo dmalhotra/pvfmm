@@ -31,7 +31,9 @@ end
 subroutine fn_input(coord, n, val)
   implicit none
   integer*8 :: n, i, dof
-  real*8 :: coord(n*3), val(n*3), L, r_2
+  real*8, intent(in) :: coord(n*3)
+  real*8, intent(out) :: val(n*3)
+  real*8 :: L, r_2
 
   dof = 3
   L = 125
@@ -46,7 +48,9 @@ endsubroutine
 subroutine fn_poten(coord, n, val)
   implicit none
   integer*8 :: n, i, dof
-  real*8 :: coord(n*3), val(n*3), L, r_2
+  real*8, intent(in) :: coord(n*3)
+  real*8, intent(out) :: val(n*3)
+  real*8 :: L, r_2
 
   dof = 3
   L = 125

@@ -6,6 +6,12 @@
 extern "C" { // Volume FM
 #endif
 
+#ifdef PVFMM_EXTENDED_BC
+#define PVFMM_FULL_PERIODIC pvfmm::PXYZ
+#else
+#define PVFMM_FULL_PERIODIC pvfmm::Periodic
+#endif
+
 void* PVFMMCreateVolumeFMMF(int m, int q, enum PVFMMKernel kernel, MPI_Comm comm) {
   const pvfmm::Kernel<float>* ker = nullptr;
   if (kernel == PVFMMLaplacePotential   ) ker = &pvfmm::LaplaceKernel   <float>::potential();
@@ -30,7 +36,7 @@ void* PVFMMCreateVolumeTreeF(int cheb_deg, int data_dim, void (*fn_ptr)(const fl
     fn_ptr(coord, n, out, fn_ctx);
   };
 
-  auto* tree = ChebFMM_CreateTree(cheb_deg, data_dim, fn_ptr_, trg_coord_, comm, tol, max_pts, periodic?pvfmm::Periodic:pvfmm::FreeSpace, init_depth);
+  auto* tree = ChebFMM_CreateTree(cheb_deg, data_dim, fn_ptr_, trg_coord_, comm, tol, max_pts, periodic?PVFMM_FULL_PERIODIC:pvfmm::FreeSpace, init_depth);
   //tree->Write2File("vis",4);
 
   return (void*)tree;
@@ -46,7 +52,7 @@ void* PVFMMCreateVolumeTreeFromCoeffF(long n_nodes, int cheb_deg, int data_dim, 
   #pragma omp parallel for schedule(static)
   for (long i = 0; i < (long)trg_coord_.size(); i++) trg_coord_[i] = trg_coord[i];
 
-  auto* tree = ChebFMM_CreateTree(cheb_deg, node_coord_, fn_coeff_, trg_coord_, comm, periodic?pvfmm::Periodic:pvfmm::FreeSpace);
+  auto* tree = ChebFMM_CreateTree(cheb_deg, node_coord_, fn_coeff_, trg_coord_, comm, periodic?PVFMM_FULL_PERIODIC:pvfmm::FreeSpace);
   //tree->Write2File("vis",4);
 
   return (void*)tree;
@@ -138,7 +144,7 @@ void* PVFMMCreateVolumeTreeD(int cheb_deg, int data_dim, void (*fn_ptr)(const do
     fn_ptr(coord, n, out, fn_ctx);
   };
 
-  auto* tree = ChebFMM_CreateTree(cheb_deg, data_dim, fn_ptr_, trg_coord_, comm, tol, max_pts, periodic?pvfmm::Periodic:pvfmm::FreeSpace, init_depth);
+  auto* tree = ChebFMM_CreateTree(cheb_deg, data_dim, fn_ptr_, trg_coord_, comm, tol, max_pts, periodic?PVFMM_FULL_PERIODIC:pvfmm::FreeSpace, init_depth);
   //tree->Write2File("vis",4);
 
   return (void*)tree;
@@ -154,7 +160,7 @@ void* PVFMMCreateVolumeTreeFromCoeffD(long n_nodes, int cheb_deg, int data_dim, 
   #pragma omp parallel for schedule(static)
   for (long i = 0; i < (long)trg_coord_.size(); i++) trg_coord_[i] = trg_coord[i];
 
-  auto* tree = ChebFMM_CreateTree(cheb_deg, node_coord_, fn_coeff_, trg_coord_, comm, periodic?pvfmm::Periodic:pvfmm::FreeSpace);
+  auto* tree = ChebFMM_CreateTree(cheb_deg, node_coord_, fn_coeff_, trg_coord_, comm, periodic?PVFMM_FULL_PERIODIC:pvfmm::FreeSpace);
   //tree->Write2File("vis",4);
 
   return (void*)tree;
@@ -242,7 +248,7 @@ void pvfmmcreatevolumetreef_(void** ctx, const int32_t* cheb_deg, const int32_t*
   };
 
   const MPI_Comm comm = MPI_Comm_f2c(*fcomm);
-  auto* tree = ChebFMM_CreateTree(*cheb_deg, *data_dim, fn_ptr_, trg_coord_, comm, *tol, *max_pts, (*periodic)==0?pvfmm::FreeSpace:pvfmm::Periodic, *init_depth);
+  auto* tree = ChebFMM_CreateTree(*cheb_deg, *data_dim, fn_ptr_, trg_coord_, comm, *tol, *max_pts, (*periodic)==0?pvfmm::FreeSpace:PVFMM_FULL_PERIODIC, *init_depth);
   //tree->Write2File("vis",4);
 
   (*ctx) = (void*)tree;
@@ -304,7 +310,7 @@ void pvfmmcreatevolumetreed_(void** ctx, const int32_t* cheb_deg, const int32_t*
   };
 
   const MPI_Comm comm = MPI_Comm_f2c(*fcomm);
-  auto* tree = ChebFMM_CreateTree(*cheb_deg, *data_dim, fn_ptr_, trg_coord_, comm, *tol, *max_pts, (*periodic)==0?pvfmm::FreeSpace:pvfmm::Periodic, *init_depth);
+  auto* tree = ChebFMM_CreateTree(*cheb_deg, *data_dim, fn_ptr_, trg_coord_, comm, *tol, *max_pts, (*periodic)==0?pvfmm::FreeSpace:PVFMM_FULL_PERIODIC, *init_depth);
   //tree->Write2File("vis",4);
 
   (*ctx) = (void*)tree;
