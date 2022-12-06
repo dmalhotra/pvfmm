@@ -1,5 +1,5 @@
 // TODO:
-// #cmakedefine PVFMM_HAVE_CUDA
+#cmakedefine PVFMM_HAVE_CUDA
 // #cmakedefine PVFMM_QUAD_T
 #cmakedefine PVFMM_FFTW3_MKL
 #cmakedefine PVFMM_HAVE_FFTW

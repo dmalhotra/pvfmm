@@ -1,6 +1,8 @@
 if (PVFMM_ENABLE_CUDA)
   find_package(CUDAToolkit)
   set(example_DEPS CUDA::cublas_static CUDA::cublasLt_static)
+else()
+  unset(example_DEPS)
 endif()
 
 add_executable(example1 ./src/example1.cpp)
