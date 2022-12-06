@@ -1846,7 +1846,6 @@ void EvalListGPU(SetupData<Real_t>& setup_data, Vector<char>& dev_buffer, MPI_Co
     { // interactions
       size_t interac_indx = 0;
       size_t interac_blk_dsp = 0;
-      cudaError_t error;
       for (size_t k = 0; k < interac_blk.Dim(); k++) {
         size_t vec_cnt=0;
         for(size_t j=interac_blk_dsp;j<interac_blk_dsp+interac_blk[k];j++) vec_cnt+=interac_cnt[j];
