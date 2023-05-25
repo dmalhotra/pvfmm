@@ -35,3 +35,6 @@ libtool
 .project
 .settings/
 
+build/
+
+*.pyc
