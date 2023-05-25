@@ -14,7 +14,8 @@ def get_MPI_COMM(comm) -> MPI_Comm:
     comm_ptr = MPI._addressof(comm)
     return MPI_Comm.from_address(comm_ptr)
 
-PVFMMKernel = ctypes.c_uint # enum
+
+PVFMMKernel = ctypes.c_uint  # enum
 
 # try to load lib
 # hardcoded path for now
@@ -34,22 +35,88 @@ PVFMMCreateVolumeFMMF.argtypes = [ctypes.c_int, ctypes.c_int, PVFMMKernel, MPI_C
 
 PVFMMCreateVolumeTreeD = SHARED_LIB.PVFMMCreateVolumeTreeD
 PVFMMCreateVolumeTreeD.restype = ctypes.POINTER(None)
-PVFMMCreateVolumeTreeD.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.CFUNCTYPE(None, ctypes.POINTER(ctypes.c_double), ctypes.c_long, ctypes.POINTER(ctypes.c_double), ctypes.POINTER(None)), ctypes.POINTER(None), ctypes.POINTER(ctypes.c_double), ctypes.c_long, MPI_Comm, ctypes.c_double, ctypes.c_int, ctypes.c_bool, ctypes.c_int]
+PVFMMCreateVolumeTreeD.argtypes = [
+    ctypes.c_int,
+    ctypes.c_int,
+    ctypes.CFUNCTYPE(
+        None,
+        ctypes.POINTER(ctypes.c_double),
+        ctypes.c_long,
+        ctypes.POINTER(ctypes.c_double),
+        ctypes.POINTER(None),
+    ),
+    ctypes.POINTER(None),
+    ctypes.POINTER(ctypes.c_double),
+    ctypes.c_long,
+    MPI_Comm,
+    ctypes.c_double,
+    ctypes.c_int,
+    ctypes.c_bool,
+    ctypes.c_int,
+]
 PVFMMCreateVolumeTreeF = SHARED_LIB.PVFMMCreateVolumeTreeF
 PVFMMCreateVolumeTreeF.restype = ctypes.POINTER(None)
-PVFMMCreateVolumeTreeF.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.CFUNCTYPE(None, ctypes.POINTER(ctypes.c_float), ctypes.c_long, ctypes.POINTER(ctypes.c_float), ctypes.POINTER(None)), ctypes.POINTER(None), ctypes.POINTER(ctypes.c_float), ctypes.c_long, MPI_Comm, ctypes.c_float, ctypes.c_int, ctypes.c_bool, ctypes.c_int]
+PVFMMCreateVolumeTreeF.argtypes = [
+    ctypes.c_int,
+    ctypes.c_int,
+    ctypes.CFUNCTYPE(
+        None,
+        ctypes.POINTER(ctypes.c_float),
+        ctypes.c_long,
+        ctypes.POINTER(ctypes.c_float),
+        ctypes.POINTER(None),
+    ),
+    ctypes.POINTER(None),
+    ctypes.POINTER(ctypes.c_float),
+    ctypes.c_long,
+    MPI_Comm,
+    ctypes.c_float,
+    ctypes.c_int,
+    ctypes.c_bool,
+    ctypes.c_int,
+]
 PVFMMCreateVolumeTreeFromCoeffD = SHARED_LIB.PVFMMCreateVolumeTreeFromCoeffD
 PVFMMCreateVolumeTreeFromCoeffD.restype = ctypes.POINTER(None)
-PVFMMCreateVolumeTreeFromCoeffD.argtypes = [ctypes.c_long, ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double), ctypes.c_long, MPI_Comm, ctypes.c_bool]
+PVFMMCreateVolumeTreeFromCoeffD.argtypes = [
+    ctypes.c_long,
+    ctypes.c_int,
+    ctypes.c_int,
+    ctypes.POINTER(ctypes.c_double),
+    ctypes.POINTER(ctypes.c_double),
+    ctypes.POINTER(ctypes.c_double),
+    ctypes.c_long,
+    MPI_Comm,
+    ctypes.c_bool,
+]
 PVFMMCreateVolumeTreeFromCoeffF = SHARED_LIB.PVFMMCreateVolumeTreeFromCoeffF
 PVFMMCreateVolumeTreeFromCoeffF.restype = ctypes.POINTER(None)
-PVFMMCreateVolumeTreeFromCoeffF.argtypes = [ctypes.c_long, ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.c_long, MPI_Comm, ctypes.c_bool]
+PVFMMCreateVolumeTreeFromCoeffF.argtypes = [
+    ctypes.c_long,
+    ctypes.c_int,
+    ctypes.c_int,
+    ctypes.POINTER(ctypes.c_float),
+    ctypes.POINTER(ctypes.c_float),
+    ctypes.POINTER(ctypes.c_float),
+    ctypes.c_long,
+    MPI_Comm,
+    ctypes.c_bool,
+]
 PVFMMEvaluateVolumeFMMD = SHARED_LIB.PVFMMEvaluateVolumeFMMD
 PVFMMEvaluateVolumeFMMD.restype = None
-PVFMMEvaluateVolumeFMMD.argtypes = [ctypes.POINTER(ctypes.c_double), ctypes.POINTER(None), ctypes.POINTER(None), ctypes.c_long]
+PVFMMEvaluateVolumeFMMD.argtypes = [
+    ctypes.POINTER(ctypes.c_double),
+    ctypes.POINTER(None),
+    ctypes.POINTER(None),
+    ctypes.c_long,
+]
 PVFMMEvaluateVolumeFMMF = SHARED_LIB.PVFMMEvaluateVolumeFMMF
 PVFMMEvaluateVolumeFMMF.restype = None
-PVFMMEvaluateVolumeFMMF.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.POINTER(None), ctypes.POINTER(None), ctypes.c_long]
+PVFMMEvaluateVolumeFMMF.argtypes = [
+    ctypes.POINTER(ctypes.c_float),
+    ctypes.POINTER(None),
+    ctypes.POINTER(None),
+    ctypes.c_long,
+]
 PVFMMDestroyVolumeFMMD = SHARED_LIB.PVFMMDestroyVolumeFMMD
 PVFMMDestroyVolumeFMMD.restype = None
 PVFMMDestroyVolumeFMMD.argtypes = [ctypes.POINTER(ctypes.POINTER(None))]
@@ -76,34 +143,96 @@ PVFMMGetLeafCoordF.restype = None
 PVFMMGetLeafCoordF.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.POINTER(None)]
 PVFMMGetPotentialCoeffD = SHARED_LIB.PVFMMGetPotentialCoeffD
 PVFMMGetPotentialCoeffD.restype = None
-PVFMMGetPotentialCoeffD.argtypes = [ctypes.POINTER(ctypes.c_double), ctypes.POINTER(None)]
+PVFMMGetPotentialCoeffD.argtypes = [
+    ctypes.POINTER(ctypes.c_double),
+    ctypes.POINTER(None),
+]
 PVFMMGetPotentialCoeffF = SHARED_LIB.PVFMMGetPotentialCoeffF
 PVFMMGetPotentialCoeffF.restype = None
-PVFMMGetPotentialCoeffF.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.POINTER(None)]
+PVFMMGetPotentialCoeffF.argtypes = [
+    ctypes.POINTER(ctypes.c_float),
+    ctypes.POINTER(None),
+]
 PVFMMCoeff2NodesD = SHARED_LIB.PVFMMCoeff2NodesD
 PVFMMCoeff2NodesD.restype = None
-PVFMMCoeff2NodesD.argtypes = [ctypes.POINTER(ctypes.c_double), ctypes.c_long, ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_double)]
+PVFMMCoeff2NodesD.argtypes = [
+    ctypes.POINTER(ctypes.c_double),
+    ctypes.c_long,
+    ctypes.c_int,
+    ctypes.c_int,
+    ctypes.POINTER(ctypes.c_double),
+]
 PVFMMCoeff2NodesF = SHARED_LIB.PVFMMCoeff2NodesF
 PVFMMCoeff2NodesF.restype = None
-PVFMMCoeff2NodesF.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.c_long, ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_float)]
+PVFMMCoeff2NodesF.argtypes = [
+    ctypes.POINTER(ctypes.c_float),
+    ctypes.c_long,
+    ctypes.c_int,
+    ctypes.c_int,
+    ctypes.POINTER(ctypes.c_float),
+]
 PVFMMNodes2CoeffD = SHARED_LIB.PVFMMNodes2CoeffD
 PVFMMNodes2CoeffD.restype = None
-PVFMMNodes2CoeffD.argtypes = [ctypes.POINTER(ctypes.c_double), ctypes.c_long, ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_double)]
+PVFMMNodes2CoeffD.argtypes = [
+    ctypes.POINTER(ctypes.c_double),
+    ctypes.c_long,
+    ctypes.c_int,
+    ctypes.c_int,
+    ctypes.POINTER(ctypes.c_double),
+]
 PVFMMNodes2CoeffF = SHARED_LIB.PVFMMNodes2CoeffF
 PVFMMNodes2CoeffF.restype = None
-PVFMMNodes2CoeffF.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.c_long, ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_float)]
+PVFMMNodes2CoeffF.argtypes = [
+    ctypes.POINTER(ctypes.c_float),
+    ctypes.c_long,
+    ctypes.c_int,
+    ctypes.c_int,
+    ctypes.POINTER(ctypes.c_float),
+]
 PVFMMCreateContextD = SHARED_LIB.PVFMMCreateContextD
 PVFMMCreateContextD.restype = ctypes.POINTER(None)
-PVFMMCreateContextD.argtypes = [ctypes.c_double, ctypes.c_int, ctypes.c_int, PVFMMKernel, MPI_Comm]
+PVFMMCreateContextD.argtypes = [
+    ctypes.c_double,
+    ctypes.c_int,
+    ctypes.c_int,
+    PVFMMKernel,
+    MPI_Comm,
+]
 PVFMMCreateContextF = SHARED_LIB.PVFMMCreateContextF
 PVFMMCreateContextF.restype = ctypes.POINTER(None)
-PVFMMCreateContextF.argtypes = [ctypes.c_float, ctypes.c_int, ctypes.c_int, PVFMMKernel, MPI_Comm]
+PVFMMCreateContextF.argtypes = [
+    ctypes.c_float,
+    ctypes.c_int,
+    ctypes.c_int,
+    PVFMMKernel,
+    MPI_Comm,
+]
 PVFMMEvalD = SHARED_LIB.PVFMMEvalD
 PVFMMEvalD.restype = None
-PVFMMEvalD.argtypes = [ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double), ctypes.c_long, ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double), ctypes.c_long, ctypes.POINTER(None), ctypes.c_int]
+PVFMMEvalD.argtypes = [
+    ctypes.POINTER(ctypes.c_double),
+    ctypes.POINTER(ctypes.c_double),
+    ctypes.POINTER(ctypes.c_double),
+    ctypes.c_long,
+    ctypes.POINTER(ctypes.c_double),
+    ctypes.POINTER(ctypes.c_double),
+    ctypes.c_long,
+    ctypes.POINTER(None),
+    ctypes.c_int,
+]
 PVFMMEvalF = SHARED_LIB.PVFMMEvalF
 PVFMMEvalF.restype = None
-PVFMMEvalF.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.c_long, ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.c_long, ctypes.POINTER(None), ctypes.c_int]
+PVFMMEvalF.argtypes = [
+    ctypes.POINTER(ctypes.c_float),
+    ctypes.POINTER(ctypes.c_float),
+    ctypes.POINTER(ctypes.c_float),
+    ctypes.c_long,
+    ctypes.POINTER(ctypes.c_float),
+    ctypes.POINTER(ctypes.c_float),
+    ctypes.c_long,
+    ctypes.POINTER(None),
+    ctypes.c_int,
+]
 PVFMMDestroyContextD = SHARED_LIB.PVFMMDestroyContextD
 PVFMMDestroyContextD.restype = None
 PVFMMDestroyContextD.argtypes = [ctypes.POINTER(ctypes.POINTER(None))]
