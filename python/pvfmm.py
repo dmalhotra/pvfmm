@@ -72,7 +72,7 @@ class FFMDoubleParticleContext:
         sl_den: np.ndarray,
         dl_den: Optional[np.ndarray],
         trg_pos: np.ndarray,
-        setup: bool,
+        setup: bool = True,
     ):
         source_length = len(src_pos)
         if source_length % 3 != 0:
