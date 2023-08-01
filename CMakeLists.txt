@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 project(
   PVFMM
   VERSION 1.2
-  LANGUAGES CXX)
+  LANGUAGES CXX C)
 
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 set(CMAKE_CXX_STANDARD 14)
@@ -28,7 +28,7 @@ set(MPI_CXX_SKIP_MPICXX
     true
     CACHE BOOL
           "If true, the MPI-2 C++ bindings are disabled using definitions.")
-          
+
 # required compiler features
 find_package(MPI REQUIRED)
 find_package(OpenMP REQUIRED)
@@ -44,7 +44,7 @@ else()
   find_package(FFTW REQUIRED)
   set(DEP_INC ${FFTW_INCLUDE_DIRS})
   set(DEP_LIB ${FFTW_FLOAT_OPENMP_LIB} ${FFTW_FLOAT_LIB}
-              ${FFTW_DOUBLE_OPENMP_LIB} ${FFTW_DOUBLE_LIB} 
+              ${FFTW_DOUBLE_OPENMP_LIB} ${FFTW_DOUBLE_LIB}
               ${BLAS_LIBRARIES}
               ${LAPACK_LIBRARIES})
 endif()
