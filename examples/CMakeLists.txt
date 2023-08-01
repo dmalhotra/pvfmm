@@ -5,6 +5,11 @@ else()
   unset(example_DEPS)
 endif()
 
+
+add_executable(example-c ./src/example-c.c)
+target_link_libraries(example-c PRIVATE pvfmmStatic "${example_DEPS}")
+target_include_directories(example-c PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
 add_executable(example1 ./src/example1.cpp)
 target_link_libraries(example1 PRIVATE pvfmmStatic "${example_DEPS}")
 target_include_directories(example1 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
