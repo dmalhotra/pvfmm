@@ -52,16 +52,14 @@ def test_FMM(ctx):
     src_V = np.random.rand(Ns * kdim[0]) - 0.5
 
     # FMM evaluation
-    setup = 1
     tick = time.perf_counter_ns()
-    trg_V = ctx.evaluate(src_X, src_V, None, trg_X, setup)
+    trg_V = ctx.evaluate(src_X, src_V, None, trg_X)
     tock = time.perf_counter_ns()
     print("FMM evaluation time (with setup) :", (tock - tick) / 1e9)
 
     # FMM evaluation (without setup)
-    setup = 0
     tick = time.perf_counter_ns()
-    trg_V2 = ctx.evaluate(src_X, src_V, None, trg_X, setup)
+    trg_V2 = ctx.evaluate(src_X, src_V, None, trg_X, setup=False)
     tock = time.perf_counter_ns()
     print("FMM evaluation time (without setup) :", (tock - tick) / 1e9)
 
