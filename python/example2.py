@@ -1,4 +1,4 @@
-# mpirun -n 1 --map-by slot:pe=$OMP_NUM_THREADS python -m mpi4py python/example1.py
+# mpirun -n 1 --map-by slot:pe=$OMP_NUM_THREADS python -m mpi4py python/example2.py
 
 # based on examples/src/example2-c.c
 
