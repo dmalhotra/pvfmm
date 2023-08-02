@@ -12,6 +12,7 @@ import numba
 
 import pvfmm
 
+
 @numba.njit(parallel=True)
 def BiotSavart(src_X, src_V, trg_X):
     Ns = len(src_X) // 3
@@ -73,12 +74,13 @@ def test_FMM(ctx):
     max_err = np.max(np.abs(trg_V - trg_V0))
     print("Max relative error :", max_err / max_val)
 
+
 if __name__ == "__main__":
     # MPI init handled by mpi4py import
     box_size = -1
     points_per_box = 1000
     multipole_order = 10
-    kernel = pvfmm.FMMKernel.PVFMMBiotSavartPotential
+    kernel = pvfmm.FMMKernel.BiotSavartPotential
 
     print("Loaded.")
     ctx = pvfmm.FFMDoubleParticleContext(
