@@ -53,7 +53,7 @@ class FMM_Tree: public MPI_Tree<typename FMM_Mat_t::FMMNode_t>{
   void InitFMM_Tree(bool refine, BoundaryType bndry=FreeSpace);
 
   /**
-   * \brief Run FMM
+   * \brief Setup FMM
    */
   void SetupFMM(FMM_Mat_t* fmm_mat_);
 
@@ -73,7 +73,7 @@ class FMM_Tree: public MPI_Tree<typename FMM_Mat_t::FMMNode_t>{
   void BuildInteracLists();
 
   /**
-   * \brief Upward FMM pass (Including MultipoleReduceBcast).
+   * \brief Upward FMM pass (including MultipoleReduceBcast).
    */
   void UpwardPass();
 

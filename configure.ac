@@ -221,10 +221,9 @@ AC_ARG_WITH(precomp-dir,
             [PRECOMP_DIR="$withval"; AX_NORMALIZE_PATH([PRECOMP_DIR], ["/"]) ])
 AC_DEFINE_UNQUOTED(PRECOMP_DATA_PATH,"$PRECOMP_DIR",[Path for precomputed data files.])
 
-#AC_CONFIG_FILES([Makefile doc/doc/Makefile])
+#AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([Makefile
-                 MakeVariables
-                 doc/doc/Makefile])
+                 MakeVariables])
 AC_OUTPUT
 
 echo "

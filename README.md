@@ -1,6 +1,4 @@
-# PVFMM [![Build Status](https://github.com/dmalhotra/pvfmm/actions/workflows/build.yml/badge.svg)](https://github.com/dmalhotra/pvfmm/actions/workflows/build.yml)
-[![Stable Version](https://badgen.net/github/tag/dmalhotra/pvfmm)](https://github.com/dmalhotra/pvfmm/tags)
-[![Latest Release](https://img.shields.io/github/v/release/dmalhotra/pvfmm?color=%233D9970)](https://github.com/dmalhotra/pvfmm/releases)
+# PVFMM [![Build Status](https://github.com/dmalhotra/pvfmm/actions/workflows/build.yml/badge.svg)](https://github.com/dmalhotra/pvfmm/actions/workflows/build.yml) [![Stable Version](https://badgen.net/github/tag/dmalhotra/pvfmm)](https://github.com/dmalhotra/pvfmm/tags) [![Latest Release](https://img.shields.io/github/v/release/dmalhotra/pvfmm?color=%233D9970)](https://github.com/dmalhotra/pvfmm/releases)
 
 
 ### What is PVFMM?
@@ -22,12 +20,12 @@
 ### License
 
    PVFMM is distributed under the LGPLv3 licence. See COPYING in
-   the top-level directory of the distribution. 
+   the top-level directory of the distribution.
 
 ### Installing PVFMM
 
    To install PVFMM, follow the steps in the INSTALL file, which is
-   located in the top directory of the source distribution. 
+   located in the top directory of the source distribution.
 
 
 ### Using PVFMM
@@ -39,7 +37,7 @@
 
    Two very simple examples illustrating usage of the library are available:
       For particle N-body  : examples/src/example1.cpp
-      For volume potentials: examples/src/example2.cpp 
+      For volume potentials: examples/src/example2.cpp
 
    To compile these examples:
       make examples/bin/example1

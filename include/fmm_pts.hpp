@@ -90,6 +90,9 @@ struct SetupData{
 template <class FMM_Mat_t>
 class FMM_Tree;
 
+/**
+ * \brief This class manages all the translation operators for particle FMM.
+ */
 template <class FMMNode>
 class FMM_Pts{
 
@@ -121,8 +124,9 @@ class FMM_Pts{
 
   /**
    * \brief Initialize all the translation matrices (or load from file).
-   * \param[in] mult_order Order of multipole expansion.
-   * \param[in] kernel Kernel functions and related data.
+   * \param mult_order [in]: the multipole order to be used (even number 2,4,6,8,10,12)
+   * \param comm       [in]: MPI communicator.
+   * \param kernel     [in]: the kernel function pointer to be used.
    */
   void Initialize(int mult_order, const MPI_Comm& comm, const Kernel<Real_t>* kernel);
 
@@ -165,13 +169,13 @@ class FMM_Pts{
   virtual void SetM2C(Real_t* dataPtr);
 
   /**
-   * \brief Compute V-List intractions.
+   * \brief Compute V-List interactions.
    */
   virtual void V_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tree, std::vector<Matrix<Real_t> >& node_data, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device);
   virtual void V_List     (SetupData<Real_t>&  setup_data, bool device=false);
 
   /**
-   * \brief Compute X-List intractions.
+   * \brief Compute X-List interactions.
    */
   virtual void X_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tree, std::vector<Matrix<Real_t> >& node_data, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device);
   virtual void X_List     (SetupData<Real_t>&  setup_data, bool device=false);
@@ -189,13 +193,13 @@ class FMM_Pts{
   virtual void Down2Target     (SetupData<Real_t>&  setup_data, bool device=false);
 
   /**
-   * \brief Compute W-List intractions.
+   * \brief Compute W-List interactions.
    */
   virtual void W_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tree, std::vector<Matrix<Real_t> >& node_data, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device);
   virtual void W_List     (SetupData<Real_t>&  setup_data, bool device=false);
 
   /**
-   * \brief Compute U-List intractions.
+   * \brief Compute U-List interactions.
    */
   virtual void U_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tree, std::vector<Matrix<Real_t> >& node_data, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device);
   virtual void U_List     (SetupData<Real_t>&  setup_data, bool device=false);

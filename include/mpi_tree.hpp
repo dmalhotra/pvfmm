@@ -134,7 +134,7 @@ class MPI_Tree: public Tree<TreeNode>{
   /**
    * \brief Returns a pointer to the comm object.
    */
-  const MPI_Comm* Comm() {return &comm;}
+  const MPI_Comm* Comm() const {return &comm;}
 
  protected:
 

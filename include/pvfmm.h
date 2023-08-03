@@ -15,6 +15,9 @@
 extern "C" {
 #endif
 
+/**
+ * \brief Kernel functions
+ */
 enum PVFMMKernel{
   PVFMMLaplacePotential    = 0,
   PVFMMLaplaceGradient     = 1,
@@ -57,26 +60,30 @@ void* PVFMMCreateVolumeFMMF(int m, int q, enum PVFMMKernel kernel, MPI_Comm comm
  *
  * \param[in] fn_ptr the input function pointer.
  *
+ * \param[in] fn_ctx a context pointer to be passed to fn_ptr.
+ *
  * \param[in] trg_coord the target coordinate vector with values: [x1 y1 z1 ...
  * xn yn zn] where (x1 y1 z1) are the coordinates of the first target point.
+ *
+ * \param[in] n_trg number of target points.
  *
  * \param[in] comm MPI communicator.
  *
  * \param[in] tol the tolerance for adaptive refinement.
  *
- * \param[in] max_ptr the maximum number of target points per leaf node.
+ * \param[in] max_pts the maximum number of target points per leaf node.
  *
  * \param[in] periodic whether to use periodic boundary conditions.
  *
- * \param[in] init_depth the depth of the initial tree defore adaptive
+ * \param[in] init_depth the depth of the initial tree before adaptive
  * refinement. If zero then the depth is the minimum depth so that the number
  * of leaf nodes is greater than the size of the MPI communicator.
  *
  * \return the pointer to the constructed tree. It must be destroyed using
  * PVFMMDestroyVolumeTreeD to free the resources.
  */
-void* PVFMMCreateVolumeTreeD(int cheb_deg, int data_dim, void (*fn_ptr)(const double* coord, long n, double* out, void* ctx), void* fn_ctx, double* trg_coord, long n_trg, MPI_Comm comm, double tol, int max_pts, bool periodic, int init_depth);
-void* PVFMMCreateVolumeTreeF(int cheb_deg, int data_dim, void (*fn_ptr)(const float* coord, long n, float* out, void* ctx), void* fn_ctx, float* trg_coord, long n_trg, MPI_Comm comm, float tol, int max_pts, bool periodic, int init_depth);
+void* PVFMMCreateVolumeTreeD(int cheb_deg, int data_dim, void (*fn_ptr)(const double* coord, long n, double* out, const void* ctx), const void* fn_ctx, const double* trg_coord, long n_trg, MPI_Comm comm, double tol, int max_pts, bool periodic, int init_depth);
+void* PVFMMCreateVolumeTreeF(int cheb_deg, int data_dim, void (*fn_ptr)(const float* coord, long n, float* out, const void* ctx), const void* fn_ctx, const float* trg_coord, long n_trg, MPI_Comm comm, float tol, int max_pts, bool periodic, int init_depth);
 
 /**
  * \brief Construct a piecewise Chebyshev volume discretization in [0,1]^3.  It
@@ -89,6 +96,8 @@ void* PVFMMCreateVolumeTreeF(int cheb_deg, int data_dim, void (*fn_ptr)(const fl
  * coefficients in each leaf node is
  * data_dim*(cheb_deg+1)(cheb_deg+2)(cheb_deg+3)/6.
  *
+ * \param[in] data_dim the number of scalar values per point in the input density.
+ *
  * \param[in] leaf_coord A vector of points [x1 y1 z1 ...  xn yn zn] where each
  * point corresponds to a leaf node in the tree.
  *
@@ -98,6 +107,8 @@ void* PVFMMCreateVolumeTreeF(int cheb_deg, int data_dim, void (*fn_ptr)(const fl
  *
  * \param[in] trg_coord the target coordinate vector with values: [x1 y1 z1 ...
  * xn yn zn] where (x1 y1 z1) are the coordinates of the first target point.
+ *
+ * \param[in] n_trg number of target points.
  *
  * \param[in] comm MPI communicator.
  *
@@ -117,15 +128,15 @@ void* PVFMMCreateVolumeTreeFromCoeffF(long Nleaf, int cheb_deg, int data_dim, co
  * \param[out] trg_value the computed potential at the target points (in
  * array-of-structure order).
  *
- * \param[in] tree the pointer to the Chebyshev tree.
+ * \param[in,out] tree the pointer to the Chebyshev tree.
  *
  * \param[in] fmm the volume FMM context pointer.
  *
  * \param[in] loc_size the local size of the output vector (used to partition
  * it among the MPI ranks).
  */
-void PVFMMEvaluateVolumeFMMD(double* trg_val, void* tree, const void* fmm, long loc_size);
-void PVFMMEvaluateVolumeFMMF(float* trg_val, void* tree, const void* fmm, long loc_size);
+void PVFMMEvaluateVolumeFMMD(double* trg_value, void* tree, const void* fmm, long loc_size);
+void PVFMMEvaluateVolumeFMMF(float* trg_value, void* tree, const void* fmm, long loc_size);
 
 
 /**
@@ -162,7 +173,7 @@ long PVFMMGetLeafCountF(const void* tree);
 /**
  * \brief Get the leaf node coordinates.
  *
- * \param[in] leaf_coord A vector of points [x1 y1 z1 ...  xn yn zn] where each
+ * \param[out] leaf_coord A vector of points [x1 y1 z1 ...  xn yn zn] where each
  * point corresponds to a leaf node in the tree.
  *
  * \param[in] tree the pointer to the Chebyshev tree.
@@ -273,8 +284,8 @@ void* PVFMMCreateContextF(float box_size, int n, int m, enum PVFMMKernel kernel,
  * \param[in] setup a flag to indicate if the source or target particle
  * positions have changed and therefore additional setup must be performed.
  */
-void PVFMMEvalD(const double* src_pos, const double* sl_den, const double* dl_den, long n_src, const double* trg_pos, double* trg_val, long n_trg, void* ctx, int setup);
-void PVFMMEvalF(const float* src_pos, const float* sl_den, const float* dl_den, long n_src, const float* trg_pos, float* trg_val, long n_trg, void* ctx, int setup);
+void PVFMMEvalD(const double* src_pos, const double* sl_den, const double* dl_den, long n_src, const double* trg_pos, double* trg_val, long n_trg, const void* ctx, int setup);
+void PVFMMEvalF(const float* src_pos, const float* sl_den, const float* dl_den, long n_src, const float* trg_pos, float* trg_val, long n_trg, const void* ctx, int setup);
 
 /**
  * \brief Destroy the particle FMM context.

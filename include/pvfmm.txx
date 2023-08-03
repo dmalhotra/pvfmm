@@ -14,13 +14,13 @@
 namespace pvfmm{
 
 template <class Real>
-inline ChebFMM_Tree<Real>* ChebFMM_CreateTree(int cheb_deg, int data_dim, ChebFn<Real> fn_ptr, std::vector<Real>& trg_coord, MPI_Comm comm,
+inline ChebFMM_Tree<Real>* ChebFMM_CreateTree(int cheb_deg, int data_dim, ChebFn<Real> fn_ptr, const std::vector<Real>& trg_coord, MPI_Comm comm,
                                               Real tol, int max_pts, BoundaryType bndry, int init_depth){
   int np, myrank;
   MPI_Comm_size(comm, &np);
   MPI_Comm_rank(comm, &myrank);
 
-  ChebFMM_Data<Real> tree_data;
+  typename ChebFMM_Node<Real>::NodeData tree_data;
   tree_data.cheb_deg=cheb_deg;
   tree_data.data_dof=data_dim;
   tree_data.input_fn=fn_ptr;
@@ -57,12 +57,12 @@ inline ChebFMM_Tree<Real>* ChebFMM_CreateTree(int cheb_deg, int data_dim, ChebFn
 }
 
 template <class Real>
-inline ChebFMM_Tree<Real>* ChebFMM_CreateTree(int cheb_deg, std::vector<Real>& node_coord, std::vector<Real>& fn_coeff, std::vector<Real>& trg_coord, MPI_Comm comm, BoundaryType bndry){
+inline ChebFMM_Tree<Real>* ChebFMM_CreateTree(int cheb_deg, const std::vector<Real>& node_coord, const std::vector<Real>& fn_coeff, const std::vector<Real>& trg_coord, MPI_Comm comm, BoundaryType bndry){
   int np, myrank;
   MPI_Comm_size(comm, &np);
   MPI_Comm_rank(comm, &myrank);
 
-  ChebFMM_Data<Real> tree_data;
+  typename ChebFMM_Node<Real>::NodeData tree_data;
   tree_data.input_fn=ChebFn<Real>();
   tree_data.tol=0;
   bool adap=false;
@@ -254,10 +254,10 @@ inline PtFMM_Tree<Real>* PtFMM_CreateTree(const std::vector<Real>& src_coord, co
 }
 
 template <class Real>
-inline void PtFMM_Evaluate(PtFMM_Tree<Real>* tree, std::vector<Real>& trg_val, size_t loc_size, const std::vector<Real>* src_val, const std::vector<Real>* surf_val){
+inline void PtFMM_Evaluate(const PtFMM_Tree<Real>* tree, std::vector<Real>& trg_val, size_t loc_size, const std::vector<Real>* src_val, const std::vector<Real>* surf_val){
   if(src_val){
     std::vector<size_t> src_scatter_;
-    const auto& nodes=tree->GetNodeList();
+    const auto& nodes=((PtFMM_Tree<Real>*)tree)->GetNodeList();
     for(size_t i=0;i<nodes.size();i++){
       if(nodes[i]->IsLeaf() && !nodes[i]->IsGhost()){
         const auto& src_scatter=nodes[i]->src_scatter;
@@ -282,7 +282,7 @@ inline void PtFMM_Evaluate(PtFMM_Tree<Real>* tree, std::vector<Real>& trg_val, s
   }
   if(surf_val){
     std::vector<size_t> surf_scatter_;
-    const auto& nodes=tree->GetNodeList();
+    const auto& nodes=((PtFMM_Tree<Real>*)tree)->GetNodeList();
     for(size_t i=0;i<nodes.size();i++){
       if(nodes[i]->IsLeaf() && !nodes[i]->IsGhost()){
         const auto& surf_scatter=nodes[i]->surf_scatter;
@@ -305,13 +305,13 @@ inline void PtFMM_Evaluate(PtFMM_Tree<Real>* tree, std::vector<Real>& trg_val, s
       }
     }
   }
-  tree->RunFMM();
+  ((PtFMM_Tree<Real>*)tree)->RunFMM();
   Vector<Real> trg_value;
   Vector<size_t> trg_scatter;
   {
     std::vector<Real> trg_value_;
     std::vector<size_t> trg_scatter_;
-    const auto& nodes=tree->GetNodeList();
+    const auto& nodes=((PtFMM_Tree<Real>*)tree)->GetNodeList();
     for(size_t i=0;i<nodes.size();i++){
       if(nodes[i]->IsLeaf() && !nodes[i]->IsGhost()){
         const auto& trg_value=nodes[i]->trg_value;

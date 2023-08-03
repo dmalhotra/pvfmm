@@ -16,8 +16,8 @@ RESULT_DIR = ./result
 # the subdirectories of the project to go into
 #SUBDIRS = 
 
-DIST_SUBDIRS= \
-									doc/doc
+#DIST_SUBDIRS = doc/doc
+
 
 EXTRA_DIST = \
 									$(EX_DIR)/src \
@@ -26,7 +26,7 @@ EXTRA_DIST = \
 									$(DX_CONFIG) \
 									scripts
 
-# additional include pathes necessary to compile the C++ library
+# additional include paths necessary to compile the C++ library
 AM_CXXFLAGS =
 #AM_LDFLAGS = -static
 
@@ -210,10 +210,7 @@ $(EX_DIR)/bin/%: core
 # BUILD DOCUMENTATION
 #------------------------------------------------------------------------------
 
-pdf-doc:
-	cd doc/doc && $(MAKE);
-
-all-docs: doxygen-doc pdf-doc
+all-docs: doxygen-doc
 
 ###############################################################################
 # INSTALL/UNINSTALL MakeVariables, pvfmm_config.h
@@ -282,10 +279,8 @@ install: install-am
 	@echo '======================================================================='
 
 install-data-local: install-make-variables install-libtool install-doxygen-doc
-	cd doc/doc && $(MAKE) install;
 
 uninstall-local: uninstall-make-variables uninstall-libtool uninstall-doxygen-doc
-	cd doc/doc && $(MAKE) uninstall;
 
 
 ###############################################################################

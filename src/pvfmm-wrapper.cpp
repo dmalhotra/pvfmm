@@ -26,7 +26,7 @@ void* PVFMMCreateVolumeFMMF(int m, int q, enum PVFMMKernel kernel, MPI_Comm comm
   return (void*)matrices;
 }
 
-void* PVFMMCreateVolumeTreeF(int cheb_deg, int data_dim, void (*fn_ptr)(const float* coord, long n, float* out, void* ctx), void* fn_ctx, float* trg_coord, long n_trg, MPI_Comm comm, float tol, int max_pts, bool periodic, int init_depth) {
+void* PVFMMCreateVolumeTreeF(int cheb_deg, int data_dim, void (*fn_ptr)(const float* coord, long n, float* out, const void* ctx), const void* fn_ctx, const float* trg_coord, long n_trg, MPI_Comm comm, float tol, int max_pts, bool periodic, int init_depth) {
   const int COORD_DIM = 3;
   std::vector<float> trg_coord_(n_trg*COORD_DIM);
   #pragma omp parallel for schedule(static)
@@ -134,7 +134,7 @@ void* PVFMMCreateVolumeFMMD(int m, int q, enum PVFMMKernel kernel, MPI_Comm comm
   return (void*)matrices;
 }
 
-void* PVFMMCreateVolumeTreeD(int cheb_deg, int data_dim, void (*fn_ptr)(const double* coord, long n, double* out, void* ctx), void* fn_ctx, double* trg_coord, long n_trg, MPI_Comm comm, double tol, int max_pts, bool periodic, int init_depth) {
+void* PVFMMCreateVolumeTreeD(int cheb_deg, int data_dim, void (*fn_ptr)(const double* coord, long n, double* out, const void* ctx), const void* fn_ctx, const double* trg_coord, long n_trg, MPI_Comm comm, double tol, int max_pts, bool periodic, int init_depth) {
   const int COORD_DIM = 3;
   std::vector<double> trg_coord_(n_trg*COORD_DIM);
   #pragma omp parallel for schedule(static)
@@ -433,7 +433,7 @@ template<typename Real> static void* PVFMMCreateContext(Real box_size, int n, in
   return ctx;
 }
 
-template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* sl_den, const Real* dl_den, size_t n_src, const Real* trg_pos, Real* trg_val, size_t n_trg, void* ctx_, int setup){
+template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* sl_den, const Real* dl_den, size_t n_src, const Real* trg_pos, Real* trg_val, size_t n_trg, const void* ctx_, int setup){
   size_t omp_p=omp_get_max_threads();
 
   typedef pvfmm::FMM_Node<pvfmm::MPI_Node<Real> > Node_t;
@@ -880,7 +880,7 @@ void* PVFMMCreateContextF(float box_size, int n, int m, enum PVFMMKernel kernel,
   return PVFMMCreateContext<float>(box_size, n, m, PVFMM_MAX_DEPTH, ker, comm);
 }
 
-void PVFMMEvalF(const float* src_pos, const float* sl_den, const float* dl_den, long n_src, const float* trg_pos, float* trg_val, long n_trg, void* ctx, int setup) {
+void PVFMMEvalF(const float* src_pos, const float* sl_den, const float* dl_den, long n_src, const float* trg_pos, float* trg_val, long n_trg, const void* ctx, int setup) {
   PVFMMEval<float>(src_pos, sl_den, dl_den, n_src, trg_pos, trg_val, n_trg, ctx, setup);
 }
 
@@ -900,7 +900,7 @@ void* PVFMMCreateContextD(double box_size, int n, int m, enum PVFMMKernel kernel
   return PVFMMCreateContext<double>(box_size, n, m, PVFMM_MAX_DEPTH, ker, comm);
 }
 
-void PVFMMEvalD(const double* src_pos, const double* sl_den, const double* dl_den, long n_src, const double* trg_pos, double* trg_val, long n_trg, void* ctx, int setup) {
+void PVFMMEvalD(const double* src_pos, const double* sl_den, const double* dl_den, long n_src, const double* trg_pos, double* trg_val, long n_trg, const void* ctx, int setup) {
   PVFMMEval<double>(src_pos, sl_den, dl_den, n_src, trg_pos, trg_val, n_trg, ctx, setup);
 }
 

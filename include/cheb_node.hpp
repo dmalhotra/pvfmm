@@ -34,6 +34,9 @@ class Cheb_Node: public MPI_Node<Real_t>{
 
  public:
 
+  /**
+   * \brief Evaluator function class for input volume density.
+   */
   class Function_t{
     typedef void (*FnPtr_t)(const Real_t* coord, int n, Real_t* out);
 

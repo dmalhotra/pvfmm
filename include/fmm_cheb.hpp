@@ -80,7 +80,7 @@ class FMM_Cheb: public FMM_Pts<FMMNode>{
   virtual void Source2Up     (SetupData<Real_t>& setup_data, bool device=false);
 
   /**
-   * \brief Compute X-List intractions.
+   * \brief Compute X-List interactions.
    */
   virtual void X_ListSetup(SetupData<Real_t>& setup_data, FMMTree_t* tree, std::vector<Matrix<Real_t> >& node_data, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device);
   virtual void X_List     (SetupData<Real_t>& setup_data, bool device=false);
@@ -92,13 +92,13 @@ class FMM_Cheb: public FMM_Pts<FMMNode>{
   virtual void Down2Target     (SetupData<Real_t>& setup_data, bool device=false);
 
   /**
-   * \brief Compute W-List intractions.
+   * \brief Compute W-List interactions.
    */
   virtual void W_ListSetup(SetupData<Real_t>& setup_data, FMMTree_t* tree, std::vector<Matrix<Real_t> >& node_data, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device);
   virtual void W_List     (SetupData<Real_t>& setup_data, bool device=false);
 
   /**
-   * \brief Compute U-List intractions.
+   * \brief Compute U-List interactions.
    */
   virtual void U_ListSetup(SetupData<Real_t>& setup_data, FMMTree_t* tree, std::vector<Matrix<Real_t> >& node_data, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device);
   virtual void U_List     (SetupData<Real_t>& setup_data, bool device=false);
