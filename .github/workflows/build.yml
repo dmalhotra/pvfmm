@@ -14,11 +14,13 @@ jobs:
   build-matrix:
     strategy:
       matrix:
-        os: [ubuntu-20.04, macOS-latest]
-        compiler: [g++-10, clang++]
-        exclude:
-          - os: macOS-latest
-            compiler: clang++
+        include:
+        - os: ubuntu-20.04
+          compiler: g++-10
+        - os: ubuntu-20.04
+          compiler: clang++
+        - os: macOS-latest
+          compiler: g++-12
     runs-on: ${{ matrix.os }}
     env:
       OMPI_CXX: ${{ matrix.compiler }}
@@ -42,7 +44,7 @@ jobs:
 
     - name: Configure macOS
       if: runner.os == 'macOS'
-      run: ./configure F77="gfortran-10" --with-openmp-flag="fopenmp" --with-fftw=$(brew --prefix fftw) --with-blas="-L$(brew --prefix openblas)/lib -lopenblas" --with-lapack="-L$(brew --prefix openblas)/lib -lopenblas"
+      run: ./configure F77="gfortran-12" --with-openmp-flag="fopenmp" --with-fftw=$(brew --prefix fftw) --with-blas="-L$(brew --prefix openblas)/lib -lopenblas" --with-lapack="-L$(brew --prefix openblas)/lib -lopenblas"
 
     - name: Configure Linux
       if: runner.os == 'Linux'
