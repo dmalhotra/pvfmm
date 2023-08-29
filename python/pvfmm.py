@@ -1,6 +1,3 @@
-# module load gcc/11.3.0 openmpi python/3.10.8 openblas fftw3
-# source ~/venvs/pvfmm/bin/activate
-
 import ctypes
 import numpy as np
 from enum import Enum
@@ -12,8 +9,18 @@ from mpi4py import MPI
 
 import ffi
 
+__all__ = [
+    "FMMKernel",
+    "FMMDoubleVolumeContext",
+    "FFMDoubleParticleContext",
+    "FMMDoubleVolumeTree",
+    "nodes_to_coeff",
+]
 
-def nodes_to_coeff(N_leaf: int, cheb_deg: int, dof: int, node_val: np.ndarray):
+
+def nodes_to_coeff(
+    N_leaf: int, cheb_deg: int, dof: int, node_val: np.ndarray
+) -> np.ndarray:
     is_double = node_val.dtype == np.float64
     Ncoef = (cheb_deg + 1) * (cheb_deg + 2) * (cheb_deg + 3) // 6
     # XXX: is this valid?
@@ -37,6 +44,17 @@ class FMMKernel(Enum):
     BiotSavartPotential = 5
 
 
+# read out of calls to BuildKernel in pvfmm/include/kernel.txx
+KERNEL_DIMS = {
+    FMMKernel.LaplacePotential: (1, 1),
+    FMMKernel.LaplaceGradient: (1, 3),
+    FMMKernel.StokesPressure: (3, 1),
+    FMMKernel.StokesVelocity: (3, 3),
+    FMMKernel.StokesVelocityGrad: (3, 9),
+    FMMKernel.BiotSavartPotential: (3, 3),
+}
+
+
 class FMMDoubleVolumeContext:
     def __init__(
         self,
@@ -45,10 +63,14 @@ class FMMDoubleVolumeContext:
         kernel: FMMKernel,
         comm: MPI.Comm,
     ):
+        self.kernel = kernel
         if multipole_order <= 0 or multipole_order % 2 != 0:
             raise ValueError("multipole order must be even and postive")
         self._ptr = ffi.PVFMMCreateVolumeFMMD(
-            multipole_order, chebyshev_degree, int(kernel.value), ffi.get_MPI_COMM(comm)
+            multipole_order,
+            chebyshev_degree,
+            int(self.kernel.value),
+            ffi.get_MPI_COMM(comm),
         )
 
     def __del__(self):
@@ -65,13 +87,14 @@ class FFMDoubleParticleContext:
         kernel: FMMKernel,
         comm: MPI.Comm,
     ):
+        self.kernel = kernel
         if multipole_order <= 0 or multipole_order % 2 != 0:
             raise ValueError("multipole order must be even and postive")
         self._ptr = ffi.PVFMMCreateContextD(
             float(box_size),
             max_points,
             multipole_order,
-            int(kernel.value),
+            int(self.kernel.value),
             ffi.get_MPI_COMM(comm),
         )
 
@@ -86,7 +109,7 @@ class FFMDoubleParticleContext:
         dl_den: Optional[np.ndarray],
         trg_pos: np.ndarray,
         setup: bool = True,
-    ):
+    ) -> np.ndarray:
         source_length = len(src_pos)
         if source_length % 3 != 0:
             raise ValueError(
@@ -128,6 +151,7 @@ class FMMDoubleVolumeTree:
         self.n_coeff = (cheb_deg + 1) * (cheb_deg + 2) * (cheb_deg + 3) // 6
         self.data_dim = data_dim
         self.n_trg = n_trg
+        self._used_kernel = None
 
     @classmethod
     def from_function(
@@ -142,7 +166,7 @@ class FMMDoubleVolumeTree:
         max_pts: int,
         periodic: bool,
         init_depth: int,
-    ):
+    ) -> "FMMDoubleVolumeTree":
         n_trg = len(trg_coord) // 3
         ptr = ffi.PVFMMCreateVolumeTreeD(
             cheb_deg,
@@ -169,7 +193,7 @@ class FMMDoubleVolumeTree:
         trg_coord: Optional[np.ndarray],
         comm: MPI.Comm,
         periodic: bool,
-    ):
+    ) -> "FMMDoubleVolumeTree":
         if len(leaf_coord) % 3 != 0:
             raise ValueError(
                 "Leaf coordinates must have a length which is a multiple of 3"
@@ -203,38 +227,36 @@ class FMMDoubleVolumeTree:
             ffi.PVFMMDestroyVolumeTreeD(ctypes.byref(ctypes.c_void_p(self._ptr)))
 
     def evaluate(self, fmm: FMMDoubleVolumeContext, loc_size: int) -> np.ndarray:
-        # TODO: XXX: in C code this uses kdim1, but data_dim was passed kdim0
-        trg_val = np.empty(self.n_trg * self.data_dim)
+        (_kdim0, kdim1) = KERNEL_DIMS[fmm.kernel]
+        trg_val = np.empty(self.n_trg * kdim1)
         ffi.PVFMMEvaluateVolumeFMMD(trg_val, self._ptr, fmm._ptr, loc_size)
-        self._evaluated = True
+        self._used_kernel = fmm.kernel
         return trg_val
 
-    def leaf_count(self):
+    def leaf_count(self) -> int:
         return int(ffi.PVFMMGetLeafCountD(self._ptr))
 
-    def get_leaf_coordinates(self):
+    def get_leaf_coordinates(self) -> np.ndarray:
         Nleaf = self.leaf_count()
         leaf_coord = np.empty(Nleaf * 3)
         ffi.PVFMMGetLeafCoordD(leaf_coord, self._ptr)
         return leaf_coord
 
-    # WHERE DO I GET KDIM0?
-
-    def get_coefficients(self):
-        if not self._evaluated:
+    def get_coefficients(self) -> np.ndarray:
+        if self._used_kernel is None:
             raise ValueError(
                 "Cannot get coefficients of an un-evaluated tree"
             )  # TODO: true?
         n_leaf = self.leaf_count()
-        # TODO: XXX: in C code this uses kdim1, but data_dim was passed kdim0
-        coeff = np.empty(n_leaf * self.n_coeff * self.data_dim)
+        (_kdim0, kdim1) = KERNEL_DIMS[self._used_kernel]
+        coeff = np.empty(n_leaf * self.n_coeff * kdim1)
         ffi.PVFMMGetPotentialCoeffD(coeff, self._ptr)
         return coeff
 
-    def get_values(self):
+    def get_values(self) -> np.ndarray:
         coeff = self.get_coefficients()
         n_leaf = self.leaf_count()
-        # TODO: XXX: in C code these two lines use kdim1, but data_dim was passed kdim0
-        value = np.empty(n_leaf * self.n_cheb * self.data_dim)
+        (_kdim0, kdim1) = KERNEL_DIMS[self._used_kernel]
+        value = np.empty(n_leaf * self.n_cheb * kdim1)
         ffi.PVFMMCoeff2NodesD(value, n_leaf, self.cheb_deg, self.data_dim, coeff)
         return value
