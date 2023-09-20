@@ -25,12 +25,14 @@ def fn_input(coord, out):
             -L * r_2
         ) + 2 * L * np.exp(-L * r_2) * (c[2] - 0.5)
 
+
 c_sig = types.void(
     types.CPointer(types.double),
     types.int64,
     types.CPointer(types.double),
     types.voidptr,
 )
+
 
 # see https://numba.readthedocs.io/en/stable/user/cfunc.html
 @numba.cfunc(c_sig, nopython=True)

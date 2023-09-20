@@ -169,7 +169,7 @@ int main(int argc, char** argv) {
   // Build FMM translation operators
   void* fmm = PVFMMCreateVolumeFMMD(mult_order, cheb_deg, PVFMMStokesVelocity, comm);
 
-  // test1(fmm, kdim0, kdim1, cheb_deg, comm);
+  //test1(fmm, kdim0, kdim1, cheb_deg, comm);
   test2(fmm, kdim0, kdim1, cheb_deg, comm);
 
   PVFMMDestroyVolumeFMMD(&fmm);
