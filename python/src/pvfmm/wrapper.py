@@ -7,15 +7,7 @@ from typing import Optional, Callable, Union
 # see https://mpi4py.readthedocs.io/en/stable/mpi4py.run.html
 from mpi4py import MPI
 
-import ffi
-
-__all__ = [
-    "FMMKernel",
-    "FMMVolumeContext",
-    "FFMParticleContext",
-    "FMMVolumeTree",
-    "nodes_to_coeff",
-]
+from . import ffi
 
 
 def nodes_to_coeff(
@@ -97,7 +89,7 @@ class FMMVolumeContext:
             )
 
 
-class FFMParticleContext:
+class FMMParticleContext:
     def __init__(
         self,
         box_size: float,

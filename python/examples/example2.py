@@ -1,5 +1,3 @@
-# mpirun -n 1 --map-by slot:pe=$OMP_NUM_THREADS python -m mpi4py python/example2.py
-
 # based on examples/src/example2-c.c
 
 import numpy as np
@@ -10,19 +8,10 @@ from mpi4py import MPI
 
 import pvfmm
 
-c_sig = types.void(
-    types.CPointer(types.double),
-    types.int64,
-    types.CPointer(types.double),
-    types.voidptr,
-)
 
-
-# see https://numba.readthedocs.io/en/stable/user/cfunc.html
-@numba.cfunc(c_sig, nopython=True)
-def fn_input(coord_, n, out_, _ctx):
-    coord = numba.carray(coord_, n * 3)
-    out = numba.carray(out_, n * 3)
+@numba.njit
+def fn_input(coord, out):
+    n = len(coord) // 3
     L = 125
     for i in range(n):
         idx = i * 3
@@ -35,6 +24,20 @@ def fn_input(coord_, n, out_, _ctx):
         out[idx + 2] = -4 * L**2 * (c[1] - 0.5) * (5 - 2 * L * r_2) * np.exp(
             -L * r_2
         ) + 2 * L * np.exp(-L * r_2) * (c[2] - 0.5)
+
+c_sig = types.void(
+    types.CPointer(types.double),
+    types.int64,
+    types.CPointer(types.double),
+    types.voidptr,
+)
+
+# see https://numba.readthedocs.io/en/stable/user/cfunc.html
+@numba.cfunc(c_sig, nopython=True)
+def fn_input_C(coord_, n, out_, _ctx):
+    coord = numba.carray(coord_, n * 3)
+    out = numba.carray(out_, n * 3)
+    fn_input(coord, out)
 
 
 @numba.njit
@@ -97,7 +100,7 @@ def test1(fmm, kdim0, kdim1, cheb_deg, comm):
     trg_coord = np.random.rand(Nt * 3)
     trg_value_ref = fn_poten(trg_coord)
     tree = pvfmm.FMMVolumeTree.from_function(
-        cheb_deg, kdim0, fn_input.ctypes, None, trg_coord, comm, 1e-6, 100, False, 0
+        cheb_deg, kdim0, fn_input_C.ctypes, None, trg_coord, comm, 1e-6, 100, False, 0
     )
     trg_value = tree.evaluate(fmm, Nt)
 
@@ -111,8 +114,6 @@ def test2(fmm, kdim0, kdim1, cheb_deg, comm):
     Ncoef = (cheb_deg + 1) * (cheb_deg + 2) * (cheb_deg + 3) // 6
 
     depth = 3
-    # skipping MPI (for now?)
-
     Nleaf = 1 << (3 * depth)
     leaf_length = 1 / (1 << depth)
 
@@ -131,12 +132,9 @@ def test2(fmm, kdim0, kdim1, cheb_deg, comm):
         )
     print("Getting nodes")
     cheb_coord = GetChebNodes(Nleaf, cheb_deg, depth, leaf_coord)
-    fn_input(  # ugly just because we used numba above
-        cheb_coord.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
-        Nleaf * Ncheb,
-        dens_value.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
-        None,
-    )
+
+    fn_input(cheb_coord, dens_value)
+
     dense_coeff = pvfmm.nodes_to_coeff(Nleaf, cheb_deg, kdim0, dens_value)
     tree = pvfmm.FMMVolumeTree.from_coefficients(
         cheb_deg, kdim0, leaf_coord, dense_coeff, None, comm, False
@@ -144,7 +142,7 @@ def test2(fmm, kdim0, kdim1, cheb_deg, comm):
     tree.evaluate(fmm, 0)
     potn_value = tree.get_values()
 
-    Nleaf = tree.leaf_count()  # does this change from above?
+    Nleaf = tree.leaf_count()  # TODO: does this change from above?
     leaf_coord = tree.get_leaf_coordinates()
     cheb_coord = GetChebNodes(Nleaf, cheb_deg, depth, leaf_coord)
     potn_value_ref = fn_poten(cheb_coord)

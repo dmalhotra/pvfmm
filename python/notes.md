@@ -1,7 +1,0 @@
-- no error handling
-- examples (translate):
-  - [x] example-c.c
-  - [x] example2-c.c test1
-- MPI init (not needed - see mpi4py doc: https://mpi4py.readthedocs.io/en/stable/overview.html#initialization-and-exit)
-- function pointers for PVFMMCreateVolumeTree functions (numba for speed: https://numba.readthedocs.io/en/stable/user/cfunc.html)
-- first run can take a long time, expected.
