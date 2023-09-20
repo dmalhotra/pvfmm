@@ -1,4 +1,6 @@
 import ctypes
+import ctypes.util
+import os
 
 import numpy as np
 from numpy.ctypeslib import ndpointer
@@ -43,9 +45,18 @@ float_volume_callback = volume_callback(ctypes.c_float)
 PVFMMKernel = ctypes.c_uint  # enum
 
 # try to load lib
-# hardcoded path for now
-SHARED_LIB = ctypes.CDLL("./build/libpvfmm.so")
+_custom_location = os.getenv("PVFMM")
+if _custom_location:
+    _dll = os.path.join(_custom_location, "libpvfmm.so")
+else:
+    _dll = ctypes.util.find_library("pvfmm")
+    if _dll is None:
+        raise ImportError(
+            "Failed to find libpvfmm! \n"
+            "Set PVFMM environment variable or check your installation of pvfmm!"
+        )
 
+SHARED_LIB = ctypes.CDLL(_dll)
 
 # somwhat automatically generated:
 # clang2py --clang-args="-I/mnt/sw/nix/store/z5w5a7pr5cmdbds0pn9ajdgy0jg71sl6-gcc-11.3.0/lib/gcc/x86_64-pc-linux-gnu/11.3.0/include/" include/pvfmm.h -l ~/pvfmm/build/libpvfmm.so > python/auto.py
