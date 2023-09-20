@@ -96,7 +96,7 @@ def test1(fmm, kdim0, kdim1, cheb_deg, comm):
     Nt = 100
     trg_coord = np.random.rand(Nt * 3)
     trg_value_ref = fn_poten(trg_coord)
-    tree = pvfmm.FMMDoubleVolumeTree.from_function(
+    tree = pvfmm.FMMVolumeTree.from_function(
         cheb_deg, kdim0, fn_input.ctypes, None, trg_coord, comm, 1e-6, 100, False, 0
     )
     trg_value = tree.evaluate(fmm, Nt)
@@ -138,7 +138,7 @@ def test2(fmm, kdim0, kdim1, cheb_deg, comm):
         None,
     )
     dense_coeff = pvfmm.nodes_to_coeff(Nleaf, cheb_deg, kdim0, dens_value)
-    tree = pvfmm.FMMDoubleVolumeTree.from_coefficients(
+    tree = pvfmm.FMMVolumeTree.from_coefficients(
         cheb_deg, kdim0, leaf_coord, dense_coeff, None, comm, False
     )
     tree.evaluate(fmm, 0)
@@ -161,7 +161,7 @@ if __name__ == "__main__":
     kdim1 = 3
 
     comm = MPI.COMM_WORLD
-    fmm = pvfmm.FMMDoubleVolumeContext(
+    fmm = pvfmm.FMMVolumeContext(
         mult_order, cheb_deg, pvfmm.FMMKernel.StokesVelocity, comm
     )
     test1(fmm, kdim0, kdim1, cheb_deg, comm)

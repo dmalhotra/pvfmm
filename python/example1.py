@@ -83,7 +83,7 @@ if __name__ == "__main__":
     kernel = pvfmm.FMMKernel.BiotSavartPotential
 
     print("Loaded.")
-    ctx = pvfmm.FFMDoubleParticleContext(
+    ctx = pvfmm.FFMParticleContext(
         box_size, points_per_box, multipole_order, kernel, MPI.COMM_WORLD
     )
     print("Running!")
