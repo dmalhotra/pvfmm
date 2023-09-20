@@ -19,6 +19,10 @@ def get_MPI_COMM(comm) -> MPI_Comm:
 
 
 def wrapped_ndptr(*args, **kwargs):
+    """
+    A version of np.ctypeslib.ndpointer
+    which allows None (passed as NULL)
+    """
     base = ndpointer(*args, **kwargs)
 
     def from_param(cls, obj):

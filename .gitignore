@@ -38,3 +38,4 @@ libtool
 build/
 
 *.pyc
+pvfmm.egg-info/

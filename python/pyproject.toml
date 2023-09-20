@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pvfmm"
+readme = "README.md"
+authors = [{ "name" = "Brian Ward", "email" = "bward@flatironinstitute.org" }]
+dependencies = ["numpy", "mpi4py"]
+requires-python = ">=3.8"
+license = { text = "BSD-3-Clause" }
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Development Status :: 4 - Beta",
+]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+all = ["numba"]
+
+[tool.setuptools.dynamic]
+version = { attr = "pvfmm.__version__" }
+
+[tool.isort]
+profile = "black"
+
+[tool.setuptools.package-data]
+"pvfmm" = ["py.typed"]
+
+[tool.setuptools.packages.find]
+where = ["src"]

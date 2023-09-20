@@ -1,7 +1,3 @@
-# module load gcc/11.3.0 openmpi python-mpi/3.10.8 fftw/mpi openblas
-# export OMP_NUM_THREADS=16
-# mpirun -n 1 --map-by slot:pe=$OMP_NUM_THREADS python -m mpi4py python/example1.py
-
 # based on examples/src/example-c.c
 
 import time
@@ -83,10 +79,9 @@ if __name__ == "__main__":
     kernel = pvfmm.FMMKernel.BiotSavartPotential
 
     print("Loaded.")
-    ctx = pvfmm.FFMParticleContext(
+    ctx = pvfmm.FMMParticleContext(
         box_size, points_per_box, multipole_order, kernel, MPI.COMM_WORLD
     )
     print("Running!")
     test_FMM(ctx)
-
     # MPI finalize handled by mpi4py atexit handler
