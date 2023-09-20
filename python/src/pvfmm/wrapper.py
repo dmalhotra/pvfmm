@@ -15,7 +15,7 @@ def nodes_to_coeff(
 ) -> np.ndarray:
     is_double = node_val.dtype == np.float64
     Ncoef = (cheb_deg + 1) * (cheb_deg + 2) * (cheb_deg + 3) // 6
-    # XXX: is this valid?
+    # TODO: is this the valid size of the output array?
     coeff = np.empty(Ncoef * N_leaf * dof, dtype=node_val.dtype)
 
     get_function_dtype("PVFMMNodes2Coeff", node_val.dtype)(
@@ -203,7 +203,7 @@ class FMMVolumeTree:
         cheb_deg: int,
         data_dim: int,
         fn: Union[ffi.double_volume_callback, ffi.float_volume_callback],
-        context: ctypes.c_void_p,  # TODO: investigate
+        context: ctypes.c_void_p,
         trg_coord: np.ndarray,
         comm: MPI.Comm,
         tol: float,
@@ -315,7 +315,7 @@ class FMMVolumeTree:
         if self._used_kernel is None:
             raise ValueError(
                 "Cannot get coefficients of an un-evaluated tree"
-            )  # TODO: true?
+            )  # TODO: is this true? what is the contract of this class
         n_leaf = self.leaf_count()
         (_kdim0, kdim1) = KERNEL_DIMS[self._used_kernel]
         coeff = np.empty(n_leaf * self.n_coeff * kdim1, dtype=self.dtype)
