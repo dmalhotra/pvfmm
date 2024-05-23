@@ -63,7 +63,7 @@ template <class Real> void test_particle_fmm(const Comm& comm) {
     StaticArray<Real,2> loc_err{0,0}, glb_err{0,0};
     for (const auto& a : Uerr) loc_err[0] = std::max<Real>(loc_err[0], fabs(a));
     for (const auto& a : Uref) loc_err[1] = std::max<Real>(loc_err[1], fabs(a));
-    comm.Allreduce<Real>(loc_err, glb_err, 2, Comm::CommOp::MAX);
+    comm.Allreduce<Real>(loc_err, glb_err, 2, CommOp::MAX);
     if (!comm.Rank()) std::cout<<"Maximum relative error: "<<glb_err[0]/glb_err[1]<<'\n';
   }
 }

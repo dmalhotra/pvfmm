@@ -113,15 +113,23 @@ subdirheaders_HEADERS = \
 												SCTL/include/sctl/comm.hpp \
 												SCTL/include/sctl/comm.txx \
 												SCTL/include/sctl/common.hpp \
+												SCTL/include/sctl/complex.hpp \
+												SCTL/include/sctl/complex.txx \
 												SCTL/include/sctl/fft_wrapper.hpp \
+												SCTL/include/sctl/fft_wrapper.txx \
 												SCTL/include/sctl/fmm-wrapper.hpp \
 												SCTL/include/sctl/fmm-wrapper.txx \
+												SCTL/include/sctl/generic-kernel.hpp \
+												SCTL/include/sctl/generic-kernel.txx \
 												SCTL/include/sctl/intrin-wrapper.hpp \
+												SCTL/include/sctl/iterator.hpp \
+												SCTL/include/sctl/iterator.txx \
 												SCTL/include/sctl/kernel_functions.hpp \
 												SCTL/include/sctl/lagrange-interp.hpp \
 												SCTL/include/sctl/lagrange-interp.txx \
 												SCTL/include/sctl/lapack.h \
-												SCTL/include/sctl/legendre_rule.hpp \
+												SCTL/include/sctl/lin-solve.hpp \
+												SCTL/include/sctl/lin-solve.txx \
 												SCTL/include/sctl/mat_utils.hpp \
 												SCTL/include/sctl/mat_utils.txx \
 												SCTL/include/sctl/math_utils.hpp \
@@ -131,24 +139,32 @@ subdirheaders_HEADERS = \
 												SCTL/include/sctl/mem_mgr.hpp \
 												SCTL/include/sctl/mem_mgr.txx \
 												SCTL/include/sctl/morton.hpp \
+												SCTL/include/sctl/morton.txx \
 												SCTL/include/sctl/ode-solver.hpp \
 												SCTL/include/sctl/ode-solver.txx \
 												SCTL/include/sctl/ompUtils.hpp \
 												SCTL/include/sctl/ompUtils.txx \
-												SCTL/include/sctl/parallel_solver.hpp \
+												SCTL/include/sctl/permutation.hpp \
+												SCTL/include/sctl/permutation.txx \
 												SCTL/include/sctl/profile.hpp \
 												SCTL/include/sctl/profile.txx \
 												SCTL/include/sctl/quadrule.hpp \
+												SCTL/include/sctl/quadrule.txx \
 												SCTL/include/sctl/slender_element.hpp \
 												SCTL/include/sctl/slender_element.txx \
 												SCTL/include/sctl/sph_harm.hpp \
 												SCTL/include/sctl/sph_harm.txx \
+												SCTL/include/sctl/sse2neon.h \
 												SCTL/include/sctl/stacktrace.h \
+												SCTL/include/sctl/static-array.hpp \
+												SCTL/include/sctl/static-array.txx \
 												SCTL/include/sctl/tensor.hpp \
+												SCTL/include/sctl/tensor.txx \
 												SCTL/include/sctl/tree.hpp \
 												SCTL/include/sctl/tree.txx \
 												SCTL/include/sctl/vec-test.hpp \
 												SCTL/include/sctl/vec.hpp \
+												SCTL/include/sctl/vec.txx \
 												SCTL/include/sctl/vector.hpp \
 												SCTL/include/sctl/vector.txx \
 												SCTL/include/sctl/vtudata.hpp \

@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <pvfmm.h>
 
-void fn_input(const double* coord, long n, double* out, void* ctx){ //Input function
+void fn_input(const double* coord, long n, double* out, const void* ctx){ //Input function
   int dof=3;
   double L=125;
   for(int i=0;i<n;i++){
@@ -17,7 +17,7 @@ void fn_input(const double* coord, long n, double* out, void* ctx){ //Input func
     }
   }
 }
-void fn_poten(const double* coord, long n, double* out, void* ctx){ //Output potential
+void fn_poten(const double* coord, long n, double* out, const void* ctx){ //Output potential
   int dof=3;
   double L=125;
   for(int i=0;i<n;i++){
