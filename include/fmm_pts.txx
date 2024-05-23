@@ -17,17 +17,20 @@
 #include <sys/stat.h>
 #endif
 
-#ifdef __SSE__
-#include <xmmintrin.h>
-#endif
-#ifdef __SSE2__
-#include <emmintrin.h>
-#endif
-#ifdef __SSE3__
-#include <pmmintrin.h>
-#endif
-#ifdef __AVX__
-#include <immintrin.h>
+#if defined(__ARM_NEON)
+#  include SCTL_INCLUDE(sse2neon.h)
+#  define __SSE__
+#  define __SSE2__
+#  define __SSE3__
+#  define __SSE4__
+#  define __SSE4_1__
+#  define __SSE4_2__
+#elif defined(__SSE4_2__) || defined(__AVX__) || defined(__AVX512F__)
+#  ifdef _MSC_VER
+#    include <intrin.h>
+#  else
+#    include <x86intrin.h>
+#  endif
 #endif
 #if defined(__MIC__)
 #include <immintrin.h>
