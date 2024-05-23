@@ -25,7 +25,7 @@
 #  define __SSE4__
 #  define __SSE4_1__
 #  define __SSE4_2__
-#elif defined(__SSE4_2__) || defined(__AVX__) || defined(__AVX512F__)
+#elif defined(__MMX__) || defined(__SSE__) || defined(__SSE2__) || defined(__SSE4_2__) || defined(__AVX__) || defined(__AVX512F__)
 #  ifdef _MSC_VER
 #    include <intrin.h>
 #  else
