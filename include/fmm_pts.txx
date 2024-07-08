@@ -18,7 +18,7 @@
 #endif
 
 #if defined(__ARM_NEON)
-#  include SCTL_INCLUDE(sse2neon.h)
+#  include "sctl/sse2neon.h"
 #  define __SSE__
 #  define __SSE2__
 #  define __SSE3__
