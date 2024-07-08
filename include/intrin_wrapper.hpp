@@ -5,20 +5,21 @@
  * \brief This file contains the templated wrappers for vector intrinsics.
  */
 
-#ifdef __SSE__
-#include <xmmintrin.h>
-#endif
-#ifdef __SSE2__
-#include <emmintrin.h>
-#endif
-#ifdef __SSE3__
-#include <pmmintrin.h>
-#endif
-#ifdef __AVX__
-#include <immintrin.h>
-#endif
-#if defined(__MIC__)
-#include <immintrin.h>
+#if defined(__ARM_NEON)
+#  include "sctl/sse2neon.h"
+#  define __SSE__
+#  define __SSE2__
+#  define __SSE3__
+#  define __SSE4__
+#  define __SSE4_1__
+#  define __SSE4_2__
+#  define _MM_SHUFFLE2(fp1, fp0) (((fp1) << 1) | (fp0))
+#elif defined(__MMX__) || defined(__SSE__) || defined(__SSE2__) || defined(__SSE4_2__) || defined(__AVX__) || defined(__AVX512F__)
+#  ifdef _MSC_VER
+#    include <intrin.h>
+#  else
+#    include <x86intrin.h>
+#  endif
 #endif
 
 #ifndef _PVFMM_INTRIN_WRAPPER_HPP_
