@@ -150,8 +150,6 @@ subdirheaders_HEADERS = \
 												SCTL/include/sctl/profile.txx \
 												SCTL/include/sctl/quadrule.hpp \
 												SCTL/include/sctl/quadrule.txx \
-												SCTL/include/sctl/slender_element.hpp \
-												SCTL/include/sctl/slender_element.txx \
 												SCTL/include/sctl/sph_harm.hpp \
 												SCTL/include/sctl/sph_harm.txx \
 												SCTL/include/sctl/sse2neon.h \
