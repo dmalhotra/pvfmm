@@ -851,7 +851,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
           for(size_t i=0;i<n_surf;i++)
             for(size_t j=0;j<n_surf;j++)
               for(int k=0;k<ker_dim[1];k++)
-                M_check_zero_avg[i*ker_dim[1]+k][j*ker_dim[1]+k]-=1/n_surf;
+                M_check_zero_avg[i*ker_dim[1]+k][j*ker_dim[1]+k]-=1/(Real_t)n_surf;
         }
 
         size_t mat_cnt_m2m=interac_list.ListCount(U2U_Type);
