@@ -20,7 +20,7 @@ jobs:
         - os: ubuntu-latest
           compiler: clang++
         - os: macOS-latest
-          compiler: g++-15
+          compiler: g++-14
     runs-on: ${{ matrix.os }}
     env:
       OMPI_CXX: ${{ matrix.compiler }}
@@ -44,7 +44,7 @@ jobs:
 
     - name: Configure macOS
       if: runner.os == 'macOS'
-      run: ./configure F77="gfortran-12" --with-openmp-flag="fopenmp" --with-fftw=$(brew --prefix fftw) --with-blas="-L$(brew --prefix openblas)/lib -lopenblas" --with-lapack="-L$(brew --prefix openblas)/lib -lopenblas"
+      run: ./configure F77="gfortran-14" --with-openmp-flag="fopenmp" --with-fftw=$(brew --prefix fftw) --with-blas="-L$(brew --prefix openblas)/lib -lopenblas" --with-lapack="-L$(brew --prefix openblas)/lib -lopenblas"
 
     - name: Configure Linux
       if: runner.os == 'Linux'
