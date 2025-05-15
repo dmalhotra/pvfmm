@@ -257,7 +257,7 @@ void Profile::print(const MPI_Comm* comm_){
       level--;
     }
   }
-  if(!rank)
+  if(!rank && e_log.size()>0)
     std::cout<<out_stack.top()<<'\n';
 
   reset();

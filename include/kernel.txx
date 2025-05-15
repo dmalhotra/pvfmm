@@ -310,9 +310,9 @@ void Kernel<T>::Initialize(bool verbose) const{
           }
           for(int i=0;i<ker_dim[0]*ker_dim[1];i++)
           for(int j=0;j<ker_dim[0]*ker_dim[1];j++){
-            dot11[i][j]/=(norm1[i]*norm1[j]);
-            dot12[i][j]/=(norm1[i]*norm2[j]);
-            dot22[i][j]/=(norm2[i]*norm2[j]);
+            if (norm1[i]>eps_ && norm1[j]>eps_) dot11[i][j]/=(norm1[i]*norm1[j]);
+            if (norm1[i]>eps_ && norm2[j]>eps_) dot12[i][j]/=(norm1[i]*norm2[j]);
+            if (norm2[i]>eps_ && norm2[j]>eps_) dot22[i][j]/=(norm2[i]*norm2[j]);
           }
         }
 
