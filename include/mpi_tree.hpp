@@ -9,6 +9,7 @@
 #include <mpi.h>
 #include <vector>
 #include <string>
+#include <cstdint>
 
 #include <pvfmm_common.hpp>
 #include <mortonid.hpp>
@@ -19,15 +20,12 @@
 
 namespace pvfmm{
 
-enum BoundaryType{
-  FreeSpace,
-#ifndef PVFMM_EXTENDED_BC
-  Periodic,
-#else
+enum BoundaryType : uint8_t {
+  FreeSpace = 0,
   PX,
   PXY,
   PXYZ,
-#endif
+  Periodic = PXYZ,
   BoundaryTypeCount
 };
 

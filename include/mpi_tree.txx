@@ -1141,43 +1141,31 @@ void MPI_Tree<TreeNode>::SetColleagues(BoundaryType bndry, Node_t* node){
   if(node==NULL){
     Node_t* curr_node=this->PreorderFirst();
     if(curr_node!=NULL){ // Set colleagues of root node
+      const auto colleague_idx = [](long x, long y, long z) {
+        return (((z+1)*3+(y+1))*3+(x+1));
+      };
       if(bndry==FreeSpace){
-        curr_node->SetColleague(curr_node,(n1-1)/2);
-      }else{
-#ifndef PVFMM_EXTENDED_BC
-        for(int i=0;i<n1;i++)
-          curr_node->SetColleague(curr_node,i);
-#else
-          int xlow,xhigh,ylow,yhigh,zlow,zhigh;
-          switch(bndry){
-          case BoundaryType::PXYZ :
-            xlow=-1;xhigh=+1;
-            ylow=-1;yhigh=+1;
-            zlow=-1;zhigh=+1;
-            break;
-          case BoundaryType::PX :
-            xlow=-1;xhigh=+1;
-            ylow=0;yhigh=0;
-            zlow=0;zhigh=0;
-            break;
-          case BoundaryType::PXY :
-            xlow=-1;xhigh=+1;
-            ylow=-1;yhigh=+1;
-            zlow=0;zhigh=0;
-            break;
-          default:
-            xlow=0;xhigh=0;
-            ylow=0;yhigh=0;
-            zlow=0;zhigh=0;
-            break;
-          }
-
-        for(long i0=xlow;i0<=xhigh;i0++)
-        for(long i1=ylow;i1<=yhigh;i1++)
-        for(long i2=zlow;i2<=zhigh;i2++){
-          curr_node->SetColleague(curr_node,3*(3*(i2+1)+(i1+1))+(i0+1));
+        curr_node->SetColleague(curr_node, colleague_idx(0,0,0) );
+      } else if (bndry==BoundaryType::PX) {
+        for(long x = -1; x <= 1; x++) {
+          curr_node->SetColleague(curr_node, colleague_idx(x,0,0) );
         }
-#endif
+      } else if (bndry==BoundaryType::PXY) {
+        for(long y = -1; y <= 1; y++) {
+          for(long x = -1; x <= 1; x++) {
+            curr_node->SetColleague(curr_node, colleague_idx(x,y,0) );
+          }
+        }
+      } else if (bndry==BoundaryType::PXYZ) {
+        for(long z = -1; z <= 1; z++) {
+          for(long y = -1; y <= 1; y++) {
+            for(long x = -1; x <= 1; x++) {
+              curr_node->SetColleague(curr_node, colleague_idx(x,y,z) );
+            }
+          }
+        }
+      } else {
+        assert(false);
       }
       curr_node=this->PreorderNxt(curr_node);
     }

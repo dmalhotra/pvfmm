@@ -800,273 +800,336 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
           M.SetZero();
           break;
         }
-        Matrix<Real_t> M_m2m[PVFMM_BC_LEVELS+1];
-        Matrix<Real_t> M_m2l[PVFMM_BC_LEVELS+1];
-        Matrix<Real_t> M_l2l[PVFMM_BC_LEVELS+1];
-        Matrix<Real_t> M_equiv_zero_avg(n_surf*ker_dim[0],n_surf*ker_dim[0]);
-        Matrix<Real_t> M_check_zero_avg(n_surf*ker_dim[1],n_surf*ker_dim[1]);
-        { // Set average multipole charge to zero (projection for non-zero total source density)
-          Matrix<Real_t> M_s2c;
-          { // Compute M_s2c
-            int ker_dim[2]={kernel->k_m2m->ker_dim[0],kernel->k_m2m->ker_dim[1]};
-            M_s2c.ReInit(ker_dim[0],n_surf*ker_dim[1]);
-            std::vector<Real_t> uc_coord;
-            { // Coord of upward check surface
-              Real_t c[3]={0,0,0};
-              uc_coord=u_check_surf(MultipoleOrder(),c,0);
-            }
-            #pragma omp parallel for schedule(dynamic)
-            for(size_t i=0;i<n_surf;i++){
-              std::vector<Real_t> M_=cheb_integ<Real_t>(0, &uc_coord[i*3], 1.0, *kernel->k_m2m);
-              for(int j=0; j<ker_dim[0]; j++)
-                for(int k=0; k<ker_dim[1]; k++)
-                  M_s2c[j][i*ker_dim[1]+k] = M_[j+k*ker_dim[0]];
-            }
-          }
-
-          Matrix<Real_t>& M_c2e0 = Precomp(level, UC2UE0_Type, 0);
-          Matrix<Real_t>& M_c2e1 = Precomp(level, UC2UE1_Type, 0);
-          Matrix<Real_t> M_s2e=(M_s2c*M_c2e0)*M_c2e1;
-          for(size_t i=0;i<M_s2e.Dim(0);i++){ // Normalize each row to 1
-            Real_t s=0;
-            for(size_t j=0;j<M_s2e.Dim(1);j++) s+=M_s2e[i][j];
-            s=1/s;
-            for(size_t j=0;j<M_s2e.Dim(1);j++) M_s2e[i][j]*=s;
-          }
-
-          assert(M_equiv_zero_avg.Dim(0)==M_s2e.Dim(1));
-          assert(M_equiv_zero_avg.Dim(1)==M_s2e.Dim(1));
-          M_equiv_zero_avg.SetZero();
-          for(size_t i=0;i<n_surf*ker_dim[0];i++)
-            M_equiv_zero_avg[i][i]=1;
-          for(size_t i=0;i<n_surf;i++)
-            for(int k=0;k<ker_dim[0];k++)
-              for(size_t j=0;j<n_surf*ker_dim[0];j++)
-                M_equiv_zero_avg[i*ker_dim[0]+k][j]-=M_s2e[k][j];
-        }
-        { // Set average check potential to zero. (improves stability for large PVFMM_BC_LEVELS)
-          M_check_zero_avg.SetZero();
-          for(size_t i=0;i<n_surf*ker_dim[1];i++)
-            M_check_zero_avg[i][i]+=1;
-          for(size_t i=0;i<n_surf;i++)
-            for(size_t j=0;j<n_surf;j++)
-              for(int k=0;k<ker_dim[1];k++)
-                M_check_zero_avg[i*ker_dim[1]+k][j*ker_dim[1]+k]-=1/(Real_t)n_surf;
-        }
-
-        size_t mat_cnt_m2m=interac_list.ListCount(U2U_Type);
-        for(int level=0; level>=-PVFMM_BC_LEVELS; level--){
-          { // Compute M_l2l
-            this->Precomp(level, D2D_Type, 0);
-            Permutation<Real_t> Pr = this->interac_list.Perm_R(abs(level), D2D_Type, 0);
-            Permutation<Real_t> Pc = this->interac_list.Perm_C(abs(level), D2D_Type, 0);
-            { // Invert scaling because level<0
-              for(size_t i=0;i<Pr.Dim();i++) Pr.scal[i]=1/Pr.scal[i];
-              for(size_t i=0;i<Pc.Dim();i++) Pc.scal[i]=1/Pc.scal[i];
-            }
-            M_l2l[-level] = M_check_zero_avg * Pr * this->Precomp(level, D2D_Type, this->interac_list.InteracClass(D2D_Type, 0)) * Pc * M_check_zero_avg;
-            assert(M_l2l[-level].Dim(0)>0 && M_l2l[-level].Dim(1)>0);
-          }
-
-          // Compute M_m2m
-          for(size_t mat_indx=0; mat_indx<mat_cnt_m2m; mat_indx++){
-            this->Precomp(level-1, U2U_Type, mat_indx);
-            Permutation<Real_t> Pr = this->interac_list.Perm_R(abs(level-1), U2U_Type, mat_indx);
-            Permutation<Real_t> Pc = this->interac_list.Perm_C(abs(level-1), U2U_Type, mat_indx);
-            for(size_t i=0;i<Pr.Dim();i++) Pr.scal[i]=1/Pr.scal[i];
-            for(size_t i=0;i<Pc.Dim();i++) Pc.scal[i]=1/Pc.scal[i];
-            Matrix<Real_t> M = Pr * this->Precomp(level-1, U2U_Type, this->interac_list.InteracClass(U2U_Type, mat_indx)) * Pc;
-            assert(M.Dim(0)>0 && M.Dim(1)>0);
-
-            if(mat_indx==0) M_m2m[-level] = M_equiv_zero_avg*M*M_equiv_zero_avg;
-            else M_m2m[-level] += M_equiv_zero_avg*M*M_equiv_zero_avg;
-          }
-
-          // Compute M_m2l
-          if(!ScaleInvar() || level==0){
-            Real_t s=(1UL<<(-level));
-            Real_t dc_coord[3]={0,0,0};
-            std::vector<Real_t> trg_coord=d_check_surf(MultipoleOrder(), dc_coord, level);
-            Matrix<Real_t> M_ue2dc(n_surf*ker_dim[0], n_surf*ker_dim[1]); M_ue2dc.SetZero();
-
-            for(int x0=-2;x0<4;x0++)
-            for(int x1=-2;x1<4;x1++)
-            for(int x2=-2;x2<4;x2++)
-            if(abs(x0)>1 || abs(x1)>1 || abs(x2)>1){
-              Real_t ue_coord[3]={x0*s, x1*s, x2*s};
-              std::vector<Real_t> src_coord=u_equiv_surf(MultipoleOrder(), ue_coord, level);
-              Matrix<Real_t> M_tmp(n_surf*ker_dim[0], n_surf*ker_dim[1]);
-              kernel->k_m2l->BuildMatrix(&src_coord[0], n_surf,
-                                         &trg_coord[0], n_surf, &(M_tmp[0][0]));
-              M_ue2dc+=M_tmp;
+        if (mat_indx == BoundaryType::PXYZ) {
+          Matrix<Real_t> M_m2m[PVFMM_BC_LEVELS+1];
+          Matrix<Real_t> M_m2l[PVFMM_BC_LEVELS+1];
+          Matrix<Real_t> M_l2l[PVFMM_BC_LEVELS+1];
+          Matrix<Real_t> M_equiv_zero_avg(n_surf*ker_dim[0],n_surf*ker_dim[0]);
+          Matrix<Real_t> M_check_zero_avg(n_surf*ker_dim[1],n_surf*ker_dim[1]);
+          { // Set average multipole charge to zero (projection for non-zero total source density)
+            Matrix<Real_t> M_s2c;
+            { // Compute M_s2c
+              int ker_dim[2]={kernel->k_m2m->ker_dim[0],kernel->k_m2m->ker_dim[1]};
+              M_s2c.ReInit(ker_dim[0],n_surf*ker_dim[1]);
+              std::vector<Real_t> uc_coord;
+              { // Coord of upward check surface
+                Real_t c[3]={0,0,0};
+                uc_coord=u_check_surf(MultipoleOrder(),c,0);
+              }
+              #pragma omp parallel for schedule(dynamic)
+              for(size_t i=0;i<n_surf;i++){
+                std::vector<Real_t> M_=cheb_integ<Real_t>(0, &uc_coord[i*3], 1.0, *kernel->k_m2m);
+                for(int j=0; j<ker_dim[0]; j++)
+                  for(int k=0; k<ker_dim[1]; k++)
+                    M_s2c[j][i*ker_dim[1]+k] = M_[j+k*ker_dim[0]];
+              }
             }
 
-            M_m2l[-level]=M_equiv_zero_avg*M_ue2dc * M_check_zero_avg;
-          }else{
-            M_m2l[-level]=M_equiv_zero_avg * M_m2l[-level-1] * M_check_zero_avg;
-            if(ScaleInvar()){ // Scale M_m2l
-              Permutation<Real_t> ker_perm=this->kernel->k_m2l->perm_vec[0     +Scaling];
-              Vector<Real_t> scal_exp=this->kernel->k_m2l->src_scal;
-              for(size_t i=0;i<scal_exp.Dim();i++) scal_exp[i]=-scal_exp[i];
-              Permutation<Real_t> P=equiv_surf_perm(MultipoleOrder(), Scaling, ker_perm, &scal_exp);
-              M_m2l[-level]=P*M_m2l[-level];
+            Matrix<Real_t>& M_c2e0 = Precomp(level, UC2UE0_Type, 0);
+            Matrix<Real_t>& M_c2e1 = Precomp(level, UC2UE1_Type, 0);
+            Matrix<Real_t> M_s2e=(M_s2c*M_c2e0)*M_c2e1;
+            for(size_t i=0;i<M_s2e.Dim(0);i++){ // Normalize each row to 1
+              Real_t s=0;
+              for(size_t j=0;j<M_s2e.Dim(1);j++) s+=M_s2e[i][j];
+              s=1/s;
+              for(size_t j=0;j<M_s2e.Dim(1);j++) M_s2e[i][j]*=s;
             }
-            if(ScaleInvar()){ // Scale M_m2l
-              Permutation<Real_t> ker_perm=this->kernel->k_m2l->perm_vec[C_Perm+Scaling];
-              Vector<Real_t> scal_exp=this->kernel->k_m2l->trg_scal;
-              for(size_t i=0;i<scal_exp.Dim();i++) scal_exp[i]=-scal_exp[i];
-              Permutation<Real_t> P=equiv_surf_perm(MultipoleOrder(), Scaling, ker_perm, &scal_exp);
-              M_m2l[-level]=M_m2l[-level]*P;
-            }
-          }
-        }
-        for(int level=-PVFMM_BC_LEVELS;level<=0;level++){
-          if(level==-PVFMM_BC_LEVELS) M = M_m2l[-level];
-          else                  M = M_equiv_zero_avg * (M_m2l[-level] + M_m2m[-level]*M*M_l2l[-level]) * M_check_zero_avg;
-        }
-        if(kernel->k_m2l->vol_poten){ // Correction for far-field of analytical volume potential
-          Matrix<Real_t> M_far;
-          { // Compute M_far
-            // kernel->k_m2l->vol_poten  is the analtical particular solution for uniform source density=1
-            // We already corrected far-field above with M_equiv_zero_avg, so we don't need the far field of the analytical solutions.
-            // We take the analytical solution and subtract the near interaction (3x3x3 boxes) from it to get the far-field
-            // Then, we add the far-field correction for the analytical solution to be subtracted later.
 
-            std::vector<Real_t> dc_coord;
-            { // Coord of upward check surface
-              Real_t c[3]={1.0,1.0,1.0};
-              dc_coord=d_check_surf(MultipoleOrder(),c,0);
-            }
-            Matrix<Real_t> M_near(ker_dim[0],n_surf*ker_dim[1]);
-            #pragma omp parallel for schedule(dynamic)
-            for(size_t i=0;i<n_surf;i++){ // Compute near-interaction part
-              std::vector<Real_t> M_=cheb_integ<Real_t>(0, &dc_coord[i*3], 3.0, *kernel->k_m2l);
-              for(int j=0; j<ker_dim[0]; j++)
-                for(int k=0; k<ker_dim[1]; k++)
-                  M_near[j][i*ker_dim[1]+k] = M_[j+k*ker_dim[0]];
-            }
-            { // M_far = M_analytic - M_near
-              Matrix<Real_t> M_analytic(ker_dim[0],n_surf*ker_dim[1]); M_analytic.SetZero();
-              kernel->k_m2l->vol_poten(&dc_coord[0],n_surf,&M_analytic[0][0]);
-              M_far=M_analytic-M_near;
-            }
-          }
-          { // Add far-field corection to M
+            assert(M_equiv_zero_avg.Dim(0)==M_s2e.Dim(1));
+            assert(M_equiv_zero_avg.Dim(1)==M_s2e.Dim(1));
+            M_equiv_zero_avg.SetZero();
+            for(size_t i=0;i<n_surf*ker_dim[0];i++)
+              M_equiv_zero_avg[i][i]=1;
             for(size_t i=0;i<n_surf;i++)
               for(int k=0;k<ker_dim[0];k++)
-                for(size_t j=0;j<n_surf*ker_dim[1];j++)
-                  M[i*ker_dim[0]+k][j]+=M_far[k][j];
+                for(size_t j=0;j<n_surf*ker_dim[0];j++)
+                  M_equiv_zero_avg[i*ker_dim[0]+k][j]-=M_s2e[k][j];
           }
-        }
-        { // a + bx + cy + dz + exy + fxz + gyz  correction.
-          std::vector<Real_t> corner_pts;
-          corner_pts.push_back(0); corner_pts.push_back(0); corner_pts.push_back(0);
-          corner_pts.push_back(1); corner_pts.push_back(0); corner_pts.push_back(0);
-          corner_pts.push_back(0); corner_pts.push_back(1); corner_pts.push_back(0);
-          corner_pts.push_back(0); corner_pts.push_back(0); corner_pts.push_back(1);
-          corner_pts.push_back(0); corner_pts.push_back(1); corner_pts.push_back(1);
-          corner_pts.push_back(1); corner_pts.push_back(0); corner_pts.push_back(1);
-          corner_pts.push_back(1); corner_pts.push_back(1); corner_pts.push_back(0);
-          corner_pts.push_back(1); corner_pts.push_back(1); corner_pts.push_back(1);
-          size_t n_corner=corner_pts.size()/PVFMM_COORD_DIM;
+          { // Set average check potential to zero. (improves stability for large PVFMM_BC_LEVELS)
+            M_check_zero_avg.SetZero();
+            for(size_t i=0;i<n_surf*ker_dim[1];i++)
+              M_check_zero_avg[i][i]+=1;
+            for(size_t i=0;i<n_surf;i++)
+              for(size_t j=0;j<n_surf;j++)
+                for(int k=0;k<ker_dim[1];k++)
+                  M_check_zero_avg[i*ker_dim[1]+k][j*ker_dim[1]+k]-=1/(Real_t)n_surf;
+          }
 
-          // Coord of downward equivalent surface
-          Real_t c[3]={0,0,0};
-          std::vector<Real_t> up_equiv_surf=u_equiv_surf(MultipoleOrder(),c,0);
-          std::vector<Real_t> dn_equiv_surf=d_equiv_surf(MultipoleOrder(),c,0);
-          std::vector<Real_t> dn_check_surf=d_check_surf(MultipoleOrder(),c,0);
-
-          Matrix<Real_t> M_err;
-          { // Evaluate potential at corner due to upward and dnward equivalent surface.
-            { // Error from local expansion.
-              Matrix<Real_t> M_e2pt(n_surf*kernel->k_l2l->ker_dim[0],n_corner*kernel->k_l2l->ker_dim[1]);
-              kernel->k_l2l->BuildMatrix(&dn_equiv_surf[0], n_surf,
-                                            &corner_pts[0], n_corner, &(M_e2pt[0][0]));
-              Matrix<Real_t>& M_dc2de0 = Precomp(0, DC2DE0_Type, 0);
-              Matrix<Real_t>& M_dc2de1 = Precomp(0, DC2DE1_Type, 0);
-              M_err=(M*M_dc2de0)*(M_dc2de1*M_e2pt);
+          size_t mat_cnt_m2m=interac_list.ListCount(U2U_Type);
+          for(int level=0; level>=-PVFMM_BC_LEVELS; level--){
+            { // Compute M_l2l
+              this->Precomp(level, D2D_Type, 0);
+              Permutation<Real_t> Pr = this->interac_list.Perm_R(abs(level), D2D_Type, 0);
+              Permutation<Real_t> Pc = this->interac_list.Perm_C(abs(level), D2D_Type, 0);
+              { // Invert scaling because level<0
+                for(size_t i=0;i<Pr.Dim();i++) Pr.scal[i]=1/Pr.scal[i];
+                for(size_t i=0;i<Pc.Dim();i++) Pc.scal[i]=1/Pc.scal[i];
+              }
+              M_l2l[-level] = M_check_zero_avg * Pr * this->Precomp(level, D2D_Type, this->interac_list.InteracClass(D2D_Type, 0)) * Pc * M_check_zero_avg;
+              assert(M_l2l[-level].Dim(0)>0 && M_l2l[-level].Dim(1)>0);
             }
-            for(size_t k=0;k<n_corner;k++){ // Error from colleagues of root.
-              for(int j0=-1;j0<=1;j0++)
-              for(int j1=-1;j1<=1;j1++)
-              for(int j2=-1;j2<=1;j2++){
-                Real_t pt_coord[3]={corner_pts[k*PVFMM_COORD_DIM+0]-j0,
-                                    corner_pts[k*PVFMM_COORD_DIM+1]-j1,
-                                    corner_pts[k*PVFMM_COORD_DIM+2]-j2};
-                if(sctl::fabs<Real_t>(pt_coord[0]-(Real_t)0.5)>1 || sctl::fabs<Real_t>(pt_coord[1]-(Real_t)0.5)>1 || sctl::fabs<Real_t>(pt_coord[2]-(Real_t)0.5)>1){
-                  Matrix<Real_t> M_e2pt(n_surf*ker_dim[0],ker_dim[1]);
-                  kernel->k_m2l->BuildMatrix(&up_equiv_surf[0], n_surf,
-                                                  &pt_coord[0], 1, &(M_e2pt[0][0]));
-                  for(size_t i=0;i<M_e2pt.Dim(0);i++)
-                    for(size_t j=0;j<M_e2pt.Dim(1);j++)
-                      M_err[i][k*ker_dim[1]+j]+=M_e2pt[i][j];
+
+            // Compute M_m2m
+            for(size_t mat_indx=0; mat_indx<mat_cnt_m2m; mat_indx++){
+              this->Precomp(level-1, U2U_Type, mat_indx);
+              Permutation<Real_t> Pr = this->interac_list.Perm_R(abs(level-1), U2U_Type, mat_indx);
+              Permutation<Real_t> Pc = this->interac_list.Perm_C(abs(level-1), U2U_Type, mat_indx);
+              for(size_t i=0;i<Pr.Dim();i++) Pr.scal[i]=1/Pr.scal[i];
+              for(size_t i=0;i<Pc.Dim();i++) Pc.scal[i]=1/Pc.scal[i];
+              Matrix<Real_t> M = Pr * this->Precomp(level-1, U2U_Type, this->interac_list.InteracClass(U2U_Type, mat_indx)) * Pc;
+              assert(M.Dim(0)>0 && M.Dim(1)>0);
+
+              if(mat_indx==0) M_m2m[-level] = M_equiv_zero_avg*M*M_equiv_zero_avg;
+              else M_m2m[-level] += M_equiv_zero_avg*M*M_equiv_zero_avg;
+            }
+
+            // Compute M_m2l
+            if(!ScaleInvar() || level==0){
+              Real_t s=(1UL<<(-level));
+              Real_t dc_coord[3]={0,0,0};
+              std::vector<Real_t> trg_coord=d_check_surf(MultipoleOrder(), dc_coord, level);
+              Matrix<Real_t> M_ue2dc(n_surf*ker_dim[0], n_surf*ker_dim[1]); M_ue2dc.SetZero();
+
+              for(int x0=-2;x0<4;x0++)
+              for(int x1=-2;x1<4;x1++)
+              for(int x2=-2;x2<4;x2++)
+              if(abs(x0)>1 || abs(x1)>1 || abs(x2)>1){
+                Real_t ue_coord[3]={x0*s, x1*s, x2*s};
+                std::vector<Real_t> src_coord=u_equiv_surf(MultipoleOrder(), ue_coord, level);
+                Matrix<Real_t> M_tmp(n_surf*ker_dim[0], n_surf*ker_dim[1]);
+                kernel->k_m2l->BuildMatrix(&src_coord[0], n_surf,
+                                           &trg_coord[0], n_surf, &(M_tmp[0][0]));
+                M_ue2dc+=M_tmp;
+              }
+
+              M_m2l[-level]=M_equiv_zero_avg*M_ue2dc * M_check_zero_avg;
+            }else{
+              M_m2l[-level]=M_equiv_zero_avg * M_m2l[-level-1] * M_check_zero_avg;
+              if(ScaleInvar()){ // Scale M_m2l
+                Permutation<Real_t> ker_perm=this->kernel->k_m2l->perm_vec[0     +Scaling];
+                Vector<Real_t> scal_exp=this->kernel->k_m2l->src_scal;
+                for(size_t i=0;i<scal_exp.Dim();i++) scal_exp[i]=-scal_exp[i];
+                Permutation<Real_t> P=equiv_surf_perm(MultipoleOrder(), Scaling, ker_perm, &scal_exp);
+                M_m2l[-level]=P*M_m2l[-level];
+              }
+              if(ScaleInvar()){ // Scale M_m2l
+                Permutation<Real_t> ker_perm=this->kernel->k_m2l->perm_vec[C_Perm+Scaling];
+                Vector<Real_t> scal_exp=this->kernel->k_m2l->trg_scal;
+                for(size_t i=0;i<scal_exp.Dim();i++) scal_exp[i]=-scal_exp[i];
+                Permutation<Real_t> P=equiv_surf_perm(MultipoleOrder(), Scaling, ker_perm, &scal_exp);
+                M_m2l[-level]=M_m2l[-level]*P;
+              }
+            }
+          }
+          for(int level=-PVFMM_BC_LEVELS;level<=0;level++){
+            if(level==-PVFMM_BC_LEVELS) M = M_m2l[-level];
+            else                  M = M_equiv_zero_avg * (M_m2l[-level] + M_m2m[-level]*M*M_l2l[-level]) * M_check_zero_avg;
+          }
+          if(kernel->k_m2l->vol_poten){ // Correction for far-field of analytical volume potential
+            Matrix<Real_t> M_far;
+            { // Compute M_far
+              // kernel->k_m2l->vol_poten  is the analtical particular solution for uniform source density=1
+              // We already corrected far-field above with M_equiv_zero_avg, so we don't need the far field of the analytical solutions.
+              // We take the analytical solution and subtract the near interaction (3x3x3 boxes) from it to get the far-field
+              // Then, we add the far-field correction for the analytical solution to be subtracted later.
+
+              std::vector<Real_t> dc_coord;
+              { // Coord of upward check surface
+                Real_t c[3]={1.0,1.0,1.0};
+                dc_coord=d_check_surf(MultipoleOrder(),c,0);
+              }
+              Matrix<Real_t> M_near(ker_dim[0],n_surf*ker_dim[1]);
+              #pragma omp parallel for schedule(dynamic)
+              for(size_t i=0;i<n_surf;i++){ // Compute near-interaction part
+                std::vector<Real_t> M_=cheb_integ<Real_t>(0, &dc_coord[i*3], 3.0, *kernel->k_m2l);
+                for(int j=0; j<ker_dim[0]; j++)
+                  for(int k=0; k<ker_dim[1]; k++)
+                    M_near[j][i*ker_dim[1]+k] = M_[j+k*ker_dim[0]];
+              }
+              { // M_far = M_analytic - M_near
+                Matrix<Real_t> M_analytic(ker_dim[0],n_surf*ker_dim[1]); M_analytic.SetZero();
+                kernel->k_m2l->vol_poten(&dc_coord[0],n_surf,&M_analytic[0][0]);
+                M_far=M_analytic-M_near;
+              }
+            }
+            { // Add far-field corection to M
+              for(size_t i=0;i<n_surf;i++)
+                for(int k=0;k<ker_dim[0];k++)
+                  for(size_t j=0;j<n_surf*ker_dim[1];j++)
+                    M[i*ker_dim[0]+k][j]+=M_far[k][j];
+            }
+          }
+          { // a + bx + cy + dz + exy + fxz + gyz  correction.
+            std::vector<Real_t> corner_pts;
+            corner_pts.push_back(0); corner_pts.push_back(0); corner_pts.push_back(0);
+            corner_pts.push_back(1); corner_pts.push_back(0); corner_pts.push_back(0);
+            corner_pts.push_back(0); corner_pts.push_back(1); corner_pts.push_back(0);
+            corner_pts.push_back(0); corner_pts.push_back(0); corner_pts.push_back(1);
+            corner_pts.push_back(0); corner_pts.push_back(1); corner_pts.push_back(1);
+            corner_pts.push_back(1); corner_pts.push_back(0); corner_pts.push_back(1);
+            corner_pts.push_back(1); corner_pts.push_back(1); corner_pts.push_back(0);
+            corner_pts.push_back(1); corner_pts.push_back(1); corner_pts.push_back(1);
+            size_t n_corner=corner_pts.size()/PVFMM_COORD_DIM;
+
+            // Coord of downward equivalent surface
+            Real_t c[3]={0,0,0};
+            std::vector<Real_t> up_equiv_surf=u_equiv_surf(MultipoleOrder(),c,0);
+            std::vector<Real_t> dn_equiv_surf=d_equiv_surf(MultipoleOrder(),c,0);
+            std::vector<Real_t> dn_check_surf=d_check_surf(MultipoleOrder(),c,0);
+
+            Matrix<Real_t> M_err;
+            { // Evaluate potential at corner due to upward and dnward equivalent surface.
+              { // Error from local expansion.
+                Matrix<Real_t> M_e2pt(n_surf*kernel->k_l2l->ker_dim[0],n_corner*kernel->k_l2l->ker_dim[1]);
+                kernel->k_l2l->BuildMatrix(&dn_equiv_surf[0], n_surf,
+                                              &corner_pts[0], n_corner, &(M_e2pt[0][0]));
+                Matrix<Real_t>& M_dc2de0 = Precomp(0, DC2DE0_Type, 0);
+                Matrix<Real_t>& M_dc2de1 = Precomp(0, DC2DE1_Type, 0);
+                M_err=(M*M_dc2de0)*(M_dc2de1*M_e2pt);
+              }
+              for(size_t k=0;k<n_corner;k++){ // Error from colleagues of root.
+                for(int j0=-1;j0<=1;j0++)
+                for(int j1=-1;j1<=1;j1++)
+                for(int j2=-1;j2<=1;j2++){
+                  Real_t pt_coord[3]={corner_pts[k*PVFMM_COORD_DIM+0]-j0,
+                                      corner_pts[k*PVFMM_COORD_DIM+1]-j1,
+                                      corner_pts[k*PVFMM_COORD_DIM+2]-j2};
+                  if(sctl::fabs<Real_t>(pt_coord[0]-(Real_t)0.5)>1 || sctl::fabs<Real_t>(pt_coord[1]-(Real_t)0.5)>1 || sctl::fabs<Real_t>(pt_coord[2]-(Real_t)0.5)>1){
+                    Matrix<Real_t> M_e2pt(n_surf*ker_dim[0],ker_dim[1]);
+                    kernel->k_m2l->BuildMatrix(&up_equiv_surf[0], n_surf,
+                                                    &pt_coord[0], 1, &(M_e2pt[0][0]));
+                    for(size_t i=0;i<M_e2pt.Dim(0);i++)
+                      for(size_t j=0;j<M_e2pt.Dim(1);j++)
+                        M_err[i][k*ker_dim[1]+j]+=M_e2pt[i][j];
+                  }
+                }
+              }
+              if(kernel->k_m2l->vol_poten){ // Error from analytical volume potential
+                Matrix<Real_t> M_analytic(ker_dim[0],n_corner*ker_dim[1]); M_analytic.SetZero();
+                kernel->k_m2l->vol_poten(&corner_pts[0],n_corner,&M_analytic[0][0]);
+                for(size_t j=0;j<n_surf;j++)
+                for(int k=0;k<ker_dim[0];k++)
+                for(size_t i=0;i<M_err.Dim(1);i++){
+                  M_err[j*ker_dim[0]+k][i]-=M_analytic[k][i];
                 }
               }
             }
-            if(kernel->k_m2l->vol_poten){ // Error from analytical volume potential
-              Matrix<Real_t> M_analytic(ker_dim[0],n_corner*ker_dim[1]); M_analytic.SetZero();
-              kernel->k_m2l->vol_poten(&corner_pts[0],n_corner,&M_analytic[0][0]);
-              for(size_t j=0;j<n_surf;j++)
-              for(int k=0;k<ker_dim[0];k++)
-              for(size_t i=0;i<M_err.Dim(1);i++){
-                M_err[j*ker_dim[0]+k][i]-=M_analytic[k][i];
-              }
+
+            Matrix<Real_t> M_grad(M_err.Dim(0),n_surf*ker_dim[1]);
+            for(size_t i=0;i<M_err.Dim(0);i++)
+            for(int k=0;k<ker_dim[1];k++)
+            for(size_t j=0;j<n_surf;j++){
+              M_grad[i][j*ker_dim[1]+k]=  M_err[i][0*ker_dim[1]+k]
+                                        +(M_err[i][1*ker_dim[1]+k]-M_err[i][0*ker_dim[1]+k])*dn_check_surf[j*PVFMM_COORD_DIM+0]
+                                        +(M_err[i][2*ker_dim[1]+k]-M_err[i][0*ker_dim[1]+k])*dn_check_surf[j*PVFMM_COORD_DIM+1]
+                                        +(M_err[i][3*ker_dim[1]+k]-M_err[i][0*ker_dim[1]+k])*dn_check_surf[j*PVFMM_COORD_DIM+2]
+                                        +(M_err[i][4*ker_dim[1]+k]+M_err[i][0*ker_dim[1]+k]-M_err[i][2*ker_dim[1]+k]-M_err[i][3*ker_dim[1]+k])*dn_check_surf[j*PVFMM_COORD_DIM+1]*dn_check_surf[j*PVFMM_COORD_DIM+2]
+                                        +(M_err[i][5*ker_dim[1]+k]+M_err[i][0*ker_dim[1]+k]-M_err[i][1*ker_dim[1]+k]-M_err[i][3*ker_dim[1]+k])*dn_check_surf[j*PVFMM_COORD_DIM+2]*dn_check_surf[j*PVFMM_COORD_DIM+0]
+                                        +(M_err[i][6*ker_dim[1]+k]+M_err[i][0*ker_dim[1]+k]-M_err[i][1*ker_dim[1]+k]-M_err[i][2*ker_dim[1]+k])*dn_check_surf[j*PVFMM_COORD_DIM+0]*dn_check_surf[j*PVFMM_COORD_DIM+1]
+                                        +(M_err[i][7*ker_dim[1]+k]+M_err[i][1*ker_dim[1]+k]+M_err[i][2*ker_dim[1]+k]+M_err[i][3*ker_dim[1]+k]-M_err[i][0*ker_dim[1]+k]-M_err[i][4*ker_dim[1]+k]-M_err[i][5*ker_dim[1]+k]-M_err[i][6*ker_dim[1]+k])*dn_check_surf[j*PVFMM_COORD_DIM+0]*dn_check_surf[j*PVFMM_COORD_DIM+1]*dn_check_surf[j*PVFMM_COORD_DIM+2];
+            }
+            M-=M_grad;
+          }
+
+          if(!this->ScaleInvar()){ // Free memory
+            Mat_Type type=D2D_Type;
+            for(int l=-PVFMM_BC_LEVELS;l<0;l++)
+            for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
+              Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
+              M.Resize(0,0);
+            }
+            type=U2U_Type;
+            for(int l=-PVFMM_BC_LEVELS;l<0;l++)
+            for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
+              Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
+              M.Resize(0,0);
+            }
+            type=DC2DE0_Type;
+            for(int l=-PVFMM_BC_LEVELS;l<0;l++)
+            for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
+              Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
+              M.Resize(0,0);
+            }
+            type=DC2DE1_Type;
+            for(int l=-PVFMM_BC_LEVELS;l<0;l++)
+            for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
+              Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
+              M.Resize(0,0);
+            }
+            type=UC2UE0_Type;
+            for(int l=-PVFMM_BC_LEVELS;l<0;l++)
+            for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
+              Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
+              M.Resize(0,0);
+            }
+            type=UC2UE1_Type;
+            for(int l=-PVFMM_BC_LEVELS;l<0;l++)
+            for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
+              Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
+              M.Resize(0,0);
             }
           }
-
-          Matrix<Real_t> M_grad(M_err.Dim(0),n_surf*ker_dim[1]);
-          for(size_t i=0;i<M_err.Dim(0);i++)
-          for(int k=0;k<ker_dim[1];k++)
-          for(size_t j=0;j<n_surf;j++){
-            M_grad[i][j*ker_dim[1]+k]=  M_err[i][0*ker_dim[1]+k]
-                                      +(M_err[i][1*ker_dim[1]+k]-M_err[i][0*ker_dim[1]+k])*dn_check_surf[j*PVFMM_COORD_DIM+0]
-                                      +(M_err[i][2*ker_dim[1]+k]-M_err[i][0*ker_dim[1]+k])*dn_check_surf[j*PVFMM_COORD_DIM+1]
-                                      +(M_err[i][3*ker_dim[1]+k]-M_err[i][0*ker_dim[1]+k])*dn_check_surf[j*PVFMM_COORD_DIM+2]
-                                      +(M_err[i][4*ker_dim[1]+k]+M_err[i][0*ker_dim[1]+k]-M_err[i][2*ker_dim[1]+k]-M_err[i][3*ker_dim[1]+k])*dn_check_surf[j*PVFMM_COORD_DIM+1]*dn_check_surf[j*PVFMM_COORD_DIM+2]
-                                      +(M_err[i][5*ker_dim[1]+k]+M_err[i][0*ker_dim[1]+k]-M_err[i][1*ker_dim[1]+k]-M_err[i][3*ker_dim[1]+k])*dn_check_surf[j*PVFMM_COORD_DIM+2]*dn_check_surf[j*PVFMM_COORD_DIM+0]
-                                      +(M_err[i][6*ker_dim[1]+k]+M_err[i][0*ker_dim[1]+k]-M_err[i][1*ker_dim[1]+k]-M_err[i][2*ker_dim[1]+k])*dn_check_surf[j*PVFMM_COORD_DIM+0]*dn_check_surf[j*PVFMM_COORD_DIM+1]
-                                      +(M_err[i][7*ker_dim[1]+k]+M_err[i][1*ker_dim[1]+k]+M_err[i][2*ker_dim[1]+k]+M_err[i][3*ker_dim[1]+k]-M_err[i][0*ker_dim[1]+k]-M_err[i][4*ker_dim[1]+k]-M_err[i][5*ker_dim[1]+k]-M_err[i][6*ker_dim[1]+k])*dn_check_surf[j*PVFMM_COORD_DIM+0]*dn_check_surf[j*PVFMM_COORD_DIM+1]*dn_check_surf[j*PVFMM_COORD_DIM+2];
-          }
-          M-=M_grad;
+          break;
         }
+        if (mat_indx == BoundaryType::PXY) {
+          assert(false); // TODO
+        }
+        if (mat_indx == BoundaryType::PX) {
+          Real_t root_coord[3]={-(Real_t)0.5,-(Real_t)0.5,-(Real_t)0.5};
+          std::vector<Real_t> trg_coord = d_check_surf(MultipoleOrder(), root_coord, 0);
 
-        if(!this->ScaleInvar()){ // Free memory
-          Mat_Type type=D2D_Type;
-          for(int l=-PVFMM_BC_LEVELS;l<0;l++)
-          for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
-            Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
-            M.Resize(0,0);
+          Matrix<Real_t> M2M;
+          for (int level=0; level < PVFMM_BC_LEVELS; level++) {
+            const Real_t box_length = (Real_t)(1UL << level);
+
+            Real_t src_box0[3] = {-box_length*2-(Real_t)0.5, -(Real_t)0.5*box_length, -(Real_t)0.5*box_length};
+            Real_t src_box1[3] = { box_length+1-(Real_t)0.5, -(Real_t)0.5*box_length, -(Real_t)0.5*box_length};
+            std::vector<Real_t> src_coord0 = u_equiv_surf(MultipoleOrder(), src_box0, -level);
+            std::vector<Real_t> src_coord1 = u_equiv_surf(MultipoleOrder(), src_box1, -level);
+
+            Matrix<Real_t> M0(n_surf*ker_dim[0], n_surf*ker_dim[1]);
+            Matrix<Real_t> M1(n_surf*ker_dim[0], n_surf*ker_dim[1]);
+            kernel->k_m2l->BuildMatrix(&src_coord0[0], n_surf, &trg_coord[0], n_surf, &(M0[0][0]));
+            kernel->k_m2l->BuildMatrix(&src_coord1[0], n_surf, &trg_coord[0], n_surf, &(M1[0][0]));
+            if (level == 0) M = M0 + M1;
+            else M += M2M * (M0 + M1);
+
+            { // Update M2M for next level
+              Real_t trg_box[3]  = {-box_length, -box_length, -box_length};
+              std::vector<Real_t> equiv_coord = u_equiv_surf(MultipoleOrder(), trg_box, -level-1);
+              std::vector<Real_t> check_coord = u_check_surf(MultipoleOrder(), trg_box, -level-1);
+
+              Matrix<Real_t> M_uc2ue0, M_uc2ue1;
+              { // Set M_uc2ue0, M_uc2ue1
+                Matrix<Real_t> M_e2c(n_surf*ker_dim[0], n_surf*ker_dim[1]);;
+                kernel->k_m2m->BuildMatrix(&equiv_coord[0], n_surf, &check_coord[0], n_surf, &(M_e2c[0][0]));
+
+                Matrix<Real_t> U,S,V;
+                M_e2c.SVD(U,S,V);
+                Real_t eps=1, max_S=0;
+                while(eps*(Real_t)0.5+(Real_t)1>1) eps*=(Real_t)0.5;
+                for(size_t i=0;i<std::min(S.Dim(0),S.Dim(1));i++){
+                  if(sctl::fabs<Real_t>(S[i][i])>max_S) max_S=sctl::fabs<Real_t>(S[i][i]);
+                }
+                for(size_t i=0;i<S.Dim(0);i++) S[i][i]=(S[i][i]>eps*max_S*4?1/S[i][i]:0);
+                M_uc2ue0 = V.Transpose() * S;
+                M_uc2ue1 = U.Transpose();
+              }
+
+              Real_t src_box0[3] = {-box_length, -(Real_t)0.5*box_length, -(Real_t)0.5*box_length};
+              Real_t src_box1[3] = {          0, -(Real_t)0.5*box_length, -(Real_t)0.5*box_length};
+              std::vector<Real_t> src_coord0 = u_equiv_surf(MultipoleOrder(), src_box0, -level);
+              std::vector<Real_t> src_coord1 = u_equiv_surf(MultipoleOrder(), src_box1, -level);
+
+              Matrix<Real_t> M0(n_surf*ker_dim[0], n_surf*ker_dim[1]);
+              Matrix<Real_t> M1(n_surf*ker_dim[0], n_surf*ker_dim[1]);
+              kernel->k_m2m->BuildMatrix(&src_coord0[0], n_surf, &check_coord[0], n_surf, &(M0[0][0]));
+              kernel->k_m2m->BuildMatrix(&src_coord1[0], n_surf, &check_coord[0], n_surf, &(M1[0][0]));
+              if (level == 0) M2M = (M0 + M1) * M_uc2ue0 * M_uc2ue1;
+              else M2M = M2M * (((M0 + M1) * M_uc2ue0) * M_uc2ue1);
+            }
           }
-          type=U2U_Type;
-          for(int l=-PVFMM_BC_LEVELS;l<0;l++)
-          for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
-            Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
-            M.Resize(0,0);
-          }
-          type=DC2DE0_Type;
-          for(int l=-PVFMM_BC_LEVELS;l<0;l++)
-          for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
-            Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
-            M.Resize(0,0);
-          }
-          type=DC2DE1_Type;
-          for(int l=-PVFMM_BC_LEVELS;l<0;l++)
-          for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
-            Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
-            M.Resize(0,0);
-          }
-          type=UC2UE0_Type;
-          for(int l=-PVFMM_BC_LEVELS;l<0;l++)
-          for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
-            Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
-            M.Resize(0,0);
-          }
-          type=UC2UE1_Type;
-          for(int l=-PVFMM_BC_LEVELS;l<0;l++)
-          for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
-            Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
-            M.Resize(0,0);
-          }
+          break;
         }
         #else
         { // Compute M
@@ -5623,7 +5686,8 @@ void FMM_Pts<FMMNode>::Down2Target(SetupData<Real_t>&  setup_data, bool device){
 template <class FMMNode>
 void FMM_Pts<FMMNode>::PostProcessing(FMMTree_t* tree, std::vector<FMMNode_t*>& nodes, BoundaryType bndry){
 #ifndef PVFMM_EXTENDED_BC
-  if(kernel->k_m2l->vol_poten && bndry==Periodic && PVFMM_BC_LEVELS>0){ // Add analytical near-field to target potential
+  if(kernel->k_m2l->vol_poten && bndry==PXYZ && PVFMM_BC_LEVELS>0){ // Add analytical near-field to target potential
+    // TODO: Unclear what should be done for PX, PXY boundary conditions
     const Kernel<Real_t>& k_m2t=*kernel->k_m2t;
     int ker_dim[2]={k_m2t.ker_dim[0],k_m2t.ker_dim[1]};
 
