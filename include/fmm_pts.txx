@@ -1071,8 +1071,83 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
           }
           break;
         }
+
+        Matrix<Real_t> M_uc2ue0[PVFMM_BC_LEVELS], M_uc2ue1[PVFMM_BC_LEVELS];
+        #pragma omp parallel for schedule(dynamic)
+        for (int level=0; level < PVFMM_BC_LEVELS; level++) { // Set M_uc2ue0, M_uc2ue1
+          const Real_t box_length = (Real_t)(1UL << level);
+
+          Real_t trg_box[3]  = {-box_length, -box_length, -box_length};
+          std::vector<Real_t> equiv_coord = u_equiv_surf(MultipoleOrder(), trg_box, -level-1);
+          std::vector<Real_t> check_coord = u_check_surf(MultipoleOrder(), trg_box, -level-1);
+
+          Matrix<Real_t> M_e2c(n_surf*ker_dim[0], n_surf*ker_dim[1]);;
+          kernel->k_m2m->BuildMatrix(&equiv_coord[0], n_surf, &check_coord[0], n_surf, &(M_e2c[0][0]));
+
+          Matrix<Real_t> U,S,V;
+          M_e2c.SVD(U,S,V);
+          Real_t eps=1, max_S=0;
+          while(eps*(Real_t)0.5+(Real_t)1>1) eps*=(Real_t)0.5;
+          for(size_t i=0;i<std::min(S.Dim(0),S.Dim(1));i++){
+            if(sctl::fabs<Real_t>(S[i][i])>max_S) max_S=sctl::fabs<Real_t>(S[i][i]);
+          }
+          for(size_t i=0;i<S.Dim(0);i++) S[i][i]=(S[i][i]>eps*max_S*4?1/S[i][i]:0);
+          M_uc2ue0[level] = V.Transpose() * S;
+          M_uc2ue1[level] = U.Transpose();
+        }
         if (mat_indx == BoundaryType::PXY) {
-          assert(false); // TODO
+          Real_t root_coord[3]={-(Real_t)0.5,-(Real_t)0.5,-(Real_t)0.5};
+          std::vector<Real_t> trg_coord = d_check_surf(MultipoleOrder(), root_coord, 0);
+
+          Matrix<Real_t> M2M;
+          for (int level=0; level < PVFMM_BC_LEVELS; level++) {
+            const Real_t box_length = (Real_t)(1UL << level);
+
+            Matrix<Real_t> MM;
+            for (int k0 = -2; k0 < 4; k0++) {
+              for (int k1 = -2; k1 < 4; k1++) {
+                if (std::max(abs(k0), abs(k1)) <= 1) continue;
+
+                Real_t src_box[3] = {root_coord[0] + k0*box_length,
+                                     root_coord[1] + k1*box_length,
+                                     -(Real_t)0.5*box_length};
+
+                Matrix<Real_t> M0(n_surf*ker_dim[0], n_surf*ker_dim[1]);
+                std::vector<Real_t> src_coord = u_equiv_surf(MultipoleOrder(), src_box, -level);
+                kernel->k_m2l->BuildMatrix(&src_coord[0], n_surf, &trg_coord[0], n_surf, &(M0[0][0]));
+
+                if (MM.Dim(0) == 0) MM = M0;
+                else MM += M0;
+              }
+            }
+            if (level == 0) M = MM;
+            else M += M2M * MM;
+
+            { // Update M2M for next level
+              Real_t trg_box[3]  = {-box_length, -box_length, -box_length};
+              std::vector<Real_t> equiv_coord = u_equiv_surf(MultipoleOrder(), trg_box, -level-1);
+              std::vector<Real_t> check_coord = u_check_surf(MultipoleOrder(), trg_box, -level-1);
+
+              Matrix<Real_t> MM;
+              for (int k0 = 0; k0 < 2; k0++) {
+                for (int k1 = 0; k1 < 2; k1++) {
+                  Real_t src_box[3] = {trg_box[0] + k0*box_length,
+                                       trg_box[1] + k1*box_length,
+                                       -(Real_t)0.5*box_length};
+
+                  Matrix<Real_t> M0(n_surf*ker_dim[0], n_surf*ker_dim[1]);
+                  std::vector<Real_t> src_coord = u_equiv_surf(MultipoleOrder(), src_box, -level);
+                  kernel->k_m2m->BuildMatrix(&src_coord[0], n_surf, &check_coord[0], n_surf, &(M0[0][0]));
+
+                  if (MM.Dim(0) == 0) MM = M0;
+                  else MM += M0;
+                }
+              }
+              if (level == 0) M2M = (MM * M_uc2ue0[level]) * M_uc2ue1[level];
+              else M2M = M2M * ((MM * M_uc2ue0[level]) * M_uc2ue1[level]);
+            }
+          }
+          break;
         }
         if (mat_indx == BoundaryType::PX) {
           Real_t root_coord[3]={-(Real_t)0.5,-(Real_t)0.5,-(Real_t)0.5};
@@ -1096,37 +1171,23 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
 
             { // Update M2M for next level
               Real_t trg_box[3]  = {-box_length, -box_length, -box_length};
-              std::vector<Real_t> equiv_coord = u_equiv_surf(MultipoleOrder(), trg_box, -level-1);
               std::vector<Real_t> check_coord = u_check_surf(MultipoleOrder(), trg_box, -level-1);
 
-              Matrix<Real_t> M_uc2ue0, M_uc2ue1;
-              { // Set M_uc2ue0, M_uc2ue1
-                Matrix<Real_t> M_e2c(n_surf*ker_dim[0], n_surf*ker_dim[1]);;
-                kernel->k_m2m->BuildMatrix(&equiv_coord[0], n_surf, &check_coord[0], n_surf, &(M_e2c[0][0]));
+              Matrix<Real_t> MM;
+              for (int k0 = 0; k0 < 2; k0++) {
+                Real_t src_box[3] = {trg_box[0] + k0*box_length,
+                                     -(Real_t)0.5*box_length,
+                                     -(Real_t)0.5*box_length};
 
-                Matrix<Real_t> U,S,V;
-                M_e2c.SVD(U,S,V);
-                Real_t eps=1, max_S=0;
-                while(eps*(Real_t)0.5+(Real_t)1>1) eps*=(Real_t)0.5;
-                for(size_t i=0;i<std::min(S.Dim(0),S.Dim(1));i++){
-                  if(sctl::fabs<Real_t>(S[i][i])>max_S) max_S=sctl::fabs<Real_t>(S[i][i]);
-                }
-                for(size_t i=0;i<S.Dim(0);i++) S[i][i]=(S[i][i]>eps*max_S*4?1/S[i][i]:0);
-                M_uc2ue0 = V.Transpose() * S;
-                M_uc2ue1 = U.Transpose();
+                Matrix<Real_t> M0(n_surf*ker_dim[0], n_surf*ker_dim[1]);
+                std::vector<Real_t> src_coord = u_equiv_surf(MultipoleOrder(), src_box, -level);
+                kernel->k_m2m->BuildMatrix(&src_coord[0], n_surf, &check_coord[0], n_surf, &(M0[0][0]));
+
+                if (MM.Dim(0) == 0) MM = M0;
+                else MM += M0;
               }
-
-              Real_t src_box0[3] = {-box_length, -(Real_t)0.5*box_length, -(Real_t)0.5*box_length};
-              Real_t src_box1[3] = {          0, -(Real_t)0.5*box_length, -(Real_t)0.5*box_length};
-              std::vector<Real_t> src_coord0 = u_equiv_surf(MultipoleOrder(), src_box0, -level);
-              std::vector<Real_t> src_coord1 = u_equiv_surf(MultipoleOrder(), src_box1, -level);
-
-              Matrix<Real_t> M0(n_surf*ker_dim[0], n_surf*ker_dim[1]);
-              Matrix<Real_t> M1(n_surf*ker_dim[0], n_surf*ker_dim[1]);
-              kernel->k_m2m->BuildMatrix(&src_coord0[0], n_surf, &check_coord[0], n_surf, &(M0[0][0]));
-              kernel->k_m2m->BuildMatrix(&src_coord1[0], n_surf, &check_coord[0], n_surf, &(M1[0][0]));
-              if (level == 0) M2M = (M0 + M1) * M_uc2ue0 * M_uc2ue1;
-              else M2M = M2M * (((M0 + M1) * M_uc2ue0) * M_uc2ue1);
+              if (level == 0) M2M = (MM * M_uc2ue0[level]) * M_uc2ue1[level];
+              else M2M = M2M * ((MM * M_uc2ue0[level]) * M_uc2ue1[level]);
             }
           }
           break;
