@@ -800,60 +800,62 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
           M.SetZero();
           break;
         }
+
+        Matrix<Real_t> M_equiv_zero_avg(n_surf*ker_dim[0],n_surf*ker_dim[0]);
+        Matrix<Real_t> M_check_zero_avg(n_surf*ker_dim[1],n_surf*ker_dim[1]);
+        { // Set average multipole charge to zero (projection for non-zero total source density)
+          Matrix<Real_t> M_s2c;
+          { // Compute M_s2c
+            int ker_dim[2]={kernel->k_m2m->ker_dim[0],kernel->k_m2m->ker_dim[1]};
+            M_s2c.ReInit(ker_dim[0],n_surf*ker_dim[1]);
+            std::vector<Real_t> uc_coord;
+            { // Coord of upward check surface
+              Real_t c[3]={0,0,0};
+              uc_coord=u_check_surf(MultipoleOrder(),c,0);
+            }
+            #pragma omp parallel for schedule(dynamic)
+            for(size_t i=0;i<n_surf;i++){
+              std::vector<Real_t> M_=cheb_integ<Real_t>(0, &uc_coord[i*3], 1.0, *kernel->k_m2m);
+              for(int j=0; j<ker_dim[0]; j++)
+                for(int k=0; k<ker_dim[1]; k++)
+                  M_s2c[j][i*ker_dim[1]+k] = M_[j+k*ker_dim[0]];
+            }
+          }
+
+          Matrix<Real_t>& M_c2e0 = Precomp(level, UC2UE0_Type, 0);
+          Matrix<Real_t>& M_c2e1 = Precomp(level, UC2UE1_Type, 0);
+          Matrix<Real_t> M_s2e=(M_s2c*M_c2e0)*M_c2e1;
+          for(size_t i=0;i<M_s2e.Dim(0);i++){ // Normalize each row to 1
+            Real_t s=0;
+            for(size_t j=0;j<M_s2e.Dim(1);j++) s+=M_s2e[i][j];
+            s=1/s;
+            for(size_t j=0;j<M_s2e.Dim(1);j++) M_s2e[i][j]*=s;
+          }
+
+          assert(M_equiv_zero_avg.Dim(0)==M_s2e.Dim(1));
+          assert(M_equiv_zero_avg.Dim(1)==M_s2e.Dim(1));
+          M_equiv_zero_avg.SetZero();
+          for(size_t i=0;i<n_surf*ker_dim[0];i++)
+            M_equiv_zero_avg[i][i]=1;
+          for(size_t i=0;i<n_surf;i++)
+            for(int k=0;k<ker_dim[0];k++)
+              for(size_t j=0;j<n_surf*ker_dim[0];j++)
+                M_equiv_zero_avg[i*ker_dim[0]+k][j]-=M_s2e[k][j];
+        }
+        { // Set average check potential to zero. (improves stability for large PVFMM_BC_LEVELS)
+          M_check_zero_avg.SetZero();
+          for(size_t i=0;i<n_surf*ker_dim[1];i++)
+            M_check_zero_avg[i][i]+=1;
+          for(size_t i=0;i<n_surf;i++)
+            for(size_t j=0;j<n_surf;j++)
+              for(int k=0;k<ker_dim[1];k++)
+                M_check_zero_avg[i*ker_dim[1]+k][j*ker_dim[1]+k]-=1/(Real_t)n_surf;
+        }
+
         if (mat_indx == BoundaryType::PXYZ) {
           Matrix<Real_t> M_m2m[PVFMM_BC_LEVELS+1];
           Matrix<Real_t> M_m2l[PVFMM_BC_LEVELS+1];
           Matrix<Real_t> M_l2l[PVFMM_BC_LEVELS+1];
-          Matrix<Real_t> M_equiv_zero_avg(n_surf*ker_dim[0],n_surf*ker_dim[0]);
-          Matrix<Real_t> M_check_zero_avg(n_surf*ker_dim[1],n_surf*ker_dim[1]);
-          { // Set average multipole charge to zero (projection for non-zero total source density)
-            Matrix<Real_t> M_s2c;
-            { // Compute M_s2c
-              int ker_dim[2]={kernel->k_m2m->ker_dim[0],kernel->k_m2m->ker_dim[1]};
-              M_s2c.ReInit(ker_dim[0],n_surf*ker_dim[1]);
-              std::vector<Real_t> uc_coord;
-              { // Coord of upward check surface
-                Real_t c[3]={0,0,0};
-                uc_coord=u_check_surf(MultipoleOrder(),c,0);
-              }
-              #pragma omp parallel for schedule(dynamic)
-              for(size_t i=0;i<n_surf;i++){
-                std::vector<Real_t> M_=cheb_integ<Real_t>(0, &uc_coord[i*3], 1.0, *kernel->k_m2m);
-                for(int j=0; j<ker_dim[0]; j++)
-                  for(int k=0; k<ker_dim[1]; k++)
-                    M_s2c[j][i*ker_dim[1]+k] = M_[j+k*ker_dim[0]];
-              }
-            }
-
-            Matrix<Real_t>& M_c2e0 = Precomp(level, UC2UE0_Type, 0);
-            Matrix<Real_t>& M_c2e1 = Precomp(level, UC2UE1_Type, 0);
-            Matrix<Real_t> M_s2e=(M_s2c*M_c2e0)*M_c2e1;
-            for(size_t i=0;i<M_s2e.Dim(0);i++){ // Normalize each row to 1
-              Real_t s=0;
-              for(size_t j=0;j<M_s2e.Dim(1);j++) s+=M_s2e[i][j];
-              s=1/s;
-              for(size_t j=0;j<M_s2e.Dim(1);j++) M_s2e[i][j]*=s;
-            }
-
-            assert(M_equiv_zero_avg.Dim(0)==M_s2e.Dim(1));
-            assert(M_equiv_zero_avg.Dim(1)==M_s2e.Dim(1));
-            M_equiv_zero_avg.SetZero();
-            for(size_t i=0;i<n_surf*ker_dim[0];i++)
-              M_equiv_zero_avg[i][i]=1;
-            for(size_t i=0;i<n_surf;i++)
-              for(int k=0;k<ker_dim[0];k++)
-                for(size_t j=0;j<n_surf*ker_dim[0];j++)
-                  M_equiv_zero_avg[i*ker_dim[0]+k][j]-=M_s2e[k][j];
-          }
-          { // Set average check potential to zero. (improves stability for large PVFMM_BC_LEVELS)
-            M_check_zero_avg.SetZero();
-            for(size_t i=0;i<n_surf*ker_dim[1];i++)
-              M_check_zero_avg[i][i]+=1;
-            for(size_t i=0;i<n_surf;i++)
-              for(size_t j=0;j<n_surf;j++)
-                for(int k=0;k<ker_dim[1];k++)
-                  M_check_zero_avg[i*ker_dim[1]+k][j*ker_dim[1]+k]-=1/(Real_t)n_surf;
-          }
 
           size_t mat_cnt_m2m=interac_list.ListCount(U2U_Type);
           for(int level=0; level>=-PVFMM_BC_LEVELS; level--){
@@ -1116,8 +1118,8 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
                 std::vector<Real_t> src_coord = u_equiv_surf(MultipoleOrder(), src_box, -level);
                 kernel->k_m2l->BuildMatrix(&src_coord[0], n_surf, &trg_coord[0], n_surf, &(M0[0][0]));
 
-                if (MM.Dim(0) == 0) MM = M0;
-                else MM += M0;
+                if (MM.Dim(0) == 0) MM = M0 * M_check_zero_avg;
+                else MM += M0 * M_check_zero_avg;
               }
             }
             if (level == 0) M = MM;
@@ -1125,7 +1127,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
 
             { // Update M2M for next level
               Real_t trg_box[3]  = {-box_length, -box_length, -box_length};
-              std::vector<Real_t> equiv_coord = u_equiv_surf(MultipoleOrder(), trg_box, -level-1);
+              //std::vector<Real_t> equiv_coord = u_equiv_surf(MultipoleOrder(), trg_box, -level-1);
               std::vector<Real_t> check_coord = u_check_surf(MultipoleOrder(), trg_box, -level-1);
 
               Matrix<Real_t> MM;
@@ -1145,6 +1147,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
               }
               if (level == 0) M2M = (MM * M_uc2ue0[level]) * M_uc2ue1[level];
               else M2M = M2M * ((MM * M_uc2ue0[level]) * M_uc2ue1[level]);
+              M2M = M_equiv_zero_avg * M2M * M_equiv_zero_avg;
             }
           }
           break;

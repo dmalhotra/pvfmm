@@ -147,7 +147,7 @@ void Kernel<T>::Initialize(bool verbose) const{
          dot22>max_val*eps ){
         T s=dot12/dot11;
         M_scal[0][i]=sctl::log<T>(s)/sctl::log<T>(2.0);
-        T err=sctl::sqrt<T>(((dot22/dot11)/(s*s)-1)*(T)0.5);
+        T err = sctl::fabs<T>(1 - dot12*dot12/dot11/dot22);
         if(err>eps_){
           scale_invar=false;
           M_scal[0][i]=0.0;
