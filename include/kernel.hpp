@@ -46,7 +46,7 @@ struct Kernel{
    * \param[out] out Elements of a matrix M of size (ker_dim0 x n*ker_dim1),
    * such that fxM gives the target potential.
    */
-  typedef void (*VolPoten)(const T* coord, int n, T* out);
+  using VolPoten = std::function<void(const T* coord, int n, T* out)>;
 
   /**
    * \brief Constructor.
@@ -105,7 +105,7 @@ template<typename T, void (*A)(T*, int, T*, int, T*, int, T*, mem::MemoryManager
 Kernel<T> BuildKernel(const char* name, int dim, std::pair<int,int> k_dim,
     const Kernel<T>* k_s2m=NULL, const Kernel<T>* k_s2l=NULL, const Kernel<T>* k_s2t=NULL,
     const Kernel<T>* k_m2m=NULL, const Kernel<T>* k_m2l=NULL, const Kernel<T>* k_m2t=NULL,
-    const Kernel<T>* k_l2l=NULL, const Kernel<T>* k_l2t=NULL, typename Kernel<T>::VolPoten vol_poten=NULL, bool scale_invar_=true){
+    const Kernel<T>* k_l2l=NULL, const Kernel<T>* k_l2t=NULL, typename Kernel<T>::VolPoten vol_poten={}, bool scale_invar_=true){
   size_t dev_ker_poten      ;
   size_t dev_dbl_layer_poten;
   #ifdef __INTEL_OFFLOAD
@@ -137,7 +137,7 @@ template<typename T, void (*A)(T*, int, T*, int, T*, int, T*, mem::MemoryManager
 Kernel<T> BuildKernel(const char* name, int dim, std::pair<int,int> k_dim,
     const Kernel<T>* k_s2m=NULL, const Kernel<T>* k_s2l=NULL, const Kernel<T>* k_s2t=NULL,
     const Kernel<T>* k_m2m=NULL, const Kernel<T>* k_m2l=NULL, const Kernel<T>* k_m2t=NULL,
-    const Kernel<T>* k_l2l=NULL, const Kernel<T>* k_l2t=NULL, typename Kernel<T>::VolPoten vol_poten=NULL, bool scale_invar_=true){
+    const Kernel<T>* k_l2l=NULL, const Kernel<T>* k_l2t=NULL, typename Kernel<T>::VolPoten vol_poten={}, bool scale_invar_=true){
   size_t dev_ker_poten      ;
   #ifdef __INTEL_OFFLOAD
   #pragma offload target(mic:0)

@@ -930,7 +930,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
           if(kernel->k_m2l->vol_poten){ // Correction for far-field of analytical volume potential
             Matrix<Real_t> M_far;
             { // Compute M_far
-              // kernel->k_m2l->vol_poten  is the analtical particular solution for uniform source density=1
+              // kernel->k_m2l->vol_poten  is the analytical particular solution for uniform source density=1
               // We already corrected far-field above with M_equiv_zero_avg, so we don't need the far field of the analytical solutions.
               // We take the analytical solution and subtract the near interaction (3x3x3 boxes) from it to get the far-field
               // Then, we add the far-field correction for the analytical solution to be subtracted later.
@@ -954,7 +954,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
                 M_far=M_analytic-M_near;
               }
             }
-            { // Add far-field corection to M
+            { // Add far-field correction to M
               for(size_t i=0;i<n_surf;i++)
                 for(int k=0;k<ker_dim[0];k++)
                   for(size_t j=0;j<n_surf*ker_dim[1];j++)
