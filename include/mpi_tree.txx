@@ -209,7 +209,7 @@ void MPI_Tree<TreeNode>::Initialize(typename Node_t::NodeData* init_data){
   assert(this->dim==PVFMM_COORD_DIM);
   Profile::Toc();
 
-  Profile::Tic("Points2Octee",Comm(),true,5);
+  Profile::Tic("Points2Octree",Comm(),true,5);
   Vector<MortonId> lin_oct;
   { //Get the linear tree.
     // Compute MortonId from pt_coord.

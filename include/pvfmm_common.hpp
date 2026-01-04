@@ -28,7 +28,7 @@
 
 #define PVFMM_MAX_DEPTH 30
 
-#define PVFMM_BC_LEVELS 30
+#define PVFMM_BC_LEVELS 45
 
 #define PVFMM_RAD0 1.05 //Radius of upward equivalent (downward check) surface.
 #define PVFMM_RAD1 2.95 //Radius of downward equivalent (upward check) surface.

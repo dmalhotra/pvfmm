@@ -1243,7 +1243,7 @@ struct laplace_dbl_poten_ {
 struct laplace_dbl_poten : public GenericKernel<laplace_dbl_poten_> {};
 
 
-// Laplace grdient kernel.
+// Laplace gradient kernel.
 struct laplace_grad_ {
   static const int FLOPS = 16;
   template <class Real> static Real ScaleFactor() {
