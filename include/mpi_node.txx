@@ -541,7 +541,7 @@ void MPI_Node<T>::VTU_Data(VTUData_t& vtu_data, std::vector<Node_t*>& nodes, int
         coord.push_back(c[0]+(i&1?1:0)*s);
         coord.push_back(c[1]+(i&2?1:0)*s);
         coord.push_back(c[2]+(i&4?1:0)*s);
-        for(int j=0;j<value_dof;j++) value.push_back(0.0);
+        for(int j=0;j<(int)value_dof;j++) value.push_back(0.0);
         connect.push_back(point_cnt+i);
         connect_cnt++;
       }

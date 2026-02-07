@@ -246,7 +246,7 @@ inline PtFMM_Tree<Real>* PtFMM_CreateTree(const std::vector<Real>&  src_coord, c
 
 template <class Real>
 inline PtFMM_Tree<Real>* PtFMM_CreateTree(const std::vector<Real>& src_coord, const std::vector<Real>&  src_value,
-                                          const std::vector<Real>& trg_coord, MPI_Comm& comm, int max_pts,
+                                          const std::vector<Real>& trg_coord, MPI_Comm comm, int max_pts,
                                           BoundaryType bndry, int init_depth){
   std::vector<Real> surf_coord;
   std::vector<Real> surf_value;
