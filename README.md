@@ -49,6 +49,11 @@
      the configure option '--with-precomp-dir=DIR' to set the default
      path for precomputed data.
 
+### Language bindings
+
+   Python bindings are available under `python/`.
+   Julia bindings are available under `julia/` (see `julia/README.md`).
+
 
 ### Acknowledgment
 
@@ -62,4 +67,3 @@
    The authors would also like to thank ORNL/OLCF and TACC for providing
    access to computing resources for the development, testing and
    benchmarking of this software.
-
