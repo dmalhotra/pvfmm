@@ -39,3 +39,7 @@ build/
 
 *.pyc
 pvfmm.egg-info/
+
+Manifest.toml
+.DS_Store
+.vscode

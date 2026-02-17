@@ -253,6 +253,8 @@ extern "C" {
  */
 void* PVFMMCreateContextD(double box_size, int n, int m, enum PVFMMKernel kernel, MPI_Comm comm);
 void* PVFMMCreateContextF(float box_size, int n, int m, enum PVFMMKernel kernel, MPI_Comm comm);
+void* PVFMMCreateContextDWorld(double box_size, int n, int m, enum PVFMMKernel kernel);
+void* PVFMMCreateContextFWorld(float box_size, int n, int m, enum PVFMMKernel kernel);
 
 /**
  * \brief Evaluate potential in single-precision.
@@ -301,4 +303,3 @@ void PVFMMDestroyContextF(void** ctx);
 #endif
 
 #endif //_PVFMM_H_
-

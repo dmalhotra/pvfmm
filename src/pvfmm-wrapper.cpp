@@ -12,6 +12,15 @@ extern "C" { // Volume FM
 #define PVFMM_FULL_PERIODIC pvfmm::Periodic
 #endif
 
+static void PVFMMEnsureMPIInitialized() {
+  int initialized = 0;
+  MPI_Initialized(&initialized);
+  if (!initialized) {
+    int provided = 0;
+    MPI_Init_thread(nullptr, nullptr, MPI_THREAD_FUNNELED, &provided);
+  }
+}
+
 void* PVFMMCreateVolumeFMMF(int m, int q, enum PVFMMKernel kernel, MPI_Comm comm) {
   const pvfmm::Kernel<float>* ker = nullptr;
   if (kernel == PVFMMLaplacePotential   ) ker = &pvfmm::LaplaceKernel   <float>::potential();
@@ -880,6 +889,11 @@ void* PVFMMCreateContextF(float box_size, int n, int m, enum PVFMMKernel kernel,
   return PVFMMCreateContext<float>(box_size, n, m, PVFMM_MAX_DEPTH, ker, comm);
 }
 
+void* PVFMMCreateContextFWorld(float box_size, int n, int m, enum PVFMMKernel kernel) {
+  PVFMMEnsureMPIInitialized();
+  return PVFMMCreateContextF(box_size, n, m, kernel, MPI_COMM_WORLD);
+}
+
 void PVFMMEvalF(const float* src_pos, const float* sl_den, const float* dl_den, long n_src, const float* trg_pos, float* trg_val, long n_trg, const void* ctx, int setup) {
   PVFMMEval<float>(src_pos, sl_den, dl_den, n_src, trg_pos, trg_val, n_trg, ctx, setup);
 }
@@ -898,6 +912,11 @@ void* PVFMMCreateContextD(double box_size, int n, int m, enum PVFMMKernel kernel
   if (kernel == PVFMMStokesVelocityGrad ) ker = &pvfmm::StokesKernel    <double>::vel_grad();
   if (kernel == PVFMMBiotSavartPotential) ker = &pvfmm::BiotSavartKernel<double>::potential();
   return PVFMMCreateContext<double>(box_size, n, m, PVFMM_MAX_DEPTH, ker, comm);
+}
+
+void* PVFMMCreateContextDWorld(double box_size, int n, int m, enum PVFMMKernel kernel) {
+  PVFMMEnsureMPIInitialized();
+  return PVFMMCreateContextD(box_size, n, m, kernel, MPI_COMM_WORLD);
 }
 
 void PVFMMEvalD(const double* src_pos, const double* sl_den, const double* dl_den, long n_src, const double* trg_pos, double* trg_val, long n_trg, const void* ctx, int setup) {
