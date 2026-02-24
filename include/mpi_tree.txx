@@ -577,10 +577,10 @@ void MPI_Tree<TreeNode>::RedistNodes(MortonId* loc_min) {
   char* recv_buff=mem::aligned_new<char>(rbuff_size);
   std::vector<char*> data_ptr(leaf_cnt);
   char* s_ptr=send_buff;
-  for(size_t i=0;i<leaf_cnt;i++){
-    *((MortonId*)s_ptr)=in  [i]       ; s_ptr+=sizeof(MortonId);
-    *((  size_t*)s_ptr)=data[i].length; s_ptr+=sizeof(size_t);
-    data_ptr[i]=s_ptr                 ; s_ptr+=data[i].length;
+  for(size_t i = 0; i < leaf_cnt; i++) {
+    std::memcpy(s_ptr, &in[i], sizeof(MortonId))       ; s_ptr += sizeof(MortonId);
+    std::memcpy(s_ptr, &data[i].length, sizeof(size_t)); s_ptr += sizeof(size_t);
+    data_ptr[i] = s_ptr                                ; s_ptr += data[i].length;
   }
   #pragma omp parallel for
   for(int p=0;p<omp_p;p++){
@@ -596,9 +596,9 @@ void MPI_Tree<TreeNode>::RedistNodes(MortonId* loc_min) {
   char* r_ptr=recv_buff;
   std::vector<PackedData> r_data(recv_cnt);
   for(size_t i=0;i<recv_cnt;i++){
-    out   [i]       =*(MortonId*)r_ptr; r_ptr+=sizeof(MortonId);
-    r_data[i].length=*(  size_t*)r_ptr; r_ptr+=sizeof(size_t);
-    r_data[i].data  =            r_ptr; r_ptr+=r_data[i].length;
+    std::memcpy(&out   [i],        r_ptr, sizeof(MortonId)); r_ptr+=sizeof(MortonId);
+    std::memcpy(&r_data[i].length, r_ptr, sizeof(size_t))  ; r_ptr+=sizeof(size_t);
+    r_data[i].data = r_ptr                                 ; r_ptr+=r_data[i].length;
   }
 
   //Initialize all new nodes.
@@ -1791,8 +1791,8 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
   { // Unpack received octants.
     std::vector<par::SortPair<MortonId,size_t> > mid_indx_pair;
     for(size_t i=0; i<recv_length;){
-      CommData& comm_data=*(CommData*)&recv_buff[i];
-      recv_data.push_back(&comm_data);
+      recv_data.push_back(&recv_buff[i]);
+      CommData comm_data = *(CommData*)&recv_buff[i];
       { // Add mid_indx_pair
         par::SortPair<MortonId,size_t> p;
         p.key=comm_data.mid;
@@ -1869,7 +1869,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
     for(size_t i=0;i<recv_data.size();i++){ // Unpack
       if(!recv_nodes[i]->IsGhost()) continue;
       assert(recv_nodes[i]->IsGhost());
-      CommData& comm_data=*(CommData*)recv_data[i];
+      CommData comm_data=*(CommData*)recv_data[i];
 
       PackedData p;
       p.data=((char*)recv_data[i])+sizeof(CommData);
@@ -1911,14 +1911,14 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
         if(shrd_data.size()==0 || shrd_data.back()!=&comm_data) this->memgr.free(&comm_data);
       }
       for(size_t i=0;i<recv_data.size();i++){
-        CommData& comm_data=*(CommData*)recv_data[i];
+        CommData comm_data=*(CommData*)recv_data[i];
         assert(comm_data.mid.GetDepth()>0);
         size_t d=comm_data.mid.GetDepth()-1;
         if(d<shrd_mid.size() && shrd_mid[d].getDFD()>=mins[rank])
         for(size_t j=0;j<comm_data.usr_cnt;j++){
           if(comm_data.usr_mid[j]==shrd_mid[d]){
             char* data_ptr=(char*)this->memgr.malloc(comm_data.pkd_length);
-            mem::copy<char>(data_ptr, (char*)&comm_data, comm_data.pkd_length);
+            mem::copy<char>(data_ptr, (char*)recv_data[i], comm_data.pkd_length);
             shrd_data.push_back(data_ptr);
             break;
           }
@@ -1951,7 +1951,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
           send_size.push_back(comm_data.pkd_length);
         }
         std::vector<size_t> send_disp(send_data.size(),0);
-        omp_par::scan(&send_size[0],&send_disp[0],send_data.size());
+        if(send_data.size()) omp_par::scan(&send_size[0],&send_disp[0],send_data.size());
         if(send_data.size()>0) send_length=send_size.back()+send_disp.back();
 
         // Resize send_buff.
@@ -1989,8 +1989,8 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
       { // Unpack received octants.
         std::vector<par::SortPair<MortonId,size_t> > mid_indx_pair;
         for(size_t i=0; i<(size_t)recv_length;){
-          CommData& comm_data=*(CommData*)&recv_buff[i];
-          recv_data.push_back(&comm_data);
+          recv_data.push_back(&recv_buff[i]);
+          CommData comm_data=*(CommData*)&recv_buff[i];
           { // Add mid_indx_pair
             par::SortPair<MortonId,size_t> p;
             p.key=comm_data.mid;
@@ -2024,7 +2024,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
 //          recv_nodes[i]=srch_node;
 //        }
         { // Find received octants in tree.
-          omp_par::merge_sort(&mid_indx_pair[0], &mid_indx_pair[0]+mid_indx_pair.size());
+          if (mid_indx_pair.size()) omp_par::merge_sort(&mid_indx_pair[0], &mid_indx_pair[0]+mid_indx_pair.size());
           std::vector<size_t> indx(omp_p+1);
           for(int i=0;i<=omp_p;i++){
             size_t j=(mid_indx_pair.size()*i)/omp_p;
@@ -2088,7 +2088,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
         for(size_t i=0;i<recv_data.size();i++){
           if(!recv_nodes[i]->IsGhost()) continue;
           assert(recv_nodes[i]->IsGhost());
-          CommData& comm_data=*(CommData*)recv_data[i];
+          CommData comm_data=*(CommData*)recv_data[i];
 
           PackedData p;
           p.data=((char*)recv_data[i])+sizeof(CommData);
@@ -2101,7 +2101,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
       send_pid=(rank+pid_shift<num_p?rank+pid_shift:rank);
       if(send_pid!=rank){ // Set shrd_data
         for(size_t i=0;i<recv_data.size();i++){
-          CommData& comm_data=*(CommData*)recv_data[i];
+          CommData comm_data=*(CommData*)recv_data[i];
 
           //{ // Skip if this node already exists.
           //  bool skip=false;
@@ -2122,7 +2122,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
           for(size_t j=0;j<comm_data.usr_cnt;j++){
             if(comm_data.usr_mid[j]==shrd_mid[d]){
               char* data_ptr=(char*)this->memgr.malloc(comm_data.pkd_length);
-              mem::copy<char>(data_ptr, (char*)&comm_data, comm_data.pkd_length);
+              mem::copy<char>(data_ptr, (char*)recv_data[i], comm_data.pkd_length);
               shrd_data.push_back(data_ptr);
               break;
             }
