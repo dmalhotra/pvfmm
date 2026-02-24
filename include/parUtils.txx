@@ -211,9 +211,9 @@ namespace par{
             char* sbuff_new=mem::aligned_new<char>(sdisp_new[new_np-1]+s_cnt_new[new_np-1]);
             #pragma omp parallel for
             for(int i=0;i<new_np;i++){
-              memcpy(&sbuff_new[sdisp_new[i]                      ],&sbuff   [sdisp_old[i]],s_cnt_old[i]);
-              memcpy(&sbuff_new[sdisp_new[i]+s_cnt_old[i]         ],&rbuff   [rdisp    [i]],r_cnt    [i]);
-              memcpy(&sbuff_new[sdisp_new[i]+s_cnt_old[i]+r_cnt[i]],&rbuffext[rdisp_ext[i]],r_cnt_ext[i]);
+              if (s_cnt_old[i]) memcpy(&sbuff_new[sdisp_new[i]                      ],&sbuff   [sdisp_old[i]],s_cnt_old[i]);
+              if (r_cnt[i])     memcpy(&sbuff_new[sdisp_new[i]+s_cnt_old[i]         ],&rbuff   [rdisp    [i]],r_cnt    [i]);
+              if (r_cnt_ext[i]) memcpy(&sbuff_new[sdisp_new[i]+s_cnt_old[i]+r_cnt[i]],&rbuffext[rdisp_ext[i]],r_cnt_ext[i]);
             }
 
             //Free memory.
@@ -471,15 +471,17 @@ namespace par{
           // Exchange data.
           rbuff    .Resize(    rsize/sizeof(T));
           rbuff_ext.Resize(ext_rsize/sizeof(T));
-          MPI_Sendrecv                  (sbuff,ssize,MPI_BYTE, partner,0,   &rbuff    [0],    rsize,MPI_BYTE, partner,   0,comm,&status);
-          if(extra_partner) MPI_Sendrecv( NULL,    0,MPI_BYTE,split_id,0,   &rbuff_ext[0],ext_rsize,MPI_BYTE,split_id,   0,comm,&status);
+          T *rbuff_ptr = rsize ? &rbuff[0] : nullptr;
+          T *rbuff_ext_ptr = ext_rsize ? &rbuff_ext[0] : nullptr;
+          MPI_Sendrecv                  (sbuff,ssize,MPI_BYTE, partner,0,   rbuff_ptr    ,    rsize,MPI_BYTE, partner,   0,comm,&status);
+          if(extra_partner) MPI_Sendrecv( NULL,    0,MPI_BYTE,split_id,0,   rbuff_ext_ptr,ext_rsize,MPI_BYTE,split_id,   0,comm,&status);
 
           int nbuff_size=lsize+rsize+ext_rsize;
           nbuff.Resize(nbuff_size/sizeof(T));
-          omp_par::merge<T*>((T*)lbuff, (T*)(lbuff+lsize), &rbuff[0], &rbuff[0]+(rsize/sizeof(T)), &nbuff[0], omp_p, std::less<T>());
+          omp_par::merge<T*>((T*)lbuff, (T*)(lbuff+lsize), rbuff_ptr, rbuff_ptr+(rsize/sizeof(T)), &nbuff[0], omp_p, std::less<T>());
           if(ext_rsize>0 && nbuff.Dim()>0){
             nbuff_ext.Resize(nbuff_size/sizeof(T));
-            omp_par::merge<T*>(&nbuff[0], &nbuff[0]+((lsize+rsize)/sizeof(T)), &rbuff_ext[0], &rbuff_ext[0]+(ext_rsize/sizeof(T)), &nbuff_ext[0], omp_p, std::less<T>());
+            omp_par::merge<T*>(&nbuff[0], &nbuff[0]+((lsize+rsize)/sizeof(T)), rbuff_ext_ptr, rbuff_ext_ptr+(ext_rsize/sizeof(T)), &nbuff_ext[0], omp_p, std::less<T>());
             nbuff.Swap(nbuff_ext);
             nbuff_ext.Resize(0);
           }

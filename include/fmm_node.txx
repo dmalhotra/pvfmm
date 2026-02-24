@@ -142,17 +142,19 @@ void FMM_Node<Node>::Unpack(PackedData p0, bool own_data){
   char* data_ptr=(char*)p0.data;
 
   // Check header
-  assert(((size_t*)data_ptr)[0]==p0.length);
+  size_t data_ptr_len;
+  std::memcpy(&data_ptr_len, data_ptr, sizeof(size_t));
+  assert(data_ptr_len==p0.length);
   data_ptr+=sizeof(size_t);
 
   PackedData p2;
-  p2.length=(((size_t*)data_ptr)[0]); data_ptr+=sizeof(size_t);
+  std::memcpy(&p2.length, data_ptr, sizeof(size_t)); data_ptr+=sizeof(size_t);
   p2.data=(void*)data_ptr; data_ptr+=p2.length;
   InitMultipole(p2,own_data);
 
   PackedData p1;
   p1.data=data_ptr;
-  p1.length=((size_t*)data_ptr)[0];
+  std::memcpy(&p1.length, data_ptr, sizeof(size_t));
   Node::Unpack(p1, own_data);
 }
 

@@ -300,46 +300,52 @@ PackedData MPI_Node<T>::Pack(bool ghost, void* buff_ptr, size_t offset){
   data_ptr+=offset;
 
   // Header
-  ((size_t*)data_ptr)[0]=p0.length;
+  std::memcpy(data_ptr, &p0.length, sizeof(size_t));
   data_ptr+=sizeof(size_t);
 
-  ((int*)data_ptr)[0]=this->Depth();
+  std::memcpy(data_ptr, &this->depth, sizeof(int));
   data_ptr+=sizeof(int);
 
-  ((long long*)data_ptr)[0]=this->NodeCost();
+  std::memcpy(data_ptr, &this->NodeCost(), sizeof(long long));
   data_ptr+=sizeof(long long);
 
-  ((MortonId*)data_ptr)[0]=this->GetMortonId();
+  MortonId mid = this->GetMortonId();
+  std::memcpy(data_ptr, &mid, sizeof(MortonId));
   data_ptr+=sizeof(MortonId);
 
   // Copy Vector data.
   for(size_t j=0;j<pt_coord.size();j++){
+    const size_t zero = 0;
     if(pt_coord[j]){
       Vector<Real_t>& vec=*pt_coord[j];
-      ((size_t*)data_ptr)[0]=vec.Dim(); data_ptr+=sizeof(size_t);
+      const size_t vec_dim = vec.Dim();
+      std::memcpy(data_ptr, &vec_dim, sizeof(size_t)); data_ptr+=sizeof(size_t);
       if(vec.Dim()>0 && data_ptr!=(char*)&vec[0])
         mem::copy<Real_t>((Real_t*)data_ptr, &vec[0], vec.Dim());
       data_ptr+=vec.Dim()*sizeof(Real_t);
     }else{
-      ((size_t*)data_ptr)[0]=0; data_ptr+=sizeof(size_t);
+      std::memcpy(data_ptr, &zero, sizeof(size_t)); data_ptr+=sizeof(size_t);
     }
     if(pt_value[j]){
       Vector<Real_t>& vec=*pt_value[j];
-      ((size_t*)data_ptr)[0]=vec.Dim(); data_ptr+=sizeof(size_t);
+      const size_t vec_dim = vec.Dim();
+      std::memcpy(data_ptr, &vec_dim, sizeof(size_t)); data_ptr+=sizeof(size_t);
       if(vec.Dim()>0 && data_ptr!=(char*)&vec[0])
         mem::copy<Real_t>((Real_t*)data_ptr, &vec[0], vec.Dim());
       data_ptr+=vec.Dim()*sizeof(Real_t);
     }else{
-      ((size_t*)data_ptr)[0]=0; data_ptr+=sizeof(size_t);
+      std::memcpy(data_ptr, &zero, sizeof(size_t)); data_ptr+=sizeof(size_t);
     }
     if(pt_scatter[j] && !ghost){
       Vector<size_t>& vec=*pt_scatter[j];
-      ((size_t*)data_ptr)[0]=vec.Dim(); data_ptr+=sizeof(size_t);
+      const size_t vec_dim = vec.Dim();
+      std::memcpy(data_ptr, &vec_dim, sizeof(size_t)); data_ptr+=sizeof(size_t);
       if(vec.Dim()>0 && data_ptr!=(char*)&vec[0])
         mem::copy<size_t>((size_t*)data_ptr, &vec[0], vec.Dim());
       data_ptr+=vec.Dim()*sizeof(size_t);
     }else{
-      ((size_t*)data_ptr)[0]=0; data_ptr+=sizeof(size_t);
+      std::memcpy(data_ptr, &zero, sizeof(size_t));
+      data_ptr += sizeof(size_t);
     }
   }
 
@@ -356,22 +362,27 @@ void MPI_Node<T>::Unpack(PackedData p0, bool own_data){
   char* data_ptr=(char*)p0.data;
 
   // Check header
-  assert(((size_t*)data_ptr)[0]==p0.length);
+  size_t data_ptr_len_check;
+  std::memcpy(&data_ptr_len_check, data_ptr, sizeof(size_t));
+  assert(data_ptr_len_check==p0.length);
   data_ptr+=sizeof(size_t);
 
-  this->depth=(((int*)data_ptr)[0]);
+  std::memcpy(&this->depth, data_ptr, sizeof(int));
   data_ptr+=sizeof(int);
 
-  this->NodeCost()=(((long long*)data_ptr)[0]);
+  std::memcpy(&this->NodeCost(), data_ptr, sizeof(long long));
   data_ptr+=sizeof(long long);
 
-  this->SetCoord(((MortonId*)data_ptr)[0]);
+  MortonId mid;
+  std::memcpy(&mid, data_ptr, sizeof(MortonId));
+  this->SetCoord(mid);
   data_ptr+=sizeof(MortonId);
 
   for(size_t j=0;j<pt_coord.size();j++){
     if(pt_coord[j]){
       Vector<Real_t>& vec=*pt_coord[j];
-      size_t vec_sz=(((size_t*)data_ptr)[0]); data_ptr+=sizeof(size_t);
+      size_t vec_sz;
+      std::memcpy(&vec_sz, data_ptr, sizeof(size_t)); data_ptr+=sizeof(size_t);
       if(own_data){
         vec=Vector<Real_t>(vec_sz,(Real_t*)data_ptr,false);
       }else{
@@ -384,7 +395,8 @@ void MPI_Node<T>::Unpack(PackedData p0, bool own_data){
     }
     if(pt_value[j]){
       Vector<Real_t>& vec=*pt_value[j];
-      size_t vec_sz=(((size_t*)data_ptr)[0]); data_ptr+=sizeof(size_t);
+      size_t vec_sz;
+      std::memcpy(&vec_sz, data_ptr, sizeof(size_t)); data_ptr+=sizeof(size_t);
       if(own_data){
         vec=Vector<Real_t>(vec_sz,(Real_t*)data_ptr,false);
       }else{
@@ -397,7 +409,8 @@ void MPI_Node<T>::Unpack(PackedData p0, bool own_data){
     }
     if(pt_scatter[j]){
       Vector<size_t>& vec=*pt_scatter[j];
-      size_t vec_sz=(((size_t*)data_ptr)[0]); data_ptr+=sizeof(size_t);
+      size_t vec_sz;
+      std::memcpy(&vec_sz, data_ptr, sizeof(size_t)); data_ptr+=sizeof(size_t);
       if(own_data){
         vec=Vector<size_t>(vec_sz,(size_t*)data_ptr,false);
       }else{
