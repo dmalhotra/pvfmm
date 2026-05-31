@@ -1,0 +1,4 @@
+var searchData=
+[
+  ['pvfmm_0',['PVFMM',['../index.html#autotoc_md2',1,'How to get PVFMM'],['../index.html#autotoc_md4',1,'Installing PVFMM'],['../index.html',1,'PVFMM &lt;a href=&quot;https://github.com/dmalhotra/pvfmm/actions/workflows/build.yml&quot; &gt;&lt;img src=&quot;https://github.com/dmalhotra/pvfmm/actions/workflows/build.yml/badge.svg&quot; alt=&quot;Build Status&quot;/&gt;&lt;/a&gt; &lt;a href=&quot;https://github.com/dmalhotra/pvfmm/tags&quot; &gt;&lt;img src=&quot;https://badgen.net/github/tag/dmalhotra/pvfmm&quot; alt=&quot;Stable Version&quot;/&gt;&lt;/a&gt; &lt;a href=&quot;https://github.com/dmalhotra/pvfmm/releases&quot; &gt;&lt;img src=&quot;https://img.shields.io/github/v/release/dmalhotra/pvfmm?color=%233D9970&quot; alt=&quot;Latest Release&quot;/&gt;&lt;/a&gt;'],['../index.html#autotoc_md5',1,'Using PVFMM'],['../index.html#autotoc_md1',1,'What is PVFMM?']]]
+];
