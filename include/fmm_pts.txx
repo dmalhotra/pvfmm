@@ -909,124 +909,6 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
           auto M_equiv_zero_avg = compute_equiv_zero_proj();
           auto M_check_zero_avg = compute_check_zero_proj();
 
-          const auto compute_corner_correction = [&kernel,&mult_order,&mat_indx,&n_surf,&M_dc2de0,&M_dc2de1,&M_equiv_zero_avg](Matrix<Real_t> Mbc) {
-            // Mbc: matrix from upward equivalent density to downward check potential (n_surf*ker_dim[0] x n_surf*ker_dim[1])
-            //
-            // Fit a polynomial a+bx+cy+dz+exy+fxz+gyz+hxyz to the potential
-            // values on the corners of a cube.  Evaluate that polynomial (with
-            // selected terms enabled) at points on the check surface.  This
-            // matrix must be subtracted from the BC matrix to correct for the
-            // corner values.
-
-            constexpr int n_corner = 8;
-            std::array<int,n_corner> enable_flag = {0,0,0,0,0,0,0,0}; // array indicating which correction terms to enable
-            if (mat_indx == BoundaryType::PXYZ) enable_flag = {1,1,1,1,0,0,0,0};
-            else if (mat_indx == BoundaryType::PXY) enable_flag = {1,1,1,0,0,0,0,0};
-            else if (mat_indx == BoundaryType::PX) enable_flag = {1,1,0,0,0,0,0,0};
-
-            std::vector<Real_t> corner_pts(n_corner*PVFMM_COORD_DIM);
-            for (int i = 0; i < n_corner; i++) {
-              corner_pts[i*PVFMM_COORD_DIM+0] = ( i   %2);
-              corner_pts[i*PVFMM_COORD_DIM+1] = ((i/2)%2);
-              corner_pts[i*PVFMM_COORD_DIM+2] = ((i/4)%2);
-            }
-
-            Real_t c[3]={0,0,0}; // Coord of downward equivalent surface
-            std::vector<Real_t> up_equiv_surf=u_equiv_surf(mult_order,c,0);
-            std::vector<Real_t> dn_equiv_surf=d_equiv_surf(mult_order,c,0);
-            std::vector<Real_t> dn_check_surf=d_check_surf(mult_order,c,0);
-            int ker_dim[2] = {kernel->k_m2l->ker_dim[0], kernel->k_m2l->ker_dim[1]};
-
-            Matrix<Real_t> corner_vals; // matrix with rows containing corner values
-            { // Evaluate potential at corner due to upward and dnward equivalent surface.
-              { // Potential from local expansion.
-                Matrix<Real_t> M_e2pt(n_surf * kernel->k_l2l->ker_dim[0], n_corner * kernel->k_l2l->ker_dim[1]);
-                kernel->k_l2l->BuildMatrix(&dn_equiv_surf[0], n_surf, &corner_pts[0], n_corner, &(M_e2pt[0][0]));
-                corner_vals = M_equiv_zero_avg * (Mbc * M_dc2de0) * (M_dc2de1 * M_e2pt);
-              }
-              for(size_t k = 0; k < n_corner; k++) { // Potential from colleagues of root.
-                for(int j0 = -1; j0 <= 1; j0++)
-                for(int j1 = -1; j1 <= 1; j1++)
-                for(int j2 = -1; j2 <= 1; j2++) {
-                  if (mat_indx == BoundaryType::PXY && (j2 != 0)) continue;
-                  if (mat_indx == BoundaryType::PX  && (j1 != 0 || j2 != 0)) continue;
-
-                  Real_t pt_coord[3] = {corner_pts[k*PVFMM_COORD_DIM+0]-j0,
-                                        corner_pts[k*PVFMM_COORD_DIM+1]-j1,
-                                        corner_pts[k*PVFMM_COORD_DIM+2]-j2};
-                  if (sctl::fabs(pt_coord[0]-0.5)<1 && sctl::fabs(pt_coord[1]-0.5)<1 && sctl::fabs(pt_coord[2]-0.5)<1) continue;
-
-                  Matrix<Real_t> M_e2pt(n_surf * ker_dim[0], ker_dim[1]);
-                  kernel->k_m2l->BuildMatrix(&up_equiv_surf[0], n_surf, &pt_coord[0], 1, &(M_e2pt[0][0]));
-                  M_e2pt = M_equiv_zero_avg * M_e2pt;
-                  for(size_t i = 0; i < M_e2pt.Dim(0); i++)
-                    for(size_t j = 0; j < M_e2pt.Dim(1); j++)
-                      corner_vals[i][k*ker_dim[1]+j] += M_e2pt[i][j];
-                }
-              }
-            }
-
-            constexpr int n_coeff = 8;
-            Matrix<Real_t> V(n_coeff, n_corner), V_pinv;
-            for (int i = 0; i < (int)n_corner; i++) { // Set Vandermonde matrix V
-              V[0][i] = 1;
-              V[1][i] = corner_pts[i*PVFMM_COORD_DIM+0];
-              V[2][i] = corner_pts[i*PVFMM_COORD_DIM+1];
-              V[3][i] = corner_pts[i*PVFMM_COORD_DIM+2];
-              V[4][i] = corner_pts[i*PVFMM_COORD_DIM+0] * corner_pts[i*PVFMM_COORD_DIM+1];
-              V[5][i] = corner_pts[i*PVFMM_COORD_DIM+0] * corner_pts[i*PVFMM_COORD_DIM+2];
-              V[6][i] = corner_pts[i*PVFMM_COORD_DIM+1] * corner_pts[i*PVFMM_COORD_DIM+2];
-              V[7][i] = corner_pts[i*PVFMM_COORD_DIM+0] * corner_pts[i*PVFMM_COORD_DIM+1] * corner_pts[i*PVFMM_COORD_DIM+2];
-            }
-            { // Compute V_pinv
-              sctl::Matrix<Real_t> V_(V.Dim(0), V.Dim(1));
-              for (int i = 0; i < (int)(V.Dim(0) * V.Dim(1)); i++) V_[0][i] = V[0][i];
-              auto V_pinv_ = V_.pinv(0);
-              V_pinv.ReInit(V_pinv_.Dim(0), V_pinv_.Dim(1), &V_pinv_[0][0]);
-            }
-
-            Matrix<Real_t> M_coeff; // (ker_dim[1] * n_surf * ker_dim[0], n_coeff)
-            { // Compute coefficients for correction terms
-              Matrix<Real_t> corner_vals_(n_surf * ker_dim[0] * n_corner, ker_dim[1], (Real_t*)&corner_vals[0][0]);
-              corner_vals_ = corner_vals_.Transpose();
-              M_coeff = Matrix<Real_t>(ker_dim[1] * n_surf * ker_dim[0], n_corner, corner_vals_.Begin(), false) * V_pinv;
-            }
-
-            if (0) { // for debugging: print max of absolute values of each coefficient
-              for (size_t j = 0; j < M_coeff.Dim(1); j++) {
-                Real_t max_val = 0;
-                for (size_t i = 0; i < M_coeff.Dim(0); i++) {
-                  max_val = std::max<Real_t>(max_val, fabs(M_coeff[i][j]));
-                }
-                std::cout << max_val << " ";
-              }
-              std::cout<<std::endl;
-            }
-
-            Matrix<Real_t> CorrecVecs(n_coeff, n_surf);
-            { // Map each coefficient to the correction vector
-              for (int i = 0; i < (int)n_surf; i++) {
-                CorrecVecs[0][i] = enable_flag[0] * 1;
-                CorrecVecs[1][i] = enable_flag[1] * dn_check_surf[i*PVFMM_COORD_DIM+0];
-                CorrecVecs[2][i] = enable_flag[2] * dn_check_surf[i*PVFMM_COORD_DIM+1];
-                CorrecVecs[3][i] = enable_flag[3] * dn_check_surf[i*PVFMM_COORD_DIM+2];
-                CorrecVecs[4][i] = enable_flag[4] * dn_check_surf[i*PVFMM_COORD_DIM+0]*dn_check_surf[i*PVFMM_COORD_DIM+1];
-                CorrecVecs[5][i] = enable_flag[5] * dn_check_surf[i*PVFMM_COORD_DIM+0]*dn_check_surf[i*PVFMM_COORD_DIM+2];
-                CorrecVecs[6][i] = enable_flag[6] * dn_check_surf[i*PVFMM_COORD_DIM+1]*dn_check_surf[i*PVFMM_COORD_DIM+2];
-                CorrecVecs[7][i] = enable_flag[7] * dn_check_surf[i*PVFMM_COORD_DIM+0]*dn_check_surf[i*PVFMM_COORD_DIM+1]*dn_check_surf[i*PVFMM_COORD_DIM+2];
-              }
-            }
-
-            Matrix<Real_t> M_corr; // (n_surf * ker_dim[0], n_surf * ker_dim[1])
-            { // Compute correction matrix
-              Matrix<Real_t> M0 = M_coeff * CorrecVecs;
-              Matrix<Real_t> M1(ker_dim[1], n_surf * ker_dim[0] * n_surf, M0.Begin());
-              M1 = M1.Transpose();
-              M_corr.ReInit(n_surf * ker_dim[0], n_surf * ker_dim[1], M1.Begin());
-            }
-            return M_corr;
-          };
-
           Matrix<Real_t> M2M, L2L, M2L;
           { // Set M2M
             int ker_dim[2] = {kernel->k_m2m->ker_dim[0], kernel->k_m2m->ker_dim[1]};
@@ -1113,7 +995,6 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
 
           Matrix<Real_t> M = M2L;
           for (int level = 1; level < PVFMM_BC_LEVELS; level++) M = M2L + M2M * (Pr * M * Pc) * L2L;
-          M -= compute_corner_correction(M);
 
           if (mat_indx == BoundaryType::PXYZ && kernel->k_m2l->vol_poten) { // Correction for far-field of analytical volume potential
             int ker_dim[2] = {kernel->k_m2l->ker_dim[0], kernel->k_m2l->ker_dim[1]};
@@ -1150,6 +1031,132 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
                     M[i*ker_dim[0]+k][j]+=M_far[k][j];
             }
           }
+
+          const auto compute_corner_correction = [&kernel,&mult_order,&mat_indx,&n_surf,&M_dc2de0,&M_dc2de1](Matrix<Real_t> Mbc) {
+            // Mbc: matrix from upward equivalent density to downward check potential (n_surf*ker_dim[0] x n_surf*ker_dim[1])
+            //
+            // Fit a polynomial a+bx+cy+dz+exy+fxz+gyz+hxyz to the potential
+            // values on the corners of a cube.  Evaluate that polynomial (with
+            // selected terms enabled) at points on the check surface.  This
+            // matrix must be subtracted from the BC matrix to correct for the
+            // corner values.
+
+            constexpr int n_corner = 8;
+            std::array<int,n_corner> enable_flag = {0,0,0,0,0,0,0,0}; // array indicating which correction terms to enable
+            if (mat_indx == BoundaryType::PXYZ) enable_flag = {1,1,1,1,0,0,0,0};
+            else if (mat_indx == BoundaryType::PXY) enable_flag = {1,1,1,0,0,0,0,0};
+            else if (mat_indx == BoundaryType::PX) enable_flag = {1,1,0,0,0,0,0,0};
+
+            std::vector<Real_t> corner_pts(n_corner*PVFMM_COORD_DIM);
+            for (int i = 0; i < n_corner; i++) {
+              corner_pts[i*PVFMM_COORD_DIM+0] = ( i   %2);
+              corner_pts[i*PVFMM_COORD_DIM+1] = ((i/2)%2);
+              corner_pts[i*PVFMM_COORD_DIM+2] = ((i/4)%2);
+            }
+
+            Real_t c[3]={0,0,0}; // Coord of downward equivalent surface
+            std::vector<Real_t> up_equiv_surf=u_equiv_surf(mult_order,c,0);
+            std::vector<Real_t> dn_equiv_surf=d_equiv_surf(mult_order,c,0);
+            std::vector<Real_t> dn_check_surf=d_check_surf(mult_order,c,0);
+            int ker_dim[2] = {kernel->k_m2l->ker_dim[0], kernel->k_m2l->ker_dim[1]};
+
+            Matrix<Real_t> corner_vals; // matrix with rows containing corner values
+            { // Evaluate potential at corner due to upward and dnward equivalent surface.
+              { // Potential from local expansion.
+                Matrix<Real_t> M_e2pt(n_surf * kernel->k_l2l->ker_dim[0], n_corner * kernel->k_l2l->ker_dim[1]);
+                kernel->k_l2l->BuildMatrix(&dn_equiv_surf[0], n_surf, &corner_pts[0], n_corner, &(M_e2pt[0][0]));
+                corner_vals = (Mbc * M_dc2de0) * (M_dc2de1 * M_e2pt);
+              }
+              for(size_t k = 0; k < n_corner; k++) { // Potential from colleagues of root.
+                for(int j0 = -1; j0 <= 1; j0++)
+                for(int j1 = -1; j1 <= 1; j1++)
+                for(int j2 = -1; j2 <= 1; j2++) {
+                  if (mat_indx == BoundaryType::PXY && (j2 != 0)) continue;
+                  if (mat_indx == BoundaryType::PX  && (j1 != 0 || j2 != 0)) continue;
+
+                  Real_t pt_coord[3] = {corner_pts[k*PVFMM_COORD_DIM+0]-j0,
+                                        corner_pts[k*PVFMM_COORD_DIM+1]-j1,
+                                        corner_pts[k*PVFMM_COORD_DIM+2]-j2};
+                  if (sctl::fabs(pt_coord[0]-0.5)<1 && sctl::fabs(pt_coord[1]-0.5)<1 && sctl::fabs(pt_coord[2]-0.5)<1) continue;
+
+                  Matrix<Real_t> M_e2pt(n_surf * ker_dim[0], ker_dim[1]);
+                  kernel->k_m2l->BuildMatrix(&up_equiv_surf[0], n_surf, &pt_coord[0], 1, &(M_e2pt[0][0]));
+                  for(size_t i = 0; i < M_e2pt.Dim(0); i++)
+                    for(size_t j = 0; j < M_e2pt.Dim(1); j++)
+                      corner_vals[i][k*ker_dim[1]+j] += M_e2pt[i][j];
+                }
+              }
+              if (mat_indx == BoundaryType::PXYZ && kernel->k_m2l->vol_poten) { // Subtract analytical vol_poten at corners
+                Matrix<Real_t> M_analytic(ker_dim[0], n_corner*ker_dim[1]); M_analytic.SetZero();
+                kernel->k_m2l->vol_poten(&corner_pts[0], n_corner, &M_analytic[0][0]);
+                for (size_t j = 0; j < n_surf; j++)
+                  for (int k = 0; k < ker_dim[0]; k++)
+                    for (size_t i = 0; i < corner_vals.Dim(1); i++)
+                      corner_vals[j*ker_dim[0]+k][i] -= M_analytic[k][i];
+              }
+            }
+
+            constexpr int n_coeff = 8;
+            Matrix<Real_t> V(n_coeff, n_corner), V_pinv;
+            for (int i = 0; i < (int)n_corner; i++) { // Set Vandermonde matrix V
+              V[0][i] = 1;
+              V[1][i] = corner_pts[i*PVFMM_COORD_DIM+0];
+              V[2][i] = corner_pts[i*PVFMM_COORD_DIM+1];
+              V[3][i] = corner_pts[i*PVFMM_COORD_DIM+2];
+              V[4][i] = corner_pts[i*PVFMM_COORD_DIM+0] * corner_pts[i*PVFMM_COORD_DIM+1];
+              V[5][i] = corner_pts[i*PVFMM_COORD_DIM+0] * corner_pts[i*PVFMM_COORD_DIM+2];
+              V[6][i] = corner_pts[i*PVFMM_COORD_DIM+1] * corner_pts[i*PVFMM_COORD_DIM+2];
+              V[7][i] = corner_pts[i*PVFMM_COORD_DIM+0] * corner_pts[i*PVFMM_COORD_DIM+1] * corner_pts[i*PVFMM_COORD_DIM+2];
+            }
+            { // Compute V_pinv
+              sctl::Matrix<Real_t> V_(V.Dim(0), V.Dim(1));
+              for (int i = 0; i < (int)(V.Dim(0) * V.Dim(1)); i++) V_[0][i] = V[0][i];
+              auto V_pinv_ = V_.pinv(0);
+              V_pinv.ReInit(V_pinv_.Dim(0), V_pinv_.Dim(1), &V_pinv_[0][0]);
+            }
+
+            Matrix<Real_t> M_coeff; // (ker_dim[1] * n_surf * ker_dim[0], n_coeff)
+            { // Compute coefficients for correction terms
+              Matrix<Real_t> corner_vals_(n_surf * ker_dim[0] * n_corner, ker_dim[1], (Real_t*)&corner_vals[0][0]);
+              corner_vals_ = corner_vals_.Transpose();
+              M_coeff = Matrix<Real_t>(ker_dim[1] * n_surf * ker_dim[0], n_corner, corner_vals_.Begin(), false) * V_pinv;
+            }
+
+            if (0) { // for debugging: print max of absolute values of each coefficient
+              for (size_t j = 0; j < M_coeff.Dim(1); j++) {
+                Real_t max_val = 0;
+                for (size_t i = 0; i < M_coeff.Dim(0); i++) {
+                  max_val = std::max<Real_t>(max_val, fabs(M_coeff[i][j]));
+                }
+                std::cout << max_val << " ";
+              }
+              std::cout<<std::endl;
+            }
+
+            Matrix<Real_t> CorrecVecs(n_coeff, n_surf);
+            { // Map each coefficient to the correction vector
+              for (int i = 0; i < (int)n_surf; i++) {
+                CorrecVecs[0][i] = enable_flag[0] * 1;
+                CorrecVecs[1][i] = enable_flag[1] * dn_check_surf[i*PVFMM_COORD_DIM+0];
+                CorrecVecs[2][i] = enable_flag[2] * dn_check_surf[i*PVFMM_COORD_DIM+1];
+                CorrecVecs[3][i] = enable_flag[3] * dn_check_surf[i*PVFMM_COORD_DIM+2];
+                CorrecVecs[4][i] = enable_flag[4] * dn_check_surf[i*PVFMM_COORD_DIM+0]*dn_check_surf[i*PVFMM_COORD_DIM+1];
+                CorrecVecs[5][i] = enable_flag[5] * dn_check_surf[i*PVFMM_COORD_DIM+0]*dn_check_surf[i*PVFMM_COORD_DIM+2];
+                CorrecVecs[6][i] = enable_flag[6] * dn_check_surf[i*PVFMM_COORD_DIM+1]*dn_check_surf[i*PVFMM_COORD_DIM+2];
+                CorrecVecs[7][i] = enable_flag[7] * dn_check_surf[i*PVFMM_COORD_DIM+0]*dn_check_surf[i*PVFMM_COORD_DIM+1]*dn_check_surf[i*PVFMM_COORD_DIM+2];
+              }
+            }
+
+            Matrix<Real_t> M_corr; // (n_surf * ker_dim[0], n_surf * ker_dim[1])
+            { // Compute correction matrix
+              Matrix<Real_t> M0 = M_coeff * CorrecVecs;
+              Matrix<Real_t> M1(ker_dim[1], n_surf * ker_dim[0] * n_surf, M0.Begin());
+              M1 = M1.Transpose();
+              M_corr.ReInit(n_surf * ker_dim[0], n_surf * ker_dim[1], M1.Begin());
+            }
+            return M_corr;
+          };
+          M -= compute_corner_correction(M);
 
           if (mult_upsample) { // downsample to mult_order0
             Matrix<Real_t> M2M, L2L;

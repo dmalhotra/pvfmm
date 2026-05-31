@@ -113,8 +113,6 @@ subdirheaders_HEADERS = \
 												SCTL/include/sctl/comm.hpp \
 												SCTL/include/sctl/comm.txx \
 												SCTL/include/sctl/common.hpp \
-												SCTL/include/sctl/complex.hpp \
-												SCTL/include/sctl/complex.txx \
 												SCTL/include/sctl/fft_wrapper.hpp \
 												SCTL/include/sctl/fft_wrapper.txx \
 												SCTL/include/sctl/fmm-wrapper.hpp \
