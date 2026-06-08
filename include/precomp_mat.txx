@@ -34,8 +34,8 @@ PrecompMat<T>::PrecompMat(bool scale_invar_): scale_invar(scale_invar_){
     perm[i].resize(Perm_Count);
   }
 
-  perm_r.resize((PVFMM_PRECOMP_MAX_DEPTH+PVFMM_PRECOMP_MIN_DEPTH)*Type_Count);
-  perm_c.resize((PVFMM_PRECOMP_MAX_DEPTH+PVFMM_PRECOMP_MIN_DEPTH)*Type_Count);
+  perm_r.resize((PVFMM_BC_LEVELS+1)*Type_Count);
+  perm_c.resize((PVFMM_BC_LEVELS+1)*Type_Count);
   for(size_t i=0;i<perm_r.size();i++){
     perm_r[i].resize(500);
     perm_c[i].resize(500);
@@ -56,26 +56,18 @@ Matrix<T>& PrecompMat<T>::Mat(int l, Mat_Type type, size_t indx){
 
 template <class T>
 Permutation<T>& PrecompMat<T>::Perm_R(int l, Mat_Type type, size_t indx){
-  int level=l+PVFMM_PRECOMP_MIN_DEPTH;
-  assert(level*Type_Count+type<(int)perm_r.size());
-  //#pragma omp critical(PVFMM_PrecompMAT)
-  if(indx>=perm_r[level*Type_Count+type].size()){
-    perm_r[level*Type_Count+type].resize(indx+1);
-    assert(false); //TODO: this is not thread safe.
-  }
-  return perm_r[level*Type_Count+type][indx];
+  assert(0 <= l && l <= PVFMM_BC_LEVELS);
+  assert(l*Type_Count+type < (int)perm_r.size());
+  assert(indx < perm_r[l*Type_Count+type].size());
+  return perm_r[l*Type_Count+type][indx];
 }
 
 template <class T>
 Permutation<T>& PrecompMat<T>::Perm_C(int l, Mat_Type type, size_t indx){
-  int level=l+PVFMM_PRECOMP_MIN_DEPTH;
-  assert(level*Type_Count+type<(int)perm_c.size());
-  //#pragma omp critical(PVFMM_PrecompMAT)
-  if(indx>=perm_c[level*Type_Count+type].size()){
-    perm_c[level*Type_Count+type].resize(indx+1);
-    assert(false); //TODO: this is not thread safe.
-  }
-  return perm_c[level*Type_Count+type][indx];
+  assert(0 <= l && l <= PVFMM_BC_LEVELS);
+  assert(l*Type_Count+type < (int)perm_c.size());
+  assert(indx < perm_c[l*Type_Count+type].size());
+  return perm_c[l*Type_Count+type][indx];
 }
 
 template <class T>
@@ -109,7 +101,7 @@ size_t PrecompMat<T>::CompactData(int level, Mat_Type type, Matrix<char>& comp_d
 
   int omp_p=omp_get_max_threads();
   size_t l0=(scale_invar?0:level);
-  size_t l1=(scale_invar?PVFMM_PRECOMP_MAX_DEPTH:level+1);
+  size_t l1=(scale_invar?(size_t)(PVFMM_BC_LEVELS+1):(size_t)(level+1));
 
   { // Determine memory size.
     indx_size+=sizeof(HeaderData); // HeaderData
@@ -342,8 +334,8 @@ void PrecompMat<T>::LoadFile(const char* fname, MPI_Comm comm){
     }
 
     // Resize perm_r, perm_c
-    perm_r.resize((PVFMM_PRECOMP_MAX_DEPTH+PVFMM_PRECOMP_MIN_DEPTH)*Type_Count);
-    perm_c.resize((PVFMM_PRECOMP_MAX_DEPTH+PVFMM_PRECOMP_MIN_DEPTH)*Type_Count);
+    perm_r.resize((PVFMM_BC_LEVELS+1)*Type_Count);
+    perm_c.resize((PVFMM_BC_LEVELS+1)*Type_Count);
     for(size_t i=0;i<perm_r.size();i++){
       perm_r[i].resize(500);
       perm_c[i].resize(500);

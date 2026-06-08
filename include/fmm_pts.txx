@@ -232,7 +232,9 @@ void FMM_Pts<FMMNode>::Initialize(int mult_order, const MPI_Comm& comm_, const K
   if(!rank) verbose=true;
   #endif
   #endif
+  Profile::Tic("InitKernel",&comm,false,4);
   if(kernel_) kernel_->Initialize(verbose);
+  Profile::Toc();
 
   multipole_order=mult_order;
   comm=comm_;
@@ -2696,9 +2698,8 @@ void FMM_Pts<FMMNode>::FFT_UpEquiv(size_t dof, size_t m, size_t ker_dim0, Vector
   size_t fftsize_in =2*n3_*chld_cnt*ker_dim0*dof;
   int omp_p=omp_get_max_threads();
 
-  //Load permutation map.
   size_t n=6*(m-1)*(m-1)+2;
-  static Vector<size_t> map;
+  Vector<size_t>& map = vlist_fft_map;
   { // Build map to reorder upward_equiv
     size_t n_old=map.Dim();
     if(n_old!=n){
@@ -2781,9 +2782,8 @@ void FMM_Pts<FMMNode>::FFT_Check2Equiv(size_t dof, size_t m, size_t ker_dim1, Ve
   size_t fftsize_out=2*n3_*dof*ker_dim1*chld_cnt;
   int omp_p=omp_get_max_threads();
 
-  //Load permutation map.
   size_t n=6*(m-1)*(m-1)+2;
-  static Vector<size_t> map;
+  Vector<size_t>& map = vlist_ifft_map;
   { // Build map to reorder dnward_check
     size_t n_old=map.Dim();
     if(n_old!=n){

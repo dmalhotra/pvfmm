@@ -294,21 +294,18 @@ Permutation<typename Node_t::Real_t>& InteracList<Node_t>::Perm_R(int l, Mat_Typ
 
   //Get the necessary permutations.
   if(row_perm.Dim()==0){
+    for(int i=0;i<C_Perm;i++){
+      if(mat->Perm(type, R_Perm + i).Dim()==0) return row_perm;
+    }
     std::vector<Perm_Type> p_list=PermutList(type, indx);
     for(int i=0;i<l;i++) p_list.push_back(Scaling);
-    Permutation<Real_t> row_perm_=Permutation<Real_t>(M0.Dim(0));
-    for(int i=0;i<C_Perm;i++){
-      Permutation<Real_t>& pr=mat->Perm(type, R_Perm + i);
-      if(!pr.Dim()) row_perm_=Permutation<Real_t>(0);
-    }
 
-    if(row_perm_.Dim()>0)
+    Permutation<Real_t> cumulative=Permutation<Real_t>(M0.Dim(0));
     for(int i=p_list.size()-1; i>=0; i--){
       assert(type!=V_Type);
-      Permutation<Real_t>& pr=mat->Perm(type, R_Perm + p_list[i]);
-      row_perm_=pr.Transpose()*row_perm_;
+      cumulative *= mat->Perm(type, R_Perm + p_list[i]);
     }
-    row_perm=row_perm_;
+    row_perm = cumulative.Transpose();
   }
   return row_perm;
 }
@@ -323,21 +320,18 @@ Permutation<typename Node_t::Real_t>& InteracList<Node_t>::Perm_C(int l, Mat_Typ
 
   //Get the necessary permutations.
   if(col_perm.Dim()==0){
+    for(int i=0;i<C_Perm;i++){
+      if(mat->Perm(type, C_Perm + i).Dim()==0) return col_perm;
+    }
     std::vector<Perm_Type> p_list=PermutList(type, indx);
     for(int i=0;i<l;i++) p_list.push_back(Scaling);
-    Permutation<Real_t> col_perm_=Permutation<Real_t>(M0.Dim(1));
-    for(int i=0;i<C_Perm;i++){
-      Permutation<Real_t>& pc=mat->Perm(type, C_Perm + i);
-      if(!pc.Dim()) col_perm_=Permutation<Real_t>(0);
-    }
 
-    if(col_perm_.Dim()>0)
+    Permutation<Real_t> cumulative=Permutation<Real_t>(M0.Dim(1));
     for(int i=p_list.size()-1; i>=0; i--){
       assert(type!=V_Type);
-      Permutation<Real_t>& pc=mat->Perm(type, C_Perm + p_list[i]);
-      col_perm_=col_perm_*pc;
+      cumulative *= mat->Perm(type, C_Perm + p_list[i]);
     }
-    col_perm=col_perm_;
+    col_perm = cumulative;
   }
   return col_perm;
 }

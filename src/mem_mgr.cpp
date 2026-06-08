@@ -14,6 +14,13 @@
 #include <cassert>
 #include <cmath>
 
+// Central memory-bookkeeping hookup. Every allocation produced by
+// pvfmm::mem::MemoryManager flows through `malloc`/`free` below, so this
+// is the one place we need to instrument to capture every pvfmm
+// allocation (instead of sprinkling Profile::Add_MEM calls across
+// matrix.txx, vector.txx, etc.).
+#include <profile.hpp>
+
 namespace pvfmm{
 namespace mem{
 
@@ -157,7 +164,9 @@ void* MemoryManager::malloc(const size_t n_elem, const size_t type_size) const{
     mem_head->check_sum=check_sum;
     #endif
   }
-  return (void*)(base+header_size);
+  void* ret = (void*)(base+header_size);
+  Profile::Add_MEM((long long)(n_elem * type_size));
+  return ret;
 }
 
 void MemoryManager::free(void* p) const{
@@ -167,6 +176,8 @@ void MemoryManager::free(void* p) const{
 
   char* base=(char*)((char*)p-header_size);
   MemHead* mem_head=(MemHead*)base;
+
+  Profile::Add_MEM(-(long long)(mem_head->n_elem * mem_head->type_size));
 
   if(base<&buff[0] || base>=&buff[buff_size]){ // Use system free
     char* p_=(char*)((uintptr_t)base-((uint16_t*)base)[-1]);

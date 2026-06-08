@@ -8,6 +8,7 @@
 
 #include <string>
 #include <cstdlib>
+#include <type_traits>
 
 #include <pvfmm_common.hpp>
 #include <mem_mgr.hpp>
@@ -38,6 +39,9 @@ struct Kernel{
    */
   typedef void (*Ker_t)(T* r_src, int src_cnt, T* v_src, int dof,
                         T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr);
+
+  typedef void (*BuildMat_t)(T* r_src, int src_cnt,
+                             T* r_trg, int trg_cnt, T* k_out);
 
   /**
    * \brief Volume potential solution for a constant density f
@@ -79,6 +83,7 @@ struct Kernel{
 
   Ker_t ker_poten;
   Ker_t dbl_layer_poten;
+  BuildMat_t build_matrix = nullptr;
 
   size_t dev_ker_poten;
   size_t dev_dbl_layer_poten;
@@ -100,66 +105,33 @@ struct Kernel{
   mutable VolPoten vol_poten;
 };
 
-template<typename T, void (*A)(T*, int, T*, int, T*, int, T*, mem::MemoryManager* mem_mgr),
-                     void (*B)(T*, int, T*, int, T*, int, T*, mem::MemoryManager* mem_mgr)>
+template<typename T, class K1, class K2 = void>
 Kernel<T> BuildKernel(const char* name, int dim, std::pair<int,int> k_dim,
     const Kernel<T>* k_s2m=NULL, const Kernel<T>* k_s2l=NULL, const Kernel<T>* k_s2t=NULL,
     const Kernel<T>* k_m2m=NULL, const Kernel<T>* k_m2l=NULL, const Kernel<T>* k_m2t=NULL,
     const Kernel<T>* k_l2l=NULL, const Kernel<T>* k_l2t=NULL, typename Kernel<T>::VolPoten vol_poten={}, bool scale_invar_=true){
-  size_t dev_ker_poten      ;
+  using Ker_t = typename Kernel<T>::Ker_t;
+  const Ker_t A = &K1::template Eval<T>;
+  Ker_t B = nullptr;
+  if constexpr (!std::is_same<K2, void>::value) B = &K2::template Eval<T>;
+
+  size_t dev_ker_poten;
   size_t dev_dbl_layer_poten;
   #ifdef __INTEL_OFFLOAD
   #pragma offload target(mic:0)
   #endif
   {
-    dev_ker_poten      =(size_t)((typename Kernel<T>::Ker_t)A);
-    dev_dbl_layer_poten=(size_t)((typename Kernel<T>::Ker_t)B);
+    dev_ker_poten      =(size_t)A;
+    dev_dbl_layer_poten=(size_t)B;
   }
 
-  Kernel<T> K(A, B, name, dim, k_dim,
-              dev_ker_poten, dev_dbl_layer_poten);
-
-  K.k_s2m=k_s2m;
-  K.k_s2l=k_s2l;
-  K.k_s2t=k_s2t;
-  K.k_m2m=k_m2m;
-  K.k_m2l=k_m2l;
-  K.k_m2t=k_m2t;
-  K.k_l2l=k_l2l;
-  K.k_l2t=k_l2t;
+  Kernel<T> K(A, B, name, dim, k_dim, dev_ker_poten, dev_dbl_layer_poten);
+  K.k_s2m=k_s2m; K.k_s2l=k_s2l; K.k_s2t=k_s2t;
+  K.k_m2m=k_m2m; K.k_m2l=k_m2l; K.k_m2t=k_m2t;
+  K.k_l2l=k_l2l; K.k_l2t=k_l2t;
   K.vol_poten=vol_poten;
   K.scale_invar=scale_invar_;
-
-  return K;
-}
-
-template<typename T, void (*A)(T*, int, T*, int, T*, int, T*, mem::MemoryManager* mem_mgr)>
-Kernel<T> BuildKernel(const char* name, int dim, std::pair<int,int> k_dim,
-    const Kernel<T>* k_s2m=NULL, const Kernel<T>* k_s2l=NULL, const Kernel<T>* k_s2t=NULL,
-    const Kernel<T>* k_m2m=NULL, const Kernel<T>* k_m2l=NULL, const Kernel<T>* k_m2t=NULL,
-    const Kernel<T>* k_l2l=NULL, const Kernel<T>* k_l2t=NULL, typename Kernel<T>::VolPoten vol_poten={}, bool scale_invar_=true){
-  size_t dev_ker_poten      ;
-  #ifdef __INTEL_OFFLOAD
-  #pragma offload target(mic:0)
-  #endif
-  {
-    dev_ker_poten      =(size_t)((typename Kernel<T>::Ker_t)A);
-  }
-
-  Kernel<T> K(A, NULL, name, dim, k_dim,
-              dev_ker_poten, (size_t)NULL);
-
-  K.k_s2m=k_s2m;
-  K.k_s2l=k_s2l;
-  K.k_s2t=k_s2t;
-  K.k_m2m=k_m2m;
-  K.k_m2l=k_m2l;
-  K.k_m2t=k_m2t;
-  K.k_l2l=k_l2l;
-  K.k_l2t=k_l2t;
-  K.vol_poten=vol_poten;
-  K.scale_invar=scale_invar_;
-
+  K.build_matrix = &K1::template BuildMatrix<T>;
   return K;
 }
 
@@ -175,6 +147,8 @@ template <class uKernel> class GenericKernel {
   public:
 
   template <class Real, int digits = -1> static void Eval(Real* r_src, int src_cnt, Real* v_src, int dof, Real* r_trg, int trg_cnt, Real* v_trg, mem::MemoryManager* mem_mgr);
+
+  template <class Real, int digits = -1> static void BuildMatrix(Real* r_src, int src_cnt, Real* r_trg, int trg_cnt, Real* k_out);
 };
 
 }//end namespace

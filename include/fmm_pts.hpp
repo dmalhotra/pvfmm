@@ -228,11 +228,13 @@ class FMM_Pts{
       Vector<Real_t>& input_data, Vector<Real_t>& output_data, Vector<Real_t>& buffer_);
   typename FFTW_t<Real_t>::plan vlist_fftplan;
   bool vlist_fft_flag;
+  Vector<size_t> vlist_fft_map;
 
   void FFT_Check2Equiv(size_t dof, size_t m, size_t ker_dim0, Vector<size_t>& ifft_vec, Vector<Real_t>& ifft_scl,
       Vector<Real_t>& input_data, Vector<Real_t>& output_data, Vector<Real_t>& buffer_);
   typename FFTW_t<Real_t>::plan vlist_ifftplan;
   bool vlist_ifft_flag;
+  Vector<size_t> vlist_ifft_map;
 
   mem::MemoryManager* mem_mgr;
   InteracList<FMMNode> interac_list;

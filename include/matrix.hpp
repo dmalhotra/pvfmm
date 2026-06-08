@@ -170,6 +170,8 @@ class Permutation{
 
   Permutation<T> Transpose();
 
+  Permutation<T>& operator*=(const Permutation<T>& P);
+
   Permutation<T> operator*(const Permutation<T>& P);
 
   Matrix<T> operator*(const Matrix<T>& M);

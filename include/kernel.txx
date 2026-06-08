@@ -104,13 +104,10 @@ void Kernel<T>::Initialize(bool verbose) const{
         trg_coord1[i*PVFMM_COORD_DIM+1]=y*1/scal;
         trg_coord1[i*PVFMM_COORD_DIM+2]=z*1/scal;
       }
-      for(size_t i=0;i<N;i++){
-        BuildMatrix(&src_coord [          0], 1,
-                    &trg_coord1[i*PVFMM_COORD_DIM], 1, &(M1[i][0]));
-        for(int j=0;j<ker_dim[0]*ker_dim[1];j++){
-          abs_sum+=sctl::fabs<T>(M1[i][j]);
-        }
-      }
+      BuildMatrix(&trg_coord1[0], (int)N, &src_coord[0], 1, &M1[0][0]);
+      for(size_t i=0;i<N;i++)
+        for(int jk=0;jk<ker_dim[0]*ker_dim[1];jk++)
+          abs_sum += sctl::fabs<T>(M1[i][jk]);
       if(abs_sum>sctl::sqrt<T>(eps) || scal<eps) break;
       scal=scal*(T)0.5;
     }
@@ -120,10 +117,7 @@ void Kernel<T>::Initialize(bool verbose) const{
     for(size_t i=0;i<N*PVFMM_COORD_DIM;i++){
       trg_coord2[i]=trg_coord1[i]*(T)0.5;
     }
-    for(size_t i=0;i<N;i++){
-      BuildMatrix(&src_coord [          0], 1,
-                  &trg_coord2[i*PVFMM_COORD_DIM], 1, &(M2[i][0]));
-    }
+    BuildMatrix(&trg_coord2[0], (int)N, &src_coord[0], 1, &M2[0][0]);
 
     T max_val=0;
     for(int i=0;i<ker_dim[0]*ker_dim[1];i++){
@@ -284,12 +278,8 @@ void Kernel<T>::Initialize(bool verbose) const{
       {
         Matrix<T> M1(N,ker_dim[0]*ker_dim[1]); M1.SetZero();
         Matrix<T> M2(N,ker_dim[0]*ker_dim[1]); M2.SetZero();
-        for(size_t i=0;i<N;i++){
-          BuildMatrix(&src_coord [          0], 1,
-                      &trg_coord1[i*PVFMM_COORD_DIM], 1, &(M1[i][0]));
-          BuildMatrix(&src_coord [          0], 1,
-                      &trg_coord2[i*PVFMM_COORD_DIM], 1, &(M2[i][0]));
-        }
+        BuildMatrix(&trg_coord1[0], (int)N, &src_coord[0], 1, &M1[0][0]);
+        BuildMatrix(&trg_coord2[0], (int)N, &src_coord[0], 1, &M2[0][0]);
 
         Matrix<T> dot11(ker_dim[0]*ker_dim[1],ker_dim[0]*ker_dim[1]);dot11.SetZero();
         Matrix<T> dot12(ker_dim[0]*ker_dim[1],ker_dim[0]*ker_dim[1]);dot12.SetZero();
@@ -948,6 +938,7 @@ void Kernel<T>::Initialize(bool verbose) const{
 template <class T>
 void Kernel<T>::BuildMatrix(T* r_src, int src_cnt,
                  T* r_trg, int trg_cnt, T* k_out) const{
+  if (build_matrix) return build_matrix(r_src, src_cnt, r_trg, trg_cnt, k_out);
   int dim=3; //Only supporting 3D
   ::memset(k_out, 0, src_cnt*ker_dim[0]*trg_cnt*ker_dim[1]*sizeof(T));
   #pragma omp parallel for
@@ -1063,6 +1054,84 @@ void generic_kernel(Real_t* r_src, int src_cnt, Real_t* v_src, int dof, Real_t* 
   if(buff){ // Free memory: buff
     mem::aligned_delete<Real_t>(buff);
   }
+}
+
+template <class uKernel> template <class Real, int digits>
+void GenericKernel<uKernel>::BuildMatrix(Real* r_src, int src_cnt, Real* r_trg, int trg_cnt, Real* k_out) {
+  static constexpr int digits_ = (digits==-1 ? (int)(sctl::TypeTraits<Real>::SigBits*0.3010299957) : digits);
+  static constexpr int VecLen = sctl::DefaultVecLen<Real>();
+  using RealVec = sctl::Vec<Real, VecLen>;
+  const Real scale = uKernel::template ScaleFactor<Real>();
+  // Pre-scale into sv_pack: K(scale·e_j) = scale·K(e_j) (kernel is linear).
+  RealVec sv_pack[KDIM0][KDIM0];
+  for (int j = 0; j < KDIM0; ++j)
+    for (int k = 0; k < KDIM0; ++k) sv_pack[j][k] = RealVec(k == j ? scale : Real(0));
+
+  // AoS coord array → DIM × n_pad SoA scratch, last lane replicated.
+  auto build_soa = [](Real* out, const Real* in, int n, int n_pad) {
+    for (int i = 0; i < n;     ++i) for (int d = 0; d < DIM; ++d) out[(std::size_t)d*n_pad + i] = in[i*DIM + d];
+    for (int i = n; i < n_pad; ++i) for (int d = 0; d < DIM; ++d) out[(std::size_t)d*n_pad + i] = in[(n-1)*DIM + d];
+  };
+
+  if (trg_cnt >= VecLen) {  // vectorize over targets
+    const int trg_pad = ((trg_cnt + VecLen - 1) / VecLen) * VecLen;
+    sctl::ScratchBuf<Real> soa_storage((sctl::Long)DIM * trg_pad);
+    Real* soa = &soa_storage[0];
+    build_soa(soa, r_trg, trg_cnt, trg_pad);
+
+    #pragma omp parallel for
+    for (int i = 0; i < src_cnt; ++i) {
+      const RealVec sx = RealVec::Load1(&r_src[i*DIM + 0]);
+      const RealVec sy = RealVec::Load1(&r_src[i*DIM + 1]);
+      const RealVec sz = RealVec::Load1(&r_src[i*DIM + 2]);
+      for (int t = 0; t < trg_cnt; t += VecLen) {
+        const RealVec r[DIM] = {
+          RealVec::LoadAligned(&soa[0*trg_pad + t]) - sx,
+          RealVec::LoadAligned(&soa[1*trg_pad + t]) - sy,
+          RealVec::LoadAligned(&soa[2*trg_pad + t]) - sz };
+        const int n_real = std::min(VecLen, trg_cnt - t);
+        for (int j = 0; j < KDIM0; ++j) {
+          RealVec tv[KDIM1];
+          for (int k = 0; k < KDIM1; ++k) tv[k] = RealVec::Zero();
+          uKernel::template uKerEval<RealVec, digits_>(tv, r, sv_pack[j], nullptr);
+          alignas(sizeof(RealVec)) Real tv_tmp[KDIM1][VecLen];
+          for (int k = 0; k < KDIM1; ++k) tv[k].StoreAligned(&tv_tmp[k][0]);
+          Real* out = k_out + ((std::size_t)i*KDIM0 + j) * trg_cnt * KDIM1;
+          for (int lane = 0; lane < n_real; ++lane)
+            for (int k = 0; k < KDIM1; ++k) out[(std::size_t)(t+lane)*KDIM1 + k] = tv_tmp[k][lane];
+        }
+      }
+    }
+  } else {                  // vectorize over sources
+    const int src_pad = ((src_cnt + VecLen - 1) / VecLen) * VecLen;
+    sctl::ScratchBuf<Real> soa_storage((sctl::Long)DIM * src_pad);
+    Real* soa = &soa_storage[0];
+    build_soa(soa, r_src, src_cnt, src_pad);
+
+    #pragma omp parallel for collapse(2)
+    for (int t = 0; t < trg_cnt; ++t) {
+      for (int i_blk = 0; i_blk < src_pad; i_blk += VecLen) {
+        const RealVec r[DIM] = {
+          RealVec(r_trg[t*DIM+0]) - RealVec::LoadAligned(&soa[0*src_pad + i_blk]),
+          RealVec(r_trg[t*DIM+1]) - RealVec::LoadAligned(&soa[1*src_pad + i_blk]),
+          RealVec(r_trg[t*DIM+2]) - RealVec::LoadAligned(&soa[2*src_pad + i_blk]) };
+        const int n_real = std::min(VecLen, src_cnt - i_blk);
+        for (int j = 0; j < KDIM0; ++j) {
+          RealVec tv[KDIM1];
+          for (int k = 0; k < KDIM1; ++k) tv[k] = RealVec::Zero();
+          uKernel::template uKerEval<RealVec, digits_>(tv, r, sv_pack[j], nullptr);
+          alignas(sizeof(RealVec)) Real tv_tmp[KDIM1][VecLen];
+          for (int k = 0; k < KDIM1; ++k) tv[k].StoreAligned(&tv_tmp[k][0]);
+          for (int lane = 0; lane < n_real; ++lane)
+            for (int k = 0; k < KDIM1; ++k)
+              k_out[((std::size_t)(i_blk+lane)*KDIM0 + j)*trg_cnt*KDIM1 + (std::size_t)t*KDIM1 + k] = tv_tmp[k][lane];
+        }
+      }
+    }
+  }
+  #ifndef __MIC__
+  Profile::Add_FLOP((long long)src_cnt * (long long)KDIM0 * (long long)trg_cnt * uKernel::FLOPS);
+  #endif
 }
 
 template <class uKernel> template <class Real, int digits> void GenericKernel<uKernel>::Eval(Real* r_src, int src_cnt, Real* v_src, int dof, Real* r_trg, int trg_cnt, Real* v_trg, mem::MemoryManager* mem_mgr) {
@@ -1262,13 +1331,14 @@ struct laplace_grad : public GenericKernel<laplace_grad_> {};
 
 
 template<class T> const Kernel<T>& LaplaceKernel<T>::potential(){
-  static Kernel<T> potn_ker=BuildKernel<T, laplace_poten::Eval<T>, laplace_dbl_poten::Eval<T> >("laplace"     , 3, std::pair<int,int>(1,1),
+  static Kernel<T> potn_ker=BuildKernel<T, laplace_poten, laplace_dbl_poten>(
+      "laplace", 3, std::pair<int,int>(1,1),
       NULL,NULL,NULL, NULL,NULL,NULL, NULL,NULL, &laplace_vol_poten<T>);
   return potn_ker;
 }
 template<class T> const Kernel<T>& LaplaceKernel<T>::gradient(){
-  static Kernel<T> potn_ker=BuildKernel<T, laplace_poten::Eval<T>, laplace_dbl_poten::Eval<T> >("laplace"     , 3, std::pair<int,int>(1,1));
-  static Kernel<T> grad_ker=BuildKernel<T, laplace_grad ::Eval<T>                             >("laplace_grad", 3, std::pair<int,int>(1,3),
+  static Kernel<T> potn_ker=BuildKernel<T, laplace_poten, laplace_dbl_poten>("laplace", 3, std::pair<int,int>(1,1));
+  static Kernel<T> grad_ker=BuildKernel<T, laplace_grad>("laplace_grad", 3, std::pair<int,int>(1,3),
       &potn_ker, &potn_ker, NULL, &potn_ker, &potn_ker, NULL, &potn_ker, NULL);
   return grad_ker;
 }
@@ -1397,20 +1467,20 @@ void stokes_vol_poten(const Real_t* coord, int n, Real_t* out){
 
 
 template<class T> const Kernel<T>& StokesKernel<T>::velocity(){
-  static Kernel<T> ker=BuildKernel<T, stokes_vel::Eval<T>, stokes_sym_dip::Eval<T>>("stokes_vel"   , 3, std::pair<int,int>(3,3),
+  static Kernel<T> ker=BuildKernel<T, stokes_vel, stokes_sym_dip>("stokes_vel"   , 3, std::pair<int,int>(3,3),
       NULL,NULL,NULL, NULL,NULL,NULL, NULL,NULL, &stokes_vol_poten<T>);
   return ker;
 }
 template<class T> const Kernel<T>& StokesKernel<T>::pressure(){
-  static Kernel<T> ker = BuildKernel<T, stokes_press::Eval<T>>("stokes_press", 3, std::pair<int, int>(3, 1));
+  static Kernel<T> ker = BuildKernel<T, stokes_press>("stokes_press", 3, std::pair<int, int>(3, 1));
   return ker;
 }
 template<class T> const Kernel<T>& StokesKernel<T>::stress(){
-  static Kernel<T> ker = BuildKernel<T, stokes_stress::Eval<T>>("stokes_stress", 3, std::pair<int, int>(3, 9));
+  static Kernel<T> ker = BuildKernel<T, stokes_stress>("stokes_stress", 3, std::pair<int, int>(3, 9));
   return ker;
 }
 template<class T> const Kernel<T>& StokesKernel<T>::vel_grad(){
-    static Kernel<T> ker = BuildKernel<T, stokes_grad::Eval<T>>("stokes_grad", 3, std::pair<int, int>(3, 9));
+    static Kernel<T> ker = BuildKernel<T, stokes_grad>("stokes_grad", 3, std::pair<int, int>(3, 9));
   return ker;
 }
 
@@ -1436,7 +1506,7 @@ struct biot_savart : public GenericKernel<biot_savart_> {};
 
 
 template<class T> const Kernel<T>& BiotSavartKernel<T>::potential(){
-  static Kernel<T> ker = BuildKernel<T, biot_savart::Eval<T>>("biot_savart", 3, std::pair<int, int>(3, 3));
+  static Kernel<T> ker = BuildKernel<T, biot_savart>("biot_savart", 3, std::pair<int, int>(3, 3));
   return ker;
 }
 
@@ -1465,7 +1535,7 @@ struct helmholtz_poten : public GenericKernel<helmholtz_poten_> {};
 
 
 template<class T> const Kernel<T>& HelmholtzKernel<T>::potential(){
-  static Kernel<T> ker = BuildKernel<T, helmholtz_poten::Eval<T>>("helmholtz", 3, std::pair<int, int>(2, 2));
+  static Kernel<T> ker = BuildKernel<T, helmholtz_poten>("helmholtz", 3, std::pair<int, int>(2, 2));
   return ker;
 }
 

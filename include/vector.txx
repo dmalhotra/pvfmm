@@ -43,9 +43,6 @@ Vector<T>::Vector(size_t dim_, T* data_, bool own_data_){
   if(own_data){
     if(dim>0){
       data_ptr=mem::aligned_new<T>(capacity);
-#if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
-      Profile::Add_MEM(capacity*sizeof(T));
-#endif
       if(data_!=NULL) mem::copy<T>(data_ptr,data_,dim);
     }else data_ptr=NULL;
   }else
@@ -60,9 +57,6 @@ Vector<T>::Vector(const Vector<T>& V){
   own_data=true;
   if(dim>0){
     data_ptr=mem::aligned_new<T>(capacity);
-#if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
-    Profile::Add_MEM(capacity*sizeof(T));
-#endif
     mem::copy<T>(data_ptr,V.data_ptr,dim);
   }else
     data_ptr=NULL;
@@ -76,9 +70,6 @@ Vector<T>::Vector(const std::vector<T>& V){
   own_data=true;
   if(dim>0){
     data_ptr=mem::aligned_new<T>(capacity);
-#if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
-    Profile::Add_MEM(capacity*sizeof(T));
-#endif
     mem::copy<T>(data_ptr,&V[0],dim);
   }else
     data_ptr=NULL;
@@ -91,9 +82,6 @@ Vector<T>::~Vector(){
   if(own_data){
     if(data_ptr!=NULL){
       mem::aligned_delete(data_ptr);
-#if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
-      Profile::Add_MEM(-capacity*sizeof(T));
-#endif
     }
   }
   data_ptr=NULL;

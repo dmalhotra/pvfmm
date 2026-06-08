@@ -52,9 +52,6 @@ Matrix<T>::Matrix(size_t dim1, size_t dim2, T* data_, bool own_data_){
   if(own_data){
     if(dim[0]*dim[1]>0){
       data_ptr=mem::aligned_new<T>(dim[0]*dim[1]);
-#if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
-      Profile::Add_MEM(dim[0]*dim[1]*sizeof(T));
-#endif
       if(data_!=NULL) mem::copy<T>(data_ptr,data_,dim[0]*dim[1]);
     }else data_ptr=NULL;
   }else
@@ -69,9 +66,6 @@ Matrix<T>::Matrix(const Matrix<T>& M){
   own_data=true;
   if(dim[0]*dim[1]>0){
     data_ptr=mem::aligned_new<T>(dim[0]*dim[1]);
-#if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
-    Profile::Add_MEM(dim[0]*dim[1]*sizeof(T));
-#endif
     mem::copy<T>(data_ptr,M.data_ptr,dim[0]*dim[1]);
   }else
     data_ptr=NULL;
@@ -84,9 +78,6 @@ Matrix<T>::~Matrix(){
   if(own_data){
     if(data_ptr!=NULL){
       mem::aligned_delete(data_ptr);
-#if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
-      Profile::Add_MEM(-dim[0]*dim[1]*sizeof(T));
-#endif
     }
   }
   data_ptr=NULL;
@@ -121,9 +112,6 @@ template <class T>
 void Matrix<T>::ReInit(size_t dim1, size_t dim2, T* data_, bool own_data_){
   if(own_data_ && own_data && dim[0]*dim[1]>=dim1*dim2){
     if(dim[0]*dim[1]!=dim1*dim2) FreeDevice(false);
-#if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
-    Profile::Add_MEM((dim1*dim2-dim[0]*dim[1])*sizeof(T));
-#endif
     dim[0]=dim1; dim[1]=dim2;
     if(data_) mem::copy<T>(data_ptr,data_,dim[0]*dim[1]);
   }else{
@@ -574,6 +562,20 @@ Permutation<T> Permutation<T>::Transpose(){
     scal_r[perm[i]]=scal[i];
   }
   return P_r;
+}
+
+template <class T>
+Permutation<T>& Permutation<T>::operator*=(const Permutation<T>& P){
+  size_t size=perm.Dim();
+  assert(P.Dim()==size);
+  sctl::ScratchBuf<PVFMM_PERM_INT_T> old_perm((sctl::Long)size);
+  sctl::ScratchBuf<T> old_scal((sctl::Long)size);
+  for(size_t i=0;i<size;i++){ old_perm[i]=perm[i]; old_scal[i]=scal[i]; }
+  for(size_t i=0;i<size;i++){
+    perm[i]=old_perm[P.perm[i]];
+    scal[i]=old_scal[P.perm[i]]*P.scal[i];
+  }
+  return *this;
 }
 
 template <class T>
