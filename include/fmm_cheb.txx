@@ -499,6 +499,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
   MPI_Comm_rank(this->comm, &myrank);
   MPI_Comm_size(this->comm,&np);
 
+  #ifdef PVFMM_VERBOSE
   size_t progress=0, class_count=0;
   { // Determine precomputation progress.
     size_t mat_cnt=this->interac_list.ListCount((Mat_Type)type);
@@ -510,6 +511,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
       }
     }
   }
+  #endif
 
   //Compute the matrix.
   Matrix<Real_t> M;
