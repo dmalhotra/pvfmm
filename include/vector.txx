@@ -31,20 +31,20 @@ Vector<T>::Vector(){
   dim=0;
   capacity=0;
   own_data=true;
-  data_ptr=NULL;
+  data_ptr=sctl::NullIterator<T>();
   dev.dev_ptr=(uintptr_t)NULL;
 }
 
 template <class T>
-Vector<T>::Vector(size_t dim_, T* data_, bool own_data_){
+Vector<T>::Vector(size_t dim_, sctl::Iterator<T> data_, bool own_data_){
   dim=dim_;
   capacity=dim;
   own_data=own_data_;
   if(own_data){
     if(dim>0){
       data_ptr=mem::aligned_new<T>(capacity);
-      if(data_!=NULL) mem::copy<T>(data_ptr,data_,dim);
-    }else data_ptr=NULL;
+      if(data_!=sctl::NullIterator<T>()) mem::copy<T>(data_ptr,(sctl::ConstIterator<T>)data_,dim);
+    }else data_ptr=sctl::NullIterator<T>();
   }else
     data_ptr=data_;
   dev.dev_ptr=(uintptr_t)NULL;
@@ -57,9 +57,9 @@ Vector<T>::Vector(const Vector<T>& V){
   own_data=true;
   if(dim>0){
     data_ptr=mem::aligned_new<T>(capacity);
-    mem::copy<T>(data_ptr,V.data_ptr,dim);
+    mem::copy<T>(data_ptr,(sctl::ConstIterator<T>)V.data_ptr,dim);
   }else
-    data_ptr=NULL;
+    data_ptr=sctl::NullIterator<T>();
   dev.dev_ptr=(uintptr_t)NULL;
 }
 
@@ -70,9 +70,9 @@ Vector<T>::Vector(const std::vector<T>& V){
   own_data=true;
   if(dim>0){
     data_ptr=mem::aligned_new<T>(capacity);
-    mem::copy<T>(data_ptr,&V[0],dim);
+    mem::copy<T>(data_ptr,sctl::Ptr2ConstItr<T>(&V[0],dim),dim);
   }else
-    data_ptr=NULL;
+    data_ptr=sctl::NullIterator<T>();
   dev.dev_ptr=(uintptr_t)NULL;
 }
 
@@ -80,11 +80,11 @@ template <class T>
 Vector<T>::~Vector(){
   FreeDevice(false);
   if(own_data){
-    if(data_ptr!=NULL){
-      mem::aligned_delete(data_ptr);
+    if(data_ptr!=sctl::NullIterator<T>()){
+      mem::aligned_delete<T>(data_ptr);
     }
   }
-  data_ptr=NULL;
+  data_ptr=sctl::NullIterator<T>();
   capacity=0;
   dim=0;
 }
@@ -93,7 +93,7 @@ template <class T>
 void Vector<T>::Swap(Vector<T>& v1){
   size_t dim_=dim;
   size_t capacity_=capacity;
-  T* data_ptr_=data_ptr;
+  sctl::Iterator<T> data_ptr_=data_ptr;
   bool own_data_=own_data;
   Device dev_=dev;
 
@@ -111,11 +111,11 @@ void Vector<T>::Swap(Vector<T>& v1){
 }
 
 template <class T>
-void Vector<T>::ReInit(size_t dim_, T* data_, bool own_data_){
+void Vector<T>::ReInit(size_t dim_, sctl::Iterator<T> data_, bool own_data_){
   if(own_data_ && own_data && dim_<=capacity){
     if(dim!=dim_) FreeDevice(false);
     dim=dim_;
-    if(data_) mem::copy<T>(data_ptr,data_,dim);
+    if(data_!=sctl::NullIterator<T>()) mem::copy<T>(data_ptr,(sctl::ConstIterator<T>)data_,dim);
   }else{
     Vector<T> tmp(dim_,data_,own_data_);
     this->Swap(tmp);
@@ -125,9 +125,9 @@ void Vector<T>::ReInit(size_t dim_, T* data_, bool own_data_){
 template <class T>
 typename Vector<T>::Device& Vector<T>::AllocDevice(bool copy){
   if(dev.dev_ptr==(uintptr_t)NULL && dim>0) // Allocate data on device.
-    dev.dev_ptr=DeviceWrapper::alloc_device((char*)data_ptr, dim*sizeof(T));
+    dev.dev_ptr=DeviceWrapper::alloc_device((char*)&data_ptr[0], dim*sizeof(T));
   if(dev.dev_ptr!=(uintptr_t)NULL && copy) // Copy data to device
-    DeviceWrapper::host2device((char*)data_ptr,(char*)data_ptr,dev.dev_ptr,dim*sizeof(T));
+    DeviceWrapper::host2device((char*)&data_ptr[0],(char*)&data_ptr[0],dev.dev_ptr,dim*sizeof(T));
 
   dev.dim=dim;
   return dev;
@@ -136,14 +136,14 @@ typename Vector<T>::Device& Vector<T>::AllocDevice(bool copy){
 template <class T>
 void Vector<T>::Device2Host(){
   if(dev.dev_ptr==(uintptr_t)NULL) return;
-  DeviceWrapper::device2host((char*)data_ptr,dev.dev_ptr,(char*)data_ptr,dim*sizeof(T));
+  DeviceWrapper::device2host((char*)&data_ptr[0],dev.dev_ptr,(char*)&data_ptr[0],dim*sizeof(T));
 }
 
 template <class T>
 void Vector<T>::FreeDevice(bool copy){
   if(dev.dev_ptr==(uintptr_t)NULL) return;
-  if(copy) DeviceWrapper::device2host((char*)data_ptr,dev.dev_ptr,(char*)data_ptr,dim*sizeof(T));
-  DeviceWrapper::free_device((char*)data_ptr,dev.dev_ptr);
+  if(copy) DeviceWrapper::device2host((char*)&data_ptr[0],dev.dev_ptr,(char*)&data_ptr[0],dim*sizeof(T));
+  DeviceWrapper::free_device((char*)&data_ptr[0],dev.dev_ptr);
   dev.dev_ptr=(uintptr_t)NULL;
   dev.dim=0;
 }
@@ -157,7 +157,7 @@ void Vector<T>::Write(const char* fname){
   }
   int dim_=dim;
   fwrite(&dim_,sizeof(int),2,f1);
-  fwrite(data_ptr,sizeof(T),dim,f1);
+  if(dim>0) fwrite(&data_ptr[0],sizeof(T),dim,f1);
   fclose(f1);
 }
 
@@ -181,17 +181,17 @@ void Vector<T>::Resize(size_t dim_){
 template <class T>
 void Vector<T>::SetZero(){
   if(dim>0)
-    ::memset(data_ptr,0,dim*sizeof(T));
+    ::memset(&data_ptr[0],0,dim*sizeof(T));
 }
 
 template <class ValueType>
-ValueType* Vector<ValueType>::Begin(){
+sctl::Iterator<ValueType> Vector<ValueType>::Begin(){
   return data_ptr;
 }
 
 template <class ValueType>
-const ValueType* Vector<ValueType>::Begin() const{
-  return data_ptr;
+sctl::ConstIterator<ValueType> Vector<ValueType>::Begin() const{
+  return (sctl::ConstIterator<ValueType>)data_ptr;
 }
 
 template <class T>
@@ -200,7 +200,7 @@ Vector<T>& Vector<T>::operator=(const Vector<T>& V){
     if(dim!=V.dim) FreeDevice(false);
     if(capacity<V.dim) ReInit(V.dim);
     dim=V.dim;
-    mem::copy<T>(data_ptr,V.data_ptr,dim);
+    if(dim) mem::copy<T>(data_ptr,(sctl::ConstIterator<T>)V.data_ptr,dim);
   }
   return *this;
 }
@@ -211,7 +211,7 @@ Vector<T>& Vector<T>::operator=(const std::vector<T>& V){
     if(dim!=V.size()) FreeDevice(false);
     if(capacity<V.size()) ReInit(V.size());
     dim=V.size();
-    if (dim) mem::copy<T>(data_ptr,&V[0],dim);
+    if (dim) mem::copy<T>(data_ptr,sctl::Ptr2ConstItr<T>(&V[0],dim),dim);
   }
   return *this;
 }

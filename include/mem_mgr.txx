@@ -70,8 +70,8 @@ void MemoryManager::delete_node(size_t indx) const{
 
 
 template <class T>
-T* aligned_new(size_t n_elem, const MemoryManager* mem_mgr){
-  if(!n_elem) return NULL;
+sctl::Iterator<T> aligned_new(size_t n_elem, const MemoryManager* mem_mgr){
+  if(!n_elem) return sctl::NullIterator<T>();
 
   static MemoryManager def_mem_mgr(0);
   if(!mem_mgr) mem_mgr=&def_mem_mgr;
@@ -95,45 +95,46 @@ T* aligned_new(size_t n_elem, const MemoryManager* mem_mgr){
   }
 
   assert(A);
-  return A;
+  return sctl::Ptr2Itr<T>(A, (sctl::Long)n_elem);
 }
 
 template <class T>
-void aligned_delete(T* A, const MemoryManager* mem_mgr){
-  if (!A) return;
+void aligned_delete(sctl::Iterator<T> A, const MemoryManager* mem_mgr){
+  T* raw = (A == sctl::NullIterator<T>() ? nullptr : &A[0]);
+  if (!raw) return;
 
   if(!TypeTraits<T>::IsPOD()){ // Call destructors
     //printf("%s\n", __PRETTY_FUNCTION__);
-    MemoryManager::MemHead* mem_head=MemoryManager::GetMemHead(A);
+    MemoryManager::MemHead* mem_head=MemoryManager::GetMemHead(raw);
     size_t type_size=mem_head->type_size;
     size_t n_elem=mem_head->n_elem;
     for(size_t i=0;i<n_elem;i++){
-      ((T*)(((char*)A)+i*type_size))->~T();
+      ((T*)(((char*)raw)+i*type_size))->~T();
     }
   }else{
     #ifndef PVFMM_NDEBUG
-    MemoryManager::MemHead* mem_head=MemoryManager::GetMemHead(A);
+    MemoryManager::MemHead* mem_head=MemoryManager::GetMemHead(raw);
     size_t type_size=mem_head->type_size;
     size_t n_elem=mem_head->n_elem;
     size_t size=n_elem*type_size;
     #pragma omp parallel for
     for(size_t i=0;i<size;i++){
-      ((char*)A)[i]=0;
+      ((char*)raw)[i]=0;
     }
     #endif
   }
 
   static MemoryManager def_mem_mgr(0);
   if(!mem_mgr) mem_mgr=&def_mem_mgr;
-  mem_mgr->free(A);
+  mem_mgr->free(raw);
 }
 
-template <class ValueType> ValueType* copy(ValueType* destination, const ValueType* source, size_t num){
+template <class ValueType> sctl::Iterator<ValueType> copy(sctl::Iterator<ValueType> destination, sctl::ConstIterator<ValueType> source, size_t num){
   if (destination != source && num) {
     if (TypeTraits<ValueType>::IsPOD()) {
-      memcpy((void*)destination, (const void*)source, num * sizeof(ValueType));
+      memcpy((void*)&destination[0], (const void*)&source[0], num * sizeof(ValueType));
     } else {
-      for (size_t i = 0; i < num; i++) destination[i] = source[i];
+      for (sctl::Long i = 0; i < (sctl::Long)num; i++) destination[i] = source[i];
     }
   }
   return destination;

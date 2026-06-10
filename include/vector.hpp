@@ -10,6 +10,7 @@
 #include <stdint.h>
 
 #include <pvfmm_common.hpp>
+#include <sctl.hpp>
 
 #ifndef _PVFMM_VECTOR_HPP_
 #define _PVFMM_VECTOR_HPP_
@@ -46,7 +47,7 @@ class Vector{
 
   Vector();
 
-  Vector(size_t dim_, T* data_=NULL, bool own_data_=true);
+  Vector(size_t dim_, sctl::Iterator<T> data_=sctl::NullIterator<T>(), bool own_data_=true);
 
   Vector(const Vector& V);
 
@@ -56,7 +57,7 @@ class Vector{
 
   void Swap(Vector<T>& v1);
 
-  void ReInit(size_t dim_, T* data_=NULL, bool own_data_=true);
+  void ReInit(size_t dim_, sctl::Iterator<T> data_=sctl::NullIterator<T>(), bool own_data_=true);
 
   Device& AllocDevice(bool copy);
 
@@ -74,9 +75,9 @@ class Vector{
 
   void SetZero();
 
-  T* Begin();
+  sctl::Iterator<T> Begin();
 
-  const T* Begin() const;
+  sctl::ConstIterator<T> Begin() const;
 
   Vector& operator=(const Vector& V);
 
@@ -90,7 +91,7 @@ class Vector{
 
   size_t dim;
   size_t capacity;
-  T* data_ptr;
+  sctl::Iterator<T> data_ptr;
   bool own_data;
   Device dev;
 };

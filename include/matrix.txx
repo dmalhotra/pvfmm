@@ -40,20 +40,20 @@ Matrix<T>::Matrix(){
   dim[0]=0;
   dim[1]=0;
   own_data=true;
-  data_ptr=NULL;
+  data_ptr=sctl::NullIterator<T>();
   dev.dev_ptr=(uintptr_t)NULL;
 }
 
 template <class T>
-Matrix<T>::Matrix(size_t dim1, size_t dim2, T* data_, bool own_data_){
+Matrix<T>::Matrix(size_t dim1, size_t dim2, sctl::Iterator<T> data_, bool own_data_){
   dim[0]=dim1;
   dim[1]=dim2;
   own_data=own_data_;
   if(own_data){
     if(dim[0]*dim[1]>0){
       data_ptr=mem::aligned_new<T>(dim[0]*dim[1]);
-      if(data_!=NULL) mem::copy<T>(data_ptr,data_,dim[0]*dim[1]);
-    }else data_ptr=NULL;
+      if(data_!=sctl::NullIterator<T>()) mem::copy<T>(data_ptr,(sctl::ConstIterator<T>)data_,dim[0]*dim[1]);
+    }else data_ptr=sctl::NullIterator<T>();
   }else
     data_ptr=data_;
   dev.dev_ptr=(uintptr_t)NULL;
@@ -66,9 +66,9 @@ Matrix<T>::Matrix(const Matrix<T>& M){
   own_data=true;
   if(dim[0]*dim[1]>0){
     data_ptr=mem::aligned_new<T>(dim[0]*dim[1]);
-    mem::copy<T>(data_ptr,M.data_ptr,dim[0]*dim[1]);
+    mem::copy<T>(data_ptr,(sctl::ConstIterator<T>)M.data_ptr,dim[0]*dim[1]);
   }else
-    data_ptr=NULL;
+    data_ptr=sctl::NullIterator<T>();
   dev.dev_ptr=(uintptr_t)NULL;
 }
 
@@ -76,11 +76,11 @@ template <class T>
 Matrix<T>::~Matrix(){
   FreeDevice(false);
   if(own_data){
-    if(data_ptr!=NULL){
-      mem::aligned_delete(data_ptr);
+    if(data_ptr!=sctl::NullIterator<T>()){
+      mem::aligned_delete<T>(data_ptr);
     }
   }
-  data_ptr=NULL;
+  data_ptr=sctl::NullIterator<T>();
   dim[0]=0;
   dim[1]=0;
 }
@@ -88,7 +88,7 @@ Matrix<T>::~Matrix(){
 template <class T>
 void Matrix<T>::Swap(Matrix<T>& M){
   size_t dim_[2]={dim[0],dim[1]};
-  T* data_ptr_=data_ptr;
+  sctl::Iterator<T> data_ptr_=data_ptr;
   bool own_data_=own_data;
   Device dev_=dev;
   Vector<char> dev_sig_=dev_sig;
@@ -109,11 +109,11 @@ void Matrix<T>::Swap(Matrix<T>& M){
 }
 
 template <class T>
-void Matrix<T>::ReInit(size_t dim1, size_t dim2, T* data_, bool own_data_){
+void Matrix<T>::ReInit(size_t dim1, size_t dim2, sctl::Iterator<T> data_, bool own_data_){
   if(own_data_ && own_data && dim[0]*dim[1]>=dim1*dim2){
     if(dim[0]*dim[1]!=dim1*dim2) FreeDevice(false);
     dim[0]=dim1; dim[1]=dim2;
-    if(data_) mem::copy<T>(data_ptr,data_,dim[0]*dim[1]);
+    if(data_!=sctl::NullIterator<T>()) mem::copy<T>(data_ptr,(sctl::ConstIterator<T>)data_,dim[0]*dim[1]);
   }else{
     Matrix<T> tmp(dim1,dim2,data_,own_data_);
     this->Swap(tmp);
@@ -124,9 +124,9 @@ template <class T>
 typename Matrix<T>::Device& Matrix<T>::AllocDevice(bool copy){
   size_t len=dim[0]*dim[1];
   if(dev.dev_ptr==(uintptr_t)NULL && len>0) // Allocate data on device.
-    dev.dev_ptr=DeviceWrapper::alloc_device((char*)data_ptr, len*sizeof(T));
+    dev.dev_ptr=DeviceWrapper::alloc_device((char*)&data_ptr[0], len*sizeof(T));
   if(dev.dev_ptr!=(uintptr_t)NULL && copy) // Copy data to device
-    dev.lock_idx=DeviceWrapper::host2device((char*)data_ptr,(char*)data_ptr,dev.dev_ptr,len*sizeof(T));
+    dev.lock_idx=DeviceWrapper::host2device((char*)&data_ptr[0],(char*)&data_ptr[0],dev.dev_ptr,len*sizeof(T));
 
   dev.dim[0]=dim[0];
   dev.dim[1]=dim[1];
@@ -134,8 +134,8 @@ typename Matrix<T>::Device& Matrix<T>::AllocDevice(bool copy){
 }
 
 template <class T>
-void Matrix<T>::Device2Host(T* host_ptr){
-  dev.lock_idx=DeviceWrapper::device2host((char*)data_ptr,dev.dev_ptr,(char*)(host_ptr==NULL?data_ptr:host_ptr),dim[0]*dim[1]*sizeof(T));
+void Matrix<T>::Device2Host(sctl::Iterator<T> host_ptr){
+  dev.lock_idx=DeviceWrapper::device2host((char*)&data_ptr[0],dev.dev_ptr,(char*)(host_ptr==sctl::NullIterator<T>()?&data_ptr[0]:&host_ptr[0]),dim[0]*dim[1]*sizeof(T));
 //#if defined(PVFMM_HAVE_CUDA)
 //  cudaEventCreate(&lock);
 //  cudaEventRecord(lock, 0);
@@ -155,8 +155,8 @@ void Matrix<T>::Device2HostWait(){
 template <class T>
 void Matrix<T>::FreeDevice(bool copy){
   if(dev.dev_ptr==(uintptr_t)NULL) return;
-  if(copy) DeviceWrapper::device2host((char*)data_ptr,dev.dev_ptr,(char*)data_ptr,dim[0]*dim[1]*sizeof(T));
-  DeviceWrapper::free_device((char*)data_ptr, dev.dev_ptr);
+  if(copy) DeviceWrapper::device2host((char*)&data_ptr[0],dev.dev_ptr,(char*)&data_ptr[0],dim[0]*dim[1]*sizeof(T));
+  DeviceWrapper::free_device((char*)&data_ptr[0], dev.dev_ptr);
   dev.dev_ptr=(uintptr_t)NULL;
   dev.dim[0]=0;
   dev.dim[1]=0;
@@ -171,7 +171,7 @@ void Matrix<T>::Write(const char* fname){
   }
   uint32_t dim_[2]={(uint32_t)dim[0],(uint32_t)dim[1]};
   fwrite(dim_,sizeof(uint32_t),2,f1);
-  fwrite(data_ptr,sizeof(T),dim[0]*dim[1],f1);
+  if(dim[0]*dim[1]>0) fwrite(&data_ptr[0],sizeof(T),dim[0]*dim[1],f1);
   fclose(f1);
 }
 
@@ -187,8 +187,10 @@ void Matrix<T>::Read(const char* fname){
   assert(readlen==2);
 
   ReInit(dim_[0],dim_[1]);
-  readlen=fread(data_ptr,sizeof(T),dim[0]*dim[1],f1);
-  assert(readlen==dim[0]*dim[1]);
+  if(dim[0]*dim[1]>0){
+    readlen=fread(&data_ptr[0],sizeof(T),dim[0]*dim[1],f1);
+    assert(readlen==dim[0]*dim[1]);
+  }
   fclose(f1);
 }
 
@@ -205,17 +207,17 @@ void Matrix<T>::Resize(size_t i, size_t j){
 template <class T>
 void Matrix<T>::SetZero(){
   if(dim[0] && dim[1])
-    ::memset(data_ptr,0,dim[0]*dim[1]*sizeof(T));
+    ::memset(&data_ptr[0],0,dim[0]*dim[1]*sizeof(T));
 }
 
 template <class ValueType>
-ValueType* Matrix<ValueType>::Begin(){
+sctl::Iterator<ValueType> Matrix<ValueType>::Begin(){
   return data_ptr;
 }
 
 template <class ValueType>
-const ValueType* Matrix<ValueType>::Begin() const{
-  return data_ptr;
+sctl::ConstIterator<ValueType> Matrix<ValueType>::Begin() const{
+  return (sctl::ConstIterator<ValueType>)data_ptr;
 }
 
 template <class T>
@@ -226,7 +228,7 @@ Matrix<T>& Matrix<T>::operator=(const Matrix<T>& M){
       ReInit(M.dim[0],M.dim[1]);
     }
     dim[0]=M.dim[0]; dim[1]=M.dim[1];
-    mem::copy<T>(data_ptr,M.data_ptr,dim[0]*dim[1]);
+    if(dim[0]*dim[1]>0) mem::copy<T>(data_ptr,(sctl::ConstIterator<T>)M.data_ptr,dim[0]*dim[1]);
   }
   return *this;
 }
@@ -282,15 +284,15 @@ inline const T& Matrix<T>::operator()(size_t i,size_t j) const{
 }
 
 template <class T>
-inline T* Matrix<T>::operator[](size_t i){
+inline sctl::Iterator<T> Matrix<T>::operator[](size_t i){
   assert(i<dim[0]);
-  return &data_ptr[i*dim[1]];
+  return data_ptr + i*dim[1];
 }
 
 template <class T>
-inline const T* Matrix<T>::operator[](size_t i) const{
+inline sctl::ConstIterator<T> Matrix<T>::operator[](size_t i) const{
   assert(i<dim[0]);
-  return &data_ptr[i*dim[1]];
+  return (sctl::ConstIterator<T>)data_ptr + i*dim[1];
 }
 
 template <class T>

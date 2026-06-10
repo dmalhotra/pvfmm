@@ -42,7 +42,7 @@ class Matrix{
     Device& operator=(Matrix& M){
       dim[0]=M.Dim(0);
       dim[1]=M.Dim(1);
-      dev_ptr=(uintptr_t)M.data_ptr;
+      dev_ptr=(uintptr_t)&M.data_ptr[0];
       return *this;
     }
 
@@ -58,7 +58,7 @@ class Matrix{
 
   Matrix();
 
-  Matrix(size_t dim1, size_t dim2, T* data_=NULL, bool own_data_=true);
+  Matrix(size_t dim1, size_t dim2, sctl::Iterator<T> data_=sctl::NullIterator<T>(), bool own_data_=true);
 
   Matrix(const Matrix<T>& M);
 
@@ -66,11 +66,11 @@ class Matrix{
 
   void Swap(Matrix<T>& M);
 
-  void ReInit(size_t dim1, size_t dim2, T* data_=NULL, bool own_data_=true);
+  void ReInit(size_t dim1, size_t dim2, sctl::Iterator<T> data_=sctl::NullIterator<T>(), bool own_data_=true);
 
   Device& AllocDevice(bool copy);
 
-  void Device2Host(T* host_ptr=NULL);
+  void Device2Host(sctl::Iterator<T> host_ptr=sctl::NullIterator<T>());
 
   void Device2HostWait();
 
@@ -86,9 +86,9 @@ class Matrix{
 
   void SetZero();
 
-  T* Begin();
+  sctl::Iterator<T> Begin();
 
-  const T* Begin() const;
+  sctl::ConstIterator<T> Begin() const;
 
   Matrix<T>& operator=(const Matrix<T>& M);
 
@@ -102,9 +102,9 @@ class Matrix{
 
   const T& operator()(size_t i,size_t j) const;
 
-  T* operator[](size_t i);
+  sctl::Iterator<T> operator[](size_t i);
 
-  const T* operator[](size_t i) const;
+  sctl::ConstIterator<T> operator[](size_t i) const;
 
   Matrix<T> operator*(const Matrix<T>& M);
 
@@ -129,7 +129,7 @@ class Matrix{
   private:
 
   size_t dim[2];
-  T* data_ptr;
+  sctl::Iterator<T> data_ptr;
   bool own_data;
 
   Device dev;

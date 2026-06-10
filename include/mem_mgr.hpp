@@ -18,6 +18,7 @@
 //#include <mutex>
 
 #include <pvfmm_common.hpp>
+#include <sctl.hpp>
 
 #ifndef _PVFMM_MEM_MGR_HPP_
 #define _PVFMM_MEM_MGR_HPP_
@@ -139,24 +140,25 @@ inline uintptr_t align_ptr(uintptr_t ptr){
 
 /**
  * \brief Aligned allocation as an alternative to new. Uses placement new to
- * construct objects.
+ * construct objects. Returns an sctl::Iterator<T> — in release this is a
+ * raw T* (zero overhead); in SCTL_MEMDEBUG it's a bounds-checked iterator
+ * wrapping the same address.
  */
 template <class T>
-inline T* aligned_new(size_t n_elem=1, const MemoryManager* mem_mgr=&glbMemMgr);
+inline sctl::Iterator<T> aligned_new(size_t n_elem=1, const MemoryManager* mem_mgr=&glbMemMgr);
 
 /**
  * \brief Aligned de-allocation as an alternative to delete. Calls the object
- * destructors. Not sure which destructor is called for virtual classes, this
- * is why we also match the TypeTraits<T>::ID()
+ * destructors. Takes an sctl::Iterator<T> as returned by aligned_new.
  */
 template <class T>
-inline void aligned_delete(T* A, const MemoryManager* mem_mgr=&glbMemMgr);
+inline void aligned_delete(sctl::Iterator<T> A, const MemoryManager* mem_mgr=&glbMemMgr);
 
 /**
- * \brief Wrapper to memcpy. Also checks if source and destination pointers are
- * the same.
+ * \brief Wrapper to memcpy on contiguous ranges. Both arguments are
+ * sctl::Iterator<T> for bounds-checking parity with the alloc/free path.
  */
-template <class ValueType> inline ValueType* copy(ValueType* destination, const ValueType* source, size_t num);
+template <class ValueType> inline sctl::Iterator<ValueType> copy(sctl::Iterator<ValueType> destination, sctl::ConstIterator<ValueType> source, size_t num);
 
 }//end namespace
 }//end namespace
