@@ -119,7 +119,7 @@ T cheb_approx(const T* fn_v, int cheb_deg, int dof, T* out, mem::MemoryManager* 
 
   // Create work buffers
   size_t buff_size=dof*d*d*d;
-  Y* buff=mem::aligned_new<Y>(2*buff_size,mem_mgr);
+  Y* buff=(Y*)mem::aligned_new<Y>(2*buff_size,mem_mgr);
   Y* buff1=buff+buff_size*0;
   Y* buff2=buff+buff_size*1;
 
@@ -428,7 +428,7 @@ void cheb_eval(const Vector<T>& coeff_, int cheb_deg, const std::vector<T>& in_x
 
   // Create work buffers
   size_t buff_size=std::max(d,n1)*std::max(d,n2)*std::max(d,n3)*dof;
-  T* buff=mem::aligned_new<T>(2*buff_size,mem_mgr);
+  T* buff=(T*)mem::aligned_new<T>(2*buff_size,mem_mgr);
   Vector<T> v1(buff_size,buff+buff_size*0,false);
   Vector<T> v2(buff_size,buff+buff_size*1,false);
 
@@ -1120,7 +1120,7 @@ void cheb_diff(const Vector<T>& A, int deg, int diff_dim, Vector<T>& B, mem::Mem
 
   // Create work buffers
   size_t buff_size=A.Dim();
-  T* buff=mem::aligned_new<T>(2*buff_size,mem_mgr);
+  T* buff=(T*)mem::aligned_new<T>(2*buff_size,mem_mgr);
   T* buff1=buff+buff_size*0;
   T* buff2=buff+buff_size*1;
 
@@ -1164,7 +1164,7 @@ void cheb_grad(const Vector<T>& A, int deg, Vector<T>& B, mem::MemoryManager* me
   size_t dof=A.Dim()/n_coeff;
 
   // Create work buffers
-  T* buff=mem::aligned_new<T>(2*n_coeff_*dof,mem_mgr);
+  T* buff=(T*)mem::aligned_new<T>(2*n_coeff_*dof,mem_mgr);
   Vector<T> A_(n_coeff_*dof,buff+n_coeff_*dof*0,false); A_.SetZero();
   Vector<T> B_(n_coeff_*dof,buff+n_coeff_*dof*1,false); B_.SetZero();
 
@@ -1300,8 +1300,8 @@ void cheb_laplacian(T* A, int deg, T* B){
   int d=deg+1;
   int n1=sctl::pow<unsigned int>(d,dim);
 
-  T* C1=mem::aligned_new<T>(n1);
-  T* C2=mem::aligned_new<T>(n1);
+  T* C1=(T*)mem::aligned_new<T>(n1);
+  T* C2=(T*)mem::aligned_new<T>(n1);
 
   Matrix<T> M_(1,n1,C2,false);
   for(int i=0;i<3;i++){

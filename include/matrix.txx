@@ -211,13 +211,13 @@ void Matrix<T>::SetZero(){
 }
 
 template <class ValueType>
-sctl::Iterator<ValueType> Matrix<ValueType>::Begin(){
-  return data_ptr;
+ValueType* Matrix<ValueType>::Begin(){
+  return (dim[0]*dim[1]>0 ? &data_ptr[0] : (ValueType*)NULL);
 }
 
 template <class ValueType>
-sctl::ConstIterator<ValueType> Matrix<ValueType>::Begin() const{
-  return (sctl::ConstIterator<ValueType>)data_ptr;
+const ValueType* Matrix<ValueType>::Begin() const{
+  return (dim[0]*dim[1]>0 ? &data_ptr[0] : (const ValueType*)NULL);
 }
 
 template <class T>
@@ -284,15 +284,15 @@ inline const T& Matrix<T>::operator()(size_t i,size_t j) const{
 }
 
 template <class T>
-inline sctl::Iterator<T> Matrix<T>::operator[](size_t i){
+inline T* Matrix<T>::operator[](size_t i){
   assert(i<dim[0]);
-  return data_ptr + i*dim[1];
+  return (dim[1]>0 ? &data_ptr[i*dim[1]] : (T*)NULL);
 }
 
 template <class T>
-inline sctl::ConstIterator<T> Matrix<T>::operator[](size_t i) const{
+inline const T* Matrix<T>::operator[](size_t i) const{
   assert(i<dim[0]);
-  return (sctl::ConstIterator<T>)data_ptr + i*dim[1];
+  return (dim[1]>0 ? &data_ptr[i*dim[1]] : (const T*)NULL);
 }
 
 template <class T>
@@ -303,7 +303,7 @@ Matrix<T> Matrix<T>::operator*(const Matrix<T>& M){
   Matrix<T> M_r(dim[0],M.dim[1],NULL);
   if(M.Dim(0)*M.Dim(1)==0 || this->Dim(0)*this->Dim(1)==0) return M_r;
   mat::gemm<T>('N','N',M.dim[1],dim[0],dim[1],
-      1.0,M.data_ptr,M.dim[1],data_ptr,dim[1],0.0,M_r.data_ptr,M_r.dim[1]);
+      1.0,&M.data_ptr[0],M.dim[1],&data_ptr[0],dim[1],0.0,&M_r.data_ptr[0],M_r.dim[1]);
   return M_r;
 }
 
@@ -317,7 +317,7 @@ void Matrix<T>::GEMM(Matrix<T>& M_r, const Matrix<T>& A, const Matrix<T>& B, T b
   sctl::Profile::IncrementCounter(sctl::ProfileCounter::FLOP, 2*(((long long)A.dim[0])*A.dim[1])*B.dim[1]);
 #endif
   mat::gemm<T>('N','N',B.dim[1],A.dim[0],A.dim[1],
-      1.0,B.data_ptr,B.dim[1],A.data_ptr,A.dim[1],beta,M_r.data_ptr,M_r.dim[1]);
+      1.0,&B.data_ptr[0],B.dim[1],&A.data_ptr[0],A.dim[1],beta,&M_r.data_ptr[0],M_r.dim[1]);
 }
 
 // cublasgemm wrapper
@@ -330,7 +330,7 @@ void Matrix<T>::CUBLASGEMM(Matrix<T>& M_r, const Matrix<T>& A, const Matrix<T>& 
   assert(M_r.dim[1]==B.dim[1]);
   sctl::Profile::IncrementCounter(sctl::ProfileCounter::FLOP, 2*(((long long)A.dim[0])*A.dim[1])*B.dim[1]);
   mat::cublasgemm('N', 'N', B.dim[1], A.dim[0], A.dim[1],
-      (T)1.0, B.data_ptr, B.dim[1], A.data_ptr, A.dim[1], beta, M_r.data_ptr, M_r.dim[1]);
+      (T)1.0, &B.data_ptr[0], B.dim[1], &A.data_ptr[0], A.dim[1], beta, &M_r.data_ptr[0], M_r.dim[1]);
 }
 #endif
 
@@ -474,7 +474,7 @@ void Matrix<T>::SVD(Matrix<T>& tU, Matrix<T>& tS, Matrix<T>& tVT){
   int wssize1 = 5*(m<n?m:n);
   wssize = (wssize>wssize1?wssize:wssize1);
 
-  T* wsbuf = mem::aligned_new<T>(wssize);
+  T* wsbuf = (T*)mem::aligned_new<T>(wssize);
   pvfmm::mat::svd(&JOBU, &JOBVT, &m, &n, &M[0][0], &m, &tS[0][0], &tVT[0][0], &m, &tU[0][0], &k, wsbuf, &wssize, &INFO);
   mem::aligned_delete<T>(wsbuf);
 
@@ -496,7 +496,7 @@ Matrix<T> Matrix<T>::pinv(T eps){
     eps=sctl::sqrt<T>(eps);
   }
   Matrix<T> M_r(dim[1],dim[0]);
-  mat::pinv(data_ptr,dim[0],dim[1],eps,M_r.data_ptr);
+  mat::pinv(&data_ptr[0],dim[0],dim[1],eps,&M_r.data_ptr[0]);
   this->Resize(0,0);
   return M_r;
 }

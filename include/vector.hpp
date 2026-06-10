@@ -49,6 +49,12 @@ class Vector{
 
   Vector(size_t dim_, sctl::Iterator<T> data_=sctl::NullIterator<T>(), bool own_data_=true);
 
+#if defined(SCTL_MEMDEBUG)
+  // Legacy compatibility: accept raw T* and wrap into Iterator<T>.
+  Vector(size_t dim_, T* data_, bool own_data_=true)
+    : Vector(dim_, (data_? sctl::Ptr2Itr<T>(data_, (sctl::Long)dim_) : sctl::NullIterator<T>()), own_data_) {}
+#endif
+
   Vector(const Vector& V);
 
   Vector(const std::vector<T>& V);
@@ -58,6 +64,12 @@ class Vector{
   void Swap(Vector<T>& v1);
 
   void ReInit(size_t dim_, sctl::Iterator<T> data_=sctl::NullIterator<T>(), bool own_data_=true);
+
+#if defined(SCTL_MEMDEBUG)
+  void ReInit(size_t dim_, T* data_, bool own_data_=true) {
+    ReInit(dim_, (data_? sctl::Ptr2Itr<T>(data_, (sctl::Long)dim_) : sctl::NullIterator<T>()), own_data_);
+  }
+#endif
 
   Device& AllocDevice(bool copy);
 
@@ -75,9 +87,9 @@ class Vector{
 
   void SetZero();
 
-  sctl::Iterator<T> Begin();
+  T* Begin();
 
-  sctl::ConstIterator<T> Begin() const;
+  const T* Begin() const;
 
   Vector& operator=(const Vector& V);
 

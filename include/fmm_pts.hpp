@@ -38,7 +38,7 @@ class FMM_Data{
 
   virtual ~FMM_Data(){}
 
-  virtual FMM_Data* NewData(){return mem::aligned_new<FMM_Data>();}
+  virtual FMM_Data* NewData(){return (FMM_Data*)mem::aligned_new<FMM_Data>();}
 
   /**
    * \brief Clear all data.
@@ -108,7 +108,7 @@ class FMM_Pts{
 
     virtual ~FMMData(){}
 
-    virtual FMM_Data<Real_t>* NewData(){return mem::aligned_new<FMMData>();}
+    virtual FMM_Data<Real_t>* NewData(){return (FMMData*)mem::aligned_new<FMMData>();}
   };
 
   /**

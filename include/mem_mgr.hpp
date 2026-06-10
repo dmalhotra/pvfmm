@@ -139,13 +139,37 @@ inline uintptr_t align_ptr(uintptr_t ptr){
 }
 
 /**
- * \brief Aligned allocation as an alternative to new. Uses placement new to
- * construct objects. Returns an sctl::Iterator<T> — in release this is a
- * raw T* (zero overhead); in SCTL_MEMDEBUG it's a bounds-checked iterator
- * wrapping the same address.
+ * \brief Aligned allocation result. Implicitly converts to either an
+ * sctl::Iterator<T> (for code that wants bounds-checks) or a raw T*
+ * (for legacy code that expects a pointer). In release, Iterator<T> IS T*,
+ * so both conversions are zero-overhead. In SCTL_MEMDEBUG, the iterator
+ * carries the n_elem bounds info; the T* path discards it.
  */
 template <class T>
-inline sctl::Iterator<T> aligned_new(size_t n_elem=1, const MemoryManager* mem_mgr=&glbMemMgr);
+struct AllocResult {
+  sctl::Iterator<T> iter;
+#if defined(SCTL_MEMDEBUG)
+  // In SCTL_MEMDEBUG, Iterator<T> is a distinct class, so we provide both conversions.
+  // The T* conversion is explicit so Vector(size_t, Iterator<T>, bool) wins over
+  // Vector(size_t, T*, bool) for `Vector(N, aligned_new<T>(N), false)`. Legacy code
+  // can still write `(T*)aligned_new<T>(N)` for an explicit cast.
+  inline operator sctl::Iterator<T>() const { return iter; }
+  inline explicit operator T*() const {
+    return (iter == sctl::NullIterator<T>() ? (T*)NULL : &iter[0]);
+  }
+#else
+  // In release, Iterator<T> is a typedef for T*, so a single conversion suffices.
+  inline operator T*() const { return iter; }
+#endif
+};
+
+/**
+ * \brief Aligned allocation as an alternative to new. Uses placement new to
+ * construct objects. Returns an AllocResult<T> that implicitly converts to
+ * either sctl::Iterator<T> or T*.
+ */
+template <class T>
+inline AllocResult<T> aligned_new(size_t n_elem=1, const MemoryManager* mem_mgr=&glbMemMgr);
 
 /**
  * \brief Aligned de-allocation as an alternative to delete. Calls the object
@@ -154,11 +178,38 @@ inline sctl::Iterator<T> aligned_new(size_t n_elem=1, const MemoryManager* mem_m
 template <class T>
 inline void aligned_delete(sctl::Iterator<T> A, const MemoryManager* mem_mgr=&glbMemMgr);
 
+#if defined(SCTL_MEMDEBUG)
+// Legacy compatibility: accept raw T* and re-wrap into Iterator<T>.
+// The element count is recovered from the MemHead written by aligned_new.
+template <class T>
+inline void aligned_delete(T* A, const MemoryManager* mem_mgr=&glbMemMgr) {
+  if (A == NULL) return;
+  size_t n_elem = MemoryManager::GetMemHead(A)->n_elem;
+  aligned_delete(sctl::Ptr2Itr<T>(A, (sctl::Long)n_elem), mem_mgr);
+}
+#endif
+
 /**
  * \brief Wrapper to memcpy on contiguous ranges. Both arguments are
  * sctl::Iterator<T> for bounds-checking parity with the alloc/free path.
  */
 template <class ValueType> inline sctl::Iterator<ValueType> copy(sctl::Iterator<ValueType> destination, sctl::ConstIterator<ValueType> source, size_t num);
+
+#if defined(SCTL_MEMDEBUG)
+// Legacy compatibility: accept raw T* / const T*. No bounds-check on the args,
+// but matches pvfmm's pre-migration memcpy idiom for in-place buffer manipulations.
+template <class ValueType>
+inline ValueType* copy(ValueType* destination, const ValueType* source, size_t num) {
+  if (destination != source && num) {
+    if (TypeTraits<ValueType>::IsPOD()) {
+      memcpy((void*)destination, (const void*)source, num * sizeof(ValueType));
+    } else {
+      for (size_t i = 0; i < num; i++) destination[i] = source[i];
+    }
+  }
+  return destination;
+}
+#endif
 
 }//end namespace
 }//end namespace

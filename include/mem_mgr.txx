@@ -70,8 +70,8 @@ void MemoryManager::delete_node(size_t indx) const{
 
 
 template <class T>
-sctl::Iterator<T> aligned_new(size_t n_elem, const MemoryManager* mem_mgr){
-  if(!n_elem) return sctl::NullIterator<T>();
+AllocResult<T> aligned_new(size_t n_elem, const MemoryManager* mem_mgr){
+  if(!n_elem) return AllocResult<T>{sctl::NullIterator<T>()};
 
   static MemoryManager def_mem_mgr(0);
   if(!mem_mgr) mem_mgr=&def_mem_mgr;
@@ -95,7 +95,7 @@ sctl::Iterator<T> aligned_new(size_t n_elem, const MemoryManager* mem_mgr){
   }
 
   assert(A);
-  return sctl::Ptr2Itr<T>(A, (sctl::Long)n_elem);
+  return AllocResult<T>{sctl::Ptr2Itr<T>(A, (sctl::Long)n_elem)};
 }
 
 template <class T>

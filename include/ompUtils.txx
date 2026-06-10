@@ -29,8 +29,8 @@ void omp_par::merge(T A_,T A_last,T B_,T B_last,T C_,int p,StrictWeakOrdering co
   //Split both arrays ( A and B ) into n equal parts.
   //Find the position of each split in the final merged array.
   int n=10;
-  _ValType* split=mem::aligned_new<_ValType>(p*n*2);
-  _DiffType* split_size=mem::aligned_new<_DiffType>(p*n*2);
+  sctl::Iterator<_ValType> split=mem::aligned_new<_ValType>(p*n*2);
+  sctl::Iterator<_DiffType> split_size=mem::aligned_new<_DiffType>(p*n*2);
   #pragma omp parallel for
   for(int i=0;i<p;i++){
     for(int j=0;j<n;j++){
@@ -48,8 +48,8 @@ void omp_par::merge(T A_,T A_last,T B_,T B_last,T C_,int p,StrictWeakOrdering co
 
   //Find the closest split position for each thread that will
   //divide the final array equally between the threads.
-  _DiffType* split_indx_A=mem::aligned_new<_DiffType>(p+1);
-  _DiffType* split_indx_B=mem::aligned_new<_DiffType>(p+1);
+  sctl::Iterator<_DiffType> split_indx_A=mem::aligned_new<_DiffType>(p+1);
+  sctl::Iterator<_DiffType> split_indx_B=mem::aligned_new<_DiffType>(p+1);
   split_indx_A[0]=0;
   split_indx_B[0]=0;
   split_indx_A[p]=N1;
@@ -101,7 +101,7 @@ void omp_par::merge_sort(T A,T A_last,StrictWeakOrdering comp){
   }
 
   //Split the array A into p equal parts.
-  _DiffType* split=mem::aligned_new<_DiffType>(p+1);
+  sctl::Iterator<_DiffType> split=mem::aligned_new<_DiffType>(p+1);
   split[p]=N;
   #pragma omp parallel for
   for(int id=0;id<p;id++){
@@ -115,7 +115,7 @@ void omp_par::merge_sort(T A,T A_last,StrictWeakOrdering comp){
   }
 
   //Merge two parts at a time.
-  _ValType* B=mem::aligned_new<_ValType>(N);
+  sctl::Iterator<_ValType> B=mem::aligned_new<_ValType>(N);
   _ValType* A_=&A[0];
   _ValType* B_=&B[0];
   for(int j=1;j<p;j=j*2){
@@ -181,7 +181,7 @@ void omp_par::scan(T* A, T* B,I cnt){
       B[j]=B[j-1]+A[j-1];
   }
 
-  T* sum=mem::aligned_new<T>(p);
+  sctl::Iterator<T> sum=mem::aligned_new<T>(p);
   sum[0]=0;
   for(int i=1;i<p;i++)
     sum[i]=sum[i-1]+B[i*step_size-1]+A[i*step_size-1];

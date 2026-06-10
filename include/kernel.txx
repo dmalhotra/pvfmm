@@ -980,7 +980,7 @@ void generic_kernel(Real_t* r_src, int src_cnt, Real_t* v_src, int dof, Real_t* 
     size_t buff_size=src_cnt_*(PVFMM_COORD_DIM+SRC_DIM)+
                      trg_cnt_*(PVFMM_COORD_DIM+TRG_DIM);
     if(buff_size>STACK_BUFF_SIZE){ // Allocate buff
-      buff=mem::aligned_new<Real_t>(buff_size, mem_mgr);
+      buff=(Real_t*)mem::aligned_new<Real_t>(buff_size, mem_mgr);
     }
 
     Real_t* buff_ptr=buff;
@@ -1155,7 +1155,7 @@ template <class uKernel> template <class Real, int digits> void GenericKernel<uK
     int buff_size = src_cnt_*(DIM + KDIM0)+
                     trg_cnt_*(DIM + KDIM1);
     if (buff_size > STACK_BUFF_SIZE) { // Allocate buff
-      buff = mem::aligned_new<Real>(buff_size, mem_mgr);
+      buff = (Real*)mem::aligned_new<Real>(buff_size, mem_mgr);
     }
 
     Real* buff_ptr = buff;

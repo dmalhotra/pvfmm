@@ -567,8 +567,8 @@ void MPI_Tree<TreeNode>::RedistNodes(MortonId* loc_min) {
   omp_par::scan(&recv_size[0],&rdisp[0],np); //     as most entries will be 0.
   size_t rbuff_size=rdisp[np-1]+recv_size[np-1];
 
-  char* send_buff=mem::aligned_new<char>(sbuff_size);
-  char* recv_buff=mem::aligned_new<char>(rbuff_size);
+  char* send_buff=(char*)mem::aligned_new<char>(sbuff_size);
+  char* recv_buff=(char*)mem::aligned_new<char>(rbuff_size);
   std::vector<char*> data_ptr(leaf_cnt);
   char* s_ptr=send_buff;
   for(size_t i = 0; i < leaf_cnt; i++) {

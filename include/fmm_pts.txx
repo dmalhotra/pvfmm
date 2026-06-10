@@ -171,7 +171,7 @@ PackedData FMM_Data<Real_t>::PackMultipole(void* buff_ptr){
   if(p0.length==0) return p0;
 
   if(p0.data==NULL) p0.data=(char*)&upward_equiv[0];
-  else mem::copy<char>((char*)p0.data,(char*)&upward_equiv[0],p0.length);
+  else memcpy(p0.data,&upward_equiv[0],p0.length);
   return p0;
 }
 
@@ -691,8 +691,8 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
       //Compute FFTW plan.
       int nnn[3]={n1,n1,n1};
       Real_t *fftw_in, *fftw_out;
-      fftw_in  = mem::aligned_new<Real_t>(  n3 *ker_dim[0]*ker_dim[1]*sizeof(Real_t));
-      fftw_out = mem::aligned_new<Real_t>(2*n3_*ker_dim[0]*ker_dim[1]*sizeof(Real_t));
+      fftw_in  = (Real_t*)mem::aligned_new<Real_t>(  n3 *ker_dim[0]*ker_dim[1]*sizeof(Real_t));
+      fftw_out = (Real_t*)mem::aligned_new<Real_t>(2*n3_*ker_dim[0]*ker_dim[1]*sizeof(Real_t));
       #pragma omp critical(PVFMM_FFTW_PLAN)
       {
         if (!vprecomp_fft_flag){
@@ -1846,9 +1846,9 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
       if(interac_data.Dim(0)*interac_data.Dim(1)<sizeof(size_t)){
         data_size+=sizeof(size_t);
         interac_data.ReInit(1,data_size);
-        ((size_t*)interac_data.Begin())[0]=sizeof(size_t);
+        ((size_t*)&interac_data[0][0])[0]=sizeof(size_t);
       }else{
-        size_t pts_data_size=*((size_t*)interac_data.Begin());
+        size_t pts_data_size=*((size_t*)&interac_data[0][0]);
         assert(interac_data.Dim(0)*interac_data.Dim(1)>=pts_data_size);
         data_size+=pts_data_size;
         if(data_size>interac_data.Dim(0)*interac_data.Dim(1)){ //Resize and copy interac_data.
@@ -1857,7 +1857,7 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
           mem::copy<char>(interac_data.Begin(),pts_interac_data.Begin(),pts_data_size);
         }
       }
-      char* data_ptr=interac_data.Begin();
+      char* data_ptr=&interac_data[0][0];
       data_ptr+=((size_t*)data_ptr)[0];
 
       ((size_t*)data_ptr)[0]=data_size; data_ptr+=sizeof(size_t);
@@ -1866,23 +1866,23 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
       ((size_t*)data_ptr)[0]=      dof; data_ptr+=sizeof(size_t);
 
       ((size_t*)data_ptr)[0]=interac_blk.size(); data_ptr+=sizeof(size_t);
-      if (interac_blk.size()) mem::copy<size_t>((size_t*)data_ptr, &interac_blk[0], interac_blk.size());
+      if (interac_blk.size()) memcpy(data_ptr, &interac_blk[0], interac_blk.size()*sizeof(size_t));
       data_ptr+=interac_blk.size()*sizeof(size_t);
 
       ((size_t*)data_ptr)[0]=interac_cnt.size(); data_ptr+=sizeof(size_t);
-      if (interac_cnt.size()) mem::copy<size_t>((size_t*)data_ptr, &interac_cnt[0], interac_cnt.size());
+      if (interac_cnt.size()) memcpy(data_ptr, &interac_cnt[0], interac_cnt.size()*sizeof(size_t));
       data_ptr+=interac_cnt.size()*sizeof(size_t);
 
       ((size_t*)data_ptr)[0]=interac_mat.size(); data_ptr+=sizeof(size_t);
-      if (interac_mat.size()) mem::copy<size_t>((size_t*)data_ptr, &interac_mat[0], interac_mat.size());
+      if (interac_mat.size()) memcpy(data_ptr, &interac_mat[0], interac_mat.size()*sizeof(size_t));
       data_ptr+=interac_mat.size()*sizeof(size_t);
 
       ((size_t*)data_ptr)[0]= input_perm.size(); data_ptr+=sizeof(size_t);
-      if (input_perm.size()) mem::copy<size_t>((size_t*)data_ptr,  &input_perm[0],  input_perm.size());
+      if (input_perm.size()) memcpy(data_ptr,  &input_perm[0],  input_perm.size()*sizeof(size_t));
       data_ptr+= input_perm.size()*sizeof(size_t);
 
       ((size_t*)data_ptr)[0]=output_perm.size(); data_ptr+=sizeof(size_t);
-      if (output_perm.size()) mem::copy<size_t>((size_t*)data_ptr, &output_perm[0], output_perm.size());
+      if (output_perm.size()) memcpy(data_ptr, &output_perm[0], output_perm.size()*sizeof(size_t));
       data_ptr+=output_perm.size()*sizeof(size_t);
     }
   }
@@ -1942,23 +1942,28 @@ void EvalListGPU(SetupData<Real_t>& setup_data, Vector<char>& dev_buffer, const 
       M_dim1   =((size_t*)data_ptr)[0]; data_ptr+=sizeof(size_t); dev_ptr += sizeof(size_t);
       dof      =((size_t*)data_ptr)[0]; data_ptr+=sizeof(size_t); dev_ptr += sizeof(size_t);
 
-      interac_blk.ReInit(((size_t*)data_ptr)[0],(size_t*)(data_ptr+sizeof(size_t)),false);
+      { size_t N=((size_t*)data_ptr)[0];
+        interac_blk.ReInit(N,sctl::Ptr2Itr<size_t>((size_t*)(data_ptr+sizeof(size_t)),N),false); }
       data_ptr += sizeof(size_t) + sizeof(size_t)*interac_blk.Dim();
       dev_ptr  += sizeof(size_t) + sizeof(size_t)*interac_blk.Dim();
 
-      interac_cnt.ReInit(((size_t*)data_ptr)[0],(size_t*)(data_ptr+sizeof(size_t)),false);
+      { size_t N=((size_t*)data_ptr)[0];
+        interac_cnt.ReInit(N,sctl::Ptr2Itr<size_t>((size_t*)(data_ptr+sizeof(size_t)),N),false); }
       data_ptr += sizeof(size_t) + sizeof(size_t)*interac_cnt.Dim();
       dev_ptr  += sizeof(size_t) + sizeof(size_t)*interac_cnt.Dim();
 
-      interac_mat.ReInit(((size_t*)data_ptr)[0],(size_t*)(data_ptr+sizeof(size_t)),false);
+      { size_t N=((size_t*)data_ptr)[0];
+        interac_mat.ReInit(N,sctl::Ptr2Itr<size_t>((size_t*)(data_ptr+sizeof(size_t)),N),false); }
       data_ptr += sizeof(size_t) + sizeof(size_t)*interac_mat.Dim();
       dev_ptr  += sizeof(size_t) + sizeof(size_t)*interac_mat.Dim();
 
-      input_perm_d.ReInit(((size_t*)data_ptr)[0],(size_t*)(dev_ptr+sizeof(size_t)),false);
+      { size_t N=((size_t*)data_ptr)[0];
+        input_perm_d.ReInit(N,sctl::Ptr2Itr<size_t>((size_t*)(dev_ptr+sizeof(size_t)),N),false); }
       data_ptr += sizeof(size_t) + sizeof(size_t)*input_perm_d.Dim();
       dev_ptr  += sizeof(size_t) + sizeof(size_t)*input_perm_d.Dim();
 
-      output_perm_d.ReInit(((size_t*)data_ptr)[0],(size_t*)(dev_ptr+sizeof(size_t)),false);
+      { size_t N=((size_t*)data_ptr)[0];
+        output_perm_d.ReInit(N,sctl::Ptr2Itr<size_t>((size_t*)(dev_ptr+sizeof(size_t)),N),false); }
       data_ptr += sizeof(size_t) + sizeof(size_t)*output_perm_d.Dim();
       dev_ptr  += sizeof(size_t) + sizeof(size_t)*output_perm_d.Dim();
     }
@@ -2076,19 +2081,24 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
       M_dim1   =((size_t*)data_ptr)[0]; data_ptr+=sizeof(size_t);
       dof      =((size_t*)data_ptr)[0]; data_ptr+=sizeof(size_t);
 
-      interac_blk.ReInit(((size_t*)data_ptr)[0],(size_t*)(data_ptr+sizeof(size_t)),false);
+      { size_t N=((size_t*)data_ptr)[0];
+        interac_blk.ReInit(N,sctl::Ptr2Itr<size_t>((size_t*)(data_ptr+sizeof(size_t)),N),false); }
       data_ptr+=sizeof(size_t)+interac_blk.Dim()*sizeof(size_t);
 
-      interac_cnt.ReInit(((size_t*)data_ptr)[0],(size_t*)(data_ptr+sizeof(size_t)),false);
+      { size_t N=((size_t*)data_ptr)[0];
+        interac_cnt.ReInit(N,sctl::Ptr2Itr<size_t>((size_t*)(data_ptr+sizeof(size_t)),N),false); }
       data_ptr+=sizeof(size_t)+interac_cnt.Dim()*sizeof(size_t);
 
-      interac_mat.ReInit(((size_t*)data_ptr)[0],(size_t*)(data_ptr+sizeof(size_t)),false);
+      { size_t N=((size_t*)data_ptr)[0];
+        interac_mat.ReInit(N,sctl::Ptr2Itr<size_t>((size_t*)(data_ptr+sizeof(size_t)),N),false); }
       data_ptr+=sizeof(size_t)+interac_mat.Dim()*sizeof(size_t);
 
-      input_perm .ReInit(((size_t*)data_ptr)[0],(size_t*)(data_ptr+sizeof(size_t)),false);
+      { size_t N=((size_t*)data_ptr)[0];
+        input_perm .ReInit(N,sctl::Ptr2Itr<size_t>((size_t*)(data_ptr+sizeof(size_t)),N),false); }
       data_ptr+=sizeof(size_t)+ input_perm.Dim()*sizeof(size_t);
 
-      output_perm.ReInit(((size_t*)data_ptr)[0],(size_t*)(data_ptr+sizeof(size_t)),false);
+      { size_t N=((size_t*)data_ptr)[0];
+        output_perm.ReInit(N,sctl::Ptr2Itr<size_t>((size_t*)(data_ptr+sizeof(size_t)),N),false); }
       data_ptr+=sizeof(size_t)+output_perm.Dim()*sizeof(size_t);
     }
 
@@ -2344,7 +2354,7 @@ void FMM_Pts<FMMNode>::Source2UpSetup(SetupData<Real_t>&  setup_data, FMMTree_t*
       Vector<Real_t>& coord_vec=((FMMNode*)nodes[i])->src_coord;
       Vector<Real_t>& value_vec=((FMMNode*)nodes[i])->src_value;
       if(coord_vec.Dim()){
-        coord.dsp[i]=&coord_vec[0]-coord.ptr[0][0];
+        coord.dsp[i]=&coord_vec[0]-&coord.ptr[0][0][0];
         assert(coord.dsp[i]<coord.len);
         coord.cnt[i]=coord_vec.Dim();
       }else{
@@ -2352,7 +2362,7 @@ void FMM_Pts<FMMNode>::Source2UpSetup(SetupData<Real_t>&  setup_data, FMMTree_t*
         coord.cnt[i]=0;
       }
       if(value_vec.Dim()){
-        value.dsp[i]=&value_vec[0]-value.ptr[0][0];
+        value.dsp[i]=&value_vec[0]-&value.ptr[0][0][0];
         assert(value.dsp[i]<value.len);
         value.cnt[i]=value_vec.Dim();
       }else{
@@ -2381,7 +2391,7 @@ void FMM_Pts<FMMNode>::Source2UpSetup(SetupData<Real_t>&  setup_data, FMMTree_t*
       Vector<Real_t>& coord_vec=((FMMNode*)nodes[i])->surf_coord;
       Vector<Real_t>& value_vec=((FMMNode*)nodes[i])->surf_value;
       if(coord_vec.Dim()){
-        coord.dsp[i]=&coord_vec[0]-coord.ptr[0][0];
+        coord.dsp[i]=&coord_vec[0]-&coord.ptr[0][0][0];
         assert(coord.dsp[i]<coord.len);
         coord.cnt[i]=coord_vec.Dim();
       }else{
@@ -2389,7 +2399,7 @@ void FMM_Pts<FMMNode>::Source2UpSetup(SetupData<Real_t>&  setup_data, FMMTree_t*
         coord.cnt[i]=0;
       }
       if(value_vec.Dim()){
-        value.dsp[i]=&value_vec[0]-value.ptr[0][0];
+        value.dsp[i]=&value_vec[0]-&value.ptr[0][0][0];
         assert(value.dsp[i]<value.len);
         value.cnt[i]=value_vec.Dim();
       }else{
@@ -2418,7 +2428,7 @@ void FMM_Pts<FMMNode>::Source2UpSetup(SetupData<Real_t>&  setup_data, FMMTree_t*
       Vector<Real_t>& coord_vec=tree->upwd_check_surf[((FMMNode*)nodes[i])->Depth()];
       Vector<Real_t>& value_vec=((FMMData*)((FMMNode*)nodes[i])->FMMData())->upward_equiv;
       if(coord_vec.Dim()){
-        coord.dsp[i]=&coord_vec[0]-coord.ptr[0][0];
+        coord.dsp[i]=&coord_vec[0]-&coord.ptr[0][0][0];
         assert(coord.dsp[i]<coord.len);
         coord.cnt[i]=coord_vec.Dim();
       }else{
@@ -2426,7 +2436,7 @@ void FMM_Pts<FMMNode>::Source2UpSetup(SetupData<Real_t>&  setup_data, FMMTree_t*
         coord.cnt[i]=0;
       }
       if(value_vec.Dim()){
-        value.dsp[i]=&value_vec[0]-value.ptr[0][0];
+        value.dsp[i]=&value_vec[0]-&value.ptr[0][0][0];
         assert(value.dsp[i]<value.len);
         value.cnt[i]=value_vec.Dim();
       }else{
@@ -2711,8 +2721,8 @@ void FMM_Pts<FMMNode>::FFT_UpEquiv(size_t dof, size_t m, size_t ker_dim0, Vector
     if(!vlist_fft_flag){
       int nnn[3]={(int)n1,(int)n1,(int)n1};
       void *fftw_in, *fftw_out;
-      fftw_in  = mem::aligned_new<Real_t>(  n3 *ker_dim0*chld_cnt);
-      fftw_out = mem::aligned_new<Real_t>(2*n3_*ker_dim0*chld_cnt);
+      fftw_in  = (Real_t*)mem::aligned_new<Real_t>(  n3 *ker_dim0*chld_cnt);
+      fftw_out = (Real_t*)mem::aligned_new<Real_t>(2*n3_*ker_dim0*chld_cnt);
       vlist_fftplan = FFTW_t<Real_t>::fft_plan_many_dft_r2c(PVFMM_COORD_DIM,nnn,ker_dim0*chld_cnt,
           (Real_t*)fftw_in, NULL, 1, n3, (typename FFTW_t<Real_t>::cplx*)(fftw_out),NULL, 1, n3_);
       mem::aligned_delete<Real_t>((Real_t*)fftw_in );
@@ -2797,8 +2807,8 @@ void FMM_Pts<FMMNode>::FFT_Check2Equiv(size_t dof, size_t m, size_t ker_dim1, Ve
       //Build FFTW plan.
       int nnn[3]={(int)n1,(int)n1,(int)n1};
       Real_t *fftw_in, *fftw_out;
-      fftw_in  = mem::aligned_new<Real_t>(2*n3_*ker_dim1*chld_cnt);
-      fftw_out = mem::aligned_new<Real_t>(  n3 *ker_dim1*chld_cnt);
+      fftw_in  = (Real_t*)mem::aligned_new<Real_t>(2*n3_*ker_dim1*chld_cnt);
+      fftw_out = (Real_t*)mem::aligned_new<Real_t>(  n3 *ker_dim1*chld_cnt);
       vlist_ifftplan = FFTW_t<Real_t>::fft_plan_many_dft_c2r(PVFMM_COORD_DIM,nnn,ker_dim1*chld_cnt,
           (typename FFTW_t<Real_t>::cplx*)fftw_in, NULL, 1, n3_, (Real_t*)(fftw_out),NULL, 1, n3);
       mem::aligned_delete<Real_t>(fftw_in);
@@ -3250,8 +3260,8 @@ void VListHadamard(size_t dof, size_t M_dim, size_t ker_dim0, size_t ker_dim1, V
   size_t chld_cnt=1UL<<PVFMM_COORD_DIM;
   size_t fftsize_in =M_dim*ker_dim0*chld_cnt*2;
   size_t fftsize_out=M_dim*ker_dim1*chld_cnt*2;
-  Real_t* zero_vec0=mem::aligned_new<Real_t>(fftsize_in );
-  Real_t* zero_vec1=mem::aligned_new<Real_t>(fftsize_out);
+  Real_t* zero_vec0=(Real_t*)mem::aligned_new<Real_t>(fftsize_in );
+  Real_t* zero_vec1=(Real_t*)mem::aligned_new<Real_t>(fftsize_out);
   size_t n_out=fft_out.Dim()/fftsize_out;
 
   // Set buff_out to zero.
@@ -3265,8 +3275,8 @@ void VListHadamard(size_t dof, size_t M_dim, size_t ker_dim0, size_t ker_dim1, V
   size_t mat_cnt=precomp_mat.Dim();
   size_t blk1_cnt=interac_dsp.Dim()/mat_cnt;
   const size_t V_BLK_SIZE=PVFMM_V_BLK_CACHE*64/sizeof(Real_t);
-  Real_t** IN_ =mem::aligned_new<Real_t*>(2*V_BLK_SIZE*blk1_cnt*mat_cnt);
-  Real_t** OUT_=mem::aligned_new<Real_t*>(2*V_BLK_SIZE*blk1_cnt*mat_cnt);
+  Real_t** IN_ =(Real_t**)mem::aligned_new<Real_t*>(2*V_BLK_SIZE*blk1_cnt*mat_cnt);
+  Real_t** OUT_=(Real_t**)mem::aligned_new<Real_t*>(2*V_BLK_SIZE*blk1_cnt*mat_cnt);
   #pragma omp parallel for
   for(size_t interac_blk1=0; interac_blk1<blk1_cnt*mat_cnt; interac_blk1++){
     size_t interac_dsp0 = (interac_blk1==0?0:interac_dsp[interac_blk1-1]);
@@ -3474,8 +3484,8 @@ void FMM_Pts<FMMNode>::V_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
         }
 
         { // Set fft vectors.
-          for(size_t i=0;i<nodes_in_ .size();i++) fft_vec[blk0].push_back((size_t)(& input_vector[nodes_in_[i]->node_id][0][0]- input_data[0]));
-          for(size_t i=0;i<nodes_out_.size();i++)ifft_vec[blk0].push_back((size_t)(&output_vector[blk0_start   +     i ][0][0]-output_data[0]));
+          for(size_t i=0;i<nodes_in_ .size();i++) fft_vec[blk0].push_back((size_t)(& input_vector[nodes_in_[i]->node_id][0][0]-& input_data[0][0]));
+          for(size_t i=0;i<nodes_out_.size();i++)ifft_vec[blk0].push_back((size_t)(&output_vector[blk0_start   +     i ][0][0]-&output_data[0][0]));
 
           size_t scal_dim0=src_scal.Dim();
           size_t scal_dim1=trg_scal.Dim();
@@ -3548,36 +3558,36 @@ void FMM_Pts<FMMNode>::V_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
       ((size_t*)data_ptr)[0]=   n_blk0; data_ptr+=sizeof(size_t);
 
       ((size_t*)data_ptr)[0]= interac_mat.size(); data_ptr+=sizeof(size_t);
-      if (interac_mat.size()) mem::copy<size_t>((size_t*)data_ptr, &interac_mat[0], interac_mat.size());
+      if (interac_mat.size()) memcpy(data_ptr, &interac_mat[0], interac_mat.size()*sizeof(size_t));
       data_ptr+=interac_mat.size()*sizeof(size_t);
 
       ((size_t*)data_ptr)[0]= interac_mat_ptr.size(); data_ptr+=sizeof(size_t);
-      if (interac_mat_ptr.size()) mem::copy<Real_t*>((Real_t**)data_ptr, &interac_mat_ptr[0], interac_mat_ptr.size());
+      if (interac_mat_ptr.size()) memcpy(data_ptr, &interac_mat_ptr[0], interac_mat_ptr.size()*sizeof(Real_t*));
       data_ptr+=interac_mat_ptr.size()*sizeof(Real_t*);
 
       for(size_t blk0=0;blk0<n_blk0;blk0++){
         ((size_t*)data_ptr)[0]= fft_vec[blk0].size(); data_ptr+=sizeof(size_t);
-        if (fft_vec[blk0].size()) mem::copy<size_t>((size_t*)data_ptr, & fft_vec[blk0][0],  fft_vec[blk0].size());
+        if (fft_vec[blk0].size()) memcpy(data_ptr, & fft_vec[blk0][0],  fft_vec[blk0].size()*sizeof(size_t));
         data_ptr+= fft_vec[blk0].size()*sizeof(size_t);
 
         ((size_t*)data_ptr)[0]=ifft_vec[blk0].size(); data_ptr+=sizeof(size_t);
-        if (ifft_vec[blk0].size()) mem::copy<size_t>((size_t*)data_ptr, &ifft_vec[blk0][0], ifft_vec[blk0].size());
+        if (ifft_vec[blk0].size()) memcpy(data_ptr, &ifft_vec[blk0][0], ifft_vec[blk0].size()*sizeof(size_t));
         data_ptr+=ifft_vec[blk0].size()*sizeof(size_t);
 
         ((size_t*)data_ptr)[0]= fft_scl[blk0].size(); data_ptr+=sizeof(size_t);
-        if (fft_scl[blk0].size()) mem::copy<Real_t>((Real_t*)data_ptr, & fft_scl[blk0][0],  fft_scl[blk0].size());
+        if (fft_scl[blk0].size()) memcpy(data_ptr, & fft_scl[blk0][0],  fft_scl[blk0].size()*sizeof(Real_t));
         data_ptr+= fft_scl[blk0].size()*sizeof(Real_t);
 
         ((size_t*)data_ptr)[0]=ifft_scl[blk0].size(); data_ptr+=sizeof(size_t);
-        if (ifft_scl[blk0].size()) mem::copy<Real_t>((Real_t*)data_ptr, &ifft_scl[blk0][0], ifft_scl[blk0].size());
+        if (ifft_scl[blk0].size()) memcpy(data_ptr, &ifft_scl[blk0][0], ifft_scl[blk0].size()*sizeof(Real_t));
         data_ptr+=ifft_scl[blk0].size()*sizeof(Real_t);
 
         ((size_t*)data_ptr)[0]=interac_vec[blk0].size(); data_ptr+=sizeof(size_t);
-        if (interac_vec[blk0].size()) mem::copy<size_t>((size_t*)data_ptr, &interac_vec[blk0][0], interac_vec[blk0].size());
+        if (interac_vec[blk0].size()) memcpy(data_ptr, &interac_vec[blk0][0], interac_vec[blk0].size()*sizeof(size_t));
         data_ptr+=interac_vec[blk0].size()*sizeof(size_t);
 
         ((size_t*)data_ptr)[0]=interac_dsp[blk0].size(); data_ptr+=sizeof(size_t);
-        if (interac_dsp[blk0].size()) mem::copy<size_t>((size_t*)data_ptr, &interac_dsp[blk0][0], interac_dsp[blk0].size());
+        if (interac_dsp[blk0].size()) memcpy(data_ptr, &interac_dsp[blk0][0], interac_dsp[blk0].size()*sizeof(size_t));
         data_ptr+=interac_dsp[blk0].size()*sizeof(size_t);
       }
     }
@@ -3659,11 +3669,13 @@ void FMM_Pts<FMMNode>::V_List     (SetupData<Real_t>&  setup_data, bool device){
       interac_dsp.resize(n_blk0);
 
       Vector<size_t> interac_mat;
-      interac_mat.ReInit(((size_t*)data_ptr)[0],(size_t*)(data_ptr+sizeof(size_t)),false);
+      { size_t N=((size_t*)data_ptr)[0];
+        interac_mat.ReInit(N,sctl::Ptr2Itr<size_t>((size_t*)(data_ptr+sizeof(size_t)),N),false); }
       data_ptr+=sizeof(size_t)+interac_mat.Dim()*sizeof(size_t);
 
       Vector<Real_t*> interac_mat_ptr;
-      interac_mat_ptr.ReInit(((size_t*)data_ptr)[0],(Real_t**)(data_ptr+sizeof(size_t)),false);
+      { size_t N=((size_t*)data_ptr)[0];
+        interac_mat_ptr.ReInit(N,sctl::Ptr2Itr<Real_t*>((Real_t**)(data_ptr+sizeof(size_t)),N),false); }
       data_ptr+=sizeof(size_t)+interac_mat_ptr.Dim()*sizeof(Real_t*);
 
 #if 0 // Since we skip SetupPrecomp for V-list
@@ -3679,22 +3691,28 @@ void FMM_Pts<FMMNode>::V_List     (SetupData<Real_t>&  setup_data, bool device){
 #endif
 
       for(size_t blk0=0;blk0<n_blk0;blk0++){
-        fft_vec[blk0].ReInit(((size_t*)data_ptr)[0],(size_t*)(data_ptr+sizeof(size_t)),false);
+        { size_t N=((size_t*)data_ptr)[0];
+          fft_vec[blk0].ReInit(N,sctl::Ptr2Itr<size_t>((size_t*)(data_ptr+sizeof(size_t)),N),false); }
         data_ptr+=sizeof(size_t)+fft_vec[blk0].Dim()*sizeof(size_t);
 
-        ifft_vec[blk0].ReInit(((size_t*)data_ptr)[0],(size_t*)(data_ptr+sizeof(size_t)),false);
+        { size_t N=((size_t*)data_ptr)[0];
+          ifft_vec[blk0].ReInit(N,sctl::Ptr2Itr<size_t>((size_t*)(data_ptr+sizeof(size_t)),N),false); }
         data_ptr+=sizeof(size_t)+ifft_vec[blk0].Dim()*sizeof(size_t);
 
-        fft_scl[blk0].ReInit(((size_t*)data_ptr)[0],(Real_t*)(data_ptr+sizeof(size_t)),false);
+        { size_t N=((size_t*)data_ptr)[0];
+          fft_scl[blk0].ReInit(N,sctl::Ptr2Itr<Real_t>((Real_t*)(data_ptr+sizeof(size_t)),N),false); }
         data_ptr+=sizeof(size_t)+fft_scl[blk0].Dim()*sizeof(Real_t);
 
-        ifft_scl[blk0].ReInit(((size_t*)data_ptr)[0],(Real_t*)(data_ptr+sizeof(size_t)),false);
+        { size_t N=((size_t*)data_ptr)[0];
+          ifft_scl[blk0].ReInit(N,sctl::Ptr2Itr<Real_t>((Real_t*)(data_ptr+sizeof(size_t)),N),false); }
         data_ptr+=sizeof(size_t)+ifft_scl[blk0].Dim()*sizeof(Real_t);
 
-        interac_vec[blk0].ReInit(((size_t*)data_ptr)[0],(size_t*)(data_ptr+sizeof(size_t)),false);
+        { size_t N=((size_t*)data_ptr)[0];
+          interac_vec[blk0].ReInit(N,sctl::Ptr2Itr<size_t>((size_t*)(data_ptr+sizeof(size_t)),N),false); }
         data_ptr+=sizeof(size_t)+interac_vec[blk0].Dim()*sizeof(size_t);
 
-        interac_dsp[blk0].ReInit(((size_t*)data_ptr)[0],(size_t*)(data_ptr+sizeof(size_t)),false);
+        { size_t N=((size_t*)data_ptr)[0];
+          interac_dsp[blk0].ReInit(N,sctl::Ptr2Itr<size_t>((size_t*)(data_ptr+sizeof(size_t)),N),false); }
         data_ptr+=sizeof(size_t)+interac_dsp[blk0].Dim()*sizeof(size_t);
       }
     }
@@ -4513,7 +4531,7 @@ void FMM_Pts<FMMNode>::X_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
       Vector<Real_t>& coord_vec=((FMMNode_t*)nodes[i])->src_coord;
       Vector<Real_t>& value_vec=((FMMNode_t*)nodes[i])->src_value;
       if(coord_vec.Dim()){
-        coord.dsp[i]=&coord_vec[0]-coord.ptr[0][0];
+        coord.dsp[i]=&coord_vec[0]-&coord.ptr[0][0][0];
         assert(coord.dsp[i]<coord.len);
         coord.cnt[i]=coord_vec.Dim();
       }else{
@@ -4521,7 +4539,7 @@ void FMM_Pts<FMMNode>::X_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
         coord.cnt[i]=0;
       }
       if(value_vec.Dim()){
-        value.dsp[i]=&value_vec[0]-value.ptr[0][0];
+        value.dsp[i]=&value_vec[0]-&value.ptr[0][0][0];
         assert(value.dsp[i]<value.len);
         value.cnt[i]=value_vec.Dim();
       }else{
@@ -4550,7 +4568,7 @@ void FMM_Pts<FMMNode>::X_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
       Vector<Real_t>& coord_vec=((FMMNode_t*)nodes[i])->surf_coord;
       Vector<Real_t>& value_vec=((FMMNode_t*)nodes[i])->surf_value;
       if(coord_vec.Dim()){
-        coord.dsp[i]=&coord_vec[0]-coord.ptr[0][0];
+        coord.dsp[i]=&coord_vec[0]-&coord.ptr[0][0][0];
         assert(coord.dsp[i]<coord.len);
         coord.cnt[i]=coord_vec.Dim();
       }else{
@@ -4558,7 +4576,7 @@ void FMM_Pts<FMMNode>::X_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
         coord.cnt[i]=0;
       }
       if(value_vec.Dim()){
-        value.dsp[i]=&value_vec[0]-value.ptr[0][0];
+        value.dsp[i]=&value_vec[0]-&value.ptr[0][0][0];
         assert(value.dsp[i]<value.len);
         value.cnt[i]=value_vec.Dim();
       }else{
@@ -4587,7 +4605,7 @@ void FMM_Pts<FMMNode>::X_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
       Vector<Real_t>& coord_vec=tree->dnwd_check_surf[((FMMNode*)nodes[i])->Depth()];
       Vector<Real_t>& value_vec=((FMMData*)((FMMNode*)nodes[i])->FMMData())->dnward_equiv;
       if(coord_vec.Dim()){
-        coord.dsp[i]=&coord_vec[0]-coord.ptr[0][0];
+        coord.dsp[i]=&coord_vec[0]-&coord.ptr[0][0][0];
         assert(coord.dsp[i]<coord.len);
         coord.cnt[i]=coord_vec.Dim();
       }else{
@@ -4595,7 +4613,7 @@ void FMM_Pts<FMMNode>::X_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
         coord.cnt[i]=0;
       }
       if(value_vec.Dim()){
-        value.dsp[i]=&value_vec[0]-value.ptr[0][0];
+        value.dsp[i]=&value_vec[0]-&value.ptr[0][0][0];
         assert(value.dsp[i]<value.len);
         value.cnt[i]=value_vec.Dim();
       }else{
@@ -4815,7 +4833,7 @@ void FMM_Pts<FMMNode>::W_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
       Vector<Real_t>& coord_vec=tree->upwd_equiv_surf[((FMMNode*)nodes[i])->Depth()];
       Vector<Real_t>& value_vec=((FMMData*)((FMMNode*)nodes[i])->FMMData())->upward_equiv;
       if(coord_vec.Dim()){
-        coord.dsp[i]=&coord_vec[0]-coord.ptr[0][0];
+        coord.dsp[i]=&coord_vec[0]-&coord.ptr[0][0][0];
         assert(coord.dsp[i]<coord.len);
         coord.cnt[i]=coord_vec.Dim();
       }else{
@@ -4823,7 +4841,7 @@ void FMM_Pts<FMMNode>::W_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
         coord.cnt[i]=0;
       }
       if(value_vec.Dim()){
-        value.dsp[i]=&value_vec[0]-value.ptr[0][0];
+        value.dsp[i]=&value_vec[0]-&value.ptr[0][0][0];
         assert(value.dsp[i]<value.len);
         value.cnt[i]=value_vec.Dim();
       }else{
@@ -4875,7 +4893,7 @@ void FMM_Pts<FMMNode>::W_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
       Vector<Real_t>& coord_vec=((FMMNode_t*)nodes[i])->trg_coord;
       Vector<Real_t>& value_vec=((FMMNode_t*)nodes[i])->trg_value;
       if(coord_vec.Dim()){
-        coord.dsp[i]=&coord_vec[0]-coord.ptr[0][0];
+        coord.dsp[i]=&coord_vec[0]-&coord.ptr[0][0][0];
         assert(coord.dsp[i]<coord.len);
         coord.cnt[i]=coord_vec.Dim();
       }else{
@@ -4883,7 +4901,7 @@ void FMM_Pts<FMMNode>::W_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
         coord.cnt[i]=0;
       }
       if(value_vec.Dim()){
-        value.dsp[i]=&value_vec[0]-value.ptr[0][0];
+        value.dsp[i]=&value_vec[0]-&value.ptr[0][0][0];
         assert(value.dsp[i]<value.len);
         value.cnt[i]=value_vec.Dim();
       }else{
@@ -5100,7 +5118,7 @@ void FMM_Pts<FMMNode>::U_ListSetup(SetupData<Real_t>& setup_data, FMMTree_t* tre
       Vector<Real_t>& coord_vec=((FMMNode_t*)nodes[i])->src_coord;
       Vector<Real_t>& value_vec=((FMMNode_t*)nodes[i])->src_value;
       if(coord_vec.Dim()){
-        coord.dsp[i]=&coord_vec[0]-coord.ptr[0][0];
+        coord.dsp[i]=&coord_vec[0]-&coord.ptr[0][0][0];
         assert(coord.dsp[i]<coord.len);
         coord.cnt[i]=coord_vec.Dim();
       }else{
@@ -5108,7 +5126,7 @@ void FMM_Pts<FMMNode>::U_ListSetup(SetupData<Real_t>& setup_data, FMMTree_t* tre
         coord.cnt[i]=0;
       }
       if(value_vec.Dim()){
-        value.dsp[i]=&value_vec[0]-value.ptr[0][0];
+        value.dsp[i]=&value_vec[0]-&value.ptr[0][0][0];
         assert(value.dsp[i]<value.len);
         value.cnt[i]=value_vec.Dim();
       }else{
@@ -5137,7 +5155,7 @@ void FMM_Pts<FMMNode>::U_ListSetup(SetupData<Real_t>& setup_data, FMMTree_t* tre
       Vector<Real_t>& coord_vec=((FMMNode_t*)nodes[i])->surf_coord;
       Vector<Real_t>& value_vec=((FMMNode_t*)nodes[i])->surf_value;
       if(coord_vec.Dim()){
-        coord.dsp[i]=&coord_vec[0]-coord.ptr[0][0];
+        coord.dsp[i]=&coord_vec[0]-&coord.ptr[0][0][0];
         assert(coord.dsp[i]<coord.len);
         coord.cnt[i]=coord_vec.Dim();
       }else{
@@ -5145,7 +5163,7 @@ void FMM_Pts<FMMNode>::U_ListSetup(SetupData<Real_t>& setup_data, FMMTree_t* tre
         coord.cnt[i]=0;
       }
       if(value_vec.Dim()){
-        value.dsp[i]=&value_vec[0]-value.ptr[0][0];
+        value.dsp[i]=&value_vec[0]-&value.ptr[0][0][0];
         assert(value.dsp[i]<value.len);
         value.cnt[i]=value_vec.Dim();
       }else{
@@ -5174,7 +5192,7 @@ void FMM_Pts<FMMNode>::U_ListSetup(SetupData<Real_t>& setup_data, FMMTree_t* tre
       Vector<Real_t>& coord_vec=((FMMNode_t*)nodes[i])->trg_coord;
       Vector<Real_t>& value_vec=((FMMNode_t*)nodes[i])->trg_value;
       if(coord_vec.Dim()){
-        coord.dsp[i]=&coord_vec[0]-coord.ptr[0][0];
+        coord.dsp[i]=&coord_vec[0]-&coord.ptr[0][0][0];
         assert(coord.dsp[i]<coord.len);
         coord.cnt[i]=coord_vec.Dim();
       }else{
@@ -5182,7 +5200,7 @@ void FMM_Pts<FMMNode>::U_ListSetup(SetupData<Real_t>& setup_data, FMMTree_t* tre
         coord.cnt[i]=0;
       }
       if(value_vec.Dim()){
-        value.dsp[i]=&value_vec[0]-value.ptr[0][0];
+        value.dsp[i]=&value_vec[0]-&value.ptr[0][0][0];
         assert(value.dsp[i]<value.len);
         value.cnt[i]=value_vec.Dim();
       }else{
@@ -5496,7 +5514,7 @@ void FMM_Pts<FMMNode>::Down2TargetSetup(SetupData<Real_t>&  setup_data, FMMTree_
       Vector<Real_t>& coord_vec=tree->dnwd_equiv_surf[((FMMNode*)nodes[i])->Depth()];
       Vector<Real_t>& value_vec=((FMMData*)((FMMNode*)nodes[i])->FMMData())->dnward_equiv;
       if(coord_vec.Dim()){
-        coord.dsp[i]=&coord_vec[0]-coord.ptr[0][0];
+        coord.dsp[i]=&coord_vec[0]-&coord.ptr[0][0][0];
         assert(coord.dsp[i]<coord.len);
         coord.cnt[i]=coord_vec.Dim();
       }else{
@@ -5504,7 +5522,7 @@ void FMM_Pts<FMMNode>::Down2TargetSetup(SetupData<Real_t>&  setup_data, FMMTree_
         coord.cnt[i]=0;
       }
       if(value_vec.Dim()){
-        value.dsp[i]=&value_vec[0]-value.ptr[0][0];
+        value.dsp[i]=&value_vec[0]-&value.ptr[0][0][0];
         assert(value.dsp[i]<value.len);
         value.cnt[i]=value_vec.Dim();
       }else{
@@ -5556,7 +5574,7 @@ void FMM_Pts<FMMNode>::Down2TargetSetup(SetupData<Real_t>&  setup_data, FMMTree_
       Vector<Real_t>& coord_vec=((FMMNode_t*)nodes[i])->trg_coord;
       Vector<Real_t>& value_vec=((FMMNode_t*)nodes[i])->trg_value;
       if(coord_vec.Dim()){
-        coord.dsp[i]=&coord_vec[0]-coord.ptr[0][0];
+        coord.dsp[i]=&coord_vec[0]-&coord.ptr[0][0][0];
         assert(coord.dsp[i]<coord.len);
         coord.cnt[i]=coord_vec.Dim();
       }else{
@@ -5564,7 +5582,7 @@ void FMM_Pts<FMMNode>::Down2TargetSetup(SetupData<Real_t>&  setup_data, FMMTree_
         coord.cnt[i]=0;
       }
       if(value_vec.Dim()){
-        value.dsp[i]=&value_vec[0]-value.ptr[0][0];
+        value.dsp[i]=&value_vec[0]-&value.ptr[0][0][0];
         assert(value.dsp[i]<value.len);
         value.cnt[i]=value_vec.Dim();
       }else{

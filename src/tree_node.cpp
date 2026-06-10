@@ -58,7 +58,7 @@ int TreeNode::Path2Node(){
 }
 
 TreeNode* TreeNode::NewNode(TreeNode* n_){
-  TreeNode* n=(n_==NULL?mem::aligned_new<TreeNode>():n_);
+  TreeNode* n=(n_==NULL?(TreeNode*)mem::aligned_new<TreeNode>():n_);
   n->dim=dim;
   n->max_depth=max_depth;
   return n_;
@@ -84,7 +84,7 @@ void TreeNode::Subdivide() {
   if(child) return;
   SetStatus(1);
   int n=(1UL<<dim);
-  child=mem::aligned_new<TreeNode*>(n);
+  child=(TreeNode**)mem::aligned_new<TreeNode*>(n);
   for(int i=0;i<n;i++){
     child[i]=this->NewNode();
     child[i]->parent=this;

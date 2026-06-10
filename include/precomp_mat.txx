@@ -266,7 +266,7 @@ void PrecompMat<T>::LoadFile(const char* fname, const sctl::Comm& comm){
       //f_size=ftell (f);
     }
     if(f_size>0){
-      f_data=mem::aligned_new<char>(f_size);
+      f_data=(char*)mem::aligned_new<char>(f_size);
       fseek (f, 0, SEEK_SET);
       {
         size_t r_cnt=fread(f_data,sizeof(char),f_size,f);
@@ -289,7 +289,7 @@ void PrecompMat<T>::LoadFile(const char* fname, const sctl::Comm& comm){
     return;
   }
 
-  if(f_data==NULL) f_data=mem::aligned_new<char>(f_size);
+  if(f_data==NULL) f_data=(char*)mem::aligned_new<char>(f_size);
   char* f_ptr=f_data;
   int max_send_size=1000000000;
   while(f_size>0){

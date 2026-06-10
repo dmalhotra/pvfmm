@@ -60,6 +60,11 @@ class Matrix{
 
   Matrix(size_t dim1, size_t dim2, sctl::Iterator<T> data_=sctl::NullIterator<T>(), bool own_data_=true);
 
+#if defined(SCTL_MEMDEBUG)
+  Matrix(size_t dim1, size_t dim2, T* data_, bool own_data_=true)
+    : Matrix(dim1, dim2, (data_? sctl::Ptr2Itr<T>(data_, (sctl::Long)dim1*(sctl::Long)dim2) : sctl::NullIterator<T>()), own_data_) {}
+#endif
+
   Matrix(const Matrix<T>& M);
 
   ~Matrix();
@@ -67,6 +72,12 @@ class Matrix{
   void Swap(Matrix<T>& M);
 
   void ReInit(size_t dim1, size_t dim2, sctl::Iterator<T> data_=sctl::NullIterator<T>(), bool own_data_=true);
+
+#if defined(SCTL_MEMDEBUG)
+  void ReInit(size_t dim1, size_t dim2, T* data_, bool own_data_=true) {
+    ReInit(dim1, dim2, (data_? sctl::Ptr2Itr<T>(data_, (sctl::Long)dim1*(sctl::Long)dim2) : sctl::NullIterator<T>()), own_data_);
+  }
+#endif
 
   Device& AllocDevice(bool copy);
 
@@ -86,9 +97,9 @@ class Matrix{
 
   void SetZero();
 
-  sctl::Iterator<T> Begin();
+  T* Begin();
 
-  sctl::ConstIterator<T> Begin() const;
+  const T* Begin() const;
 
   Matrix<T>& operator=(const Matrix<T>& M);
 
@@ -102,9 +113,9 @@ class Matrix{
 
   const T& operator()(size_t i,size_t j) const;
 
-  sctl::Iterator<T> operator[](size_t i);
+  T* operator[](size_t i);
 
-  sctl::ConstIterator<T> operator[](size_t i) const;
+  const T* operator[](size_t i) const;
 
   Matrix<T> operator*(const Matrix<T>& M);
 

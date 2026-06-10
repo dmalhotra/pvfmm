@@ -32,7 +32,7 @@ void FMM_Tree<FMM_Mat_t>::Initialize(typename Node_t::NodeData* init_data) {
     std::vector<Node_t*>& nodes=this->GetNodeList();
     #pragma omp parallel for
     for(size_t i=0;i<nodes.size();i++){
-      if(nodes[i]->FMMData()==NULL) nodes[i]->FMMData()=mem::aligned_new<typename FMM_Mat_t::FMMData>();
+      if(nodes[i]->FMMData()==NULL) nodes[i]->FMMData()=(typename FMM_Mat_t::FMMData*)mem::aligned_new<typename FMM_Mat_t::FMMData>();
     }
   }
   sctl::Profile::Toc();
@@ -423,7 +423,7 @@ void FMM_Tree<FMM_Mat_t>::MultipoleReduceBcast() {
       s_iter++;
     }
 
-    char* send_buff=mem::aligned_new<char>(send_size);
+    char* send_buff=(char*)mem::aligned_new<char>(send_size);
     char* buff_iter=send_buff;
     ((size_t*)buff_iter)[0]=s_node_cnt[0];
     ((size_t*)buff_iter)[1]=s_node_cnt[1];
@@ -450,7 +450,7 @@ void FMM_Tree<FMM_Mat_t>::MultipoleReduceBcast() {
     char* recv_buff=NULL;
     if(partner<(size_t)num_p){
       MPI_Sendrecv(&send_size,        1,  MPI_INT, partner, 0, &recv_size,         1,  MPI_INT, partner, 0, this->Comm().GetMPI_Comm(), &status);
-      recv_buff=mem::aligned_new<char>(recv_size);
+      recv_buff=(char*)mem::aligned_new<char>(recv_size);
       MPI_Sendrecv(send_buff, send_size, MPI_BYTE, partner, 0,  recv_buff, recv_size, MPI_BYTE, partner, 0, this->Comm().GetMPI_Comm(), &status);
     }
 
@@ -471,7 +471,7 @@ void FMM_Tree<FMM_Mat_t>::MultipoleReduceBcast() {
             //Receive
             if(recv_size>0) mem::aligned_delete<char>(recv_buff);
             MPI_Recv(&recv_size,         1, MPI_INT , partner0, 0, this->Comm().GetMPI_Comm(), &status);
-            recv_buff=mem::aligned_new<char>(recv_size);
+            recv_buff=(char*)mem::aligned_new<char>(recv_size);
             MPI_Recv( recv_buff, recv_size, MPI_BYTE, partner0, 0, this->Comm().GetMPI_Comm(), &status);
           }
         }
@@ -633,7 +633,7 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
         Matrix<Real_t>& output_data=*setup_data[0+PVFMM_MAX_DEPTH*2].output_data;
         if(fmm_mat->staging_buffer.Dim()){
           assert(fmm_mat->staging_buffer.Dim()*sizeof(Real_t)>=output_data.Dim(0)*output_data.Dim(1));
-          output_data.Device2Host((Real_t*)&fmm_mat->staging_buffer[0]);
+          output_data.Device2Host(sctl::Ptr2Itr<Real_t>((Real_t*)&fmm_mat->staging_buffer[0], output_data.Dim(0)*output_data.Dim(1)));
         }
       }
       sctl::Profile::Toc();
@@ -692,7 +692,7 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
     Matrix<Real_t>& output_data=*setup_data[0+PVFMM_MAX_DEPTH*0].output_data;
     if(fmm_mat->staging_buffer.Dim()){
       assert(fmm_mat->staging_buffer.Dim()>=sizeof(Real_t)*output_data.Dim(0)*output_data.Dim(1));
-      output_data.Device2Host((Real_t*)&fmm_mat->staging_buffer[0]);
+      output_data.Device2Host(sctl::Ptr2Itr<Real_t>((Real_t*)&fmm_mat->staging_buffer[0], output_data.Dim(0)*output_data.Dim(1)));
     }
   }
   sctl::Profile::Toc();

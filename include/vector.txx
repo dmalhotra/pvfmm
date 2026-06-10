@@ -185,13 +185,13 @@ void Vector<T>::SetZero(){
 }
 
 template <class ValueType>
-sctl::Iterator<ValueType> Vector<ValueType>::Begin(){
-  return data_ptr;
+ValueType* Vector<ValueType>::Begin(){
+  return (dim>0 ? &data_ptr[0] : (ValueType*)NULL);
 }
 
 template <class ValueType>
-sctl::ConstIterator<ValueType> Vector<ValueType>::Begin() const{
-  return (sctl::ConstIterator<ValueType>)data_ptr;
+const ValueType* Vector<ValueType>::Begin() const{
+  return (dim>0 ? &data_ptr[0] : (const ValueType*)NULL);
 }
 
 template <class T>
