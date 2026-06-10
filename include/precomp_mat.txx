@@ -244,15 +244,15 @@ void PrecompMat<T>::Save2File(const char* fname, bool replace){
 }
 
 template <class T>
-void PrecompMat<T>::LoadFile(const char* fname, MPI_Comm comm){
-  Profile::Tic("LoadMatrices",&comm,true,3);
+void PrecompMat<T>::LoadFile(const char* fname, const sctl::Comm& comm){
+  sctl::Profile::Tic("LoadMatrices",&comm,true,3);
 
-  Profile::Tic("ReadFile",&comm,true,4);
+  sctl::Profile::Tic("ReadFile",&comm,true,4);
   size_t f_size=0;
   char* f_data=NULL;
-  int np, myrank;
-  MPI_Comm_size(comm,&np);
-  MPI_Comm_rank(comm,&myrank);
+  const int np = comm.Size();
+  const int myrank = comm.Rank();
+  (void)np;
   if(myrank==0){
     FILE* f=fopen(fname,"rb");
     if(f==NULL){
@@ -279,13 +279,13 @@ void PrecompMat<T>::LoadFile(const char* fname, MPI_Comm comm){
       fclose(f);
     }
   }
-  Profile::Toc();
+  sctl::Profile::Toc();
 
-  Profile::Tic("Broadcast",&comm,true,4);
-  MPI_Bcast( &f_size, sizeof(size_t), MPI_BYTE, 0, comm );
+  sctl::Profile::Tic("Broadcast",&comm,true,4);
+  MPI_Bcast( &f_size, sizeof(size_t), MPI_BYTE, 0, comm.GetMPI_Comm() );
   if(f_size==0){
-    Profile::Toc();
-    Profile::Toc();
+    sctl::Profile::Toc();
+    sctl::Profile::Toc();
     return;
   }
 
@@ -294,11 +294,11 @@ void PrecompMat<T>::LoadFile(const char* fname, MPI_Comm comm){
   int max_send_size=1000000000;
   while(f_size>0){
     if(f_size>(size_t)max_send_size){
-      MPI_Bcast( f_ptr, max_send_size, MPI_BYTE, 0, comm );
+      MPI_Bcast( f_ptr, max_send_size, MPI_BYTE, 0, comm.GetMPI_Comm() );
       f_size-=max_send_size;
       f_ptr+=max_send_size;
     }else{
-      MPI_Bcast( f_ptr, f_size, MPI_BYTE, 0, comm );
+      MPI_Bcast( f_ptr, f_size, MPI_BYTE, 0, comm.GetMPI_Comm() );
       f_size=0;
     }
   }
@@ -342,8 +342,8 @@ void PrecompMat<T>::LoadFile(const char* fname, MPI_Comm comm){
     }
   }
   mem::aligned_delete<char>(f_data);
-  Profile::Toc();
-  Profile::Toc();
+  sctl::Profile::Toc();
+  sctl::Profile::Toc();
 }
 
 template <class T>

@@ -69,7 +69,7 @@ class PrecompMat{
 
   void Save2File(const char* fname, bool replace=false);
 
-  void LoadFile(const char* fname, MPI_Comm comm);
+  void LoadFile(const char* fname, const sctl::Comm& comm);
 
   std::vector<T>& RelativeTrgCoord();
 

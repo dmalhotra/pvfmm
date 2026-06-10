@@ -1,4 +1,3 @@
-#include <mpi.h>
 #include <pvfmm_common.hpp>
 #include <cstdlib>
 #include <iostream>
@@ -213,7 +212,7 @@ void fn_poten_t5(const Real_t* coord, int n, Real_t* out){
 ///////////////////////////////////////////////////////////////////////////////
 
 template <class Real_t>
-void fmm_test(int test_case, size_t N, size_t M, bool unif, int mult_order, int cheb_deg, int depth, bool adap, Real_t tol, MPI_Comm comm){
+void fmm_test(int test_case, size_t N, size_t M, bool unif, int mult_order, int cheb_deg, int depth, bool adap, Real_t tol, const sctl::Comm& comm){
   typedef pvfmm::FMM_Node<pvfmm::Cheb_Node<Real_t> > FMMNode_t;
   typedef pvfmm::FMM_Cheb<FMMNode_t> FMM_Mat_t;
   typedef pvfmm::FMM_Tree<FMM_Mat_t> FMM_Tree_t;
@@ -276,9 +275,8 @@ void fmm_test(int test_case, size_t N, size_t M, bool unif, int mult_order, int 
   int omp_p=omp_get_max_threads();
 
   // Find out my identity in the default communicator
-  int myrank, p;
-  MPI_Comm_rank(comm, &myrank);
-  MPI_Comm_size(comm,&p);
+  const int myrank = comm.Rank();
+  const int p      = comm.Size();
 
   //Various parameters.
   typename FMMNode_t::NodeData tree_data;
@@ -326,7 +324,7 @@ void fmm_test(int test_case, size_t N, size_t M, bool unif, int mult_order, int 
     fmm_mat_grad->Initialize(mult_order,tree_data.cheb_deg,comm,mykernel_grad);
   }
 
-  pvfmm::Profile::Tic("TreeSetup",&comm,true,1);
+  sctl::Profile::Tic("TreeSetup",&comm,true,1);
   {
     FMM_Tree_t* tree=new FMM_Tree_t(comm);
     tree->Initialize(&tree_data);
@@ -349,7 +347,7 @@ void fmm_test(int test_case, size_t N, size_t M, bool unif, int mult_order, int 
     tree_data.pt_coord=pt_coord;
     tree_data.max_pts=1; // Points per octant.
   }
-  pvfmm::Profile::Toc();
+  sctl::Profile::Toc();
 
   //Create Tree and initialize with input data.
   FMM_Tree_t* tree=new FMM_Tree_t(comm);
@@ -372,7 +370,7 @@ void fmm_test(int test_case, size_t N, size_t M, bool unif, int mult_order, int 
     for(int i=0;i<PVFMM_MAX_DEPTH;i++){
       int local_size=all_nodes[i];
       int global_size;
-      MPI_Allreduce(&local_size, &global_size, 1, MPI_INT, MPI_SUM, comm);
+      comm.Allreduce(sctl::Ptr2ConstItr<int>(&local_size, 1), sctl::Ptr2Itr<int>(&global_size, 1), 1, sctl::CommOp::SUM);
       if(!myrank) std::cout<<global_size<<' ';
     }
     if(!myrank) std::cout<<'\n';
@@ -381,7 +379,7 @@ void fmm_test(int test_case, size_t N, size_t M, bool unif, int mult_order, int 
     for(int i=0;i<PVFMM_MAX_DEPTH;i++){
       int local_size=leaf_nodes[i];
       int global_size;
-      MPI_Allreduce(&local_size, &global_size, 1, MPI_INT, MPI_SUM, comm);
+      comm.Allreduce(sctl::Ptr2ConstItr<int>(&local_size, 1), sctl::Ptr2Itr<int>(&global_size, 1), 1, sctl::CommOp::SUM);
       if(!myrank) std::cout<<global_size<<' ';
     }
     if(!myrank) std::cout<<'\n';
@@ -397,7 +395,7 @@ void fmm_test(int test_case, size_t N, size_t M, bool unif, int mult_order, int 
     tree->RunFMM();
 
     //Re-run and time
-    MPI_Barrier(comm);
+    comm.Barrier();
     double tt=-omp_get_wtime();
     tree->RunFMM();
     tt+=omp_get_wtime();
@@ -424,8 +422,8 @@ void fmm_test(int test_case, size_t N, size_t M, bool unif, int mult_order, int 
         if(!myrank) std::cout<<"MAX, MIN Nodes: ";
         long max=0;
         long min=0;
-        MPI_Allreduce(&node_cnt, &max, 1, MPI_LONG, MPI_MAX, comm);
-        MPI_Allreduce(&node_cnt, &min, 1, MPI_LONG, MPI_MIN, comm);
+        comm.Allreduce(sctl::Ptr2ConstItr<long>(&node_cnt, 1), sctl::Ptr2Itr<long>(&max, 1), 1, sctl::CommOp::MAX);
+        comm.Allreduce(sctl::Ptr2ConstItr<long>(&node_cnt, 1), sctl::Ptr2Itr<long>(&min, 1), 1, sctl::CommOp::MIN);
         if(!myrank) std::cout<<max<<' ';
         if(!myrank) std::cout<<min<<'\n';
       }
@@ -441,8 +439,8 @@ void fmm_test(int test_case, size_t N, size_t M, bool unif, int mult_order, int 
         if(!myrank) std::cout<<"MAX, MIN Nodes: ";
         long max=0;
         long min=0;
-        MPI_Allreduce(&node_cnt, &max, 1, MPI_LONG, MPI_MAX, comm);
-        MPI_Allreduce(&node_cnt, &min, 1, MPI_LONG, MPI_MIN, comm);
+        comm.Allreduce(sctl::Ptr2ConstItr<long>(&node_cnt, 1), sctl::Ptr2Itr<long>(&max, 1), 1, sctl::CommOp::MAX);
+        comm.Allreduce(sctl::Ptr2ConstItr<long>(&node_cnt, 1), sctl::Ptr2Itr<long>(&min, 1), 1, sctl::CommOp::MIN);
         if(!myrank) std::cout<<max<<' ';
         if(!myrank) std::cout<<min<<'\n';
       }
@@ -461,9 +459,9 @@ void fmm_test(int test_case, size_t N, size_t M, bool unif, int mult_order, int 
 
   //Check Tree.
   #ifndef NDEBUG
-  pvfmm::Profile::Tic("CheckTree",&comm,true,1);
+  sctl::Profile::Tic("CheckTree",&comm,true,1);
   tree->CheckTree();
-  pvfmm::Profile::Toc();
+  sctl::Profile::Toc();
   #endif
 
   //Find error in FMM output.
@@ -473,7 +471,7 @@ void fmm_test(int test_case, size_t N, size_t M, bool unif, int mult_order, int 
   //tree->Write2File("result/output",0);
 
   if(fn_grad_!=NULL){ //Compute gradient.
-    pvfmm::Profile::Tic("FMM_Eval(Grad)",&comm,true,1);
+    sctl::Profile::Tic("FMM_Eval(Grad)",&comm,true,1);
     if(mykernel_grad!=NULL){
       //Create Tree and initialize with input data.
       tree->Initialize(&tree_data);
@@ -490,7 +488,7 @@ void fmm_test(int test_case, size_t N, size_t M, bool unif, int mult_order, int 
       #pragma omp parallel for
       for(size_t i=0;i<nlist.size();i++) nlist[i]->Gradient();
     }
-    pvfmm::Profile::Toc();
+    sctl::Profile::Toc();
 
     //Find error in FMM output (gradient).
     CheckChebOutput<FMM_Tree_t>(tree, (typename TestFn<Real_t>::Fn_t) fn_grad_, mykernel->ker_dim[1]*PVFMM_COORD_DIM, std::string("OutputGrad"));
@@ -505,12 +503,11 @@ void fmm_test(int test_case, size_t N, size_t M, bool unif, int mult_order, int 
 }
 
 int main(int argc, char **argv){
-  MPI_Init(&argc, &argv);
+  sctl::Comm::MPI_Init(&argc, &argv);
 
-  MPI_Comm comm=MPI_COMM_WORLD;
-  int p; MPI_Comm_size(comm,&p);
-  if(p>8){ // Remove slow processors.
-    MPI_Comm comm_=MPI_COMM_WORLD;
+  sctl::Comm comm = sctl::Comm::World();
+  if(comm.Size()>8){ // Remove slow processors.
+    const sctl::Comm comm_ = sctl::Comm::World();
     size_t N=2048;
     pvfmm::Matrix<double> A(N,N);
     pvfmm::Matrix<double> B(N,N);
@@ -525,17 +522,15 @@ int main(int argc, char **argv){
     C=A*B;
     t+=omp_get_wtime();
 
-    double tt;
-    int myrank, np;
-    MPI_Comm_size(comm_,&np);
-    MPI_Comm_rank(comm_,&myrank);
-    MPI_Allreduce(&t, &tt, 1, pvfmm::par::Mpi_datatype<double>::value(), MPI_SUM, comm_);
-    tt=tt/np;
+    double tt = 0;
+    const int np = comm_.Size();
+    comm_.Allreduce(sctl::Ptr2ConstItr<double>(&t, 1), sctl::Ptr2Itr<double>(&tt, 1), 1, sctl::CommOp::SUM);
+    tt = tt / np;
 
-    int clr=(t<tt*1.5?0:1);
-    MPI_Comm_split(comm_, clr, myrank, &comm );
+    const int clr = (t < tt*1.5 ? 0 : 1);
+    comm = comm_.Split(clr);
     if(clr){
-      MPI_Finalize();
+      sctl::Comm::MPI_Finalize();
       return 0;
     }
   }
@@ -559,19 +554,19 @@ int main(int argc, char **argv){
                                4) Biot-Savart, Smooth Gaussian, FreeSpace Boundary\n\
                                5) Helmholtz, Smooth Gaussian, FreeSpace Boundary"),NULL,10);
   commandline_option_end(argc, argv);
-  pvfmm::Profile::Enable(true);
+  sctl::Profile::Enable(true);
 
   // Run FMM with above options.
-  pvfmm::Profile::Tic("FMM_Test",&comm,true);
+  sctl::Profile::Tic("FMM_Test",&comm,true);
   if(sp) fmm_test<float >(test, N,M,unif, m,q, d, adap,(float)tol, comm);
   else   fmm_test<double>(test, N,M,unif, m,q, d, adap,       tol, comm);
-  pvfmm::Profile::Toc();
+  sctl::Profile::Toc();
 
   //Output Profiling results.
-  pvfmm::Profile::print(&comm);
+  sctl::Profile::print(&comm);
 
   // Shut down MPI
-  MPI_Finalize();
+  sctl::Comm::MPI_Finalize();
   return 0;
 }
 

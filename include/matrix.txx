@@ -234,7 +234,7 @@ Matrix<T>& Matrix<T>::operator=(const Matrix<T>& M){
 template <class T>
 Matrix<T>& Matrix<T>::operator+=(const Matrix<T>& M){
   assert(M.Dim(0)==Dim(0) && M.Dim(1)==Dim(1));
-  Profile::Add_FLOP(dim[0]*dim[1]);
+  sctl::Profile::IncrementCounter(sctl::ProfileCounter::FLOP, dim[0]*dim[1]);
 
   for(size_t i=0;i<M.Dim(0)*M.Dim(1);i++)
     data_ptr[i]+=M.data_ptr[i];
@@ -244,7 +244,7 @@ Matrix<T>& Matrix<T>::operator+=(const Matrix<T>& M){
 template <class T>
 Matrix<T>& Matrix<T>::operator-=(const Matrix<T>& M){
   assert(M.Dim(0)==Dim(0) && M.Dim(1)==Dim(1));
-  Profile::Add_FLOP(dim[0]*dim[1]);
+  sctl::Profile::IncrementCounter(sctl::ProfileCounter::FLOP, dim[0]*dim[1]);
 
   for(size_t i=0;i<M.Dim(0)*M.Dim(1);i++)
     data_ptr[i]-=M.data_ptr[i];
@@ -255,7 +255,7 @@ template <class T>
 Matrix<T> Matrix<T>::operator+(const Matrix<T>& M2){
   Matrix<T>& M1=*this;
   assert(M2.Dim(0)==M1.Dim(0) && M2.Dim(1)==M1.Dim(1));
-  Profile::Add_FLOP(dim[0]*dim[1]);
+  sctl::Profile::IncrementCounter(sctl::ProfileCounter::FLOP, dim[0]*dim[1]);
 
   Matrix<T> M_r(M1.Dim(0),M1.Dim(1),NULL);
   for(size_t i=0;i<M1.Dim(0)*M1.Dim(1);i++)
@@ -267,7 +267,7 @@ template <class T>
 Matrix<T> Matrix<T>::operator-(const Matrix<T>& M2){
   Matrix<T>& M1=*this;
   assert(M2.Dim(0)==M1.Dim(0) && M2.Dim(1)==M1.Dim(1));
-  Profile::Add_FLOP(dim[0]*dim[1]);
+  sctl::Profile::IncrementCounter(sctl::ProfileCounter::FLOP, dim[0]*dim[1]);
 
   Matrix<T> M_r(M1.Dim(0),M1.Dim(1),NULL);
   for(size_t i=0;i<M1.Dim(0)*M1.Dim(1);i++)
@@ -296,7 +296,7 @@ inline const T* Matrix<T>::operator[](size_t i) const{
 template <class T>
 Matrix<T> Matrix<T>::operator*(const Matrix<T>& M){
   assert(dim[1]==M.dim[0]);
-  Profile::Add_FLOP(2*(((long long)dim[0])*dim[1])*M.dim[1]);
+  sctl::Profile::IncrementCounter(sctl::ProfileCounter::FLOP, 2*(((long long)dim[0])*dim[1])*M.dim[1]);
 
   Matrix<T> M_r(dim[0],M.dim[1],NULL);
   if(M.Dim(0)*M.Dim(1)==0 || this->Dim(0)*this->Dim(1)==0) return M_r;
@@ -312,7 +312,7 @@ void Matrix<T>::GEMM(Matrix<T>& M_r, const Matrix<T>& A, const Matrix<T>& B, T b
   assert(M_r.dim[0]==A.dim[0]);
   assert(M_r.dim[1]==B.dim[1]);
 #if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
-  Profile::Add_FLOP(2*(((long long)A.dim[0])*A.dim[1])*B.dim[1]);
+  sctl::Profile::IncrementCounter(sctl::ProfileCounter::FLOP, 2*(((long long)A.dim[0])*A.dim[1])*B.dim[1]);
 #endif
   mat::gemm<T>('N','N',B.dim[1],A.dim[0],A.dim[1],
       1.0,B.data_ptr,B.dim[1],A.data_ptr,A.dim[1],beta,M_r.data_ptr,M_r.dim[1]);
@@ -326,7 +326,7 @@ void Matrix<T>::CUBLASGEMM(Matrix<T>& M_r, const Matrix<T>& A, const Matrix<T>& 
   assert(A.dim[1]==B.dim[0]);
   assert(M_r.dim[0]==A.dim[0]);
   assert(M_r.dim[1]==B.dim[1]);
-  Profile::Add_FLOP(2*(((long long)A.dim[0])*A.dim[1])*B.dim[1]);
+  sctl::Profile::IncrementCounter(sctl::ProfileCounter::FLOP, 2*(((long long)A.dim[0])*A.dim[1])*B.dim[1]);
   mat::cublasgemm('N', 'N', B.dim[1], A.dim[0], A.dim[1],
       (T)1.0, B.data_ptr, B.dim[1], A.data_ptr, A.dim[1], beta, M_r.data_ptr, M_r.dim[1]);
 }

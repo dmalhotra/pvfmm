@@ -1130,7 +1130,7 @@ void GenericKernel<uKernel>::BuildMatrix(Real* r_src, int src_cnt, Real* r_trg, 
     }
   }
   #ifndef __MIC__
-  Profile::Add_FLOP((long long)src_cnt * (long long)KDIM0 * (long long)trg_cnt * uKernel::FLOPS);
+  sctl::Profile::IncrementCounter(sctl::ProfileCounter::FLOP, (long long)src_cnt * (long long)KDIM0 * (long long)trg_cnt * uKernel::FLOPS);
   #endif
 }
 
@@ -1248,7 +1248,7 @@ template <class uKernel> template <class Real, int digits> void GenericKernel<uK
   }
   { // Add FLOPS
     #ifndef __MIC__
-    Profile::Add_FLOP((long long)trg_cnt_*(long long)src_cnt_* uKernel::FLOPS);
+    sctl::Profile::IncrementCounter(sctl::ProfileCounter::FLOP, (long long)trg_cnt_*(long long)src_cnt_* uKernel::FLOPS);
     #endif
   }
 

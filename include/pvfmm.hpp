@@ -82,7 +82,7 @@ template <class Real> using ChebFn = typename ChebFMM_Node<Real>::Function_t;
  * delete to free the resources.
  */
 template <class Real>
-ChebFMM_Tree<Real>* ChebFMM_CreateTree(int cheb_deg, int data_dim, ChebFn<Real> fn_ptr, const std::vector<Real>& trg_coord, MPI_Comm comm,
+ChebFMM_Tree<Real>* ChebFMM_CreateTree(int cheb_deg, int data_dim, ChebFn<Real> fn_ptr, const std::vector<Real>& trg_coord, const sctl::Comm& comm,
                                       Real tol=1e-6, int max_pts=100, BoundaryType bndry=FreeSpace, int init_depth=0);
 
 
@@ -111,7 +111,7 @@ ChebFMM_Tree<Real>* ChebFMM_CreateTree(int cheb_deg, int data_dim, ChebFn<Real> 
  * delete to free the resources.
  */
 template <class Real>
-ChebFMM_Tree<Real>* ChebFMM_CreateTree(int cheb_deg, const std::vector<Real>& leaf_coord, const std::vector<Real>& fn_coeff, const std::vector<Real>& trg_coord, MPI_Comm comm, BoundaryType bndry);
+ChebFMM_Tree<Real>* ChebFMM_CreateTree(int cheb_deg, const std::vector<Real>& leaf_coord, const std::vector<Real>& fn_coeff, const std::vector<Real>& trg_coord, const sctl::Comm& comm, BoundaryType bndry);
 
 
 /**
@@ -256,7 +256,7 @@ template <class Real> using PtFMM_Data = typename PtFMM_Node<Real>::NodeData;
 template <class Real>
 PtFMM_Tree<Real>* PtFMM_CreateTree(const std::vector<Real>& sl_coord, const std::vector<Real>& sl_density,
                                    const std::vector<Real>& dl_coord, const std::vector<Real>& dl_density,
-                                   const std::vector<Real>& trg_coord, MPI_Comm comm, int max_pts=100,
+                                   const std::vector<Real>& trg_coord, const sctl::Comm& comm, int max_pts=100,
                                    BoundaryType bndry=FreeSpace, int init_depth=0);
 
 /**
@@ -286,7 +286,7 @@ PtFMM_Tree<Real>* PtFMM_CreateTree(const std::vector<Real>& sl_coord, const std:
  */
 template <class Real>
 PtFMM_Tree<Real>* PtFMM_CreateTree(const std::vector<Real>& sl_coord, const std::vector<Real>& sl_density,
-                                   const std::vector<Real>& trg_coord, MPI_Comm comm, int max_pts=100,
+                                   const std::vector<Real>& trg_coord, const sctl::Comm& comm, int max_pts=100,
                                    BoundaryType bndry=FreeSpace, int init_depth=0);
 
 /**

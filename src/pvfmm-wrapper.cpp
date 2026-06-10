@@ -31,7 +31,7 @@ void* PVFMMCreateVolumeFMMF(int m, int q, enum PVFMMKernel kernel, MPI_Comm comm
   if (kernel == PVFMMBiotSavartPotential) ker = &pvfmm::BiotSavartKernel<float>::potential();
 
   pvfmm::ChebFMM<float>* matrices = new pvfmm::ChebFMM<float>;
-  matrices->Initialize(m, q, comm, ker);
+  matrices->Initialize(m, q, sctl::Comm(comm), ker);
   return (void*)matrices;
 }
 
@@ -45,7 +45,7 @@ void* PVFMMCreateVolumeTreeF(int cheb_deg, int data_dim, void (*fn_ptr)(const fl
     fn_ptr(coord, n, out, fn_ctx);
   };
 
-  auto* tree = ChebFMM_CreateTree(cheb_deg, data_dim, fn_ptr_, trg_coord_, comm, tol, max_pts, periodic?PVFMM_FULL_PERIODIC:pvfmm::FreeSpace, init_depth);
+  auto* tree = ChebFMM_CreateTree(cheb_deg, data_dim, fn_ptr_, trg_coord_, sctl::Comm(comm), tol, max_pts, periodic?PVFMM_FULL_PERIODIC:pvfmm::FreeSpace, init_depth);
   //tree->Write2File("vis",4);
 
   return (void*)tree;
@@ -61,7 +61,7 @@ void* PVFMMCreateVolumeTreeFromCoeffF(long n_nodes, int cheb_deg, int data_dim, 
   #pragma omp parallel for schedule(static)
   for (long i = 0; i < (long)trg_coord_.size(); i++) trg_coord_[i] = trg_coord[i];
 
-  auto* tree = ChebFMM_CreateTree(cheb_deg, node_coord_, fn_coeff_, trg_coord_, comm, periodic?PVFMM_FULL_PERIODIC:pvfmm::FreeSpace);
+  auto* tree = ChebFMM_CreateTree(cheb_deg, node_coord_, fn_coeff_, trg_coord_, sctl::Comm(comm), periodic?PVFMM_FULL_PERIODIC:pvfmm::FreeSpace);
   //tree->Write2File("vis",4);
 
   return (void*)tree;
@@ -139,7 +139,7 @@ void* PVFMMCreateVolumeFMMD(int m, int q, enum PVFMMKernel kernel, MPI_Comm comm
   if (kernel == PVFMMBiotSavartPotential) ker = &pvfmm::BiotSavartKernel<double>::potential();
 
   pvfmm::ChebFMM<double>* matrices = new pvfmm::ChebFMM<double>;
-  matrices->Initialize(m, q, comm, ker);
+  matrices->Initialize(m, q, sctl::Comm(comm), ker);
   return (void*)matrices;
 }
 
@@ -153,7 +153,7 @@ void* PVFMMCreateVolumeTreeD(int cheb_deg, int data_dim, void (*fn_ptr)(const do
     fn_ptr(coord, n, out, fn_ctx);
   };
 
-  auto* tree = ChebFMM_CreateTree(cheb_deg, data_dim, fn_ptr_, trg_coord_, comm, tol, max_pts, periodic?PVFMM_FULL_PERIODIC:pvfmm::FreeSpace, init_depth);
+  auto* tree = ChebFMM_CreateTree(cheb_deg, data_dim, fn_ptr_, trg_coord_, sctl::Comm(comm), tol, max_pts, periodic?PVFMM_FULL_PERIODIC:pvfmm::FreeSpace, init_depth);
   //tree->Write2File("vis",4);
 
   return (void*)tree;
@@ -169,7 +169,7 @@ void* PVFMMCreateVolumeTreeFromCoeffD(long n_nodes, int cheb_deg, int data_dim, 
   #pragma omp parallel for schedule(static)
   for (long i = 0; i < (long)trg_coord_.size(); i++) trg_coord_[i] = trg_coord[i];
 
-  auto* tree = ChebFMM_CreateTree(cheb_deg, node_coord_, fn_coeff_, trg_coord_, comm, periodic?PVFMM_FULL_PERIODIC:pvfmm::FreeSpace);
+  auto* tree = ChebFMM_CreateTree(cheb_deg, node_coord_, fn_coeff_, trg_coord_, sctl::Comm(comm), periodic?PVFMM_FULL_PERIODIC:pvfmm::FreeSpace);
   //tree->Write2File("vis",4);
 
   return (void*)tree;
@@ -257,7 +257,7 @@ void pvfmmcreatevolumetreef_(void** ctx, const int32_t* cheb_deg, const int32_t*
   };
 
   const MPI_Comm comm = MPI_Comm_f2c(*fcomm);
-  auto* tree = ChebFMM_CreateTree(*cheb_deg, *data_dim, fn_ptr_, trg_coord_, comm, *tol, *max_pts, (*periodic)==0?pvfmm::FreeSpace:PVFMM_FULL_PERIODIC, *init_depth);
+  auto* tree = ChebFMM_CreateTree(*cheb_deg, *data_dim, fn_ptr_, trg_coord_, sctl::Comm(comm), *tol, *max_pts, (*periodic)==0?pvfmm::FreeSpace:PVFMM_FULL_PERIODIC, *init_depth);
   //tree->Write2File("vis",4);
 
   (*ctx) = (void*)tree;
@@ -319,7 +319,7 @@ void pvfmmcreatevolumetreed_(void** ctx, const int32_t* cheb_deg, const int32_t*
   };
 
   const MPI_Comm comm = MPI_Comm_f2c(*fcomm);
-  auto* tree = ChebFMM_CreateTree(*cheb_deg, *data_dim, fn_ptr_, trg_coord_, comm, *tol, *max_pts, (*periodic)==0?pvfmm::FreeSpace:PVFMM_FULL_PERIODIC, *init_depth);
+  auto* tree = ChebFMM_CreateTree(*cheb_deg, *data_dim, fn_ptr_, trg_coord_, sctl::Comm(comm), *tol, *max_pts, (*periodic)==0?pvfmm::FreeSpace:PVFMM_FULL_PERIODIC, *init_depth);
   //tree->Write2File("vis",4);
 
   (*ctx) = (void*)tree;
@@ -375,7 +375,8 @@ template<typename Real> struct PVFMMContext{
   int max_depth;
   pvfmm::BoundaryType bndry;
   const pvfmm::Kernel<Real>* ker;
-  MPI_Comm comm;
+  MPI_Comm comm;            // kept for par::* / MPI_* call sites below.
+  sctl::Comm sctl_comm;     // sctl wrapper around `comm`, used by sctl::Profile.
 
   typename Node_t::NodeData tree_data;
   Tree_t* tree;
@@ -383,8 +384,9 @@ template<typename Real> struct PVFMMContext{
 };
 
 template<typename Real> static void* PVFMMCreateContext(Real box_size, int n, int m, int max_d, const pvfmm::Kernel<Real>* ker, MPI_Comm comm) {
-  pvfmm::Profile::Tic("FMMContext", &comm, true);
-  bool prof_state=pvfmm::Profile::Enable(false);
+  const sctl::Comm sctl_comm(comm);
+  sctl::Profile::Tic("FMMContext", &sctl_comm, true);
+  bool prof_state=sctl::Profile::Enable(false);
 
   // Create new context.
   PVFMMContext<Real>* ctx = new PVFMMContext<Real>;
@@ -404,10 +406,11 @@ template<typename Real> static void* PVFMMCreateContext(Real box_size, int n, in
   }
   ctx->ker=ker;
   ctx->comm=comm;
+  ctx->sctl_comm=sctl_comm;  // share ref-counted Impl, no extra MPI_Comm_dup.
 
   // Initialize FMM matrices.
   ctx->mat=new typename PVFMMContext<Real>::Mat_t();
-  ctx->mat->Initialize(ctx->mult_order, ctx->comm, ctx->ker);
+  ctx->mat->Initialize(ctx->mult_order, sctl::Comm(ctx->comm), ctx->ker);
 
   // Set tree_data
   ctx->tree_data.dim=PVFMM_COORD_DIM;
@@ -433,12 +436,12 @@ template<typename Real> static void* PVFMMCreateContext(Real box_size, int n, in
 
   // Construct tree.
   bool adap=false; // no data to do adaptive.
-  ctx->tree=new typename PVFMMContext<Real>::Tree_t(comm);
+  ctx->tree=new typename PVFMMContext<Real>::Tree_t(sctl::Comm(comm));
   ctx->tree->Initialize(&ctx->tree_data);
   ctx->tree->InitFMM_Tree(adap,ctx->bndry);
 
-  pvfmm::Profile::Enable(prof_state);
-  pvfmm::Profile::Toc();
+  sctl::Profile::Enable(prof_state);
+  sctl::Profile::Toc();
   return ctx;
 }
 
@@ -453,7 +456,7 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
   PVFMMContext<Real>* ctx=(PVFMMContext<Real>*)ctx_;
   const int* ker_dim=ctx->ker->ker_dim;
 
-  pvfmm::Profile::Tic("FMM",&ctx->comm);
+  sctl::Profile::Tic("FMM", &ctx->sctl_comm);
   Real scale_x, shift_x[PVFMM_COORD_DIM];
   if(ctx->box_size<=0){ // determine bounding box
     Real s0, x0[PVFMM_COORD_DIM];
@@ -807,7 +810,7 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
       }
     }
   }
-  pvfmm::Profile::Toc();
+  sctl::Profile::Toc();
 }
 
 template<typename Real> static void PVFMMDestroyContext(void** ctx){

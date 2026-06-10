@@ -128,7 +128,7 @@ class FMM_Pts{
    * \param comm       [in]: MPI communicator.
    * \param kernel     [in]: the kernel function pointer to be used.
    */
-  void Initialize(int mult_order, const MPI_Comm& comm, const Kernel<Real_t>* kernel);
+  void Initialize(int mult_order, const sctl::Comm& comm, const Kernel<Real_t>* kernel);
 
   /**
    * \brief Order for the multipole expansion.
@@ -242,7 +242,7 @@ class FMM_Pts{
   PrecompMat<Real_t>* mat;   //Handles storage of matrices.
   std::string mat_fname;
   int multipole_order;       //Order of multipole expansion.
-  MPI_Comm comm;
+  sctl::Comm sctl_comm;
   Real_t* m2c;
 
 };

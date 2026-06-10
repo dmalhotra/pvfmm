@@ -8,7 +8,7 @@
 #define _UTILS_
 
 #include <vector>
-#include <mpi.h>
+#include <sctl.hpp>
 #include <cheb_utils.hpp>
 #include <fmm_tree.hpp>
 
@@ -32,7 +32,7 @@ enum DistribType{
 };
 
 template <class Real_t>
-std::vector<Real_t> point_distrib(DistribType, size_t N, MPI_Comm comm);
+std::vector<Real_t> point_distrib(DistribType, size_t N, const sctl::Comm& comm);
 
 void commandline_option_start(int argc, char** argv, const char* help_text=NULL);
 

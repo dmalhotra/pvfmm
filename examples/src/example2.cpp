@@ -1,4 +1,3 @@
-#include <mpi.h>
 #include <omp.h>
 #include <iostream>
 
@@ -25,8 +24,7 @@ void fn_output(const double* coord, int n, double* out){
   }
 }
 
-void fmm_test(size_t N, int mult_order, int cheb_deg, double tol, MPI_Comm comm){
-
+void fmm_test(size_t N, int mult_order, int cheb_deg, double tol, const sctl::Comm& comm){
   // Set kernel.
   const pvfmm::Kernel<double>& kernel_fn=pvfmm::LaplaceKernel<double>::potential();
 
@@ -61,11 +59,9 @@ void fmm_test(size_t N, int mult_order, int cheb_deg, double tol, MPI_Comm comm)
       if(fabs(trg_value_[i]-trg_value[i])>max_err)
         max_err=fabs(trg_value_[i]-trg_value[i]);
     }
-    MPI_Reduce(&max_err, &max_err_glb, 1, MPI_DOUBLE, MPI_MAX, 0, comm);
-
-    int rank;
-    MPI_Comm_rank(comm, &rank);
-    if(!rank) std::cout<<"Maximum Error:"<<max_err_glb<<'\n';
+    comm.Allreduce(sctl::Ptr2ConstItr<double>(&max_err, 1),
+                   sctl::Ptr2Itr<double>(&max_err_glb, 1), 1, sctl::CommOp::MAX);
+    if (!comm.Rank()) std::cout<<"Maximum Error:"<<max_err_glb<<'\n';
   }
 
   // Free memory
@@ -73,8 +69,8 @@ void fmm_test(size_t N, int mult_order, int cheb_deg, double tol, MPI_Comm comm)
 }
 
 int main(int argc, char **argv){
-  MPI_Init(&argc, &argv);
-  MPI_Comm comm=MPI_COMM_WORLD;
+  sctl::Comm::MPI_Init(&argc, &argv);
+  const sctl::Comm comm = sctl::Comm::World();
 
   // Read command line options.
   commandline_option_start(argc, argv, "\
@@ -86,16 +82,16 @@ with Laplace kernel, using the PvFMM library.\n");
   int      q=       strtoul(commandline_option(argc, argv,    "-q",    "14", false, "-q    <int> = (14)   : Chebyshev order (+ve integer)."     ),NULL,10);
   double tol=        strtod(commandline_option(argc, argv,  "-tol",  "1e-5", false, "-tol <real> = (1e-5) : Tolerance for adaptive refinement." ),NULL);
   commandline_option_end(argc, argv);
-  pvfmm::Profile::Enable(true);
+  sctl::Profile::Enable(true);
 
   // Run FMM with above options.
   fmm_test(N, m,q, tol, comm);
 
   //Output Profiling results.
-  pvfmm::Profile::print(&comm);
+  sctl::Profile::print(&comm);
 
   // Shut down MPI
-  MPI_Finalize();
+  sctl::Comm::MPI_Finalize();
   return 0;
 }
 

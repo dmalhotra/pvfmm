@@ -22,12 +22,12 @@ namespace pvfmm{
 
 template <class FMM_Mat_t>
 void FMM_Tree<FMM_Mat_t>::Initialize(typename Node_t::NodeData* init_data) {
-  Profile::Tic("InitTree",this->Comm(),true);{
+  sctl::Profile::Tic("InitTree",&this->Comm(),true);{
 
   //Build octree from points.
   MPI_Tree<Node_t>::Initialize(init_data);
 
-  Profile::Tic("InitFMMData",this->Comm(),true,5);
+  sctl::Profile::Tic("InitFMMData",&this->Comm(),true,5);
   { //Initialize FMM data.
     std::vector<Node_t*>& nodes=this->GetNodeList();
     #pragma omp parallel for
@@ -35,50 +35,50 @@ void FMM_Tree<FMM_Mat_t>::Initialize(typename Node_t::NodeData* init_data) {
       if(nodes[i]->FMMData()==NULL) nodes[i]->FMMData()=mem::aligned_new<typename FMM_Mat_t::FMMData>();
     }
   }
-  Profile::Toc();
+  sctl::Profile::Toc();
 
-  }Profile::Toc();
+  }sctl::Profile::Toc();
 }
 
 
 template <class FMM_Mat_t>
 void FMM_Tree<FMM_Mat_t>::InitFMM_Tree(bool refine, BoundaryType bndry_) {
-  Profile::Tic("InitFMM_Tree",this->Comm(),true);{
+  sctl::Profile::Tic("InitFMM_Tree",&this->Comm(),true);{
 
   interac_list.Initialize(this->Dim());
   bndry=bndry_;
 
   if(refine){
     //RefineTree
-    Profile::Tic("RefineTree",this->Comm(),true,5);
+    sctl::Profile::Tic("RefineTree",&this->Comm(),true,5);
     this->RefineTree();
-    Profile::Toc();
+    sctl::Profile::Toc();
   }
 
   //2:1 Balancing
-  Profile::Tic("2:1Balance",this->Comm(),true,5);
+  sctl::Profile::Tic("2:1Balance",&this->Comm(),true,5);
   this->Balance21(bndry);
-  Profile::Toc();
+  sctl::Profile::Toc();
 
   //Redistribute nodes.
-//  Profile::Tic("Redistribute",this->Comm(),true,5);
+//  sctl::Profile::Tic("Redistribute",&this->Comm(),true,5);
 //  this->RedistNodes();
-//  Profile::Toc();
+//  sctl::Profile::Toc();
 
-  }Profile::Toc();
+  }sctl::Profile::Toc();
 }
 
 
 template <class FMM_Mat_t>
 void FMM_Tree<FMM_Mat_t>::SetupFMM(FMM_Mat_t* fmm_mat_) {
-  Profile::Tic("SetupFMM",this->Comm(),true);{
+  sctl::Profile::Tic("SetupFMM",&this->Comm(),true);{
   typedef typename FMM_Mat_t::FMMTree_t MatTree_t;
   bool device=true;
 
   #ifdef __INTEL_OFFLOAD
-  Profile::Tic("InitLocks",this->Comm(),false,3);
+  sctl::Profile::Tic("InitLocks",&this->Comm(),false,3);
   MIC_Lock::init();
-  Profile::Toc();
+  sctl::Profile::Toc();
   #endif
 
   //int omp_p=omp_get_max_threads();
@@ -89,16 +89,16 @@ void FMM_Tree<FMM_Mat_t>::SetupFMM(FMM_Mat_t* fmm_mat_) {
   }
 
   //Construct LET
-  Profile::Tic("ConstructLET",this->Comm(),false,2);
+  sctl::Profile::Tic("ConstructLET",&this->Comm(),false,2);
   this->ConstructLET(bndry);
-  Profile::Toc();
+  sctl::Profile::Toc();
 
   //Set Colleagues (Needed to build U, V, W and X lists.)
-  Profile::Tic("SetColleagues",this->Comm(),false,3);
+  sctl::Profile::Tic("SetColleagues",&this->Comm(),false,3);
   this->SetColleagues(bndry);
-  Profile::Toc();
+  sctl::Profile::Toc();
 
-  Profile::Tic("CollectNodeData",this->Comm(),false,3);
+  sctl::Profile::Tic("CollectNodeData",&this->Comm(),false,3);
   //Build node list.
   Node_t* n=dynamic_cast<Node_t*>(this->PostorderFirst());
   std::vector<Node_t*> all_nodes;
@@ -111,64 +111,64 @@ void FMM_Tree<FMM_Mat_t>::SetupFMM(FMM_Mat_t* fmm_mat_) {
   //Collect node data into continuous array.
   std::vector<Vector<Node_t*> > node_lists; // TODO: Remove this parameter, not really needed
   fmm_mat->CollectNodeData((MatTree_t*)this,all_nodes, node_data_buff, node_lists);
-  Profile::Toc();
+  sctl::Profile::Toc();
 
-  Profile::Tic("BuildLists",this->Comm(),false,3);
+  sctl::Profile::Tic("BuildLists",&this->Comm(),false,3);
   BuildInteracLists();
-  Profile::Toc();
+  sctl::Profile::Toc();
 
   setup_data.resize(8*PVFMM_MAX_DEPTH);
   precomp_lst.resize(8);
 
-  Profile::Tic("UListSetup",this->Comm(),false,3);
+  sctl::Profile::Tic("UListSetup",&this->Comm(),false,3);
   for(size_t i=0;i<PVFMM_MAX_DEPTH;i++){
     setup_data[i+PVFMM_MAX_DEPTH*0].precomp_data=&precomp_lst[0];
     fmm_mat->U_ListSetup(setup_data[i+PVFMM_MAX_DEPTH*0],(MatTree_t*)this,node_data_buff,node_lists,fmm_mat->ScaleInvar()?(i==0?-1:PVFMM_MAX_DEPTH+1):i, device);
   }
-  Profile::Toc();
-  Profile::Tic("WListSetup",this->Comm(),false,3);
+  sctl::Profile::Toc();
+  sctl::Profile::Tic("WListSetup",&this->Comm(),false,3);
   for(size_t i=0;i<PVFMM_MAX_DEPTH;i++){
     setup_data[i+PVFMM_MAX_DEPTH*1].precomp_data=&precomp_lst[1];
     fmm_mat->W_ListSetup(setup_data[i+PVFMM_MAX_DEPTH*1],(MatTree_t*)this,node_data_buff,node_lists,fmm_mat->ScaleInvar()?(i==0?-1:PVFMM_MAX_DEPTH+1):i, device);
   }
-  Profile::Toc();
-  Profile::Tic("XListSetup",this->Comm(),false,3);
+  sctl::Profile::Toc();
+  sctl::Profile::Tic("XListSetup",&this->Comm(),false,3);
   for(size_t i=0;i<PVFMM_MAX_DEPTH;i++){
     setup_data[i+PVFMM_MAX_DEPTH*2].precomp_data=&precomp_lst[2];
     fmm_mat->X_ListSetup(setup_data[i+PVFMM_MAX_DEPTH*2],(MatTree_t*)this,node_data_buff,node_lists,fmm_mat->ScaleInvar()?(i==0?-1:PVFMM_MAX_DEPTH+1):i, device);
   }
-  Profile::Toc();
-  Profile::Tic("VListSetup",this->Comm(),false,3);
+  sctl::Profile::Toc();
+  sctl::Profile::Tic("VListSetup",&this->Comm(),false,3);
   for(size_t i=0;i<PVFMM_MAX_DEPTH;i++){
     setup_data[i+PVFMM_MAX_DEPTH*3].precomp_data=&precomp_lst[3];
     fmm_mat->V_ListSetup(setup_data[i+PVFMM_MAX_DEPTH*3],(MatTree_t*)this,node_data_buff,node_lists,fmm_mat->ScaleInvar()?(i==0?-1:PVFMM_MAX_DEPTH+1):i, /*device*/ false);
   }
-  Profile::Toc();
-  Profile::Tic("D2DSetup",this->Comm(),false,3);
+  sctl::Profile::Toc();
+  sctl::Profile::Tic("D2DSetup",&this->Comm(),false,3);
   for(size_t i=0;i<PVFMM_MAX_DEPTH;i++){
     setup_data[i+PVFMM_MAX_DEPTH*4].precomp_data=&precomp_lst[4];
     fmm_mat->Down2DownSetup(setup_data[i+PVFMM_MAX_DEPTH*4],(MatTree_t*)this,node_data_buff,node_lists,i, /*device*/ false);
   }
-  Profile::Toc();
-  Profile::Tic("D2TSetup",this->Comm(),false,3);
+  sctl::Profile::Toc();
+  sctl::Profile::Tic("D2TSetup",&this->Comm(),false,3);
   for(size_t i=0;i<PVFMM_MAX_DEPTH;i++){
     setup_data[i+PVFMM_MAX_DEPTH*5].precomp_data=&precomp_lst[5];
     fmm_mat->Down2TargetSetup(setup_data[i+PVFMM_MAX_DEPTH*5],(MatTree_t*)this,node_data_buff,node_lists,fmm_mat->ScaleInvar()?(i==0?-1:PVFMM_MAX_DEPTH+1):i, /*device*/ false);
   }
-  Profile::Toc();
+  sctl::Profile::Toc();
 
-  Profile::Tic("S2USetup",this->Comm(),false,3);
+  sctl::Profile::Tic("S2USetup",&this->Comm(),false,3);
   for(size_t i=0;i<PVFMM_MAX_DEPTH;i++){
     setup_data[i+PVFMM_MAX_DEPTH*6].precomp_data=&precomp_lst[6];
     fmm_mat->Source2UpSetup(setup_data[i+PVFMM_MAX_DEPTH*6],(MatTree_t*)this,node_data_buff,node_lists,fmm_mat->ScaleInvar()?(i==0?-1:PVFMM_MAX_DEPTH+1):i, /*device*/ false);
   }
-  Profile::Toc();
-  Profile::Tic("U2USetup",this->Comm(),false,3);
+  sctl::Profile::Toc();
+  sctl::Profile::Tic("U2USetup",&this->Comm(),false,3);
   for(size_t i=0;i<PVFMM_MAX_DEPTH;i++){
     setup_data[i+PVFMM_MAX_DEPTH*7].precomp_data=&precomp_lst[7];
     fmm_mat->Up2UpSetup(setup_data[i+PVFMM_MAX_DEPTH*7],(MatTree_t*)this,node_data_buff,node_lists,i, /*device*/ false);
   }
-  Profile::Toc();
+  sctl::Profile::Toc();
 
   #ifdef __INTEL_OFFLOAD
   int wait_lock_idx=-1;
@@ -179,12 +179,12 @@ void FMM_Tree<FMM_Mat_t>::SetupFMM(FMM_Mat_t* fmm_mat_) {
 
   ClearFMMData();
 
-  }Profile::Toc();
+  }sctl::Profile::Toc();
 }
 
 template <class FMM_Mat_t>
 void FMM_Tree<FMM_Mat_t>::ClearFMMData() {
-  Profile::Tic("ClearFMMData",this->Comm(),true);{
+  sctl::Profile::Tic("ClearFMMData",&this->Comm(),true);{
 
   bool device=true;
   int omp_p=omp_get_max_threads();
@@ -230,37 +230,37 @@ void FMM_Tree<FMM_Mat_t>::ClearFMMData() {
     #endif
   }
 
-  }Profile::Toc();
+  }sctl::Profile::Toc();
 }
 
 
 template <class FMM_Mat_t>
 void FMM_Tree<FMM_Mat_t>::RunFMM() {
-  Profile::Tic("RunFMM",this->Comm(),true);{
+  sctl::Profile::Tic("RunFMM",&this->Comm(),true);{
 
   //Upward Pass
-  Profile::Tic("UpwardPass",this->Comm(),false,2);
+  sctl::Profile::Tic("UpwardPass",&this->Comm(),false,2);
   UpwardPass();
-  Profile::Toc();
+  sctl::Profile::Toc();
 
   //Multipole Reduce Broadcast.
-  Profile::Tic("ReduceBcast",this->Comm(),true,2);
+  sctl::Profile::Tic("ReduceBcast",&this->Comm(),true,2);
   MultipoleReduceBcast();
-  Profile::Toc();
+  sctl::Profile::Toc();
 
   //Local 2:1 Balancing.
   //This can cause load imbalance, always use global 2:1 balance instead.
-  //Profile::Tic("2:1Balance(local)",this->Comm(),false,3);
+  //sctl::Profile::Tic("2:1Balance(local)",&this->Comm(),false,3);
   //this->Balance21_local(bndry);
   //UpwardPass(true);
-  //Profile::Toc();
+  //sctl::Profile::Toc();
 
   //Downward Pass
-  Profile::Tic("DownwardPass",this->Comm(),true,2);
+  sctl::Profile::Tic("DownwardPass",&this->Comm(),true,2);
   DownwardPass();
-  Profile::Toc();
+  sctl::Profile::Toc();
 
-  }Profile::Toc();
+  }sctl::Profile::Toc();
 }
 
 
@@ -276,24 +276,24 @@ void FMM_Tree<FMM_Mat_t>::UpwardPass() {
       Node_t* n=nodes[i];
       if(n->Depth()>max_depth_loc) max_depth_loc=n->Depth();
     }
-    MPI_Allreduce(&max_depth_loc, &max_depth, 1, MPI_INT, MPI_MAX, *this->Comm());
+    MPI_Allreduce(&max_depth_loc, &max_depth, 1, MPI_INT, MPI_MAX, this->Comm().GetMPI_Comm());
   }
 
   //Upward Pass (initialize all leaf nodes)
-  Profile::Tic("S2U",this->Comm(),false,5);
+  sctl::Profile::Tic("S2U",&this->Comm(),false,5);
   for(int i=0; i<=(fmm_mat->ScaleInvar()?0:max_depth); i++){ // Source2Up
     if(!fmm_mat->ScaleInvar()) fmm_mat->SetupPrecomp(setup_data[i+PVFMM_MAX_DEPTH*6],/*device*/ false);
     fmm_mat->Source2Up(setup_data[i+PVFMM_MAX_DEPTH*6]);
   }
-  Profile::Toc();
+  sctl::Profile::Toc();
 
   //Upward Pass (level by level)
-  Profile::Tic("U2U",this->Comm(),false,5);
+  sctl::Profile::Tic("U2U",&this->Comm(),false,5);
   for(int i=max_depth-1; i>=0; i--){ // Up2Up
     if(!fmm_mat->ScaleInvar()) fmm_mat->SetupPrecomp(setup_data[i+PVFMM_MAX_DEPTH*7],/*device*/ false);
     fmm_mat->Up2Up(setup_data[i+PVFMM_MAX_DEPTH*7]);
   }
-  Profile::Toc();
+  sctl::Profile::Toc();
 }
 
 
@@ -355,11 +355,11 @@ void FMM_Tree<FMM_Mat_t>::BuildInteracLists() {
 template <class FMM_Mat_t>
 void FMM_Tree<FMM_Mat_t>::MultipoleReduceBcast() {
   int num_p,rank;
-  MPI_Comm_size(*this->Comm(),&num_p);
-  MPI_Comm_rank(*this->Comm(),&rank );
+  num_p = this->Comm().Size();
+  rank = this->Comm().Rank();
   if(num_p==1) return;
 
-  Profile::Tic("Reduce",this->Comm(),true,3);
+  sctl::Profile::Tic("Reduce",&this->Comm(),true,3);
   std::vector<MortonId> mins=this->GetMins();
 
   size_t bit_mask=1;
@@ -449,9 +449,9 @@ void FMM_Tree<FMM_Mat_t>::MultipoleReduceBcast() {
     MPI_Status status;
     char* recv_buff=NULL;
     if(partner<(size_t)num_p){
-      MPI_Sendrecv(&send_size,        1,  MPI_INT, partner, 0, &recv_size,         1,  MPI_INT, partner, 0, *this->Comm(), &status);
+      MPI_Sendrecv(&send_size,        1,  MPI_INT, partner, 0, &recv_size,         1,  MPI_INT, partner, 0, this->Comm().GetMPI_Comm(), &status);
       recv_buff=mem::aligned_new<char>(recv_size);
-      MPI_Sendrecv(send_buff, send_size, MPI_BYTE, partner, 0,  recv_buff, recv_size, MPI_BYTE, partner, 0, *this->Comm(), &status);
+      MPI_Sendrecv(send_buff, send_size, MPI_BYTE, partner, 0,  recv_buff, recv_size, MPI_BYTE, partner, 0, this->Comm().GetMPI_Comm(), &status);
     }
 
     //Need an extra broadcast for incomplete hypercubes.
@@ -465,14 +465,14 @@ void FMM_Tree<FMM_Mat_t>::MultipoleReduceBcast() {
           size_t partner0=rank^bit_mask0;
           if( rank-p0_start < bit_mask0 ){
             //Send
-            MPI_Send(&recv_size,         1, MPI_INT , partner0, 0, *this->Comm());
-            MPI_Send( recv_buff, recv_size, MPI_BYTE, partner0, 0, *this->Comm());
+            MPI_Send(&recv_size,         1, MPI_INT , partner0, 0, this->Comm().GetMPI_Comm());
+            MPI_Send( recv_buff, recv_size, MPI_BYTE, partner0, 0, this->Comm().GetMPI_Comm());
           }else if( rank-p0_start < (bit_mask0<<1) ){
             //Receive
             if(recv_size>0) mem::aligned_delete<char>(recv_buff);
-            MPI_Recv(&recv_size,         1, MPI_INT , partner0, 0, *this->Comm(), &status);
+            MPI_Recv(&recv_size,         1, MPI_INT , partner0, 0, this->Comm().GetMPI_Comm(), &status);
             recv_buff=mem::aligned_new<char>(recv_size);
-            MPI_Recv( recv_buff, recv_size, MPI_BYTE, partner0, 0, *this->Comm(), &status);
+            MPI_Recv( recv_buff, recv_size, MPI_BYTE, partner0, 0, this->Comm().GetMPI_Comm(), &status);
           }
         }
         bit_mask0=bit_mask0<<1;
@@ -542,12 +542,12 @@ void FMM_Tree<FMM_Mat_t>::MultipoleReduceBcast() {
   for(int i=0;i<2;i++)
   for(size_t j=n[i];j<send_nodes[i].size();j++)
     mem::aligned_delete(send_nodes[i][j]);
-  Profile::Toc();
+  sctl::Profile::Toc();
 
   //Now Broadcast nodes to build LET.
-  Profile::Tic("Broadcast",this->Comm(),true,4);
+  sctl::Profile::Tic("Broadcast",&this->Comm(),true,4);
   this->ConstructLET(bndry);
-  Profile::Toc();
+  sctl::Profile::Toc();
 }
 
 
@@ -555,7 +555,7 @@ template <class FMM_Mat_t>
 void FMM_Tree<FMM_Mat_t>::DownwardPass() {
   bool device=true;
 
-  Profile::Tic("Setup",this->Comm(),true,3);
+  sctl::Profile::Tic("Setup",&this->Comm(),true,3);
   std::vector<Node_t*> leaf_nodes;
   int max_depth=0;
   { // Build leaf node list
@@ -566,69 +566,69 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
       if(!n->IsGhost() && n->IsLeaf()) leaf_nodes.push_back(n);
       if(n->Depth()>max_depth_loc) max_depth_loc=n->Depth();
     }
-    MPI_Allreduce(&max_depth_loc, &max_depth, 1, MPI_INT, MPI_MAX, *this->Comm());
+    MPI_Allreduce(&max_depth_loc, &max_depth, 1, MPI_INT, MPI_MAX, this->Comm().GetMPI_Comm());
   }
-  Profile::Toc();
+  sctl::Profile::Toc();
 
   #if defined(__INTEL_OFFLOAD) || defined(PVFMM_HAVE_CUDA)
   if(device){ // Host2Device:Src
-    Profile::Tic("Host2Device:Src",this->Comm(),false,5);
+    sctl::Profile::Tic("Host2Device:Src",&this->Comm(),false,5);
     if(setup_data[0+PVFMM_MAX_DEPTH*2]. coord_data!=NULL) setup_data[0+PVFMM_MAX_DEPTH*2]. coord_data->AllocDevice(true);
     if(setup_data[0+PVFMM_MAX_DEPTH*2]. input_data!=NULL) setup_data[0+PVFMM_MAX_DEPTH*2]. input_data->AllocDevice(true);
-    Profile::Toc();
+    sctl::Profile::Toc();
   }
   #endif
 
-  Profile::Tic("BoundaryCondition",this->Comm(),false,5);
+  sctl::Profile::Tic("BoundaryCondition",&this->Comm(),false,5);
   fmm_mat->PeriodicBC(dynamic_cast<Node_t*>(this->RootNode()), bndry);
-  Profile::Toc();
+  sctl::Profile::Toc();
 
   for(int i=0; i<=(fmm_mat->ScaleInvar()?0:max_depth); i++){ // U,V,W,X-lists
 
     if(!fmm_mat->ScaleInvar()){ // Precomp
       std::stringstream level_str;
       level_str<<"Level-"<<std::setfill('0')<<std::setw(2)<<i<<"\0";
-      Profile::Tic(level_str.str().c_str(),this->Comm(),false,5);
+      sctl::Profile::Tic(level_str.str().c_str(),&this->Comm(),false,5);
 
-      Profile::Tic("Precomp",this->Comm(),false,5);
+      sctl::Profile::Tic("Precomp",&this->Comm(),false,5);
       {// Precomp U
-        Profile::Tic("Precomp-U",this->Comm(),false,10);
+        sctl::Profile::Tic("Precomp-U",&this->Comm(),false,10);
         fmm_mat->SetupPrecomp(setup_data[i+PVFMM_MAX_DEPTH*0],device);
-        Profile::Toc();
+        sctl::Profile::Toc();
       }
       {// Precomp W
-        Profile::Tic("Precomp-W",this->Comm(),false,10);
+        sctl::Profile::Tic("Precomp-W",&this->Comm(),false,10);
         fmm_mat->SetupPrecomp(setup_data[i+PVFMM_MAX_DEPTH*1],device);
-        Profile::Toc();
+        sctl::Profile::Toc();
       }
       {// Precomp X
-        Profile::Tic("Precomp-X",this->Comm(),false,10);
+        sctl::Profile::Tic("Precomp-X",&this->Comm(),false,10);
         fmm_mat->SetupPrecomp(setup_data[i+PVFMM_MAX_DEPTH*2],device);
-        Profile::Toc();
+        sctl::Profile::Toc();
       }
       if(0){// Precomp V
-        Profile::Tic("Precomp-V",this->Comm(),false,10);
+        sctl::Profile::Tic("Precomp-V",&this->Comm(),false,10);
         fmm_mat->SetupPrecomp(setup_data[i+PVFMM_MAX_DEPTH*3], /*device*/ false);
-        Profile::Toc();
+        sctl::Profile::Toc();
       }
-      Profile::Toc();
+      sctl::Profile::Toc();
     }
 
     {// X-List
-      Profile::Tic("X-List",this->Comm(),false,5);
+      sctl::Profile::Tic("X-List",&this->Comm(),false,5);
       fmm_mat->X_List(setup_data[i+PVFMM_MAX_DEPTH*2], device);
-      Profile::Toc();
+      sctl::Profile::Toc();
     }
 
     #if defined(__INTEL_OFFLOAD) || defined(PVFMM_HAVE_CUDA)
     if(i==0 && device){ // Host2Device:Mult
-      Profile::Tic("Host2Device:Mult",this->Comm(),false,5);
+      sctl::Profile::Tic("Host2Device:Mult",&this->Comm(),false,5);
       if(setup_data[0+PVFMM_MAX_DEPTH*1]. input_data!=NULL) setup_data[0+PVFMM_MAX_DEPTH*1]. input_data->AllocDevice(true);
-      Profile::Toc();
+      sctl::Profile::Toc();
     }
 
     if(device) if(i==(fmm_mat->ScaleInvar()?0:max_depth)){ // Device2Host: LocalExp
-      Profile::Tic("Device2Host:LocExp",this->Comm(),false,5);
+      sctl::Profile::Tic("Device2Host:LocExp",&this->Comm(),false,5);
       if(setup_data[0+PVFMM_MAX_DEPTH*2].output_data!=NULL){
         Matrix<Real_t>& output_data=*setup_data[0+PVFMM_MAX_DEPTH*2].output_data;
         if(fmm_mat->staging_buffer.Dim()){
@@ -636,26 +636,26 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
           output_data.Device2Host((Real_t*)&fmm_mat->staging_buffer[0]);
         }
       }
-      Profile::Toc();
+      sctl::Profile::Toc();
     }
     #endif
 
     {// W-List
-      Profile::Tic("W-List",this->Comm(),false,5);
+      sctl::Profile::Tic("W-List",&this->Comm(),false,5);
       fmm_mat->W_List(setup_data[i+PVFMM_MAX_DEPTH*1], device);
-      Profile::Toc();
+      sctl::Profile::Toc();
     }
 
     {// U-List
-      Profile::Tic("U-List",this->Comm(),false,5);
+      sctl::Profile::Tic("U-List",&this->Comm(),false,5);
       fmm_mat->U_List(setup_data[i+PVFMM_MAX_DEPTH*0], device);
-      Profile::Toc();
+      sctl::Profile::Toc();
     }
 
     {// V-List
-      Profile::Tic("V-List",this->Comm(),false,5);
+      sctl::Profile::Tic("V-List",&this->Comm(),false,5);
       fmm_mat->V_List(setup_data[i+PVFMM_MAX_DEPTH*3], /*device*/ false);
-      Profile::Toc();
+      sctl::Profile::Toc();
     }
 
     if(!fmm_mat->ScaleInvar()){ // Wait
@@ -665,12 +665,12 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
       #pragma offload if(device) target(mic:0)
       {if(device) MIC_Lock::wait_lock(wait_lock_idx);}
       #endif
-      Profile::Toc();
+      sctl::Profile::Toc();
     }
   }
 
   #if defined(__INTEL_OFFLOAD) || defined(PVFMM_HAVE_CUDA)
-  Profile::Tic("D2H_Wait:LocExp",this->Comm(),false,5);
+  sctl::Profile::Tic("D2H_Wait:LocExp",&this->Comm(),false,5);
   if(device) if(setup_data[0+PVFMM_MAX_DEPTH*2].output_data!=NULL){
     Real_t* dev_ptr=(Real_t*)&fmm_mat->staging_buffer[0];
     Matrix<Real_t>& output_data=*setup_data[0+PVFMM_MAX_DEPTH*2].output_data;
@@ -685,9 +685,9 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
       }
     }
   }
-  Profile::Toc();
+  sctl::Profile::Toc();
 
-  Profile::Tic("Device2Host:Trg",this->Comm(),false,5);
+  sctl::Profile::Tic("Device2Host:Trg",&this->Comm(),false,5);
   if(device) if(setup_data[0+PVFMM_MAX_DEPTH*0].output_data!=NULL){ // Device2Host: Target
     Matrix<Real_t>& output_data=*setup_data[0+PVFMM_MAX_DEPTH*0].output_data;
     if(fmm_mat->staging_buffer.Dim()){
@@ -695,25 +695,25 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
       output_data.Device2Host((Real_t*)&fmm_mat->staging_buffer[0]);
     }
   }
-  Profile::Toc();
+  sctl::Profile::Toc();
   #endif
 
-  Profile::Tic("D2D",this->Comm(),false,5);
+  sctl::Profile::Tic("D2D",&this->Comm(),false,5);
   for(int i=0; i<=max_depth; i++){ // Down2Down
     if(!fmm_mat->ScaleInvar()) fmm_mat->SetupPrecomp(setup_data[i+PVFMM_MAX_DEPTH*4],/*device*/ false);
     fmm_mat->Down2Down(setup_data[i+PVFMM_MAX_DEPTH*4]);
   }
-  Profile::Toc();
+  sctl::Profile::Toc();
 
-  Profile::Tic("D2T",this->Comm(),false,5);
+  sctl::Profile::Tic("D2T",&this->Comm(),false,5);
   for(int i=0; i<=(fmm_mat->ScaleInvar()?0:max_depth); i++){ // Down2Target
     if(!fmm_mat->ScaleInvar()) fmm_mat->SetupPrecomp(setup_data[i+PVFMM_MAX_DEPTH*5],/*device*/ false);
     fmm_mat->Down2Target(setup_data[i+PVFMM_MAX_DEPTH*5]);
   }
-  Profile::Toc();
+  sctl::Profile::Toc();
 
   #if defined(__INTEL_OFFLOAD) || defined(PVFMM_HAVE_CUDA)
-  Profile::Tic("D2H_Wait:Trg",this->Comm(),false,5);
+  sctl::Profile::Tic("D2H_Wait:Trg",&this->Comm(),false,5);
   if(device) if(setup_data[0+PVFMM_MAX_DEPTH*0].output_data!=NULL){
     Real_t* dev_ptr=(Real_t*)&fmm_mat->staging_buffer[0];
     Matrix<Real_t>& output_data=*setup_data[0+PVFMM_MAX_DEPTH*0].output_data;
@@ -728,13 +728,13 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
       }
     }
   }
-  Profile::Toc();
+  sctl::Profile::Toc();
   #endif
 
-  Profile::Tic("PostProc",this->Comm(),false,5);
+  sctl::Profile::Tic("PostProc",&this->Comm(),false,5);
   typedef typename FMM_Mat_t::FMMTree_t MatTree_t;
   fmm_mat->PostProcessing((MatTree_t*)this, leaf_nodes, bndry);
-  Profile::Toc();
+  sctl::Profile::Toc();
 }
 
 

@@ -14,11 +14,10 @@
 namespace pvfmm{
 
 template <class Real>
-inline ChebFMM_Tree<Real>* ChebFMM_CreateTree(int cheb_deg, int data_dim, ChebFn<Real> fn_ptr, const std::vector<Real>& trg_coord, MPI_Comm comm,
+inline ChebFMM_Tree<Real>* ChebFMM_CreateTree(int cheb_deg, int data_dim, ChebFn<Real> fn_ptr, const std::vector<Real>& trg_coord, const sctl::Comm& comm,
                                               Real tol, int max_pts, BoundaryType bndry, int init_depth){
-  int np, myrank;
-  MPI_Comm_size(comm, &np);
-  MPI_Comm_rank(comm, &myrank);
+  const int np = comm.Size();
+  const int myrank = comm.Rank();
 
   typename ChebFMM_Node<Real>::NodeData tree_data;
   tree_data.cheb_deg=cheb_deg;
@@ -57,11 +56,7 @@ inline ChebFMM_Tree<Real>* ChebFMM_CreateTree(int cheb_deg, int data_dim, ChebFn
 }
 
 template <class Real>
-inline ChebFMM_Tree<Real>* ChebFMM_CreateTree(int cheb_deg, const std::vector<Real>& node_coord, const std::vector<Real>& fn_coeff, const std::vector<Real>& trg_coord, MPI_Comm comm, BoundaryType bndry){
-  int np, myrank;
-  MPI_Comm_size(comm, &np);
-  MPI_Comm_rank(comm, &myrank);
-
+inline ChebFMM_Tree<Real>* ChebFMM_CreateTree(int cheb_deg, const std::vector<Real>& node_coord, const std::vector<Real>& fn_coeff, const std::vector<Real>& trg_coord, const sctl::Comm& comm, BoundaryType bndry){
   typename ChebFMM_Node<Real>::NodeData tree_data;
   tree_data.input_fn=ChebFn<Real>();
   tree_data.tol=0;
@@ -77,7 +72,7 @@ inline ChebFMM_Tree<Real>* ChebFMM_CreateTree(int cheb_deg, const std::vector<Re
   const long Ncoeff = (cheb_deg+1)*(cheb_deg+2)*(cheb_deg+3)/6;
   { // Set data_dof
     long long glb_size[2], loc_size[2] = {(long long)node_coord.size()/PVFMM_COORD_DIM, (long long)fn_coeff.size()/Ncoeff};
-    MPI_Allreduce(&loc_size, &glb_size, 2, par::Mpi_datatype<long long>::value(), par::Mpi_datatype<long long>::sum(), comm);
+    MPI_Allreduce(&loc_size, &glb_size, 2, par::Mpi_datatype<long long>::value(), par::Mpi_datatype<long long>::sum(), comm.GetMPI_Comm());
     tree_data.data_dof = glb_size[1]/glb_size[0];
   }
   assert(node_coord.size() && (node_coord.size()/PVFMM_COORD_DIM)*PVFMM_COORD_DIM == node_coord.size());
@@ -123,7 +118,7 @@ inline void ChebFMM_Evaluate(std::vector<Real>& trg_val, ChebFMM_Tree<Real>* tre
     trg_value=trg_value_;
     trg_scatter=trg_scatter_;
   }
-  par::ScatterReverse(trg_value,trg_scatter,*tree->Comm(),loc_size);
+  par::ScatterReverse(trg_value,trg_scatter,tree->Comm().GetMPI_Comm(),loc_size);
   trg_val.assign(&trg_value[0],&trg_value[0]+trg_value.Dim());;
 }
 
@@ -215,12 +210,8 @@ void ChebFMM_Nodes2Coeff(std::vector<Real>& coeff, int ChebDeg, int dof, const s
 template <class Real>
 inline PtFMM_Tree<Real>* PtFMM_CreateTree(const std::vector<Real>&  src_coord, const std::vector<Real>&  src_value,
                                           const std::vector<Real>& surf_coord, const std::vector<Real>& surf_value,
-                                          const std::vector<Real>& trg_coord, MPI_Comm comm, int max_pts,
+                                          const std::vector<Real>& trg_coord, const sctl::Comm& comm, int max_pts,
                                           BoundaryType bndry, int init_depth){
-  int np, myrank;
-  MPI_Comm_size(comm, &np);
-  MPI_Comm_rank(comm, &myrank);
-
   PtFMM_Data<Real> tree_data;
   bool adap=true;
 
@@ -246,7 +237,7 @@ inline PtFMM_Tree<Real>* PtFMM_CreateTree(const std::vector<Real>&  src_coord, c
 
 template <class Real>
 inline PtFMM_Tree<Real>* PtFMM_CreateTree(const std::vector<Real>& src_coord, const std::vector<Real>&  src_value,
-                                          const std::vector<Real>& trg_coord, MPI_Comm comm, int max_pts,
+                                          const std::vector<Real>& trg_coord, const sctl::Comm& comm, int max_pts,
                                           BoundaryType bndry, int init_depth){
   std::vector<Real> surf_coord;
   std::vector<Real> surf_value;
@@ -267,7 +258,7 @@ inline void PtFMM_Evaluate(const PtFMM_Tree<Real>* tree, std::vector<Real>& trg_
 
     Vector<Real> src_value=*src_val;
     Vector<size_t> src_scatter=src_scatter_;
-    par::ScatterForward(src_value,src_scatter,*tree->Comm());
+    par::ScatterForward(src_value,src_scatter,tree->Comm().GetMPI_Comm());
 
     size_t indx=0;
     for(size_t i=0;i<nodes.size();i++){
@@ -292,7 +283,7 @@ inline void PtFMM_Evaluate(const PtFMM_Tree<Real>* tree, std::vector<Real>& trg_
 
     Vector<Real> surf_value=*surf_val;
     Vector<size_t> surf_scatter=surf_scatter_;
-    par::ScatterForward(surf_value,surf_scatter,*tree->Comm());
+    par::ScatterForward(surf_value,surf_scatter,tree->Comm().GetMPI_Comm());
 
     size_t indx=0;
     for(size_t i=0;i<nodes.size();i++){
@@ -323,7 +314,7 @@ inline void PtFMM_Evaluate(const PtFMM_Tree<Real>* tree, std::vector<Real>& trg_
     trg_value=trg_value_;
     trg_scatter=trg_scatter_;
   }
-  par::ScatterReverse(trg_value,trg_scatter,*tree->Comm(),loc_size);
+  par::ScatterReverse(trg_value,trg_scatter,tree->Comm().GetMPI_Comm(),loc_size);
   trg_val.assign(&trg_value[0],&trg_value[0]+trg_value.Dim());;
 }
 

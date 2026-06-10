@@ -200,9 +200,7 @@ void FMM_Data<Real_t>::InitMultipole(PackedData p0, bool own_data){
 template <class FMMNode>
 FMM_Pts<FMMNode>::~FMM_Pts() {
   if(mat!=NULL){
-//    int rank;
-//    MPI_Comm_rank(comm,&rank);
-//    if(rank==0) mat->Save2File("Precomp.data");
+//    if(this->sctl_comm.Rank()==0) mat->Save2File("Precomp.data");
     delete mat;
     mat=NULL;
   }
@@ -221,23 +219,22 @@ FMM_Pts<FMMNode>::~FMM_Pts() {
 
 
 template <class FMMNode>
-void FMM_Pts<FMMNode>::Initialize(int mult_order, const MPI_Comm& comm_, const Kernel<Real_t>* kernel_){
-  Profile::Tic("InitFMM_Pts",&comm_,true);{
+void FMM_Pts<FMMNode>::Initialize(int mult_order, const sctl::Comm& comm_, const Kernel<Real_t>* kernel_){
+  sctl_comm = comm_;
+  sctl::Profile::Tic("InitFMM_Pts",&this->sctl_comm,true);{
 
-  int rank;
-  MPI_Comm_rank(comm_,&rank);
+  int rank = this->sctl_comm.Rank();
   bool verbose=false;
   #ifndef PVFMM_NDEBUG
   #ifdef PVFMM_VERBOSE
   if(!rank) verbose=true;
   #endif
   #endif
-  Profile::Tic("InitKernel",&comm,false,4);
+  sctl::Profile::Tic("InitKernel",&this->sctl_comm,false,4);
   if(kernel_) kernel_->Initialize(verbose);
-  Profile::Toc();
+  sctl::Profile::Toc();
 
   multipole_order=mult_order;
-  comm=comm_;
   kernel=kernel_;
   assert(kernel!=NULL);
 
@@ -272,21 +269,21 @@ void FMM_Pts<FMMNode>::Initialize(int mult_order, const MPI_Comm& comm_, const K
     this->mat_fname=st.str();
     save_precomp=true;
   }
-  this->mat->LoadFile(mat_fname.c_str(), this->comm);
+  this->mat->LoadFile(mat_fname.c_str(), this->sctl_comm);
 
   interac_list.Initialize(PVFMM_COORD_DIM, this->mat);
 
-  Profile::Tic("PrecompUC2UE",&comm,false,4);
+  sctl::Profile::Tic("PrecompUC2UE",&this->sctl_comm,false,4);
   this->PrecompAll(UC2UE0_Type);
   this->PrecompAll(UC2UE1_Type);
-  Profile::Toc();
+  sctl::Profile::Toc();
 
-  Profile::Tic("PrecompDC2DE",&comm,false,4);
+  sctl::Profile::Tic("PrecompDC2DE",&this->sctl_comm,false,4);
   this->PrecompAll(DC2DE0_Type);
   this->PrecompAll(DC2DE1_Type);
-  Profile::Toc();
+  sctl::Profile::Toc();
 
-  Profile::Tic("PrecompBC",&comm,false,4);
+  sctl::Profile::Tic("PrecompBC",&this->sctl_comm,false,4);
   { /*
     int type=BC_Type;
     for(int l=0;l<PVFMM_MAX_DEPTH;l++)
@@ -299,35 +296,35 @@ void FMM_Pts<FMMNode>::Initialize(int mult_order, const MPI_Comm& comm_, const K
       Precomp(0, BC_Type, mat_indx);
     }
   }
-  Profile::Toc();
+  sctl::Profile::Toc();
 
-  Profile::Tic("PrecompU2U",&comm,false,4);
+  sctl::Profile::Tic("PrecompU2U",&this->sctl_comm,false,4);
   this->PrecompAll(U2U_Type);
-  Profile::Toc();
+  sctl::Profile::Toc();
 
-  Profile::Tic("PrecompD2D",&comm,false,4);
+  sctl::Profile::Tic("PrecompD2D",&this->sctl_comm,false,4);
   this->PrecompAll(D2D_Type);
-  Profile::Toc();
+  sctl::Profile::Toc();
 
   if(save_precomp){
-    Profile::Tic("Save2File",&this->comm,false,4);
+    sctl::Profile::Tic("Save2File",&this->sctl_comm,false,4);
     if(!rank){
       FILE* f=fopen(this->mat_fname.c_str(),"r");
       if(f==NULL) { //File does not exists.
         this->mat->Save2File(this->mat_fname.c_str());
       }else fclose(f);
     }
-    Profile::Toc();
+    sctl::Profile::Toc();
   }
 
-  Profile::Tic("PrecompV",&comm,false,4);
+  sctl::Profile::Tic("PrecompV",&this->sctl_comm,false,4);
   this->PrecompAll(V_Type);
-  Profile::Toc();
-  Profile::Tic("PrecompV1",&comm,false,4);
+  sctl::Profile::Toc();
+  sctl::Profile::Tic("PrecompV1",&this->sctl_comm,false,4);
   this->PrecompAll(V1_Type);
-  Profile::Toc();
+  sctl::Profile::Toc();
 
-  }Profile::Toc();
+  }sctl::Profile::Toc();
 }
 
 template <class Real_t>
@@ -1651,7 +1648,7 @@ template <class FMMNode>
 void FMM_Pts<FMMNode>::SetupPrecomp(SetupData<Real_t>& setup_data, bool device){
   if(setup_data.precomp_data==NULL || setup_data.level>PVFMM_MAX_DEPTH) return;
 
-  Profile::Tic("SetupPrecomp",&this->comm,true,25);
+  sctl::Profile::Tic("SetupPrecomp",&this->sctl_comm,true,25);
   { // Build precomp_data
     size_t precomp_offset=0;
     int level=setup_data.level;
@@ -1663,12 +1660,12 @@ void FMM_Pts<FMMNode>::SetupPrecomp(SetupData<Real_t>& setup_data, bool device){
       precomp_offset=this->mat->CompactData(level, interac_type, precomp_data, precomp_offset);
     }
   }
-  Profile::Toc();
+  sctl::Profile::Toc();
 
   if(device){ // Host2Device
-    Profile::Tic("Host2Device",&this->comm,false,25);
+    sctl::Profile::Tic("Host2Device",&this->sctl_comm,false,25);
     setup_data.precomp_data->AllocDevice(true);
-    Profile::Toc();
+    sctl::Profile::Toc();
   }
 }
 
@@ -1691,7 +1688,7 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
   if(setup_data.precomp_data->Dim(0)*setup_data.precomp_data->Dim(1)==0) SetupPrecomp(setup_data,device);
 
   // Build interac_data
-  Profile::Tic("Interac-Data",&this->comm,true,25);
+  sctl::Profile::Tic("Interac-Data",&this->sctl_comm,true,25);
   Matrix<char>& interac_data=setup_data.interac_data;
   { // Build precomp_data, interac_data
     std::vector<size_t> interac_mat;
@@ -1889,17 +1886,17 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
       data_ptr+=output_perm.size()*sizeof(size_t);
     }
   }
-  Profile::Toc();
+  sctl::Profile::Toc();
 
   if(device){ // Host2Device
-    Profile::Tic("Host2Device",&this->comm,false,25);
+    sctl::Profile::Tic("Host2Device",&this->sctl_comm,false,25);
     setup_data.interac_data .AllocDevice(true);
     if(staging_buffer.Dim()<sizeof(Real_t)*output_data.Dim(0)*output_data.Dim(1)){
       staging_buffer.ReInit(sizeof(Real_t)*output_data.Dim(0)*output_data.Dim(1));
       staging_buffer.SetZero();
       staging_buffer.AllocDevice(true);
     }
-    Profile::Toc();
+    sctl::Profile::Toc();
   }
 }
 
@@ -1907,10 +1904,10 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
 #include <fmm_pts_gpu.hpp>
 
 template <class Real_t, int SYNC>
-void EvalListGPU(SetupData<Real_t>& setup_data, Vector<char>& dev_buffer, MPI_Comm& comm) {
+void EvalListGPU(SetupData<Real_t>& setup_data, Vector<char>& dev_buffer, const sctl::Comm& comm) {
   cudaStream_t* stream = pvfmm::CUDA_Lock::acquire_stream();
 
-  Profile::Tic("Host2Device",&comm,false,25);
+  sctl::Profile::Tic("Host2Device",&comm,false,25);
   typename Matrix<char>::Device    interac_data;
   typename Vector<char>::Device            buff;
   typename Matrix<char>::Device  precomp_data_d;
@@ -1924,9 +1921,9 @@ void EvalListGPU(SetupData<Real_t>& setup_data, Vector<char>& dev_buffer, MPI_Co
   interac_data_d= setup_data.interac_data. AllocDevice(false);
   input_data_d  = setup_data.  input_data->AllocDevice(false);
   output_data_d = setup_data. output_data->AllocDevice(false);
-  Profile::Toc();
+  sctl::Profile::Toc();
 
-  Profile::Tic("DeviceComp",&comm,false,20);
+  sctl::Profile::Tic("DeviceComp",&comm,false,20);
   { // Offloaded computation.
     size_t data_size, M_dim0, M_dim1, dof;
     Vector<size_t> interac_blk;
@@ -2008,7 +2005,7 @@ void EvalListGPU(SetupData<Real_t>& setup_data, Vector<char>& dev_buffer, MPI_Co
       }
     }
   }
-  Profile::Toc();
+  sctl::Profile::Toc();
 
   if(SYNC) CUDA_Lock::wait();
 }
@@ -2018,21 +2015,21 @@ template <class FMMNode>
 template <int SYNC>
 void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
   if(setup_data.interac_data.Dim(0)==0 || setup_data.interac_data.Dim(1)==0){
-    Profile::Tic("Host2Device",&this->comm,false,25);
-    Profile::Toc();
-    Profile::Tic("DeviceComp",&this->comm,false,20);
-    Profile::Toc();
+    sctl::Profile::Tic("Host2Device",&this->sctl_comm,false,25);
+    sctl::Profile::Toc();
+    sctl::Profile::Tic("DeviceComp",&this->sctl_comm,false,20);
+    sctl::Profile::Toc();
     return;
   }
 
 #if defined(PVFMM_HAVE_CUDA)
   if (device) {
-    EvalListGPU<Real_t, SYNC>(setup_data, this->dev_buffer, this->comm);
+    EvalListGPU<Real_t, SYNC>(setup_data, this->dev_buffer, this->sctl_comm);
     return;
   }
 #endif
 
-  Profile::Tic("Host2Device",&this->comm,false,25);
+  sctl::Profile::Tic("Host2Device",&this->sctl_comm,false,25);
   typename Vector<char>::Device          buff;
   typename Matrix<char>::Device  precomp_data;
   typename Matrix<char>::Device  interac_data;
@@ -2051,9 +2048,9 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
     input_data  =*setup_data.  input_data;
     output_data =*setup_data. output_data;
   }
-  Profile::Toc();
+  sctl::Profile::Toc();
 
-  Profile::Tic("DeviceComp",&this->comm,false,20);
+  sctl::Profile::Tic("DeviceComp",&this->sctl_comm,false,20);
   int lock_idx=-1;
   int wait_lock_idx=-1;
   if(device) wait_lock_idx=MIC_Lock::curr_lock();
@@ -2267,7 +2264,7 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
   }
   #endif
 
-  Profile::Toc();
+  sctl::Profile::Toc();
 }
 
 
@@ -2755,7 +2752,7 @@ void FMM_Pts<FMMNode>::FFT_UpEquiv(size_t dof, size_t m, size_t ker_dim0, Vector
         double add=0, mul=0, fma=0;
         FFTW_t<Real_t>::fftw_flops(vlist_fftplan, &add, &mul, &fma);
         #ifndef __INTEL_OFFLOAD0
-        Profile::Add_FLOP((long long)(add+mul+2*fma));
+        sctl::Profile::IncrementCounter(sctl::ProfileCounter::FLOP, (long long)(add+mul+2*fma));
         #endif
         #endif
 
@@ -2840,7 +2837,7 @@ void FMM_Pts<FMMNode>::FFT_Check2Equiv(size_t dof, size_t m, size_t ker_dim1, Ve
         double add=0, mul=0, fma=0;
         FFTW_t<Real_t>::fftw_flops(vlist_ifftplan, &add, &mul, &fma);
         #ifndef __INTEL_OFFLOAD0
-        Profile::Add_FLOP((long long)(add+mul+2*fma)*dof);
+        sctl::Profile::IncrementCounter(sctl::ProfileCounter::FLOP, (long long)(add+mul+2*fma)*dof);
         #endif
         #endif
 
@@ -3333,7 +3330,7 @@ void VListHadamard(size_t dof, size_t M_dim, size_t ker_dim0, size_t ker_dim1, V
 
   // Compute flops.
   {
-    Profile::Add_FLOP(8*8*8*(interac_vec.Dim()/2)*M_dim*ker_dim0*ker_dim1*dof);
+    sctl::Profile::IncrementCounter(sctl::ProfileCounter::FLOP, 8*8*8*(interac_vec.Dim()/2)*M_dim*ker_dim0*ker_dim1*dof);
   }
 
   // Free memory
@@ -3379,7 +3376,7 @@ void FMM_Pts<FMMNode>::V_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
   //if(setup_data.precomp_data->Dim(0)*setup_data.precomp_data->Dim(1)==0) SetupPrecomp(setup_data,device);
 
   // Build interac_data
-  Profile::Tic("Interac-Data",&this->comm,true,25);
+  sctl::Profile::Tic("Interac-Data",&this->sctl_comm,true,25);
   Matrix<char>& interac_data=setup_data.interac_data;
   if(n_out>0 && n_in >0){ // Build precomp_data, interac_data
 
@@ -3585,12 +3582,12 @@ void FMM_Pts<FMMNode>::V_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
       }
     }
   }
-  Profile::Toc();
+  sctl::Profile::Toc();
 
   if(device){ // Host2Device
-    Profile::Tic("Host2Device",&this->comm,false,25);
+    sctl::Profile::Tic("Host2Device",&this->sctl_comm,false,25);
     setup_data.interac_data. AllocDevice(true);
-    Profile::Toc();
+    sctl::Profile::Toc();
   }
 }
 
@@ -3600,14 +3597,14 @@ void FMM_Pts<FMMNode>::V_List     (SetupData<Real_t>&  setup_data, bool device){
   assert(!device); //Can not run on accelerator yet.
 
   int np;
-  MPI_Comm_size(comm,&np);
+  np = sctl_comm.Size();
   if(setup_data.interac_data.Dim(0)==0 || setup_data.interac_data.Dim(1)==0){
-    if(np>1) Profile::Tic("Host2Device",&this->comm,false,25);
-    if(np>1) Profile::Toc();
+    if(np>1) sctl::Profile::Tic("Host2Device",&this->sctl_comm,false,25);
+    if(np>1) sctl::Profile::Toc();
     return;
   }
 
-  Profile::Tic("Host2Device",&this->comm,false,25);
+  sctl::Profile::Tic("Host2Device",&this->sctl_comm,false,25);
   //int level=setup_data.level;
   size_t buff_size=*((size_t*)&setup_data.interac_data[0][0]);
   typename Vector<char>::Device          buff;
@@ -3631,7 +3628,7 @@ void FMM_Pts<FMMNode>::V_List     (SetupData<Real_t>&  setup_data, bool device){
     input_data  =*setup_data.  input_data;
     output_data =*setup_data. output_data;
   }
-  Profile::Toc();
+  sctl::Profile::Toc();
 
   { // Offloaded computation.
 
@@ -3726,10 +3723,10 @@ void FMM_Pts<FMMNode>::V_List     (SetupData<Real_t>&  setup_data, bool device){
       Vector<Real_t>  buffer(buffer_dim, (Real_t*)&buff[(input_dim+output_dim)*sizeof(Real_t)],false);
 
       { //  FFT
-        if(np==1) Profile::Tic("FFT",&comm,false,100);
+        if(np==1) sctl::Profile::Tic("FFT",&this->sctl_comm,false,100);
         Vector<Real_t>  input_data_( input_data.dim[0]* input_data.dim[1],  input_data[0], false);
         FFT_UpEquiv(dof, m, ker_dim0,  fft_vec[blk0],  fft_scl[blk0],  input_data_, fft_in, buffer);
-        if(np==1) Profile::Toc();
+        if(np==1) sctl::Profile::Toc();
       }
       { // Hadamard
 #ifdef PVFMM_HAVE_PAPI
@@ -3738,9 +3735,9 @@ void FMM_Pts<FMMNode>::V_List     (SetupData<Real_t>&  setup_data, bool device){
         if (PAPI_start(EventSet) != PAPI_OK) std::cout << "handle_error3" << std::endl;
 #endif
 #endif
-        if(np==1) Profile::Tic("HadamardProduct",&comm,false,100);
+        if(np==1) sctl::Profile::Tic("HadamardProduct",&this->sctl_comm,false,100);
         VListHadamard<Real_t>(dof, M_dim, ker_dim0, ker_dim1, interac_dsp[blk0], interac_vec[blk0], precomp_mat, fft_in, fft_out);
-        if(np==1) Profile::Toc();
+        if(np==1) sctl::Profile::Toc();
 #ifdef PVFMM_HAVE_PAPI
 #ifdef PVFMM_VERBOSE
         if (PAPI_stop(EventSet, values) != PAPI_OK) std::cout << "handle_error4" << std::endl;
@@ -3749,10 +3746,10 @@ void FMM_Pts<FMMNode>::V_List     (SetupData<Real_t>&  setup_data, bool device){
 #endif
       }
       { // IFFT
-        if(np==1) Profile::Tic("IFFT",&comm,false,100);
+        if(np==1) sctl::Profile::Tic("IFFT",&this->sctl_comm,false,100);
         Vector<Real_t> output_data_(output_data.dim[0]*output_data.dim[1], output_data[0], false);
         FFT_Check2Equiv(dof, m, ker_dim1, ifft_vec[blk0], ifft_scl[blk0], fft_out, output_data_, buffer);
-        if(np==1) Profile::Toc();
+        if(np==1) sctl::Profile::Toc();
       }
     }
   }
@@ -3991,10 +3988,10 @@ template <int SYNC>
 void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
   if(setup_data.kernel->ker_dim[0]*setup_data.kernel->ker_dim[1]==0) return;
   if(setup_data.interac_data.Dim(0)==0 || setup_data.interac_data.Dim(1)==0){
-    Profile::Tic("Host2Device",&this->comm,false,25);
-    Profile::Toc();
-    Profile::Tic("DeviceComp",&this->comm,false,20);
-    Profile::Toc();
+    sctl::Profile::Tic("Host2Device",&this->sctl_comm,false,25);
+    sctl::Profile::Toc();
+    sctl::Profile::Tic("DeviceComp",&this->sctl_comm,false,20);
+    sctl::Profile::Toc();
     return;
   }
 
@@ -4003,7 +4000,7 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
   have_gpu=true;
   #endif
 
-  Profile::Tic("Host2Device",&this->comm,false,25);
+  sctl::Profile::Tic("Host2Device",&this->sctl_comm,false,25);
   typename Vector<char>::Device      dev_buff;
   typename Matrix<char>::Device  interac_data;
   typename Matrix<Real_t>::Device  coord_data;
@@ -4028,9 +4025,9 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
     ptr_single_layer_kernel=(size_t)setup_data.kernel->ker_poten;
     ptr_double_layer_kernel=(size_t)setup_data.kernel->dbl_layer_poten;
   }
-  Profile::Toc();
+  sctl::Profile::Toc();
 
-  Profile::Tic("DeviceComp",&this->comm,false,20);
+  sctl::Profile::Tic("DeviceComp",&this->sctl_comm,false,20);
   int lock_idx=-1;
   int wait_lock_idx=-1;
   if(device) wait_lock_idx=MIC_Lock::curr_lock();
@@ -4437,7 +4434,7 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
     {if(device) MIC_Lock::wait_lock(lock_idx);}
   }
   #endif
-  Profile::Toc();
+  sctl::Profile::Toc();
 }
 
 

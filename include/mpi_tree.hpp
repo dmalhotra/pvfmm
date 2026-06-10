@@ -43,7 +43,7 @@ class MPI_Tree: public Tree<TreeNode>{
   /**
    * \brief Constructor.
    */
-  MPI_Tree(MPI_Comm c): Tree<Node_t>() {comm=c;}
+  MPI_Tree(const sctl::Comm& c): Tree<Node_t>(), sctl_comm(c) {}
 
   /**
    * \brief Virtual destructor.
@@ -132,7 +132,7 @@ class MPI_Tree: public Tree<TreeNode>{
   /**
    * \brief Returns a pointer to the comm object.
    */
-  const MPI_Comm* Comm() const {return &comm;}
+  const sctl::Comm& Comm() const { return sctl_comm; }
 
  protected:
 
@@ -147,7 +147,7 @@ class MPI_Tree: public Tree<TreeNode>{
   void ConstructLET_Hypercube(BoundaryType bndry=FreeSpace);
   void ConstructLET_Sparse(BoundaryType bndry=FreeSpace);
 
-  MPI_Comm comm;
+  sctl::Comm sctl_comm;
   std::vector<MortonId> mins;
 
 };

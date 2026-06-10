@@ -936,7 +936,7 @@ std::vector<T> integ_pyramid(int m, T* s, T r, int nx, const Kernel<T>& kernel, 
     I2[i]=I2[i]*r*r*r/64;
 
   if(x_.size()>1)
-  Profile::Add_FLOP(( 2*ny*nz*m*k_dim
+  sctl::Profile::IncrementCounter(sctl::ProfileCounter::FLOP, ( 2*ny*nz*m*k_dim
                      +ny*m*(m+1)*k_dim
                      +2*m*(m+1)*k_dim
                      +m*(m+1)*(m+2)/3*k_dim)*nx*(x_.size()-1));

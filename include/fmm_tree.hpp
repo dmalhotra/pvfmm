@@ -34,7 +34,7 @@ class FMM_Tree: public MPI_Tree<typename FMM_Mat_t::FMMNode_t>{
   /**
    * \brief Constructor.
    */
-  FMM_Tree(MPI_Comm c): MPI_Tree<Node_t>(c), fmm_mat(NULL), bndry(FreeSpace) { };
+  FMM_Tree(const sctl::Comm& c): MPI_Tree<Node_t>(c), fmm_mat(NULL), bndry(FreeSpace) { };
 
   /**
    * \brief Virtual destructor.

@@ -1,4 +1,3 @@
-#include <mpi.h>
 #include <pvfmm_common.hpp>
 #include <cstdlib>
 #include <iostream>
@@ -12,7 +11,7 @@
 #include <utils.hpp>
 
 template <class Real_t>
-void fmm_test(int ker, size_t N, size_t M, Real_t b, int dist, int mult_order, int depth, MPI_Comm comm){
+void fmm_test(int ker, size_t N, size_t M, Real_t b, int dist, int mult_order, int depth, const sctl::Comm& comm){
   typedef pvfmm::FMM_Node<pvfmm::MPI_Node<Real_t> > FMMNode_t;
   typedef pvfmm::FMM_Pts<FMMNode_t> FMM_Mat_t;
   typedef pvfmm::FMM_Tree<FMM_Mat_t> FMM_Tree_t;
@@ -42,9 +41,8 @@ void fmm_test(int ker, size_t N, size_t M, Real_t b, int dist, int mult_order, i
   int omp_p=omp_get_max_threads();
 
   // Find out my identity in the default communicator
-  int myrank, p;
-  MPI_Comm_rank(comm, &myrank);
-  MPI_Comm_size(comm,&p);
+  const int myrank = comm.Rank();
+  const int p      = comm.Size();
 
   //Various parameters.
   typename FMMNode_t::NodeData tree_data;
@@ -89,13 +87,13 @@ void fmm_test(int ker, size_t N, size_t M, Real_t b, int dist, int mult_order, i
 
   pvfmm::Vector<Real_t> trg_value;
   for(size_t i=0;i<2;i++){ // Compute potential
-    pvfmm::Profile::Tic("TotalTime",&comm,true);
+    sctl::Profile::Tic("TotalTime",&comm,true);
 
     //Initialize tree with input data.
     tree.Initialize(&tree_data);
 
     //Initialize FMM Tree
-    pvfmm::Profile::Tic("SetSrcTrg",&comm,true);
+    sctl::Profile::Tic("SetSrcTrg",&comm,true);
     { // Set src and trg points
       std::vector<FMMNode_t*>& node=tree.GetNodeList();
       #pragma omp parallel for
@@ -107,7 +105,7 @@ void fmm_test(int ker, size_t N, size_t M, Real_t b, int dist, int mult_order, i
         node[i]->src_scatter.ReInit(node[i]->pt_scatter.Dim(), &node[i]->pt_scatter[0]);
       }
     }
-    pvfmm::Profile::Toc();
+    sctl::Profile::Toc();
     tree.InitFMM_Tree(false,bndry);
 
     // Setup FMM
@@ -119,7 +117,7 @@ void fmm_test(int ker, size_t N, size_t M, Real_t b, int dist, int mult_order, i
     //tree->RunFMM();
 
     { // Scatter trg values
-      pvfmm::Profile::Tic("Scatter",&comm,true);
+      sctl::Profile::Tic("Scatter",&comm,true);
       pvfmm::Vector<size_t> trg_scatter;
       { // build trg_scatter
         std::vector<Real_t> trg_value_;
@@ -136,10 +134,10 @@ void fmm_test(int ker, size_t N, size_t M, Real_t b, int dist, int mult_order, i
         trg_value=trg_value_;
         trg_scatter=trg_scatter_;
       }
-      pvfmm::par::ScatterReverse(trg_value,trg_scatter,*tree.Comm(),tree_data.trg_coord.Dim()*mykernel->ker_dim[1]/PVFMM_COORD_DIM);
-      pvfmm::Profile::Toc();
+      pvfmm::par::ScatterReverse(trg_value, trg_scatter, comm.GetMPI_Comm(), tree_data.trg_coord.Dim()*mykernel->ker_dim[1]/PVFMM_COORD_DIM);
+      sctl::Profile::Toc();
     }
-    pvfmm::Profile::Toc();
+    sctl::Profile::Toc();
   }
 
   { //Output max tree depth.
@@ -161,7 +159,7 @@ void fmm_test(int ker, size_t N, size_t M, Real_t b, int dist, int mult_order, i
     for(int i=0;i<PVFMM_MAX_DEPTH;i++){
       int local_size=all_nodes[i];
       int global_size;
-      MPI_Allreduce(&local_size, &global_size, 1, MPI_INT, MPI_SUM, comm);
+      comm.Allreduce(sctl::Ptr2ConstItr<int>(&local_size, 1), sctl::Ptr2Itr<int>(&global_size, 1), 1, sctl::CommOp::SUM);
       if(!myrank) std::cout<<global_size<<' ';
     }
     if(!myrank) std::cout<<'\n';
@@ -170,15 +168,15 @@ void fmm_test(int ker, size_t N, size_t M, Real_t b, int dist, int mult_order, i
     for(int i=0;i<PVFMM_MAX_DEPTH;i++){
       int local_size=leaf_nodes[i];
       int global_size;
-      MPI_Allreduce(&local_size, &global_size, 1, MPI_INT, MPI_SUM, comm);
+      comm.Allreduce(sctl::Ptr2ConstItr<int>(&local_size, 1), sctl::Ptr2Itr<int>(&global_size, 1), 1, sctl::CommOp::SUM);
       if(!myrank) std::cout<<global_size<<' ';
     }
     if(!myrank) std::cout<<'\n';
 
     long nleaf_glb=0, maxdepth_glb=0;
-    { // MPI_Reduce
-      MPI_Allreduce(&nleaf, &nleaf_glb, 1, MPI_INT, MPI_SUM, comm);
-      MPI_Allreduce(&maxdepth, &maxdepth_glb, 1, MPI_INT, MPI_MAX, comm);
+    {
+      comm.Allreduce(sctl::Ptr2ConstItr<long>(&nleaf,    1), sctl::Ptr2Itr<long>(&nleaf_glb,    1), 1, sctl::CommOp::SUM);
+      comm.Allreduce(sctl::Ptr2ConstItr<long>(&maxdepth, 1), sctl::Ptr2Itr<long>(&maxdepth_glb, 1), 1, sctl::CommOp::MAX);
     }
     if(!myrank) std::cout<<"Number of Leaf Nodes: "<<nleaf_glb<<'\n';
     if(!myrank) std::cout<<"Tree Depth: "<<maxdepth_glb<<'\n';
@@ -192,9 +190,9 @@ void fmm_test(int ker, size_t N, size_t M, Real_t b, int dist, int mult_order, i
 }
 
 int main(int argc, char **argv){
-  MPI_Init(&argc, &argv);
+  sctl::Comm::MPI_Init(&argc, &argv);
 
-  MPI_Comm comm=MPI_COMM_WORLD;
+  const sctl::Comm comm = sctl::Comm::World();
 
   // Read command line options.
   commandline_option_start(argc, argv);
@@ -212,19 +210,19 @@ int main(int argc, char **argv){
                                3) Stokes velocity\n\
                                4) Helmholtz"),NULL,10);
   commandline_option_end(argc, argv);
-  pvfmm::Profile::Enable(true);
+  sctl::Profile::Enable(true);
 
   // Run FMM with above options.
-  pvfmm::Profile::Tic("FMM_Test",&comm,true);
+  sctl::Profile::Tic("FMM_Test",&comm,true);
   if(sp) fmm_test<float >(ker, N,M,(float)b, dist,m,d,comm);
   else   fmm_test<double>(ker, N,M,       b, dist,m,d,comm);
-  pvfmm::Profile::Toc();
+  sctl::Profile::Toc();
 
   //Output Profiling results.
-  pvfmm::Profile::print(&comm);
+  sctl::Profile::print(&comm);
 
   // Shut down MPI
-  MPI_Finalize();
+  sctl::Comm::MPI_Finalize();
   return 0;
 }
 
