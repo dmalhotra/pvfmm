@@ -295,6 +295,67 @@ namespace DeviceWrapper{
 }
 
 
+  // Implementation of DeviceMirror
+
+  template <class T>
+  inline DeviceVector<T> DeviceMirror::AllocDevice(Vector<T>& host, bool copy){
+    char* p=(char*)host.Begin();
+    size_t bytes=host.Dim()*sizeof(T);
+    if(dev_ptr){ // Already bound: host buffer must not have changed.
+      assert(host_ptr==p && len==bytes);
+    }else if(bytes){
+      host_ptr=p;
+      len=bytes;
+      dev_ptr=DeviceWrapper::alloc_device(host_ptr,len);
+    }
+    if(dev_ptr && copy) lock_idx=DeviceWrapper::host2device(host_ptr,host_ptr,dev_ptr,len);
+
+    DeviceVector<T> h;
+    h.dim=host.Dim();
+    h.dev_ptr=dev_ptr;
+    return h;
+  }
+
+  template <class T>
+  inline DeviceMatrix<T> DeviceMirror::AllocDevice(Matrix<T>& host, bool copy){
+    char* p=(char*)host.Begin();
+    size_t bytes=host.Dim(0)*host.Dim(1)*sizeof(T);
+    if(dev_ptr){ // Already bound: host buffer must not have changed.
+      assert(host_ptr==p && len==bytes);
+    }else if(bytes){
+      host_ptr=p;
+      len=bytes;
+      dev_ptr=DeviceWrapper::alloc_device(host_ptr,len);
+    }
+    if(dev_ptr && copy) lock_idx=DeviceWrapper::host2device(host_ptr,host_ptr,dev_ptr,len);
+
+    DeviceMatrix<T> h;
+    h.dim[0]=host.Dim(0);
+    h.dim[1]=host.Dim(1);
+    h.dev_ptr=dev_ptr;
+    h.lock_idx=lock_idx;
+    return h;
+  }
+
+  inline void DeviceMirror::Device2Host(char* dst){
+    if(!dev_ptr) return;
+    lock_idx=DeviceWrapper::device2host(host_ptr,dev_ptr,(dst?dst:host_ptr),len);
+  }
+
+  inline void DeviceMirror::Device2HostWait(){
+    DeviceWrapper::wait(lock_idx);
+    lock_idx=-1;
+  }
+
+  inline void DeviceMirror::Free(){
+    if(dev_ptr) DeviceWrapper::free_device(host_ptr,dev_ptr);
+    host_ptr=NULL;
+    len=0;
+    dev_ptr=0;
+    lock_idx=-1;
+  }
+
+
   // Implementation of MIC_Lock
 
   #ifdef __MIC__
@@ -309,9 +370,11 @@ namespace DeviceWrapper{
     if(PVFMM_have_mic) abort();// Cannot be called from MIC.
 
     lock_idx=0;
+    static DeviceMirror lock_vec_mirror;
+    lock_vec_mirror.Free();
     lock_vec.Resize(PVFMM_NUM_LOCKS);
     lock_vec.SetZero();
-    lock_vec_=lock_vec.AllocDevice(false);
+    lock_vec_=lock_vec_mirror.AllocDevice(lock_vec,false);
     {for(size_t i=0;i<PVFMM_NUM_LOCKS;i++) lock_vec [i]=1;}
     #pragma offload target(mic:0)
     {for(size_t i=0;i<PVFMM_NUM_LOCKS;i++) lock_vec_[i]=1;}

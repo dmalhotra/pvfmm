@@ -30,32 +30,6 @@ class Matrix{
 
   public:
 
-  struct
-  Device{
-
-    Device() {
-      dim[0]=0;
-      dim[1]=0;
-      dev_ptr=0;
-    }
-
-    Device& operator=(Matrix& M){
-      dim[0]=M.Dim(0);
-      dim[1]=M.Dim(1);
-      dev_ptr=(uintptr_t)&M.data_ptr[0];
-      return *this;
-    }
-
-    inline T* operator[](size_t j) const{
-      assert(j<dim[0]);
-      return &((T*)dev_ptr)[j*dim[1]];
-    }
-
-    size_t dim[2];
-    uintptr_t dev_ptr;
-    int lock_idx;
-  };
-
   Matrix();
 
   Matrix(size_t dim1, size_t dim2, sctl::Iterator<T> data_=sctl::NullIterator<T>(), bool own_data_=true);
@@ -79,14 +53,6 @@ class Matrix{
     ReInit(dim1, dim2, (data_? sctl::Ptr2Itr<T>(data_, (sctl::Long)dim1*(sctl::Long)dim2) : sctl::NullIterator<T>()), own_data_);
   }
 #endif
-
-  Device& AllocDevice(bool copy);
-
-  void Device2Host(sctl::Iterator<T> host_ptr=sctl::NullIterator<T>());
-
-  void Device2HostWait();
-
-  void FreeDevice(bool copy);
 
   void Write(const char* fname);
 
@@ -143,12 +109,6 @@ class Matrix{
   size_t dim[2];
   sctl::Iterator<T> data_ptr;
   bool own_data;
-
-  Device dev;
-  Vector<char> dev_sig;
-#if defined(PVFMM_HAVE_CUDA)
-  cudaEvent_t lock;
-#endif
 };
 
 template <class Y>

@@ -85,6 +85,16 @@ struct SetupData{
   Matrix<Real_t>*  coord_data;
   Matrix<Real_t>*  input_data;
   Matrix<Real_t>* output_data;
+
+  // Device-side mirrors of the matrices above (see DeviceMirror). The
+  // pointer mirrors alias the mirror paired with the pointed-to matrix
+  // (owned by FMM_Tree); interac_data_mirror pairs with the by-value
+  // interac_data.
+  DeviceMirror   interac_data_mirror;
+  DeviceMirror* precomp_data_mirror = NULL;
+  DeviceMirror*   coord_data_mirror = NULL;
+  DeviceMirror*   input_data_mirror = NULL;
+  DeviceMirror*  output_data_mirror = NULL;
 };
 
 template <class FMM_Mat_t>
@@ -121,6 +131,14 @@ class FMM_Pts{
    * \brief Virtual destructor.
    */
   virtual ~FMM_Pts();
+
+  // The user-declared destructor suppresses implicit moves, and copying is
+  // no longer possible (DeviceMirror members are move-only). Default the
+  // moves so containers holding FMM_Pts by value (e.g. sctl's fmm-wrapper)
+  // can still replace instances. Memberwise move falls back to copy for the
+  // copy-only members (Vector/Matrix), matching the old copy semantics.
+  FMM_Pts(FMM_Pts&&) = default;
+  FMM_Pts& operator=(FMM_Pts&&) = default;
 
   /**
    * \brief Initialize all the translation matrices (or load from file).
@@ -213,6 +231,8 @@ class FMM_Pts{
 
   Vector<char> dev_buffer;
   Vector<char> staging_buffer;
+  DeviceMirror dev_buffer_mirror;
+  DeviceMirror staging_buffer_mirror;
 
  protected:
 

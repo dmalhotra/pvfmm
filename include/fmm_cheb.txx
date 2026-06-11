@@ -860,7 +860,9 @@ void FMM_Cheb<FMMNode>::Source2UpSetup(SetupData<Real_t>& setup_data, FMMTree_t*
     setup_data.interac_type[0]=S2U_Type;
 
     setup_data. input_data=&buff[4];
+    setup_data.input_data_mirror=&tree->node_data_buff_mirror[4];
     setup_data.output_data=&buff[0];
+    setup_data.output_data_mirror=&tree->node_data_buff_mirror[0];
     Vector<FMMNode_t*>& nodes_in =n_list[4];
     Vector<FMMNode_t*>& nodes_out=n_list[0];
 
@@ -902,7 +904,9 @@ void FMM_Cheb<FMMNode>::X_ListSetup(SetupData<Real_t>& setup_data, FMMTree_t* tr
     setup_data.interac_type[0]=X_Type;
 
     setup_data. input_data=&buff[4];
+    setup_data.input_data_mirror=&tree->node_data_buff_mirror[4];
     setup_data.output_data=&buff[1];
+    setup_data.output_data_mirror=&tree->node_data_buff_mirror[1];
     Vector<FMMNode_t*>& nodes_in =n_list[4];
     Vector<FMMNode_t*>& nodes_out=n_list[1];
 
@@ -946,7 +950,9 @@ void FMM_Cheb<FMMNode>::W_ListSetup(SetupData<Real_t>& setup_data, FMMTree_t* tr
     setup_data.interac_type[0]=W_Type;
 
     setup_data. input_data=&buff[0];
+    setup_data.input_data_mirror=&tree->node_data_buff_mirror[0];
     setup_data.output_data=&buff[5];
+    setup_data.output_data_mirror=&tree->node_data_buff_mirror[5];
     Vector<FMMNode_t*>& nodes_in =n_list[0];
     Vector<FMMNode_t*>& nodes_out=n_list[5];
 
@@ -992,7 +998,9 @@ void FMM_Cheb<FMMNode>::U_ListSetup(SetupData<Real_t>& setup_data, FMMTree_t* tr
     setup_data.interac_type[2]=U2_Type;
 
     setup_data. input_data=&buff[4];
+    setup_data.input_data_mirror=&tree->node_data_buff_mirror[4];
     setup_data.output_data=&buff[5];
+    setup_data.output_data_mirror=&tree->node_data_buff_mirror[5];
     Vector<FMMNode_t*>& nodes_in =n_list[4];
     Vector<FMMNode_t*>& nodes_out=n_list[5];
 
@@ -1035,7 +1043,9 @@ void FMM_Cheb<FMMNode>::Down2TargetSetup(SetupData<Real_t>& setup_data, FMMTree_
     setup_data.interac_type[0]=D2T_Type;
 
     setup_data. input_data=&buff[1];
+    setup_data.input_data_mirror=&tree->node_data_buff_mirror[1];
     setup_data.output_data=&buff[5];
+    setup_data.output_data_mirror=&tree->node_data_buff_mirror[5];
     Vector<FMMNode_t*>& nodes_in =n_list[1];
     Vector<FMMNode_t*>& nodes_out=n_list[5];
 

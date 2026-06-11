@@ -107,6 +107,16 @@ class FMM_Tree: public MPI_Tree<typename FMM_Mat_t::FMMNode_t>{
   std::vector<Vector<Real_t> > upwd_equiv_surf;
   std::vector<Vector<Real_t> > dnwd_check_surf;
   std::vector<Vector<Real_t> > dnwd_equiv_surf;
+
+ public:
+
+  // Device-side mirrors paired 1:1 with node_data_buff / precomp_lst
+  // entries. Public so FMM_Pts/FMM_Cheb setup code can wire SetupData
+  // mirror pointers (FMM_Cheb is not a friend). Declared after the host
+  // containers so they are destroyed first — releasing the pinned
+  // registration while the host buffers are still mapped.
+  std::vector<DeviceMirror> node_data_buff_mirror;
+  std::vector<DeviceMirror> precomp_lst_mirror;
 };
 
 }//end namespace

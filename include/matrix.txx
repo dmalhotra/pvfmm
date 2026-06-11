@@ -41,7 +41,6 @@ Matrix<T>::Matrix(){
   dim[1]=0;
   own_data=true;
   data_ptr=sctl::NullIterator<T>();
-  dev.dev_ptr=(uintptr_t)NULL;
 }
 
 template <class T>
@@ -56,7 +55,6 @@ Matrix<T>::Matrix(size_t dim1, size_t dim2, sctl::Iterator<T> data_, bool own_da
     }else data_ptr=sctl::NullIterator<T>();
   }else
     data_ptr=data_;
-  dev.dev_ptr=(uintptr_t)NULL;
 }
 
 template <class T>
@@ -69,12 +67,10 @@ Matrix<T>::Matrix(const Matrix<T>& M){
     sctl::omp_par::copy((sctl::ConstIterator<T>)M.data_ptr,(sctl::ConstIterator<T>)M.data_ptr+(sctl::Long)(dim[0]*dim[1]),data_ptr);
   }else
     data_ptr=sctl::NullIterator<T>();
-  dev.dev_ptr=(uintptr_t)NULL;
 }
 
 template <class T>
 Matrix<T>::~Matrix(){
-  FreeDevice(false);
   if(own_data){
     if(data_ptr!=sctl::NullIterator<T>()){
       sctl::aligned_delete<T>(data_ptr);
@@ -90,76 +86,27 @@ void Matrix<T>::Swap(Matrix<T>& M){
   size_t dim_[2]={dim[0],dim[1]};
   sctl::Iterator<T> data_ptr_=data_ptr;
   bool own_data_=own_data;
-  Device dev_=dev;
-  Vector<char> dev_sig_=dev_sig;
 
   dim[0]=M.dim[0];
   dim[1]=M.dim[1];
   data_ptr=M.data_ptr;
   own_data=M.own_data;
-  dev=M.dev;
-  dev_sig=M.dev_sig;
 
   M.dim[0]=dim_[0];
   M.dim[1]=dim_[1];
   M.data_ptr=data_ptr_;
   M.own_data=own_data_;
-  M.dev=dev_;
-  M.dev_sig=dev_sig_;
 }
 
 template <class T>
 void Matrix<T>::ReInit(size_t dim1, size_t dim2, sctl::Iterator<T> data_, bool own_data_){
   if(own_data_ && own_data && dim[0]*dim[1]>=dim1*dim2){
-    if(dim[0]*dim[1]!=dim1*dim2) FreeDevice(false);
     dim[0]=dim1; dim[1]=dim2;
     if(data_!=sctl::NullIterator<T>()) sctl::omp_par::copy((sctl::ConstIterator<T>)data_,(sctl::ConstIterator<T>)data_+(sctl::Long)(dim[0]*dim[1]),data_ptr);
   }else{
     Matrix<T> tmp(dim1,dim2,data_,own_data_);
     this->Swap(tmp);
   }
-}
-
-template <class T>
-typename Matrix<T>::Device& Matrix<T>::AllocDevice(bool copy){
-  size_t len=dim[0]*dim[1];
-  if(dev.dev_ptr==(uintptr_t)NULL && len>0) // Allocate data on device.
-    dev.dev_ptr=DeviceWrapper::alloc_device((char*)&data_ptr[0], len*sizeof(T));
-  if(dev.dev_ptr!=(uintptr_t)NULL && copy) // Copy data to device
-    dev.lock_idx=DeviceWrapper::host2device((char*)&data_ptr[0],(char*)&data_ptr[0],dev.dev_ptr,len*sizeof(T));
-
-  dev.dim[0]=dim[0];
-  dev.dim[1]=dim[1];
-  return dev;
-}
-
-template <class T>
-void Matrix<T>::Device2Host(sctl::Iterator<T> host_ptr){
-  dev.lock_idx=DeviceWrapper::device2host((char*)&data_ptr[0],dev.dev_ptr,(char*)(host_ptr==sctl::NullIterator<T>()?&data_ptr[0]:&host_ptr[0]),dim[0]*dim[1]*sizeof(T));
-//#if defined(PVFMM_HAVE_CUDA)
-//  cudaEventCreate(&lock);
-//  cudaEventRecord(lock, 0);
-//#endif
-}
-
-template <class T>
-void Matrix<T>::Device2HostWait(){
-//#if defined(PVFMM_HAVE_CUDA)
-//  cudaEventSynchronize(lock);
-//  cudaEventDestroy(lock);
-//#endif
-  DeviceWrapper::wait(dev.lock_idx);
-  dev.lock_idx=-1;
-}
-
-template <class T>
-void Matrix<T>::FreeDevice(bool copy){
-  if(dev.dev_ptr==(uintptr_t)NULL) return;
-  if(copy) DeviceWrapper::device2host((char*)&data_ptr[0],dev.dev_ptr,(char*)&data_ptr[0],dim[0]*dim[1]*sizeof(T));
-  DeviceWrapper::free_device((char*)&data_ptr[0], dev.dev_ptr);
-  dev.dev_ptr=(uintptr_t)NULL;
-  dev.dim[0]=0;
-  dev.dim[1]=0;
 }
 
 template <class T>
@@ -223,7 +170,6 @@ const ValueType* Matrix<ValueType>::Begin() const{
 template <class T>
 Matrix<T>& Matrix<T>::operator=(const Matrix<T>& M){
   if(this!=&M){
-    if(dim[0]*dim[1]!=M.dim[0]*M.dim[1]) FreeDevice(false);
     if(dim[0]*dim[1]<M.dim[0]*M.dim[1]){
       ReInit(M.dim[0],M.dim[1]);
     }

@@ -84,6 +84,7 @@ void FMM_Tree<FMM_Mat_t>::SetupFMM(FMM_Mat_t* fmm_mat_) {
   //int omp_p=omp_get_max_threads();
   if(fmm_mat!=fmm_mat_){ // Clear previous setup
     setup_data.clear();
+    precomp_lst_mirror.clear(); // release device mirrors before their host buffers
     precomp_lst.clear();
     fmm_mat=fmm_mat_;
   }
@@ -119,40 +120,47 @@ void FMM_Tree<FMM_Mat_t>::SetupFMM(FMM_Mat_t* fmm_mat_) {
 
   setup_data.resize(8*PVFMM_MAX_DEPTH);
   precomp_lst.resize(8);
+  precomp_lst_mirror.resize(8);
 
   sctl::Profile::Tic("UListSetup",&this->Comm(),false,3);
   for(size_t i=0;i<PVFMM_MAX_DEPTH;i++){
     setup_data[i+PVFMM_MAX_DEPTH*0].precomp_data=&precomp_lst[0];
+    setup_data[i+PVFMM_MAX_DEPTH*0].precomp_data_mirror=&precomp_lst_mirror[0];
     fmm_mat->U_ListSetup(setup_data[i+PVFMM_MAX_DEPTH*0],(MatTree_t*)this,node_data_buff,node_lists,fmm_mat->ScaleInvar()?(i==0?-1:PVFMM_MAX_DEPTH+1):i, device);
   }
   sctl::Profile::Toc();
   sctl::Profile::Tic("WListSetup",&this->Comm(),false,3);
   for(size_t i=0;i<PVFMM_MAX_DEPTH;i++){
     setup_data[i+PVFMM_MAX_DEPTH*1].precomp_data=&precomp_lst[1];
+    setup_data[i+PVFMM_MAX_DEPTH*1].precomp_data_mirror=&precomp_lst_mirror[1];
     fmm_mat->W_ListSetup(setup_data[i+PVFMM_MAX_DEPTH*1],(MatTree_t*)this,node_data_buff,node_lists,fmm_mat->ScaleInvar()?(i==0?-1:PVFMM_MAX_DEPTH+1):i, device);
   }
   sctl::Profile::Toc();
   sctl::Profile::Tic("XListSetup",&this->Comm(),false,3);
   for(size_t i=0;i<PVFMM_MAX_DEPTH;i++){
     setup_data[i+PVFMM_MAX_DEPTH*2].precomp_data=&precomp_lst[2];
+    setup_data[i+PVFMM_MAX_DEPTH*2].precomp_data_mirror=&precomp_lst_mirror[2];
     fmm_mat->X_ListSetup(setup_data[i+PVFMM_MAX_DEPTH*2],(MatTree_t*)this,node_data_buff,node_lists,fmm_mat->ScaleInvar()?(i==0?-1:PVFMM_MAX_DEPTH+1):i, device);
   }
   sctl::Profile::Toc();
   sctl::Profile::Tic("VListSetup",&this->Comm(),false,3);
   for(size_t i=0;i<PVFMM_MAX_DEPTH;i++){
     setup_data[i+PVFMM_MAX_DEPTH*3].precomp_data=&precomp_lst[3];
+    setup_data[i+PVFMM_MAX_DEPTH*3].precomp_data_mirror=&precomp_lst_mirror[3];
     fmm_mat->V_ListSetup(setup_data[i+PVFMM_MAX_DEPTH*3],(MatTree_t*)this,node_data_buff,node_lists,fmm_mat->ScaleInvar()?(i==0?-1:PVFMM_MAX_DEPTH+1):i, /*device*/ false);
   }
   sctl::Profile::Toc();
   sctl::Profile::Tic("D2DSetup",&this->Comm(),false,3);
   for(size_t i=0;i<PVFMM_MAX_DEPTH;i++){
     setup_data[i+PVFMM_MAX_DEPTH*4].precomp_data=&precomp_lst[4];
+    setup_data[i+PVFMM_MAX_DEPTH*4].precomp_data_mirror=&precomp_lst_mirror[4];
     fmm_mat->Down2DownSetup(setup_data[i+PVFMM_MAX_DEPTH*4],(MatTree_t*)this,node_data_buff,node_lists,i, /*device*/ false);
   }
   sctl::Profile::Toc();
   sctl::Profile::Tic("D2TSetup",&this->Comm(),false,3);
   for(size_t i=0;i<PVFMM_MAX_DEPTH;i++){
     setup_data[i+PVFMM_MAX_DEPTH*5].precomp_data=&precomp_lst[5];
+    setup_data[i+PVFMM_MAX_DEPTH*5].precomp_data_mirror=&precomp_lst_mirror[5];
     fmm_mat->Down2TargetSetup(setup_data[i+PVFMM_MAX_DEPTH*5],(MatTree_t*)this,node_data_buff,node_lists,fmm_mat->ScaleInvar()?(i==0?-1:PVFMM_MAX_DEPTH+1):i, /*device*/ false);
   }
   sctl::Profile::Toc();
@@ -160,12 +168,14 @@ void FMM_Tree<FMM_Mat_t>::SetupFMM(FMM_Mat_t* fmm_mat_) {
   sctl::Profile::Tic("S2USetup",&this->Comm(),false,3);
   for(size_t i=0;i<PVFMM_MAX_DEPTH;i++){
     setup_data[i+PVFMM_MAX_DEPTH*6].precomp_data=&precomp_lst[6];
+    setup_data[i+PVFMM_MAX_DEPTH*6].precomp_data_mirror=&precomp_lst_mirror[6];
     fmm_mat->Source2UpSetup(setup_data[i+PVFMM_MAX_DEPTH*6],(MatTree_t*)this,node_data_buff,node_lists,fmm_mat->ScaleInvar()?(i==0?-1:PVFMM_MAX_DEPTH+1):i, /*device*/ false);
   }
   sctl::Profile::Toc();
   sctl::Profile::Tic("U2USetup",&this->Comm(),false,3);
   for(size_t i=0;i<PVFMM_MAX_DEPTH;i++){
     setup_data[i+PVFMM_MAX_DEPTH*7].precomp_data=&precomp_lst[7];
+    setup_data[i+PVFMM_MAX_DEPTH*7].precomp_data_mirror=&precomp_lst_mirror[7];
     fmm_mat->Up2UpSetup(setup_data[i+PVFMM_MAX_DEPTH*7],(MatTree_t*)this,node_data_buff,node_lists,i, /*device*/ false);
   }
   sctl::Profile::Toc();
@@ -215,9 +225,9 @@ void FMM_Tree<FMM_Mat_t>::ClearFMMData() {
   }
 
   if(device){ // Host2Device
-    if(setup_data[0+PVFMM_MAX_DEPTH*1]. input_data!=NULL) setup_data[0+PVFMM_MAX_DEPTH*1]. input_data->AllocDevice(true);
-    if(setup_data[0+PVFMM_MAX_DEPTH*2].output_data!=NULL) setup_data[0+PVFMM_MAX_DEPTH*2].output_data->AllocDevice(true);
-    if(setup_data[0+PVFMM_MAX_DEPTH*0].output_data!=NULL) setup_data[0+PVFMM_MAX_DEPTH*0].output_data->AllocDevice(true);
+    if(setup_data[0+PVFMM_MAX_DEPTH*1]. input_data!=NULL) setup_data[0+PVFMM_MAX_DEPTH*1]. input_data_mirror->AllocDevice(*setup_data[0+PVFMM_MAX_DEPTH*1]. input_data,true);
+    if(setup_data[0+PVFMM_MAX_DEPTH*2].output_data!=NULL) setup_data[0+PVFMM_MAX_DEPTH*2].output_data_mirror->AllocDevice(*setup_data[0+PVFMM_MAX_DEPTH*2].output_data,true);
+    if(setup_data[0+PVFMM_MAX_DEPTH*0].output_data!=NULL) setup_data[0+PVFMM_MAX_DEPTH*0].output_data_mirror->AllocDevice(*setup_data[0+PVFMM_MAX_DEPTH*0].output_data,true);
 
     #ifdef __INTEL_OFFLOAD
     if(!fmm_mat->ScaleInvar()){ // Wait
@@ -577,8 +587,8 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
   #if defined(__INTEL_OFFLOAD) || defined(PVFMM_HAVE_CUDA)
   if(device){ // Host2Device:Src
     sctl::Profile::Tic("Host2Device:Src",&this->Comm(),false,5);
-    if(setup_data[0+PVFMM_MAX_DEPTH*2]. coord_data!=NULL) setup_data[0+PVFMM_MAX_DEPTH*2]. coord_data->AllocDevice(true);
-    if(setup_data[0+PVFMM_MAX_DEPTH*2]. input_data!=NULL) setup_data[0+PVFMM_MAX_DEPTH*2]. input_data->AllocDevice(true);
+    if(setup_data[0+PVFMM_MAX_DEPTH*2]. coord_data!=NULL) setup_data[0+PVFMM_MAX_DEPTH*2]. coord_data_mirror->AllocDevice(*setup_data[0+PVFMM_MAX_DEPTH*2]. coord_data,true);
+    if(setup_data[0+PVFMM_MAX_DEPTH*2]. input_data!=NULL) setup_data[0+PVFMM_MAX_DEPTH*2]. input_data_mirror->AllocDevice(*setup_data[0+PVFMM_MAX_DEPTH*2]. input_data,true);
     sctl::Profile::Toc();
   }
   #endif
@@ -627,7 +637,7 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
     #if defined(__INTEL_OFFLOAD) || defined(PVFMM_HAVE_CUDA)
     if(i==0 && device){ // Host2Device:Mult
       sctl::Profile::Tic("Host2Device:Mult",&this->Comm(),false,5);
-      if(setup_data[0+PVFMM_MAX_DEPTH*1]. input_data!=NULL) setup_data[0+PVFMM_MAX_DEPTH*1]. input_data->AllocDevice(true);
+      if(setup_data[0+PVFMM_MAX_DEPTH*1]. input_data!=NULL) setup_data[0+PVFMM_MAX_DEPTH*1]. input_data_mirror->AllocDevice(*setup_data[0+PVFMM_MAX_DEPTH*1]. input_data,true);
       sctl::Profile::Toc();
     }
 
@@ -637,7 +647,7 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
         Matrix<Real_t>& output_data=*setup_data[0+PVFMM_MAX_DEPTH*2].output_data;
         if(fmm_mat->staging_buffer.Dim()){
           assert(fmm_mat->staging_buffer.Dim()*sizeof(Real_t)>=output_data.Dim(0)*output_data.Dim(1));
-          output_data.Device2Host(sctl::Ptr2Itr<Real_t>((Real_t*)&fmm_mat->staging_buffer[0], output_data.Dim(0)*output_data.Dim(1)));
+          setup_data[0+PVFMM_MAX_DEPTH*2].output_data_mirror->Device2Host((char*)&fmm_mat->staging_buffer[0]);
         }
       }
       sctl::Profile::Toc();
@@ -681,7 +691,7 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
       Matrix<Real_t>& output_data=*setup_data[0+PVFMM_MAX_DEPTH*2].output_data;
       size_t n=output_data.Dim(0)*output_data.Dim(1);
       Real_t* host_ptr=output_data[0];
-      output_data.Device2HostWait();
+      setup_data[0+PVFMM_MAX_DEPTH*2].output_data_mirror->Device2HostWait();
 
       #pragma omp parallel for
       for(size_t i=0;i<n;i++){
@@ -696,7 +706,7 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
     Matrix<Real_t>& output_data=*setup_data[0+PVFMM_MAX_DEPTH*0].output_data;
     if(fmm_mat->staging_buffer.Dim()){
       assert(fmm_mat->staging_buffer.Dim()>=sizeof(Real_t)*output_data.Dim(0)*output_data.Dim(1));
-      output_data.Device2Host(sctl::Ptr2Itr<Real_t>((Real_t*)&fmm_mat->staging_buffer[0], output_data.Dim(0)*output_data.Dim(1)));
+      setup_data[0+PVFMM_MAX_DEPTH*0].output_data_mirror->Device2Host((char*)&fmm_mat->staging_buffer[0]);
     }
   }
   sctl::Profile::Toc();
@@ -724,7 +734,7 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
       Matrix<Real_t>& output_data=*setup_data[0+PVFMM_MAX_DEPTH*0].output_data;
       size_t n=output_data.Dim(0)*output_data.Dim(1);
       Real_t* host_ptr=output_data[0];
-      output_data.Device2HostWait();
+      setup_data[0+PVFMM_MAX_DEPTH*0].output_data_mirror->Device2HostWait();
 
       #pragma omp parallel for
       for(size_t i=0;i<n;i++){

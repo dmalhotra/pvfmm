@@ -1301,6 +1301,7 @@ void FMM_Pts<FMMNode>::PrecompAll(Mat_Type type, int level){
 template <class FMMNode>
 void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& node, std::vector<Matrix<Real_t> >& buff_list, std::vector<Vector<FMMNode_t*> >& n_list, std::vector<std::vector<Vector<Real_t>* > > vec_list){
   if(buff_list.size()<7) buff_list.resize(7);
+  if(tree->node_data_buff_mirror.size()<buff_list.size()) tree->node_data_buff_mirror.resize(buff_list.size());
   if(   n_list.size()<7)    n_list.resize(7);
   if( vec_list.size()<7)  vec_list.resize(7);
   int omp_p=omp_get_max_threads();
@@ -1571,6 +1572,7 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& n
 
   // Create extra auxiliary buffer.
   if(buff_list.size()<=vec_list.size()) buff_list.resize(vec_list.size()+1);
+  if(tree->node_data_buff_mirror.size()<buff_list.size()) tree->node_data_buff_mirror.resize(buff_list.size());
   for(size_t indx=0;indx<vec_list.size();indx++){ // Resize buffer
     Matrix<Real_t>&                  buff=buff_list[indx];
     std::vector<Vector<Real_t>*>& vec_lst= vec_list[indx];
@@ -1609,6 +1611,7 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& n
 
     if(keep_data){ // Copy to dev_buffer
       if(dev_buffer.Dim()<buff_size*sizeof(Real_t)){ // Resize dev_buffer
+        dev_buffer_mirror.Free(); // host buffer is about to be reallocated
         dev_buffer.ReInit((size_t)(buff_size*sizeof(Real_t)*1.05));
       }
 
@@ -1621,6 +1624,7 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& n
     }
 
     if(buff.Dim(0)*buff.Dim(1)<buff_size){ // Resize buff
+      tree->node_data_buff_mirror[indx].Free(); // host buffer is about to be reallocated
       buff.ReInit(1,(size_t)(buff_size*1.05));
     }
 
@@ -1647,6 +1651,7 @@ void FMM_Pts<FMMNode>::SetupPrecomp(SetupData<Real_t>& setup_data, bool device){
   if(setup_data.precomp_data==NULL || setup_data.level>PVFMM_MAX_DEPTH) return;
 
   sctl::Profile::Tic("SetupPrecomp",&this->sctl_comm,true,25);
+  if(setup_data.precomp_data_mirror) setup_data.precomp_data_mirror->Free(); // CompactData below may reallocate the host buffer
   { // Build precomp_data
     size_t precomp_offset=0;
     int level=setup_data.level;
@@ -1662,7 +1667,7 @@ void FMM_Pts<FMMNode>::SetupPrecomp(SetupData<Real_t>& setup_data, bool device){
 
   if(device){ // Host2Device
     sctl::Profile::Tic("Host2Device",&this->sctl_comm,false,25);
-    setup_data.precomp_data->AllocDevice(true);
+    setup_data.precomp_data_mirror->AllocDevice(*setup_data.precomp_data,true);
     sctl::Profile::Toc();
   }
 }
@@ -1832,7 +1837,10 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
         }
       }
     }
-    if(this->dev_buffer.Dim()<buff_size) this->dev_buffer.ReInit(buff_size);
+    if(this->dev_buffer.Dim()<buff_size){
+      this->dev_buffer_mirror.Free(); // host buffer is about to be reallocated
+      this->dev_buffer.ReInit(buff_size);
+    }
 
     { // Set interac_data.
       size_t data_size=sizeof(size_t)*4;
@@ -1843,6 +1851,7 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
       data_size+=sizeof(size_t)+output_perm.size()*sizeof(size_t);
       if(interac_data.Dim(0)*interac_data.Dim(1)<sizeof(size_t)){
         data_size+=sizeof(size_t);
+        setup_data.interac_data_mirror.Free(); // host buffer is about to be reallocated
         interac_data.ReInit(1,data_size);
         ((size_t*)&interac_data[0][0])[0]=sizeof(size_t);
       }else{
@@ -1851,6 +1860,7 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
         data_size+=pts_data_size;
         if(data_size>interac_data.Dim(0)*interac_data.Dim(1)){ //Resize and copy interac_data.
           Matrix< char> pts_interac_data=interac_data;
+          setup_data.interac_data_mirror.Free(); // host buffer is about to be reallocated
           interac_data.ReInit(1,data_size);
           sctl::omp_par::memcpy(interac_data.Begin(), pts_interac_data.Begin(), pts_data_size);
         }
@@ -1888,11 +1898,12 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
 
   if(device){ // Host2Device
     sctl::Profile::Tic("Host2Device",&this->sctl_comm,false,25);
-    setup_data.interac_data .AllocDevice(true);
+    setup_data.interac_data_mirror.AllocDevice(setup_data.interac_data,true);
     if(staging_buffer.Dim()<sizeof(Real_t)*output_data.Dim(0)*output_data.Dim(1)){
+      staging_buffer_mirror.Free(); // host buffer is about to be reallocated
       staging_buffer.ReInit(sizeof(Real_t)*output_data.Dim(0)*output_data.Dim(1));
       staging_buffer.SetZero();
-      staging_buffer.AllocDevice(true);
+      staging_buffer_mirror.AllocDevice(staging_buffer,true);
     }
     sctl::Profile::Toc();
   }
@@ -1902,23 +1913,23 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
 #include <fmm_pts_gpu.hpp>
 
 template <class Real_t, int SYNC>
-void EvalListGPU(SetupData<Real_t>& setup_data, Vector<char>& dev_buffer, const sctl::Comm& comm) {
+void EvalListGPU(SetupData<Real_t>& setup_data, Vector<char>& dev_buffer, DeviceMirror& dev_buffer_mirror, const sctl::Comm& comm) {
   cudaStream_t* stream = pvfmm::CUDA_Lock::acquire_stream();
 
   sctl::Profile::Tic("Host2Device",&comm,false,25);
-  typename Matrix<char>::Device    interac_data;
-  typename Vector<char>::Device            buff;
-  typename Matrix<char>::Device  precomp_data_d;
-  typename Matrix<char>::Device  interac_data_d;
-  typename Matrix<Real_t>::Device  input_data_d;
-  typename Matrix<Real_t>::Device output_data_d;
+  DeviceMatrix<char>    interac_data;
+  DeviceVector<char>            buff;
+  DeviceMatrix<char>  precomp_data_d;
+  DeviceMatrix<char>  interac_data_d;
+  DeviceMatrix<Real_t>  input_data_d;
+  DeviceMatrix<Real_t> output_data_d;
 
   interac_data  = setup_data.interac_data;
-  buff          =              dev_buffer. AllocDevice(false);
-  precomp_data_d= setup_data.precomp_data->AllocDevice(false);
-  interac_data_d= setup_data.interac_data. AllocDevice(false);
-  input_data_d  = setup_data.  input_data->AllocDevice(false);
-  output_data_d = setup_data. output_data->AllocDevice(false);
+  buff          = dev_buffer_mirror.AllocDevice(dev_buffer,false);
+  precomp_data_d= setup_data.precomp_data_mirror->AllocDevice(*setup_data.precomp_data,false);
+  interac_data_d= setup_data.interac_data_mirror.AllocDevice(setup_data.interac_data,false);
+  input_data_d  = setup_data.input_data_mirror->AllocDevice(*setup_data.input_data,false);
+  output_data_d = setup_data.output_data_mirror->AllocDevice(*setup_data.output_data,false);
   sctl::Profile::Toc();
 
   sctl::Profile::Tic("DeviceComp",&comm,false,20);
@@ -2027,23 +2038,23 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<Real_t>& setup_data, bool device){
 
 #if defined(PVFMM_HAVE_CUDA)
   if (device) {
-    EvalListGPU<Real_t, SYNC>(setup_data, this->dev_buffer, this->sctl_comm);
+    EvalListGPU<Real_t, SYNC>(setup_data, this->dev_buffer, this->dev_buffer_mirror, this->sctl_comm);
     return;
   }
 #endif
 
   sctl::Profile::Tic("Host2Device",&this->sctl_comm,false,25);
-  typename Vector<char>::Device          buff;
-  typename Matrix<char>::Device  precomp_data;
-  typename Matrix<char>::Device  interac_data;
-  typename Matrix<Real_t>::Device  input_data;
-  typename Matrix<Real_t>::Device output_data;
+  DeviceVector<char>          buff;
+  DeviceMatrix<char>  precomp_data;
+  DeviceMatrix<char>  interac_data;
+  DeviceMatrix<Real_t>  input_data;
+  DeviceMatrix<Real_t> output_data;
   if(device){
-    buff        =       this-> dev_buffer. AllocDevice(false);
-    precomp_data= setup_data.precomp_data->AllocDevice(false);
-    interac_data= setup_data.interac_data. AllocDevice(false);
-    input_data  = setup_data.  input_data->AllocDevice(false);
-    output_data = setup_data. output_data->AllocDevice(false);
+    buff        = this->dev_buffer_mirror.AllocDevice(this->dev_buffer,false);
+    precomp_data= setup_data.precomp_data_mirror->AllocDevice(*setup_data.precomp_data,false);
+    interac_data= setup_data.interac_data_mirror.AllocDevice(setup_data.interac_data,false);
+    input_data  = setup_data.input_data_mirror->AllocDevice(*setup_data.input_data,false);
+    output_data = setup_data.output_data_mirror->AllocDevice(*setup_data.output_data,false);
   }else{
     buff        =       this-> dev_buffer;
     precomp_data=*setup_data.precomp_data;
@@ -2284,8 +2295,11 @@ void FMM_Pts<FMMNode>::Source2UpSetup(SetupData<Real_t>&  setup_data, FMMTree_t*
     setup_data. level=level;
     setup_data.kernel=kernel->k_s2m;
     setup_data. input_data=&buff[4];
+    setup_data.input_data_mirror=&tree->node_data_buff_mirror[4];
     setup_data.output_data=&buff[0];
+    setup_data.output_data_mirror=&tree->node_data_buff_mirror[0];
     setup_data. coord_data=&buff[6];
+    setup_data.coord_data_mirror=&tree->node_data_buff_mirror[6];
     Vector<FMMNode_t*>& nodes_in =n_list[4];
     Vector<FMMNode_t*>& nodes_out=n_list[0];
 
@@ -2614,7 +2628,9 @@ void FMM_Pts<FMMNode>::Up2UpSetup(SetupData<Real_t>& setup_data, FMMTree_t* tree
     setup_data.interac_type[0]=U2U_Type;
 
     setup_data. input_data=&buff[0];
+    setup_data.input_data_mirror=&tree->node_data_buff_mirror[0];
     setup_data.output_data=&buff[0];
+    setup_data.output_data_mirror=&tree->node_data_buff_mirror[0];
     Vector<FMMNode_t*>& nodes_in =n_list[0];
     Vector<FMMNode_t*>& nodes_out=n_list[0];
 
@@ -3360,7 +3376,9 @@ void FMM_Pts<FMMNode>::V_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
     setup_data.interac_type[0]=V1_Type;
 
     setup_data. input_data=&buff[0];
+    setup_data.input_data_mirror=&tree->node_data_buff_mirror[0];
     setup_data.output_data=&buff[1];
+    setup_data.output_data_mirror=&tree->node_data_buff_mirror[1];
     Vector<FMMNode_t*>& nodes_in =n_list[2];
     Vector<FMMNode_t*>& nodes_out=n_list[3];
 
@@ -3545,8 +3563,10 @@ void FMM_Pts<FMMNode>::V_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
       }
       data_size+=sizeof(size_t)+interac_mat.size()*sizeof(size_t);
       data_size+=sizeof(size_t)+interac_mat_ptr.size()*sizeof(Real_t*);
-      if(data_size>interac_data.Dim(0)*interac_data.Dim(1))
+      if(data_size>interac_data.Dim(0)*interac_data.Dim(1)){
+        setup_data.interac_data_mirror.Free(); // host buffer is about to be reallocated
         interac_data.ReInit(1,data_size);
+      }
       char* data_ptr=&interac_data[0][0];
 
       ((size_t*)data_ptr)[0]=buff_size; data_ptr+=sizeof(size_t);
@@ -3595,7 +3615,7 @@ void FMM_Pts<FMMNode>::V_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
 
   if(device){ // Host2Device
     sctl::Profile::Tic("Host2Device",&this->sctl_comm,false,25);
-    setup_data.interac_data. AllocDevice(true);
+    setup_data.interac_data_mirror.AllocDevice(setup_data.interac_data,true);
     sctl::Profile::Toc();
   }
 }
@@ -3616,21 +3636,27 @@ void FMM_Pts<FMMNode>::V_List     (SetupData<Real_t>&  setup_data, bool device){
   sctl::Profile::Tic("Host2Device",&this->sctl_comm,false,25);
   //int level=setup_data.level;
   size_t buff_size=*((size_t*)&setup_data.interac_data[0][0]);
-  typename Vector<char>::Device          buff;
-  //typename Matrix<char>::Device  precomp_data;
-  typename Matrix<char>::Device  interac_data;
-  typename Matrix<Real_t>::Device  input_data;
-  typename Matrix<Real_t>::Device output_data;
+  DeviceVector<char>          buff;
+  //DeviceMatrix<char>  precomp_data;
+  DeviceMatrix<char>  interac_data;
+  DeviceMatrix<Real_t>  input_data;
+  DeviceMatrix<Real_t> output_data;
 
   if(device){
-    if(this->dev_buffer.Dim()<buff_size) this->dev_buffer.ReInit(buff_size);
-    buff        =       this-> dev_buffer. AllocDevice(false);
-    //precomp_data= setup_data.precomp_data->AllocDevice(false);
-    interac_data= setup_data.interac_data. AllocDevice(false);
-    input_data  = setup_data.  input_data->AllocDevice(false);
-    output_data = setup_data. output_data->AllocDevice(false);
+    if(this->dev_buffer.Dim()<buff_size){
+      this->dev_buffer_mirror.Free(); // host buffer is about to be reallocated
+      this->dev_buffer.ReInit(buff_size);
+    }
+    buff        = this->dev_buffer_mirror.AllocDevice(this->dev_buffer,false);
+    //precomp_data= setup_data.precomp_data_mirror->AllocDevice(*setup_data.precomp_data,false);
+    interac_data= setup_data.interac_data_mirror.AllocDevice(setup_data.interac_data,false);
+    input_data  = setup_data.input_data_mirror->AllocDevice(*setup_data.input_data,false);
+    output_data = setup_data.output_data_mirror->AllocDevice(*setup_data.output_data,false);
   }else{
-    if(this->dev_buffer.Dim()<buff_size) this->dev_buffer.ReInit(buff_size);
+    if(this->dev_buffer.Dim()<buff_size){
+      this->dev_buffer_mirror.Free(); // host buffer is about to be reallocated
+      this->dev_buffer.ReInit(buff_size);
+    }
     buff        =       this-> dev_buffer;
     //precomp_data=*setup_data.precomp_data;
     interac_data= setup_data.interac_data;
@@ -3783,7 +3809,9 @@ void FMM_Pts<FMMNode>::Down2DownSetup(SetupData<Real_t>& setup_data, FMMTree_t* 
     setup_data.interac_type[0]=D2D_Type;
 
     setup_data. input_data=&buff[1];
+    setup_data.input_data_mirror=&tree->node_data_buff_mirror[1];
     setup_data.output_data=&buff[1];
+    setup_data.output_data_mirror=&tree->node_data_buff_mirror[1];
     Vector<FMMNode_t*>& nodes_in =n_list[1];
     Vector<FMMNode_t*>& nodes_out=n_list[1];
 
@@ -3959,6 +3987,7 @@ void FMM_Pts<FMMNode>::PtSetup(SetupData<Real_t>& setup_data, void* data_){
     { // Set setup_data.interac_data
       Matrix<char>& buff=setup_data.interac_data;
       if(pkd_data.size>buff.Dim(0)*buff.Dim(1)){
+        setup_data.interac_data_mirror.Free(); // host buffer is about to be reallocated
         buff.ReInit(1,pkd_data.size);
       }
       ((PackedSetupData*)buff[0])[0]=pkd_data;
@@ -3996,7 +4025,10 @@ void FMM_Pts<FMMNode>::PtSetup(SetupData<Real_t>& setup_data, void* data_){
   }
   { // Resize device buffer
     size_t n=setup_data.output_data->Dim(0)*setup_data.output_data->Dim(1)*sizeof(Real_t);
-    if(this->dev_buffer.Dim()<n) this->dev_buffer.ReInit(n);
+    if(this->dev_buffer.Dim()<n){
+      this->dev_buffer_mirror.Free(); // host buffer is about to be reallocated
+      this->dev_buffer.ReInit(n);
+    }
   }
 }
 
@@ -4018,19 +4050,19 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
   #endif
 
   sctl::Profile::Tic("Host2Device",&this->sctl_comm,false,25);
-  typename Vector<char>::Device      dev_buff;
-  typename Matrix<char>::Device  interac_data;
-  typename Matrix<Real_t>::Device  coord_data;
-  typename Matrix<Real_t>::Device  input_data;
-  typename Matrix<Real_t>::Device output_data;
+  DeviceVector<char>      dev_buff;
+  DeviceMatrix<char>  interac_data;
+  DeviceMatrix<Real_t>  coord_data;
+  DeviceMatrix<Real_t>  input_data;
+  DeviceMatrix<Real_t> output_data;
   size_t ptr_single_layer_kernel=(size_t)NULL;
   size_t ptr_double_layer_kernel=(size_t)NULL;
   if(device && !have_gpu){
-    dev_buff    =       this-> dev_buffer. AllocDevice(false);
-    interac_data= setup_data.interac_data. AllocDevice(false);
-    if(setup_data.  coord_data!=NULL) coord_data  = setup_data.  coord_data->AllocDevice(false);
-    if(setup_data.  input_data!=NULL) input_data  = setup_data.  input_data->AllocDevice(false);
-    if(setup_data. output_data!=NULL) output_data = setup_data. output_data->AllocDevice(false);
+    dev_buff    = this->dev_buffer_mirror.AllocDevice(this->dev_buffer,false);
+    interac_data= setup_data.interac_data_mirror.AllocDevice(setup_data.interac_data,false);
+    if(setup_data.  coord_data!=NULL) coord_data  = setup_data.coord_data_mirror->AllocDevice(*setup_data.coord_data,false);
+    if(setup_data.  input_data!=NULL) input_data  = setup_data.input_data_mirror->AllocDevice(*setup_data.input_data,false);
+    if(setup_data. output_data!=NULL) output_data = setup_data.output_data_mirror->AllocDevice(*setup_data.output_data,false);
     ptr_single_layer_kernel=setup_data.kernel->dev_ker_poten;
     ptr_double_layer_kernel=setup_data.kernel->dev_dbl_layer_poten;
   }else{
@@ -4123,7 +4155,7 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<Real_t>& setup_data, bool device){
         size_t scal_dim[4*PVFMM_MAX_DEPTH]; size_t scal_offset[4*PVFMM_MAX_DEPTH];
         size_t            Mdim[4][2]; size_t              M_offset[4];
       };
-      typename Matrix<char>::Device& setupdata=interac_data;
+      DeviceMatrix<char>& setupdata=interac_data;
       PackedSetupData& pkd_data=*((PackedSetupData*)setupdata[0]);
 
       data. level=pkd_data. level;
@@ -4462,8 +4494,11 @@ void FMM_Pts<FMMNode>::X_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
     setup_data. level=level;
     setup_data.kernel=kernel->k_s2l;
     setup_data. input_data=&buff[4];
+    setup_data.input_data_mirror=&tree->node_data_buff_mirror[4];
     setup_data.output_data=&buff[1];
+    setup_data.output_data_mirror=&tree->node_data_buff_mirror[1];
     setup_data. coord_data=&buff[6];
+    setup_data.coord_data_mirror=&tree->node_data_buff_mirror[6];
     Vector<FMMNode_t*>& nodes_in =n_list[4];
     Vector<FMMNode_t*>& nodes_out=n_list[1];
 
@@ -4764,8 +4799,11 @@ void FMM_Pts<FMMNode>::W_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
     setup_data. level=level;
     setup_data.kernel=kernel->k_m2t;
     setup_data. input_data=&buff[0];
+    setup_data.input_data_mirror=&tree->node_data_buff_mirror[0];
     setup_data.output_data=&buff[5];
+    setup_data.output_data_mirror=&tree->node_data_buff_mirror[5];
     setup_data. coord_data=&buff[6];
+    setup_data.coord_data_mirror=&tree->node_data_buff_mirror[6];
     Vector<FMMNode_t*>& nodes_in =n_list[0];
     Vector<FMMNode_t*>& nodes_out=n_list[5];
 
@@ -5049,8 +5087,11 @@ void FMM_Pts<FMMNode>::U_ListSetup(SetupData<Real_t>& setup_data, FMMTree_t* tre
     setup_data. level=level;
     setup_data.kernel=kernel->k_s2t;
     setup_data. input_data=&buff[4];
+    setup_data.input_data_mirror=&tree->node_data_buff_mirror[4];
     setup_data.output_data=&buff[5];
+    setup_data.output_data_mirror=&tree->node_data_buff_mirror[5];
     setup_data. coord_data=&buff[6];
+    setup_data.coord_data_mirror=&tree->node_data_buff_mirror[6];
     Vector<FMMNode_t*>& nodes_in =n_list[4];
     Vector<FMMNode_t*>& nodes_out=n_list[5];
 
@@ -5445,8 +5486,11 @@ void FMM_Pts<FMMNode>::Down2TargetSetup(SetupData<Real_t>&  setup_data, FMMTree_
     setup_data. level=level;
     setup_data.kernel=kernel->k_l2t;
     setup_data. input_data=&buff[1];
+    setup_data.input_data_mirror=&tree->node_data_buff_mirror[1];
     setup_data.output_data=&buff[5];
+    setup_data.output_data_mirror=&tree->node_data_buff_mirror[5];
     setup_data. coord_data=&buff[6];
+    setup_data.coord_data_mirror=&tree->node_data_buff_mirror[6];
     Vector<FMMNode_t*>& nodes_in =n_list[1];
     Vector<FMMNode_t*>& nodes_out=n_list[5];
 

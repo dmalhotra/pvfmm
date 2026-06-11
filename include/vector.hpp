@@ -28,23 +28,6 @@ class Vector{
 
   public:
 
-  struct
-  Device{
-
-    Device& operator=(Vector& V){
-      dim=V.Dim();
-      dev_ptr=(uintptr_t)&V[0];
-      return *this;
-    }
-
-    inline T& operator[](size_t j) const{
-      return ((T*)dev_ptr)[j];
-    }
-
-    size_t dim;
-    uintptr_t dev_ptr;
-  };
-
   Vector();
 
   Vector(size_t dim_, sctl::Iterator<T> data_=sctl::NullIterator<T>(), bool own_data_=true);
@@ -76,12 +59,6 @@ class Vector{
   }
 #endif
 
-  Device& AllocDevice(bool copy);
-
-  void Device2Host();
-
-  void FreeDevice(bool copy);
-
   void Write(const char* fname);
 
   size_t Dim() const;
@@ -110,7 +87,6 @@ class Vector{
   size_t capacity;
   sctl::Iterator<T> data_ptr;
   bool own_data;
-  Device dev;
 };
 
 }//end namespace

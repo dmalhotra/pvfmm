@@ -45,6 +45,129 @@ namespace DeviceWrapper{
 
 }//end namespace
 
+template <class T> class Matrix;
+
+/**
+ * \brief Lightweight handle describing a vector buffer (device or host) to
+ * kernel/offload code. Formerly nested as Vector<T>::Device.
+ */
+template <class T>
+struct DeviceVector{
+
+  DeviceVector(): dim(0), dev_ptr(0) {}
+
+  // Bind a host-side view (CPU/MIC fallback path).
+  DeviceVector& operator=(Vector<T>& V){
+    dim=V.Dim();
+    dev_ptr=(uintptr_t)V.Begin();
+    return *this;
+  }
+
+  inline T& operator[](size_t j) const{
+    return ((T*)dev_ptr)[j];
+  }
+
+  size_t dim;
+  uintptr_t dev_ptr;
+};
+
+/**
+ * \brief Lightweight handle describing a matrix buffer (device or host) to
+ * kernel/offload code. Formerly nested as Matrix<T>::Device.
+ */
+template <class T>
+struct DeviceMatrix{
+
+  DeviceMatrix(){
+    dim[0]=0;
+    dim[1]=0;
+    dev_ptr=0;
+    lock_idx=-1;
+  }
+
+  // Bind a host-side view (CPU/MIC fallback path).
+  DeviceMatrix& operator=(Matrix<T>& M){
+    dim[0]=M.Dim(0);
+    dim[1]=M.Dim(1);
+    dev_ptr=(uintptr_t)M.Begin();
+    return *this;
+  }
+
+  inline T* operator[](size_t j) const{
+    assert(j<dim[0]);
+    return &((T*)dev_ptr)[j*dim[1]];
+  }
+
+  size_t dim[2];
+  uintptr_t dev_ptr;
+  int lock_idx;
+};
+
+/**
+ * \brief Owns the device-side mirror of one host buffer: the page-locked
+ * registration of the host range (cudaHostRegister) and the device
+ * allocation. This lifecycle state previously lived inside Vector/Matrix
+ * as the `dev` member and the AllocDevice/FreeDevice/Device2Host methods.
+ *
+ * Contract: while bound, the host buffer must not be freed, resized, or
+ * reallocated — call Free() first. Releasing the pinned registration
+ * requires the host pages to still be mapped, so a stale binding cannot be
+ * released after the host buffer is gone; AllocDevice asserts if called
+ * with a different host range while still bound.
+ */
+class DeviceMirror{
+  public:
+
+  DeviceMirror(): host_ptr(NULL), len(0), dev_ptr(0), lock_idx(-1) {}
+
+  ~DeviceMirror(){ Free(); }
+
+  DeviceMirror(const DeviceMirror&) = delete;
+  DeviceMirror& operator=(const DeviceMirror&) = delete;
+
+  DeviceMirror(DeviceMirror&& m) noexcept: host_ptr(m.host_ptr), len(m.len), dev_ptr(m.dev_ptr), lock_idx(m.lock_idx){
+    m.host_ptr=NULL; m.len=0; m.dev_ptr=0; m.lock_idx=-1;
+  }
+
+  DeviceMirror& operator=(DeviceMirror&& m) noexcept{
+    if(this!=&m){
+      Free();
+      host_ptr=m.host_ptr; len=m.len; dev_ptr=m.dev_ptr; lock_idx=m.lock_idx;
+      m.host_ptr=NULL; m.len=0; m.dev_ptr=0; m.lock_idx=-1;
+    }
+    return *this;
+  }
+
+  /**
+   * Bind to `host` and allocate the device block if not already bound
+   * (no-op when already bound to the same range). If copy, enqueue an
+   * asynchronous host-to-device copy of the full range.
+   */
+  template <class T> DeviceVector<T> AllocDevice(Vector<T>& host, bool copy);
+  template <class T> DeviceMatrix<T> AllocDevice(Matrix<T>& host, bool copy);
+
+  /**
+   * Asynchronous device-to-host copy of the bound range, into `dst` if
+   * given (default: back into the bound host range itself).
+   */
+  void Device2Host(char* dst=NULL);
+
+  /** Wait for the last asynchronous copy to complete. */
+  void Device2HostWait();
+
+  /** Release the device allocation and the host pinning. */
+  void Free();
+
+  bool Allocated() const{ return dev_ptr!=0; }
+
+  private:
+
+  char* host_ptr;
+  size_t len;
+  uintptr_t dev_ptr;
+  int lock_idx;
+};
+
 
 
 /*
@@ -95,7 +218,7 @@ transfer, use:
       static int curr_lock();
 
       static Vector<char> lock_vec;
-      static Vector<char>::Device lock_vec_;
+      static DeviceVector<char> lock_vec_;
 
     private:
       MIC_Lock(){}; // private constructor for static class.

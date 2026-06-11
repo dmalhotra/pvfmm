@@ -13,7 +13,7 @@
 namespace pvfmm{
 
   Vector<char> MIC_Lock::lock_vec;
-  Vector<char>::Device MIC_Lock::lock_vec_;
+  DeviceVector<char> MIC_Lock::lock_vec_;
   int MIC_Lock::lock_idx;
 
 #if defined(PVFMM_HAVE_CUDA)
