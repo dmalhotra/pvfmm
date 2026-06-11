@@ -43,9 +43,9 @@ void MPI_Node<T>::Initialize(TreeNode* parent_,int path2node_, TreeNode::NodeDat
     max_pts =mpi_data->max_pts;
     pt_coord=mpi_data->pt_coord;
     pt_value=mpi_data->pt_value;
-  }else if(parent){
-    max_pts =((MPI_Node<T>*)parent)->max_pts;
-    SetGhost(((MPI_Node<T>*)parent)->IsGhost());
+  }else if(parent!=sctl::NullIterator<TreeNode>()){
+    max_pts =((MPI_Node<T>*)&parent[0])->max_pts;
+    SetGhost(((MPI_Node<T>*)&parent[0])->IsGhost());
   }
 }
 
@@ -287,11 +287,14 @@ PackedData MPI_Node<T>::Pack(bool ghost, void* buff_ptr, size_t offset){
 
   PackedData p0;
   // Determine data length.
-  p0.length =sizeof(size_t)+sizeof(int)+sizeof(long long)+sizeof(MortonId);
+  // depth is padded to 8 bytes so that the packed vector data that follows
+  // the header stays 8-byte aligned (Unpack creates typed iterator views
+  // into this buffer, which assert on alignment under SCTL_MEMDEBUG).
+  p0.length =sizeof(size_t)+sizeof(long long)+sizeof(long long)+sizeof(MortonId);
   for(size_t j=0;j<pt_coord.size();j++){
     p0.length+=3*sizeof(size_t);
-    if(pt_coord  [j]) p0.length+=(pt_coord  [j]->Dim())*sizeof(Real_t);
-    if(pt_value  [j]) p0.length+=(pt_value  [j]->Dim())*sizeof(Real_t);
+    if(pt_coord  [j]) p0.length+=(((pt_coord  [j]->Dim())*sizeof(Real_t)+sizeof(size_t)-1)/sizeof(size_t))*sizeof(size_t); // Real_t segments padded to keep size_t fields 8-byte aligned
+    if(pt_value  [j]) p0.length+=(((pt_value  [j]->Dim())*sizeof(Real_t)+sizeof(size_t)-1)/sizeof(size_t))*sizeof(size_t);
     if(pt_scatter[j]) p0.length+=(pt_scatter[j]->Dim())*sizeof(size_t);
   }
 
@@ -309,8 +312,11 @@ PackedData MPI_Node<T>::Pack(bool ghost, void* buff_ptr, size_t offset){
   std::memcpy(data_ptr, &p0.length, sizeof(size_t));
   data_ptr+=sizeof(size_t);
 
-  std::memcpy(data_ptr, &this->depth, sizeof(int));
-  data_ptr+=sizeof(int);
+  { // Write depth (padded to 8 bytes; see header-size comment above).
+    long long depth_=this->depth;
+    std::memcpy(data_ptr, &depth_, sizeof(long long));
+    data_ptr+=sizeof(long long);
+  }
 
   std::memcpy(data_ptr, &this->NodeCost(), sizeof(long long));
   data_ptr+=sizeof(long long);
@@ -328,7 +334,7 @@ PackedData MPI_Node<T>::Pack(bool ghost, void* buff_ptr, size_t offset){
       std::memcpy(data_ptr, &vec_dim, sizeof(size_t)); data_ptr+=sizeof(size_t);
       if(vec.Dim()>0 && data_ptr!=(char*)&vec[0])
         sctl::omp_par::memcpy((Real_t*)data_ptr, &vec[0], vec.Dim());
-      data_ptr+=vec.Dim()*sizeof(Real_t);
+      data_ptr+=((vec.Dim()*sizeof(Real_t)+sizeof(size_t)-1)/sizeof(size_t))*sizeof(size_t);
     }else{
       std::memcpy(data_ptr, &zero, sizeof(size_t)); data_ptr+=sizeof(size_t);
     }
@@ -338,7 +344,7 @@ PackedData MPI_Node<T>::Pack(bool ghost, void* buff_ptr, size_t offset){
       std::memcpy(data_ptr, &vec_dim, sizeof(size_t)); data_ptr+=sizeof(size_t);
       if(vec.Dim()>0 && data_ptr!=(char*)&vec[0])
         sctl::omp_par::memcpy((Real_t*)data_ptr, &vec[0], vec.Dim());
-      data_ptr+=vec.Dim()*sizeof(Real_t);
+      data_ptr+=((vec.Dim()*sizeof(Real_t)+sizeof(size_t)-1)/sizeof(size_t))*sizeof(size_t);
     }else{
       std::memcpy(data_ptr, &zero, sizeof(size_t)); data_ptr+=sizeof(size_t);
     }
@@ -373,8 +379,12 @@ void MPI_Node<T>::Unpack(PackedData p0, bool own_data){
   assert(data_ptr_len_check==p0.length);
   data_ptr+=sizeof(size_t);
 
-  std::memcpy(&this->depth, data_ptr, sizeof(int));
-  data_ptr+=sizeof(int);
+  { // Read depth (padded to 8 bytes in Pack).
+    long long depth_;
+    std::memcpy(&depth_, data_ptr, sizeof(long long));
+    this->depth=(int)depth_;
+    data_ptr+=sizeof(long long);
+  }
 
   std::memcpy(&this->NodeCost(), data_ptr, sizeof(long long));
   data_ptr+=sizeof(long long);
@@ -394,7 +404,7 @@ void MPI_Node<T>::Unpack(PackedData p0, bool own_data){
       }else{
         vec.ReInit(vec_sz,(Real_t*)data_ptr,false);
       }
-      data_ptr+=vec_sz*sizeof(Real_t);
+      data_ptr+=((vec_sz*sizeof(Real_t)+sizeof(size_t)-1)/sizeof(size_t))*sizeof(size_t);
     }else{
       assert(!((size_t*)data_ptr)[0]);
       data_ptr+=sizeof(size_t);
@@ -408,7 +418,7 @@ void MPI_Node<T>::Unpack(PackedData p0, bool own_data){
       }else{
         vec.ReInit(vec_sz,(Real_t*)data_ptr,false);
       }
-      data_ptr+=vec_sz*sizeof(Real_t);
+      data_ptr+=((vec_sz*sizeof(Real_t)+sizeof(size_t)-1)/sizeof(size_t))*sizeof(size_t);
     }else{
       assert(!((size_t*)data_ptr)[0]);
       data_ptr+=sizeof(size_t);

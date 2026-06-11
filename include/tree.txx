@@ -64,7 +64,7 @@ TreeNode* Tree<TreeNode>::PreorderNxt(Node_t* curr_node){
   while(true){
     int i=node->Path2Node()+1;
     auto par=node->Parent();
-    if(par==sctl::NullIterator<TreeNode>()) return NULL;
+    if(par==sctl::NullIterator<::pvfmm::TreeNode>()) return NULL;
     node=(Node_t*)&par[0];
 
     for(;i<n;i++)
@@ -95,7 +95,7 @@ TreeNode* Tree<TreeNode>::PostorderNxt(Node_t* curr_node){
 
   int j=node->Path2Node()+1;
   auto par=node->Parent();
-  if(par==sctl::NullIterator<TreeNode>()) return NULL;
+  if(par==sctl::NullIterator<::pvfmm::TreeNode>()) return NULL;
   node=(Node_t*)&par[0];
 
   int n=(1UL<<dim);

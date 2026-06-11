@@ -186,12 +186,12 @@ void Vector<T>::SetZero(){
 
 template <class ValueType>
 ValueType* Vector<ValueType>::Begin(){
-  return (dim>0 ? &data_ptr[0] : (ValueType*)NULL);
+  return (dim>0 && data_ptr!=sctl::NullIterator<ValueType>() ? &data_ptr[0] : (ValueType*)NULL);
 }
 
 template <class ValueType>
 const ValueType* Vector<ValueType>::Begin() const{
-  return (dim>0 ? &data_ptr[0] : (const ValueType*)NULL);
+  return (dim>0 && data_ptr!=sctl::NullIterator<ValueType>() ? &data_ptr[0] : (const ValueType*)NULL);
 }
 
 template <class T>

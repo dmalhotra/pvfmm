@@ -212,12 +212,12 @@ void Matrix<T>::SetZero(){
 
 template <class ValueType>
 ValueType* Matrix<ValueType>::Begin(){
-  return (dim[0]*dim[1]>0 ? &data_ptr[0] : (ValueType*)NULL);
+  return (dim[0]*dim[1]>0 && data_ptr!=sctl::NullIterator<ValueType>() ? &data_ptr[0] : (ValueType*)NULL);
 }
 
 template <class ValueType>
 const ValueType* Matrix<ValueType>::Begin() const{
-  return (dim[0]*dim[1]>0 ? &data_ptr[0] : (const ValueType*)NULL);
+  return (dim[0]*dim[1]>0 && data_ptr!=sctl::NullIterator<ValueType>() ? &data_ptr[0] : (const ValueType*)NULL);
 }
 
 template <class T>
