@@ -8,6 +8,7 @@
 #include <omp.h>
 #include <cmath>
 #include <cstdlib>
+#include <cstring>
 #include <cassert>
 #include <sstream>
 #include <iostream>
@@ -1618,7 +1619,7 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& n
       #pragma omp parallel for
       for(size_t i=0;i<n_vec;i++){
         if(vec_lst[i]->Begin()){
-          sctl::omp_par::memcpy(((Real_t*)dev_buffer.Begin())+vec_disp[i], vec_lst[i]->Begin(), vec_size[i]);
+          std::memcpy(((Real_t*)dev_buffer.Begin())+vec_disp[i], vec_lst[i]->Begin(), vec_size[i]*sizeof(Real_t));
         }
       }
     }
@@ -1633,7 +1634,7 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& n
       for(int tid=0;tid<omp_p;tid++){
         size_t a=(buff_size*(tid+0))/omp_p;
         size_t b=(buff_size*(tid+1))/omp_p;
-        sctl::omp_par::memcpy(buff.Begin()+a, ((Real_t*)dev_buffer.Begin())+a, b-a);
+        std::memcpy(buff.Begin()+a, ((Real_t*)dev_buffer.Begin())+a, (b-a)*sizeof(Real_t));
       }
     }
 
@@ -1729,7 +1730,7 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
         for(size_t i=0;i<n_out;i++){
           if(!((FMMNode*)nodes_out[i])->IsGhost() && (level==-1 || ((FMMNode*)nodes_out[i])->Depth()==level)){
             Vector<FMMNode*>& lst=((FMMNode*)nodes_out[i])->interac_list[interac_type];
-            sctl::omp_par::memcpy(trg_interac_list[i], lst.Begin(), lst.Dim());
+            std::memcpy(trg_interac_list[i], lst.Begin(), lst.Dim()*sizeof(FMMNode*));
             assert(lst.Dim()==mat_cnt);
           }
         }

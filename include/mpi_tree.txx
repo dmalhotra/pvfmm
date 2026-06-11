@@ -577,12 +577,12 @@ void MPI_Tree<TreeNode>::RedistNodes(MortonId* loc_min) {
     std::memcpy(s_ptr, &data[i].length, sizeof(size_t)); s_ptr += sizeof(size_t);
     data_ptr[i] = s_ptr                                ; s_ptr += data[i].length;
   }
-  #pragma omp parallel for
+  #pragma omp parallel for schedule(static)
   for(int p=0;p<omp_p;p++){
     size_t a=( p   *leaf_cnt)/omp_p;
     size_t b=((p+1)*leaf_cnt)/omp_p;
     for(size_t i=a;i<b;i++)
-      sctl::omp_par::memcpy(data_ptr[i], (char*)data[i].data, data[i].length);
+      std::memcpy(data_ptr[i], (char*)data[i].data, data[i].length);
   }
 
   par::Mpi_Alltoallv_sparse<char>(&send_buff[0], &send_size[0], &sdisp[0],
@@ -1473,7 +1473,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Hypercube(BoundaryType bndry){
         size_t i0=((k+0)*mem_size.size())/omp_p;
         size_t i1=((k+1)*mem_size.size())/omp_p;
         for(size_t i=i0;i<i1;i++){
-          sctl::omp_par::memcpy((char*)srctrg_ptr[2*i+1], (char*)srctrg_ptr[2*i+0], mem_size[i]);
+          std::memcpy((char*)srctrg_ptr[2*i+1], (char*)srctrg_ptr[2*i+0], mem_size[i]);
         }
       }
     }
@@ -1523,7 +1523,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Hypercube(BoundaryType bndry){
         size_t i0=((k+0)*mem_size.size())/omp_p;
         size_t i1=((k+1)*mem_size.size())/omp_p;
         for(size_t i=i0;i<i1;i++){
-          sctl::omp_par::memcpy((char*)srctrg_ptr[2*i+1], (char*)srctrg_ptr[2*i+0], mem_size[i]);
+          std::memcpy((char*)srctrg_ptr[2*i+1], (char*)srctrg_ptr[2*i+0], mem_size[i]);
         }
       }
     }
@@ -1700,7 +1700,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
         new_comm_data=comm_data;
 
         new_comm_data.pkd_length=sizeof(CommData)+p0.length;
-        sctl::omp_par::memcpy(shared_data_storage[i]+sizeof(CommData), buff, p0.length);
+        std::memcpy(&shared_data_storage[i][sizeof(CommData)], &buff[0], p0.length);
       }
       sctl::aligned_delete(buff);
     }
@@ -1733,7 +1733,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
     #pragma omp parallel for
     for(size_t i=0;i<pid_node_pair.size();i++){
       size_t shrd_idx=pid_node_pair[i].data;
-      sctl::omp_par::memcpy(&send_buff[disp[i]], (char*)shared_data[shrd_idx], size[i]);
+      std::memcpy(&send_buff[disp[i]], (char*)shared_data[shrd_idx], size[i]);
     }
 
     // Compute send_size, send_disp.
@@ -1963,7 +1963,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
         #pragma omp parallel for
         for(size_t i=0;i<send_data.size();i++){
           CommData& comm_data=*(CommData*)send_data[i];
-          sctl::omp_par::memcpy(&send_buff[send_disp[i]], (char*)&comm_data, comm_data.pkd_length);
+          std::memcpy(&send_buff[send_disp[i]], (char*)&comm_data, comm_data.pkd_length);
         }
       }
 

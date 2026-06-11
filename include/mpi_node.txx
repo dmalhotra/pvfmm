@@ -335,7 +335,7 @@ PackedData MPI_Node<T>::Pack(bool ghost, void* buff_ptr, size_t offset){
       const size_t vec_dim = vec.Dim();
       std::memcpy(data_ptr, &vec_dim, sizeof(size_t)); data_ptr+=sizeof(size_t);
       if(vec.Dim()>0 && data_ptr!=(char*)&vec[0])
-        sctl::omp_par::memcpy((Real_t*)data_ptr, &vec[0], vec.Dim());
+        std::memcpy((Real_t*)data_ptr, &vec[0], vec.Dim()*sizeof(Real_t));
       data_ptr+=((vec.Dim()*sizeof(Real_t)+sizeof(size_t)-1)/sizeof(size_t))*sizeof(size_t);
     }else{
       std::memcpy(data_ptr, &zero, sizeof(size_t)); data_ptr+=sizeof(size_t);
@@ -345,7 +345,7 @@ PackedData MPI_Node<T>::Pack(bool ghost, void* buff_ptr, size_t offset){
       const size_t vec_dim = vec.Dim();
       std::memcpy(data_ptr, &vec_dim, sizeof(size_t)); data_ptr+=sizeof(size_t);
       if(vec.Dim()>0 && data_ptr!=(char*)&vec[0])
-        sctl::omp_par::memcpy((Real_t*)data_ptr, &vec[0], vec.Dim());
+        std::memcpy((Real_t*)data_ptr, &vec[0], vec.Dim()*sizeof(Real_t));
       data_ptr+=((vec.Dim()*sizeof(Real_t)+sizeof(size_t)-1)/sizeof(size_t))*sizeof(size_t);
     }else{
       std::memcpy(data_ptr, &zero, sizeof(size_t)); data_ptr+=sizeof(size_t);
@@ -355,7 +355,7 @@ PackedData MPI_Node<T>::Pack(bool ghost, void* buff_ptr, size_t offset){
       const size_t vec_dim = vec.Dim();
       std::memcpy(data_ptr, &vec_dim, sizeof(size_t)); data_ptr+=sizeof(size_t);
       if(vec.Dim()>0 && data_ptr!=(char*)&vec[0])
-        sctl::omp_par::memcpy((size_t*)data_ptr, &vec[0], vec.Dim());
+        std::memcpy((size_t*)data_ptr, &vec[0], vec.Dim()*sizeof(size_t));
       data_ptr+=vec.Dim()*sizeof(size_t);
     }else{
       std::memcpy(data_ptr, &zero, sizeof(size_t));

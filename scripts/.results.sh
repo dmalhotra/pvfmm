@@ -24,6 +24,23 @@ DEFAULT_FIELDS+=("nodes"   )
 DEFAULT_FIELDS+=("mpi_proc")
 DEFAULT_FIELDS+=("threads" )
 
+# Position (counted from the end of the line) of a profiling-report column.
+# The report layout depends on the number of MPI ranks: "t f f/s m" for a
+# single rank, "t_avg t_max f_avg f_max f/s_min f/s_avg f/s_total m_max" for
+# multiple ranks (and 12 columns in the old format), so the position is read
+# from the header line of the report in file $1.  $2 lists the accepted
+# header names for the column (e.g. "t t_max").
+prof_col() {
+  local -a hdr=($(grep -hE '^ +t(_min|_avg)? ' "$1" 2> /dev/null | tail -n 1));
+  local n=${#hdr[@]};
+  local i name;
+  for (( i=0; i<n; i++ )) ; do
+    for name in $2 ; do
+      if [ "${hdr[i]}" == "$name" ]; then echo $(( n - i )); return; fi
+    done
+  done
+}
+
 DEFAULT_FIELDS+=("|" )
 RESULT_FIELDS+=("|" "|")
 PROF_FIELDS+=("|" )
@@ -132,20 +149,23 @@ for (( l=0; l<${#nodes[@]}; l++ )) ; do
     # Parse Data: Time, Flop, Flop/s 
     PROC_NOMIC="$(grep -hir "Number of MPI processes:" ${FNAME_NOMIC} | tail -n 1 | tr -s ' ' | rev | cut -d ' ' -f 1 | rev)"
     PROC="$(grep -hir "Number of MPI processes:" ${FNAME} | tail -n 1 | tr -s ' ' | rev | cut -d ' ' -f 1 | rev)"
+    T_COL=$(prof_col ${FNAME} "t t_max"); T_COL=${T_COL:-10};
+    F_COL=$(prof_col ${FNAME_NOMIC} "f f_avg"); F_COL=${F_COL:-8};
+    T_COL_MIC=$(prof_col ${FNAME_MIC} "t t_max"); T_COL_MIC=${T_COL_MIC:-10};
     for (( i = 0; i < ${#PROF_FIELDS[@]}; i++ )) do
       x="${PROF_FIELDS[i]}"
       if [ "$x" == "|" ]; then
         ROW_VALUE="${ROW_VALUE} |";
         continue;
       fi
-      T_MAX[i]="$(grep -hir "$x  " ${FNAME} | tail -n 1 | tr -s ' ' | rev | cut -d ' ' -f 10 | rev)"
+      T_MAX[i]="$(grep -hir "$x  " ${FNAME} | tail -n 1 | tr -s ' ' | rev | cut -d ' ' -f ${T_COL} | rev)"
       if [ "${T_MAX[i]}" == "" ]; then continue; fi;
-      FP_AVG[i]="$(grep -hir "$x  " ${FNAME_NOMIC} | tail -n 1 | tr -s ' ' | rev | cut -d ' ' -f 8 | rev)"
+      FP_AVG[i]="$(grep -hir "$x  " ${FNAME_NOMIC} | tail -n 1 | tr -s ' ' | rev | cut -d ' ' -f ${F_COL} | rev)"
       FP_AVG[i]=$(echo "scale=10;${FP_AVG[i]}*${PROC_NOMIC}/${mpi_proc[l]}" | bc 2> /dev/null)
       FLOPS[i]=$(echo "scale=10;${FP_AVG[i]}/(${T_MAX[i]}+0.0001)" | bc 2> /dev/null)
 
       if [ "${FLOPS[i]}" != "" ] && [ -f ${FNAME_MIC} ] && [ -f ${FNAME_ASYNC} ] && [ -f ${FNAME_NOMIC} ] ; then 
-        T_MAX_NOASYNC[i]="$(grep -hir "$x  " ${FNAME_MIC} | tail -n 1 | tr -s ' ' | rev | cut -d ' ' -f 10 | rev)"
+        T_MAX_NOASYNC[i]="$(grep -hir "$x  " ${FNAME_MIC} | tail -n 1 | tr -s ' ' | rev | cut -d ' ' -f ${T_COL_MIC} | rev)"
         if [ "${T_MAX_NOASYNC[i]}" == "" ]; then continue; fi;
         compare_result1=$(echo "${T_MAX[i]}<0.5*${T_MAX_NOASYNC[i]}" | bc)
         compare_result2=$(echo "${T_MAX[i]}<0.01" | bc)
