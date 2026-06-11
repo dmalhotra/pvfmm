@@ -17,7 +17,7 @@
 #endif
 
 #include <pvfmm_common.hpp>
-#include <mem_mgr.hpp>
+
 #include <matrix.hpp>
 
 #ifndef _PVFMM_FFT_WRAPPER_
@@ -127,7 +127,7 @@ struct FFTW_t{
     }
     { // howmany
       transpose<cplx>(N2/p.howmany, p.howmany, (cplx*)buff);
-      mem::copy<T>((T*)out,buff,2*N2);
+      sctl::omp_par::memcpy((T*)out, buff, 2*N2);
     }
   }
 
@@ -141,7 +141,7 @@ struct FFTW_t{
     T* buff=&buff_[0];
 
     { // howmany
-      mem::copy<T>(buff,(T*)in,2*N2);
+      sctl::omp_par::memcpy(buff, (T*)in, 2*N2);
       transpose<cplx>(p.howmany, N2/p.howmany, (cplx*)buff);
     }
     for(size_t i=0;i<p.dim.size()-1;i++){ // c2c

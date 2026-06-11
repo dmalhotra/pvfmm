@@ -11,7 +11,7 @@
 #include <type_traits>
 
 #include <pvfmm_common.hpp>
-#include <mem_mgr.hpp>
+
 #include <vector.hpp>
 #include <matrix.hpp>
 
@@ -38,7 +38,7 @@ struct Kernel{
    * \param[out] k_out Output array with potential values.
    */
   typedef void (*Ker_t)(T* r_src, int src_cnt, T* v_src, int dof,
-                        T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr);
+                        T* r_trg, int trg_cnt, T* k_out);
 
   typedef void (*BuildMat_t)(T* r_src, int src_cnt,
                              T* r_trg, int trg_cnt, T* k_out);
@@ -146,7 +146,7 @@ template <class uKernel> class GenericKernel {
 
   public:
 
-  template <class Real, int digits = -1> static void Eval(Real* r_src, int src_cnt, Real* v_src, int dof, Real* r_trg, int trg_cnt, Real* v_trg, mem::MemoryManager* mem_mgr);
+  template <class Real, int digits = -1> static void Eval(Real* r_src, int src_cnt, Real* v_src, int dof, Real* r_trg, int trg_cnt, Real* v_trg);
 
   template <class Real, int digits = -1> static void BuildMatrix(Real* r_src, int src_cnt, Real* r_trg, int trg_cnt, Real* k_out);
 };

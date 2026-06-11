@@ -14,7 +14,7 @@
 
 #include <legendre_rule.hpp>
 #include <mat_utils.hpp>
-#include <mem_mgr.hpp>
+
 #include <matrix.hpp>
 #include <profile.hpp>
 #include <kernel.hpp>
@@ -88,7 +88,7 @@ struct SameType<U, U>{
  * \brief Computes Chebyshev approximation from function values at cheb node points.
  */
 template <class T, class Y>
-T cheb_approx(const T* fn_v, int cheb_deg, int dof, T* out, mem::MemoryManager* mem_mgr){
+T cheb_approx(const T* fn_v, int cheb_deg, int dof, T* out){
   int d=cheb_deg+1;
 
   // Precompute
@@ -117,9 +117,10 @@ T cheb_approx(const T* fn_v, int cheb_deg, int dof, T* out, mem::MemoryManager* 
     Mp=&precomp[d];
   }
 
-  // Create work buffers
+  // Create work buffers (per-thread scratch via sctl::ScratchBuf).
   size_t buff_size=dof*d*d*d;
-  Y* buff=(Y*)mem::aligned_new<Y>(2*buff_size,mem_mgr);
+  sctl::ScratchBuf<Y> buff_scratch(2*buff_size);
+  Y* buff=&buff_scratch.begin()[0];
   Y* buff1=buff+buff_size*0;
   Y* buff2=buff+buff_size*1;
 
@@ -180,8 +181,7 @@ T cheb_approx(const T* fn_v, int cheb_deg, int dof, T* out, mem::MemoryManager* 
     }
   }
 
-  // Free memory
-  mem::aligned_delete<Y>(buff,mem_mgr);
+  // buff is freed automatically by ScratchBuf destructor at scope exit.
 
   return cheb_err(out,cheb_deg,dof);
 }
@@ -402,7 +402,7 @@ T cheb_approx(T (*fn)(T,T,T), int cheb_deg, T* coord, T s, std::vector<T>& out){
  * a regular grid defined by in_x, in_y, in_z the values in the input vector.
  */
 template <class T>
-void cheb_eval(const Vector<T>& coeff_, int cheb_deg, const std::vector<T>& in_x, const std::vector<T>& in_y, const std::vector<T>& in_z, Vector<T>& out, mem::MemoryManager* mem_mgr){
+void cheb_eval(const Vector<T>& coeff_, int cheb_deg, const std::vector<T>& in_x, const std::vector<T>& in_y, const std::vector<T>& in_z, Vector<T>& out){
   size_t d=(size_t)cheb_deg+1;
   size_t n_coeff=(d*(d+1)*(d+2))/6;
   size_t dof=coeff_.Dim()/n_coeff;
@@ -426,20 +426,21 @@ void cheb_eval(const Vector<T>& coeff_, int cheb_deg, const std::vector<T>& in_x
   Matrix<T> Mp2(d,n2,&p2[0],false);
   Matrix<T> Mp3(d,n3,&p3[0],false);
 
-  // Create work buffers
+  // Create work buffers (per-thread scratch). v1 and v2 are half-and-half
+  // views into the single ScratchBuf; we use raw pointers for the Matrix
+  // wrappers below since no Vector-specific API is needed.
   size_t buff_size=std::max(d,n1)*std::max(d,n2)*std::max(d,n3)*dof;
-  T* buff=(T*)mem::aligned_new<T>(2*buff_size,mem_mgr);
-  Vector<T> v1(buff_size,buff+buff_size*0,false);
-  Vector<T> v2(buff_size,buff+buff_size*1,false);
+  sctl::ScratchBuf<T> buff_scratch(2*buff_size);
+  T* v1 = &buff_scratch[0] + buff_size*0;
+  T* v2 = &buff_scratch[0] + buff_size*1;
 
   { // Rearrange coefficients into a tensor.
-    Vector<T> coeff(d*d*d*dof,&v1[0],false);
-    coeff.SetZero();
+    std::memset(v1, 0, d*d*d*dof*sizeof(T));
     size_t indx=0;
     for(size_t l=0;l<dof;l++){
       for(size_t i=0;i<d;i++){
         for(size_t j=0;i+j<d;j++){
-          T* coeff_ptr=&coeff[(j+(i+l*d)*d)*d];
+          T* coeff_ptr=v1 + (j+(i+l*d)*d)*d;
           for(size_t k=0;i+j+k<d;k++){
             coeff_ptr[k]=coeff_[indx];
             indx++;
@@ -450,33 +451,33 @@ void cheb_eval(const Vector<T>& coeff_, int cheb_deg, const std::vector<T>& in_x
   }
 
   { // Apply Mp1
-    Matrix<T> Mi  ( d* d*dof, d,&v1[0],false);
-    Matrix<T> Mo  ( d* d*dof,n1,&v2[0],false);
+    Matrix<T> Mi  ( d* d*dof, d,v1,false);
+    Matrix<T> Mo  ( d* d*dof,n1,v2,false);
     Matrix<T>::GEMM(Mo, Mi, Mp1);
 
-    Matrix<T> Mo_t(n1, d* d*dof,&v1[0],false);
+    Matrix<T> Mo_t(n1, d* d*dof,v1,false);
     for(size_t i=0;i<Mo.Dim(0);i++)
     for(size_t j=0;j<Mo.Dim(1);j++){
       Mo_t[j][i]=Mo[i][j];
     }
   }
   { // Apply Mp2
-    Matrix<T> Mi  (n1* d*dof, d,&v1[0],false);
-    Matrix<T> Mo  (n1* d*dof,n2,&v2[0],false);
+    Matrix<T> Mi  (n1* d*dof, d,v1,false);
+    Matrix<T> Mo  (n1* d*dof,n2,v2,false);
     Matrix<T>::GEMM(Mo, Mi, Mp2);
 
-    Matrix<T> Mo_t(n2,n1* d*dof,&v1[0],false);
+    Matrix<T> Mo_t(n2,n1* d*dof,v1,false);
     for(size_t i=0;i<Mo.Dim(0);i++)
     for(size_t j=0;j<Mo.Dim(1);j++){
       Mo_t[j][i]=Mo[i][j];
     }
   }
   { // Apply Mp3
-    Matrix<T> Mi  (n2*n1*dof, d,&v1[0],false);
-    Matrix<T> Mo  (n2*n1*dof,n3,&v2[0],false);
+    Matrix<T> Mi  (n2*n1*dof, d,v1,false);
+    Matrix<T> Mo  (n2*n1*dof,n3,v2,false);
     Matrix<T>::GEMM(Mo, Mi, Mp3);
 
-    Matrix<T> Mo_t(n3,n2*n1*dof,&v1[0],false);
+    Matrix<T> Mo_t(n3,n2*n1*dof,v1,false);
     for(size_t i=0;i<Mo.Dim(0);i++)
     for(size_t j=0;j<Mo.Dim(1);j++){
       Mo_t[j][i]=Mo[i][j];
@@ -484,7 +485,7 @@ void cheb_eval(const Vector<T>& coeff_, int cheb_deg, const std::vector<T>& in_x
   }
 
   { // Copy to out
-    Matrix<T> Mo  ( n3*n2*n1,dof,&v1[0],false);
+    Matrix<T> Mo  ( n3*n2*n1,dof,v1,false);
     Matrix<T> Mo_t(dof,n3*n2*n1,&out[0],false);
     for(size_t i=0;i<Mo.Dim(0);i++)
     for(size_t j=0;j<Mo.Dim(1);j++){
@@ -492,8 +493,7 @@ void cheb_eval(const Vector<T>& coeff_, int cheb_deg, const std::vector<T>& in_x
     }
   }
 
-  // Free memory
-  mem::aligned_delete<T>(buff,mem_mgr);
+  // buff_scratch freed automatically at scope exit.
 }
 
 /**
@@ -750,7 +750,6 @@ void quad_rule(int n, T* x, T* w){
 
 template <class T>
 std::vector<T> integ_pyramid(int m, T* s, T r, int nx, const Kernel<T>& kernel, int* perm){//*
-  static mem::MemoryManager mem_mgr(16*1024*1024*sizeof(T));
   int ny=nx;
   int nz=nx;
 
@@ -819,10 +818,14 @@ std::vector<T> integ_pyramid(int m, T* s, T r, int nx, const Kernel<T>& kernel, 
     x_.swap(x_new);
   }
 
-  Vector<T> k_out(   ny*nz*k_dim,mem::aligned_new<T>(   ny*nz*k_dim,&mem_mgr),false); //Output of kernel evaluation.
-  Vector<T> I0   (   ny*m *k_dim,mem::aligned_new<T>(   ny*m *k_dim,&mem_mgr),false);
-  Vector<T> I1   (   m *m *k_dim,mem::aligned_new<T>(   m *m *k_dim,&mem_mgr),false);
-  Vector<T> I2   (m *m *m *k_dim,mem::aligned_new<T>(m *m *m *k_dim,&mem_mgr),false); I2.SetZero();
+  // Per-thread scratch (was previously backed by a function-scoped static
+  // MemoryManager of 16·sizeof(T) MB per template instantiation; sctl's
+  // ScratchPool serves the same role thread-locally and grows on demand).
+  sctl::ScratchBuf<T> k_out(   ny*nz*k_dim);
+  sctl::ScratchBuf<T> I0   (   ny*m *k_dim);
+  sctl::ScratchBuf<T> I1   (   m *m *k_dim);
+  sctl::ScratchBuf<T> I2   (m *m *m *k_dim);
+  std::memset(&I2[0], 0, m*m*m*k_dim*sizeof(T));
   if(x_.size()>1)
   for(size_t k=0; k<x_.size()-1; k++){
     T x0=x_[k];
@@ -890,7 +893,7 @@ std::vector<T> integ_pyramid(int m, T* s, T r, int nx, const Kernel<T>& kernel, 
         }
       }
 
-      I0.SetZero();
+      std::memset(&I0[0], 0, ny*m*k_dim*sizeof(T));
       for(int kk=0; kk<k_dim; kk++){
         for(int i0=0; i0<ny; i0++){
           size_t indx0=(kk*ny+i0)*nz;
@@ -903,7 +906,7 @@ std::vector<T> integ_pyramid(int m, T* s, T r, int nx, const Kernel<T>& kernel, 
         }
       }
 
-      I1.SetZero();
+      std::memset(&I1[0], 0, m*m*k_dim*sizeof(T));
       for(int kk=0; kk<k_dim; kk++){
         for(int i2=0; i2<ny; i2++){
           size_t indx0=(kk*ny+i2)*m;
@@ -941,11 +944,9 @@ std::vector<T> integ_pyramid(int m, T* s, T r, int nx, const Kernel<T>& kernel, 
                      +2*m*(m+1)*k_dim
                      +m*(m+1)*(m+2)/3*k_dim)*nx*(x_.size()-1));
 
-  std::vector<T> I2_(&I2[0], &I2[0]+I2.Dim());
-  mem::aligned_delete<T>(&k_out[0],&mem_mgr);
-  mem::aligned_delete<T>(&I0   [0],&mem_mgr);
-  mem::aligned_delete<T>(&I1   [0],&mem_mgr);
-  mem::aligned_delete<T>(&I2   [0],&mem_mgr);
+  std::vector<T> I2_(&I2[0], &I2[0]+I2.Dim());  // I2.Dim() == m*m*m*k_dim
+  // k_out, I0, I1, I2 freed automatically by ScratchBuf destructors in reverse
+  // declaration order at scope exit.
   return I2_;
 }
 
@@ -1101,7 +1102,7 @@ std::vector<T> cheb_nodes(int deg, int dim){
 
 
 template <class T>
-void cheb_diff(const Vector<T>& A, int deg, int diff_dim, Vector<T>& B, mem::MemoryManager* mem_mgr=NULL){
+void cheb_diff(const Vector<T>& A, int deg, int diff_dim, Vector<T>& B){
   size_t d=deg+1;
 
   // Precompute
@@ -1118,9 +1119,10 @@ void cheb_diff(const Vector<T>& A, int deg, int diff_dim, Vector<T>& B, mem::Mem
     }
   }
 
-  // Create work buffers
+  // Create work buffers (per-thread scratch).
   size_t buff_size=A.Dim();
-  T* buff=(T*)mem::aligned_new<T>(2*buff_size,mem_mgr);
+  sctl::ScratchBuf<T> buff_scratch(2*buff_size);
+  T* buff=&buff_scratch.begin()[0];
   T* buff1=buff+buff_size*0;
   T* buff2=buff+buff_size*1;
 
@@ -1151,20 +1153,20 @@ void cheb_diff(const Vector<T>& A, int deg, int diff_dim, Vector<T>& B, mem::Mem
     }
   }
 
-  // Free memory
-  mem::aligned_delete(buff,mem_mgr);
+  // buff is freed automatically at scope exit.
 }
 
 template <class T>
-void cheb_grad(const Vector<T>& A, int deg, Vector<T>& B, mem::MemoryManager* mem_mgr){
+void cheb_grad(const Vector<T>& A, int deg, Vector<T>& B){
   size_t dim=3;
   size_t d=(size_t)deg+1;
   size_t n_coeff =(d*(d+1)*(d+2))/6;
   size_t n_coeff_=sctl::pow<unsigned int>(d,dim);
   size_t dof=A.Dim()/n_coeff;
 
-  // Create work buffers
-  T* buff=(T*)mem::aligned_new<T>(2*n_coeff_*dof,mem_mgr);
+  // Create work buffers (per-thread scratch).
+  sctl::ScratchBuf<T> buff_scratch(2*n_coeff_*dof);
+  T* buff=&buff_scratch.begin()[0];
   Vector<T> A_(n_coeff_*dof,buff+n_coeff_*dof*0,false); A_.SetZero();
   Vector<T> B_(n_coeff_*dof,buff+n_coeff_*dof*1,false); B_.SetZero();
 
@@ -1202,8 +1204,7 @@ void cheb_grad(const Vector<T>& A, int deg, Vector<T>& B, mem::MemoryManager* me
     }
   }
 
-  // Free memory
-  mem::aligned_delete<T>(buff,mem_mgr);
+  // buff is freed automatically at scope exit.
 }
 
 template <class T>
@@ -1300,8 +1301,10 @@ void cheb_laplacian(T* A, int deg, T* B){
   int d=deg+1;
   int n1=sctl::pow<unsigned int>(d,dim);
 
-  T* C1=(T*)mem::aligned_new<T>(n1);
-  T* C2=(T*)mem::aligned_new<T>(n1);
+  sctl::ScratchBuf<T> C1_buf(n1);
+  sctl::ScratchBuf<T> C2_buf(n1);
+  T* C1 = &C1_buf.begin()[0];
+  T* C2 = &C2_buf.begin()[0];
 
   Matrix<T> M_(1,n1,C2,false);
   for(int i=0;i<3;i++){
@@ -1313,9 +1316,7 @@ void cheb_laplacian(T* A, int deg, T* B){
       M+=M_;
     }
   }
-
-  mem::aligned_delete<T>(C1);
-  mem::aligned_delete<T>(C2);
+  // C1, C2 freed automatically at scope exit.
 }
 
 /*

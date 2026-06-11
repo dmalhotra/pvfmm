@@ -13,7 +13,7 @@
 
 #include <mpi_node.hpp>
 #include <fmm_node.hpp>
-#include <mem_mgr.hpp>
+
 #include <mortonid.hpp>
 #include <profile.hpp>
 #include <vector.hpp>
@@ -32,7 +32,7 @@ void FMM_Tree<FMM_Mat_t>::Initialize(typename Node_t::NodeData* init_data) {
     std::vector<Node_t*>& nodes=this->GetNodeList();
     #pragma omp parallel for
     for(size_t i=0;i<nodes.size();i++){
-      if(nodes[i]->FMMData()==NULL) nodes[i]->FMMData()=(typename FMM_Mat_t::FMMData*)mem::aligned_new<typename FMM_Mat_t::FMMData>();
+      if(nodes[i]->FMMData()==NULL) nodes[i]->SetFMMData(sctl::Iterator<FMM_Data<Real_t>>(sctl::aligned_new<typename FMM_Mat_t::FMMData>()));
     }
   }
   sctl::Profile::Toc();
@@ -331,7 +331,7 @@ void FMM_Tree<FMM_Mat_t>::BuildInteracLists() {
   for(size_t i=0;i<type_lst.size();i++){
     interac_cnt[i]=interac_list.ListCount(type_lst[i]);
   }
-  omp_par::scan(&interac_cnt[0],&interac_dsp[0],type_lst.size());
+  sctl::omp_par::scan(&interac_cnt[0],&interac_dsp[0],type_lst.size());
   node_interac_lst.ReInit(node_cnt,interac_cnt.back()+interac_dsp.back());
 
   // Build interaction lists.
@@ -365,8 +365,10 @@ void FMM_Tree<FMM_Mat_t>::MultipoleReduceBcast() {
   size_t bit_mask=1;
   size_t max_child=(1UL<<this->Dim());
 
-  //Initialize initial send nodes.
-  std::vector<Node_t*> send_nodes[2];
+  //Initialize initial send nodes. Tree-owned entries use Ptr2Itr (non-owning
+  //view). Freshly-allocated entries (later, from NewNode) store the owning
+  //iterator and are aligned_delete'd in cleanup.
+  std::vector<sctl::Iterator<Node_t>> send_nodes[2];
 
   //Initialize send_node[0]
   Node_t* tmp_node=static_cast<Node_t*>(this->RootNode());
@@ -382,9 +384,9 @@ void FMM_Tree<FMM_Mat_t>::MultipoleReduceBcast() {
   int n[2];
   n[0]=tmp_node->Depth()+1;
   send_nodes[0].resize(n[0]);
-  send_nodes[0][n[0]-1]=tmp_node;
+  send_nodes[0][n[0]-1]=sctl::Ptr2Itr<Node_t>(tmp_node,1);
   for(int i=n[0]-1;i>0;i--)
-    send_nodes[0][i-1]=static_cast<Node_t*>(send_nodes[0][i]->Parent());
+    send_nodes[0][i-1]=(sctl::Iterator<Node_t>)send_nodes[0][i]->Parent();
 
   //Initialize send_node[1]
   tmp_node=static_cast<Node_t*>(this->RootNode());
@@ -398,9 +400,9 @@ void FMM_Tree<FMM_Mat_t>::MultipoleReduceBcast() {
   }
   n[1]=tmp_node->Depth()+1;
   send_nodes[1].resize(n[1]);
-  send_nodes[1][n[1]-1]=tmp_node;
+  send_nodes[1][n[1]-1]=sctl::Ptr2Itr<Node_t>(tmp_node,1);
   for(int i=n[1]-1;i>0;i--)
-    send_nodes[1][i-1]=static_cast<Node_t*>(send_nodes[1][i]->Parent());
+    send_nodes[1][i-1]=(sctl::Iterator<Node_t>)send_nodes[1][i]->Parent();
 
   //Hypercube reduction.
   while(bit_mask<(size_t)num_p){
@@ -417,13 +419,14 @@ void FMM_Tree<FMM_Mat_t>::MultipoleReduceBcast() {
     size_t s_iter=0;
     for(int i=0;i<2;i++)
     for(size_t j=0;j<s_node_cnt[i];j++){
-      assert(send_nodes[i][j]!=NULL);
+      assert(send_nodes[i][j]!=sctl::NullIterator<Node_t>());
       send_data[s_iter]=send_nodes[i][j]->PackMultipole();
       send_size+=send_data[s_iter].length+sizeof(size_t);
       s_iter++;
     }
 
-    char* send_buff=(char*)mem::aligned_new<char>(send_size);
+    sctl::ScratchBuf<char> send_buff_scratch(send_size ? send_size : 1);
+    char* send_buff = &send_buff_scratch.begin()[0];
     char* buff_iter=send_buff;
     ((size_t*)buff_iter)[0]=s_node_cnt[0];
     ((size_t*)buff_iter)[1]=s_node_cnt[1];
@@ -438,7 +441,7 @@ void FMM_Tree<FMM_Mat_t>::MultipoleReduceBcast() {
       ((size_t*)buff_iter)[0]=send_data[s_iter].length;
       buff_iter+=sizeof(size_t);
 
-      mem::copy<char>((char*)buff_iter,(char*)send_data[s_iter].data,send_data[s_iter].length);
+      sctl::omp_par::memcpy((char*)buff_iter, (char*)send_data[s_iter].data, send_data[s_iter].length);
       buff_iter+=send_data[s_iter].length;
 
       s_iter++;
@@ -447,11 +450,11 @@ void FMM_Tree<FMM_Mat_t>::MultipoleReduceBcast() {
     //Exchange send and recv sizes
     int recv_size=0;
     MPI_Status status;
-    char* recv_buff=NULL;
+    sctl::Iterator<char> recv_buff = sctl::NullIterator<char>();
     if(partner<(size_t)num_p){
       MPI_Sendrecv(&send_size,        1,  MPI_INT, partner, 0, &recv_size,         1,  MPI_INT, partner, 0, this->Comm().GetMPI_Comm(), &status);
-      recv_buff=(char*)mem::aligned_new<char>(recv_size);
-      MPI_Sendrecv(send_buff, send_size, MPI_BYTE, partner, 0,  recv_buff, recv_size, MPI_BYTE, partner, 0, this->Comm().GetMPI_Comm(), &status);
+      recv_buff=sctl::aligned_new<char>(recv_size);
+      MPI_Sendrecv(send_buff, send_size, MPI_BYTE, partner, 0,  &recv_buff[0], recv_size, MPI_BYTE, partner, 0, this->Comm().GetMPI_Comm(), &status);
     }
 
     //Need an extra broadcast for incomplete hypercubes.
@@ -466,13 +469,13 @@ void FMM_Tree<FMM_Mat_t>::MultipoleReduceBcast() {
           if( rank-p0_start < bit_mask0 ){
             //Send
             MPI_Send(&recv_size,         1, MPI_INT , partner0, 0, this->Comm().GetMPI_Comm());
-            MPI_Send( recv_buff, recv_size, MPI_BYTE, partner0, 0, this->Comm().GetMPI_Comm());
+            MPI_Send( &recv_buff[0], recv_size, MPI_BYTE, partner0, 0, this->Comm().GetMPI_Comm());
           }else if( rank-p0_start < (bit_mask0<<1) ){
             //Receive
-            if(recv_size>0) mem::aligned_delete<char>(recv_buff);
+            if(recv_size>0) sctl::aligned_delete<char>(recv_buff);
             MPI_Recv(&recv_size,         1, MPI_INT , partner0, 0, this->Comm().GetMPI_Comm(), &status);
-            recv_buff=(char*)mem::aligned_new<char>(recv_size);
-            MPI_Recv( recv_buff, recv_size, MPI_BYTE, partner0, 0, this->Comm().GetMPI_Comm(), &status);
+            recv_buff=sctl::aligned_new<char>(recv_size);
+            MPI_Recv( &recv_buff[0], recv_size, MPI_BYTE, partner0, 0, this->Comm().GetMPI_Comm(), &status);
           }
         }
         bit_mask0=bit_mask0<<1;
@@ -481,13 +484,13 @@ void FMM_Tree<FMM_Mat_t>::MultipoleReduceBcast() {
 
     //Construct nodes from received data.
     if(recv_size>0){
-      buff_iter=recv_buff;
+      buff_iter=&recv_buff[0];
       size_t r_node_cnt[2]={((size_t*)buff_iter)[0],((size_t*)buff_iter)[1]};
       buff_iter+=2*sizeof(size_t);
       std::vector<MortonId> r_mid[2];
       r_mid[0].resize(r_node_cnt[0]);
       r_mid[1].resize(r_node_cnt[1]);
-      std::vector<Node_t*> recv_nodes[2];
+      std::vector<sctl::Iterator<Node_t>> recv_nodes[2];
       recv_nodes[0].resize(r_node_cnt[0]);
       recv_nodes[1].resize(r_node_cnt[1]);
       std::vector<PackedData> recv_data[2];
@@ -523,25 +526,25 @@ void FMM_Tree<FMM_Mat_t>::MultipoleReduceBcast() {
             new_branch=true;
             size_t n_=(i<(size_t)n[merge_indx]?n[merge_indx]:i);
             for(size_t j=n_;j<send_nodes[merge_indx].size();j++)
-              mem::aligned_delete(send_nodes[merge_indx][j]);
+              sctl::aligned_delete(send_nodes[merge_indx][j]);
             if(i<(size_t)n[merge_indx]) n[merge_indx]=i;
           }
         }
         if(i>=send_nodes[merge_indx].size() || new_branch){
-            recv_nodes[merge_indx][i]=static_cast<Node_t*>(this->NewNode());
+            recv_nodes[merge_indx][i]=this->NewNode();
             recv_nodes[merge_indx][i]->SetCoord(r_mid[merge_indx][i]);
             recv_nodes[merge_indx][i]->InitMultipole(recv_data[merge_indx][i]);
         }
       }
       send_nodes[merge_indx]=recv_nodes[merge_indx];
     }
-    mem::aligned_delete<char>(send_buff);
-    mem::aligned_delete<char>(recv_buff);
+    sctl::aligned_delete<char>(recv_buff);
+    // send_buff_scratch freed automatically at scope exit.
   }
 
   for(int i=0;i<2;i++)
   for(size_t j=n[i];j<send_nodes[i].size();j++)
-    mem::aligned_delete(send_nodes[i][j]);
+    sctl::aligned_delete(send_nodes[i][j]);
   sctl::Profile::Toc();
 
   //Now Broadcast nodes to build LET.
@@ -672,10 +675,10 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
   #if defined(__INTEL_OFFLOAD) || defined(PVFMM_HAVE_CUDA)
   sctl::Profile::Tic("D2H_Wait:LocExp",&this->Comm(),false,5);
   if(device) if(setup_data[0+PVFMM_MAX_DEPTH*2].output_data!=NULL){
-    Real_t* dev_ptr=(Real_t*)&fmm_mat->staging_buffer[0];
-    Matrix<Real_t>& output_data=*setup_data[0+PVFMM_MAX_DEPTH*2].output_data;
-    size_t n=output_data.Dim(0)*output_data.Dim(1);
     if(fmm_mat->staging_buffer.Dim()){
+      Real_t* dev_ptr=(Real_t*)&fmm_mat->staging_buffer[0];
+      Matrix<Real_t>& output_data=*setup_data[0+PVFMM_MAX_DEPTH*2].output_data;
+      size_t n=output_data.Dim(0)*output_data.Dim(1);
       Real_t* host_ptr=output_data[0];
       output_data.Device2HostWait();
 
@@ -715,10 +718,10 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
   #if defined(__INTEL_OFFLOAD) || defined(PVFMM_HAVE_CUDA)
   sctl::Profile::Tic("D2H_Wait:Trg",&this->Comm(),false,5);
   if(device) if(setup_data[0+PVFMM_MAX_DEPTH*0].output_data!=NULL){
-    Real_t* dev_ptr=(Real_t*)&fmm_mat->staging_buffer[0];
-    Matrix<Real_t>& output_data=*setup_data[0+PVFMM_MAX_DEPTH*0].output_data;
-    size_t n=output_data.Dim(0)*output_data.Dim(1);
     if(fmm_mat->staging_buffer.Dim()){
+      Real_t* dev_ptr=(Real_t*)&fmm_mat->staging_buffer[0];
+      Matrix<Real_t>& output_data=*setup_data[0+PVFMM_MAX_DEPTH*0].output_data;
+      size_t n=output_data.Dim(0)*output_data.Dim(1);
       Real_t* host_ptr=output_data[0];
       output_data.Device2HostWait();
 

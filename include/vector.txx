@@ -10,7 +10,7 @@
 #include <iomanip>
 
 #include <device_wrapper.hpp>
-#include <mem_mgr.hpp>
+
 #include <profile.hpp>
 
 namespace pvfmm{
@@ -42,8 +42,8 @@ Vector<T>::Vector(size_t dim_, sctl::Iterator<T> data_, bool own_data_){
   own_data=own_data_;
   if(own_data){
     if(dim>0){
-      data_ptr=mem::aligned_new<T>(capacity);
-      if(data_!=sctl::NullIterator<T>()) mem::copy<T>(data_ptr,(sctl::ConstIterator<T>)data_,dim);
+      data_ptr=sctl::aligned_new<T>(capacity);
+      if(data_!=sctl::NullIterator<T>()) sctl::omp_par::copy((sctl::ConstIterator<T>)data_,(sctl::ConstIterator<T>)data_+(sctl::Long)dim,data_ptr);
     }else data_ptr=sctl::NullIterator<T>();
   }else
     data_ptr=data_;
@@ -56,8 +56,8 @@ Vector<T>::Vector(const Vector<T>& V){
   capacity=dim;
   own_data=true;
   if(dim>0){
-    data_ptr=mem::aligned_new<T>(capacity);
-    mem::copy<T>(data_ptr,(sctl::ConstIterator<T>)V.data_ptr,dim);
+    data_ptr=sctl::aligned_new<T>(capacity);
+    sctl::omp_par::copy((sctl::ConstIterator<T>)V.data_ptr,(sctl::ConstIterator<T>)V.data_ptr+(sctl::Long)dim,data_ptr);
   }else
     data_ptr=sctl::NullIterator<T>();
   dev.dev_ptr=(uintptr_t)NULL;
@@ -69,8 +69,8 @@ Vector<T>::Vector(const std::vector<T>& V){
   capacity=dim;
   own_data=true;
   if(dim>0){
-    data_ptr=mem::aligned_new<T>(capacity);
-    mem::copy<T>(data_ptr,sctl::Ptr2ConstItr<T>(&V[0],dim),dim);
+    data_ptr=sctl::aligned_new<T>(capacity);
+    sctl::omp_par::copy(sctl::Ptr2ConstItr<T>(&V[0],dim),sctl::Ptr2ConstItr<T>(&V[0],dim)+(sctl::Long)dim,data_ptr);
   }else
     data_ptr=sctl::NullIterator<T>();
   dev.dev_ptr=(uintptr_t)NULL;
@@ -81,7 +81,7 @@ Vector<T>::~Vector(){
   FreeDevice(false);
   if(own_data){
     if(data_ptr!=sctl::NullIterator<T>()){
-      mem::aligned_delete<T>(data_ptr);
+      sctl::aligned_delete<T>(data_ptr);
     }
   }
   data_ptr=sctl::NullIterator<T>();
@@ -115,7 +115,7 @@ void Vector<T>::ReInit(size_t dim_, sctl::Iterator<T> data_, bool own_data_){
   if(own_data_ && own_data && dim_<=capacity){
     if(dim!=dim_) FreeDevice(false);
     dim=dim_;
-    if(data_!=sctl::NullIterator<T>()) mem::copy<T>(data_ptr,(sctl::ConstIterator<T>)data_,dim);
+    if(data_!=sctl::NullIterator<T>()) sctl::omp_par::copy((sctl::ConstIterator<T>)data_,(sctl::ConstIterator<T>)data_+(sctl::Long)dim,data_ptr);
   }else{
     Vector<T> tmp(dim_,data_,own_data_);
     this->Swap(tmp);
@@ -200,7 +200,7 @@ Vector<T>& Vector<T>::operator=(const Vector<T>& V){
     if(dim!=V.dim) FreeDevice(false);
     if(capacity<V.dim) ReInit(V.dim);
     dim=V.dim;
-    if(dim) mem::copy<T>(data_ptr,(sctl::ConstIterator<T>)V.data_ptr,dim);
+    if(dim) sctl::omp_par::copy((sctl::ConstIterator<T>)V.data_ptr,(sctl::ConstIterator<T>)V.data_ptr+(sctl::Long)dim,data_ptr);
   }
   return *this;
 }
@@ -211,20 +211,20 @@ Vector<T>& Vector<T>::operator=(const std::vector<T>& V){
     if(dim!=V.size()) FreeDevice(false);
     if(capacity<V.size()) ReInit(V.size());
     dim=V.size();
-    if (dim) mem::copy<T>(data_ptr,sctl::Ptr2ConstItr<T>(&V[0],dim),dim);
+    if (dim) sctl::omp_par::copy(sctl::Ptr2ConstItr<T>(&V[0],dim),sctl::Ptr2ConstItr<T>(&V[0],dim)+(sctl::Long)dim,data_ptr);
   }
   return *this;
 }
 
 template <class T>
 inline T& Vector<T>::operator[](size_t j){
-  assert(dim>0?j<dim:j==0); //TODO Change to (j<dim)
+  assert(j<dim);
   return data_ptr[j];
 }
 
 template <class T>
 inline const T& Vector<T>::operator[](size_t j) const{
-  assert(dim>0?j<dim:j==0); //TODO Change to (j<dim)
+  assert(j<dim);
   return data_ptr[j];
 }
 

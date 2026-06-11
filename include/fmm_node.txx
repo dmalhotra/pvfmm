@@ -7,15 +7,15 @@
 
 #include <cassert>
 
-#include <mem_mgr.hpp>
+
 #include <mpi_node.hpp>
 
 namespace pvfmm{
 
 template <class Node>
 FMM_Node<Node>::~FMM_Node(){
-  if(fmm_data!=NULL) mem::aligned_delete(fmm_data);
-  fmm_data=NULL;
+  if(fmm_data!=sctl::NullIterator<FMM_Data<Real_t>>()) sctl::aligned_delete(fmm_data);
+  fmm_data=sctl::NullIterator<FMM_Data<Real_t>>();
 }
 
 template <class Node>
@@ -46,16 +46,22 @@ void FMM_Node<Node>::ClearData(){
 
 template <class Node>
 void FMM_Node<Node>::ClearFMMData(){
-  if(fmm_data!=NULL)
+  if(fmm_data!=sctl::NullIterator<FMM_Data<Real_t>>())
     fmm_data->Clear();
 }
 
 
 template <class Node>
-TreeNode* FMM_Node<Node>::NewNode(TreeNode* n_){
-  FMM_Node<Node>* n=(n_==NULL?(FMM_Node<Node>*)mem::aligned_new<FMM_Node<Node> >():static_cast<FMM_Node<Node>*>(n_));
-  if(fmm_data!=NULL) n->fmm_data=fmm_data->NewData();
-  return Node_t::NewNode(n);
+sctl::Iterator<TreeNode> FMM_Node<Node>::NewNode(sctl::Iterator<TreeNode> n_){
+  sctl::Iterator<FMM_Node<Node>> n;
+  if (n_==sctl::NullIterator<TreeNode>()) {
+    n=sctl::aligned_new<FMM_Node<Node> >();
+  } else {
+    n=sctl::Iterator<FMM_Node<Node>>(n_);
+  }
+  if(fmm_data!=sctl::NullIterator<FMM_Data<Real_t>>()) n->fmm_data=fmm_data->NewData();
+  Node_t::NewNode(sctl::Iterator<TreeNode>(n));
+  return sctl::Iterator<TreeNode>(n);
 }
 
 
@@ -132,7 +138,7 @@ PackedData FMM_Node<Node>::Pack(bool ghost, void* buff_ptr, size_t offset){
 
   // Copy multipole data.
   ((size_t*)data_ptr)[0]=p2.length; data_ptr+=sizeof(size_t);
-  mem::copy<char>(data_ptr,(char*)p2.data,p2.length);
+  sctl::omp_par::memcpy(data_ptr, (char*)p2.data, p2.length);
 
   return p0;
 }
@@ -161,7 +167,7 @@ void FMM_Node<Node>::Unpack(PackedData p0, bool own_data){
 
 template <class Node>
 PackedData FMM_Node<Node>::PackMultipole(void* buff_ptr){
-  if(fmm_data!=NULL)
+  if(fmm_data!=sctl::NullIterator<FMM_Data<Real_t>>())
     return fmm_data->PackMultipole(buff_ptr);
   else{
     PackedData pkd;
@@ -175,7 +181,7 @@ PackedData FMM_Node<Node>::PackMultipole(void* buff_ptr){
 template <class Node>
 void FMM_Node<Node>::AddMultipole(PackedData data){
   if(data.length>0){
-    assert(fmm_data!=NULL);
+    assert(fmm_data!=sctl::NullIterator<FMM_Data<Real_t>>());
     fmm_data->AddMultipole(data);
   }
 };
@@ -184,7 +190,7 @@ void FMM_Node<Node>::AddMultipole(PackedData data){
 template <class Node>
 void FMM_Node<Node>::InitMultipole(PackedData data, bool own_data){
   if(data.length>0){
-    assert(fmm_data!=NULL);
+    assert(fmm_data!=sctl::NullIterator<FMM_Data<Real_t>>());
     fmm_data->InitMultipole(data, own_data);
   }
 };

@@ -67,7 +67,7 @@ void CheckFMMOutput(pvfmm::FMM_Tree<FMM_Mat_t>* mytree, const pvfmm::Kernel<type
   std::vector<sctl::Long> recv_cnts(p), recv_disp(p, 0);
   c1.Allgather(sctl::Ptr2ConstItr<int>(&send_cnt, 1), 1,
                sctl::Ptr2Itr<sctl::Long>(&recv_cnts[0], p), 1);
-  pvfmm::omp_par::scan(&recv_cnts[0], &recv_disp[0], p);
+  sctl::omp_par::scan(&recv_cnts[0], &recv_disp[0], p);
   int glb_trg_cnt = (recv_disp[p-1] + recv_cnts[p-1]) / 3;
   std::vector<Real_t> glb_trg_coord(glb_trg_cnt * 3);
   c1.Allgatherv(sctl::Ptr2ConstItr<Real_t>(&trg_coord[0], send_cnt), send_cnt,
@@ -84,7 +84,7 @@ void CheckFMMOutput(pvfmm::FMM_Tree<FMM_Mat_t>* mytree, const pvfmm::Kernel<type
   for(int i=0;i<np;i++){
     size_t a=(i*glb_trg_cnt)/np;
     size_t b=((i+1)*glb_trg_cnt)/np;
-    mykernel->ker_poten(&src_coord[0], src_cnt, &src_value[0], dof, &glb_trg_coord[a*3], b-a, &trg_poten_dir[a*trg_dof  ],NULL);
+    mykernel->ker_poten(&src_coord[0], src_cnt, &src_value[0], dof, &glb_trg_coord[a*3], b-a, &trg_poten_dir[a*trg_dof  ]);
   }
   c1.Allreduce(sctl::Ptr2ConstItr<Real_t>(&trg_poten_dir[0], trg_poten_dir.size()),
                sctl::Ptr2Itr<Real_t>(&glb_trg_poten_dir[0], glb_trg_poten_dir.size()),

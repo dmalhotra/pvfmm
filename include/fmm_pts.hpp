@@ -17,7 +17,7 @@
 #include <fft_wrapper.hpp>
 #include <mpi_tree.hpp>
 #include <mpi_node.hpp>
-#include <mem_mgr.hpp>
+
 #include <vector.hpp>
 #include <matrix.hpp>
 #include <kernel.hpp>
@@ -38,7 +38,7 @@ class FMM_Data{
 
   virtual ~FMM_Data(){}
 
-  virtual FMM_Data* NewData(){return (FMM_Data*)mem::aligned_new<FMM_Data>();}
+  virtual sctl::Iterator<FMM_Data> NewData(){return sctl::aligned_new<FMM_Data>();}
 
   /**
    * \brief Clear all data.
@@ -108,14 +108,14 @@ class FMM_Pts{
 
     virtual ~FMMData(){}
 
-    virtual FMM_Data<Real_t>* NewData(){return (FMMData*)mem::aligned_new<FMMData>();}
+    virtual sctl::Iterator<FMM_Data<Real_t>> NewData(){return sctl::Iterator<FMM_Data<Real_t>>(sctl::aligned_new<FMMData>());}
   };
 
   /**
    * \brief Constructor.
    */
-  FMM_Pts(mem::MemoryManager* mem_mgr_=NULL): vprecomp_fft_flag(false), vlist_fft_flag(false), vlist_ifft_flag(false),
-             mem_mgr(mem_mgr_), kernel(NULL), mat(NULL), m2c(NULL){};
+  FMM_Pts(): vprecomp_fft_flag(false), vlist_fft_flag(false), vlist_ifft_flag(false),
+             kernel(NULL), mat(NULL), m2c(NULL){};
 
   /**
    * \brief Virtual destructor.
@@ -236,7 +236,6 @@ class FMM_Pts{
   bool vlist_ifft_flag;
   Vector<size_t> vlist_ifft_map;
 
-  mem::MemoryManager* mem_mgr;
   InteracList<FMMNode> interac_list;
   const Kernel<Real_t>* kernel;    //The kernel function.
   PrecompMat<Real_t>* mat;   //Handles storage of matrices.

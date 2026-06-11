@@ -10,7 +10,7 @@
 
 #include <pvfmm_common.hpp>
 #include <tree_node.hpp>
-#include <mem_mgr.hpp>
+
 
 #ifndef _PVFMM_TREE_HPP_
 #define _PVFMM_TREE_HPP_
@@ -30,7 +30,7 @@ class Tree{
   /**
    * \brief Constructor.
    */
-  Tree(): dim(0), root_node(NULL), max_depth(PVFMM_MAX_DEPTH), memgr(0) { };
+  Tree(): dim(0), root_node(sctl::NullIterator<Node_t>()), max_depth(PVFMM_MAX_DEPTH) { };
 
   /**
    * \brief Virtual destructor.
@@ -50,12 +50,12 @@ class Tree{
   /**
    * \brief Returns a pointer to the root node.
    */
-  Node_t* RootNode() {return root_node;}
+  Node_t* RootNode() {return (root_node==sctl::NullIterator<Node_t>()?NULL:&root_node[0]);}
 
   /**
    * \brief Returns a new node of the same type as the root node.
    */
-  Node_t* NewNode() {assert(root_node!=NULL); return (Node_t*)root_node->NewNode();}
+  sctl::Iterator<Node_t> NewNode() {assert(root_node!=sctl::NullIterator<Node_t>()); return sctl::Iterator<Node_t>(root_node->NewNode());}
 
   /**
    * \brief Returns a pointer to the first node in preorder traversal (the root
@@ -91,10 +91,9 @@ class Tree{
  protected:
 
   int dim;              // dimension of the tree
-  Node_t* root_node;    // pointer to root node
+  sctl::Iterator<Node_t> root_node;    // owning iterator for root node
   int max_depth;        // maximum tree depth
   std::vector<TreeNode*> node_lst;
-  mem::MemoryManager memgr;
 };
 
 }//end namespace

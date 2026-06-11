@@ -16,8 +16,7 @@
 #include <algorithm>
 
 #include <dtypes.h>
-#include <ompUtils.h>
-#include <mem_mgr.hpp>
+
 #include <matrix.hpp>
 
 namespace pvfmm{
@@ -58,11 +57,8 @@ namespace par{
         }
       }
 
-      sctl::Iterator<MPI_Request> requests = mem::aligned_new<MPI_Request>(commCnt);
-      assert(commCnt==0 || requests!=sctl::NullIterator<MPI_Request>());
-
-      sctl::Iterator<MPI_Status> statuses = mem::aligned_new<MPI_Status>(commCnt);
-      assert(commCnt==0 || statuses!=sctl::NullIterator<MPI_Status>());
+      sctl::ScratchBuf<MPI_Request> requests(std::max((int)commCnt, 1));
+      sctl::ScratchBuf<MPI_Status>  statuses(std::max((int)commCnt, 1));
 
       commCnt = 0;
 
@@ -107,9 +103,7 @@ namespace par{
       }
 
       if(commCnt) MPI_Waitall(commCnt, &requests[0], &statuses[0]);
-
-      mem::aligned_delete(requests);
-      mem::aligned_delete(statuses);
+      // requests, statuses freed automatically at scope exit.
       return 0;
 #endif
     }
@@ -135,9 +129,9 @@ namespace par{
         s_cnt[i]=s_cnt_[i]*sizeof(T)+2*sizeof(int);
       }
       std::vector<int> sdisp(np); sdisp[0]=0;
-      omp_par::scan(&s_cnt[0],&sdisp[0],np);
+      sctl::omp_par::scan(&s_cnt[0],&sdisp[0],np);
 
-      sctl::Iterator<char> sbuff=mem::aligned_new<char>(sdisp[np-1]+s_cnt[np-1]);
+      sctl::Iterator<char> sbuff=sctl::aligned_new<char>(sdisp[np-1]+s_cnt[np-1]);
       #pragma omp parallel for
       for(int i=0;i<np;i++){
         ((int*)&sbuff[sdisp[i]])[0]=s_cnt[i];
@@ -176,12 +170,12 @@ namespace par{
           //Allocate receive buffer.
           std::vector<int> rdisp    (new_np,0);
           std::vector<int> rdisp_ext(new_np,0);
-          omp_par::scan(&r_cnt    [0],&rdisp    [0],new_np);
-          omp_par::scan(&r_cnt_ext[0],&rdisp_ext[0],new_np);
+          sctl::omp_par::scan(&r_cnt    [0],&rdisp    [0],new_np);
+          sctl::omp_par::scan(&r_cnt_ext[0],&rdisp_ext[0],new_np);
           int rbuff_size    =rdisp    [new_np-1]+r_cnt    [new_np-1];
           int rbuff_size_ext=rdisp_ext[new_np-1]+r_cnt_ext[new_np-1];
-          sctl::Iterator<char> rbuff   =                mem::aligned_new<char>(rbuff_size    );
-          sctl::Iterator<char> rbuffext=(extra_partner? mem::aligned_new<char>(rbuff_size_ext): sctl::NullIterator<char>());
+          sctl::Iterator<char> rbuff   =                sctl::aligned_new<char>(rbuff_size    );
+          sctl::Iterator<char> rbuffext=(extra_partner? sctl::aligned_new<char>(rbuff_size_ext): sctl::NullIterator<char>());
 
           //Sendrecv data.
           {
@@ -205,10 +199,10 @@ namespace par{
             for(int i=0;i<new_np;i++){
               s_cnt_new[i]+=r_cnt[i]+r_cnt_ext[i];
             }
-            omp_par::scan(&s_cnt_new[0],&sdisp_new[0],new_np);
+            sctl::omp_par::scan(&s_cnt_new[0],&sdisp_new[0],new_np);
 
             //Copy data to sbuff_new.
-            sctl::Iterator<char> sbuff_new=mem::aligned_new<char>(sdisp_new[new_np-1]+s_cnt_new[new_np-1]);
+            sctl::Iterator<char> sbuff_new=sctl::aligned_new<char>(sdisp_new[new_np-1]+s_cnt_new[new_np-1]);
             #pragma omp parallel for
             for(int i=0;i<new_np;i++){
               if (s_cnt_old[i]) memcpy(&sbuff_new[sdisp_new[i]                      ],&sbuff   [sdisp_old[i]],s_cnt_old[i]);
@@ -217,9 +211,9 @@ namespace par{
             }
 
             //Free memory.
-            if(sbuff   !=sctl::NullIterator<char>()) mem::aligned_delete(sbuff   );
-            if(rbuff   !=sctl::NullIterator<char>()) mem::aligned_delete(rbuff   );
-            if(rbuffext!=sctl::NullIterator<char>()) mem::aligned_delete(rbuffext);
+            if(sbuff   !=sctl::NullIterator<char>()) sctl::aligned_delete(sbuff   );
+            if(rbuff   !=sctl::NullIterator<char>()) sctl::aligned_delete(rbuff   );
+            if(rbuffext!=sctl::NullIterator<char>()) sctl::aligned_delete(rbuffext);
 
             //Substitute data for next iteration.
             s_cnt=s_cnt_new;
@@ -249,7 +243,7 @@ namespace par{
       }
 
       //Free memory.
-      if(sbuff   !=sctl::NullIterator<char>()) mem::aligned_delete(sbuff);
+      if(sbuff   !=sctl::NullIterator<char>()) sctl::aligned_delete(sbuff);
       return 0;
 #endif
     }
@@ -289,7 +283,7 @@ namespace par{
       Vector<long long> lscn(nlSize);
       if(nlSize) {
         lscn[0]=off1;
-        omp_par::scan(&wts[0],&lscn[0],nlSize);
+        sctl::omp_par::scan(&wts[0],&lscn[0],nlSize);
       }
 
       Vector<int> int_buff(npesLong*4);
@@ -331,8 +325,8 @@ namespace par{
           &recvSz[0], 1, par::Mpi_datatype<int>::value(), comm);
 
       // compute offsets ...
-      sendOff[0] = 0; omp_par::scan(&sendSz[0],&sendOff[0],npesLong);
-      recvOff[0] = 0; omp_par::scan(&recvSz[0],&recvOff[0],npesLong);
+      sendOff[0] = 0; sctl::omp_par::scan(&sendSz[0],&sendOff[0],npesLong);
+      recvOff[0] = 0; sctl::omp_par::scan(&recvSz[0],&recvOff[0],npesLong);
 
       // new value of nlSize, ie the local nodes.
       long long nn = recvSz[npesLong-1] + recvOff[npes-1];
@@ -341,8 +335,8 @@ namespace par{
       Vector<T> newNodes(nn);
 
       // perform All2All  ...
-      par::Mpi_Alltoallv_sparse<T>(&nodeList[0], &sendSz[0], &sendOff[0],
-          &newNodes[0], &recvSz[0], &recvOff[0], comm);
+      par::Mpi_Alltoallv_sparse<T>(nodeList.Begin(), &sendSz[0], &sendOff[0],
+          newNodes.Begin(), &recvSz[0], &recvOff[0], comm);
 
       // reset the pointer ...
       nodeList=newNodes;
@@ -355,7 +349,7 @@ namespace par{
       Vector<T> nodeList_=nodeList;
       int ret = par::partitionW<T>(nodeList_, wts, comm);
 
-      nodeList.assign(&nodeList_[0],&nodeList_[0]+nodeList_.Dim());
+      nodeList.assign(nodeList_.Begin(),nodeList_.Begin()+nodeList_.Dim());
       return ret;
     }
 
@@ -380,7 +374,7 @@ namespace par{
 
       // Local sort.
       Vector<T> arr=arr_;
-      if (arr.Dim()) omp_par::merge_sort(&arr[0], &arr[0]+nelem);
+      if (arr.Dim()) sctl::omp_par::merge_sort(&arr[0], &arr[0]+nelem);
 
       // Allocate memory.
       Vector<T> nbuff;
@@ -413,7 +407,7 @@ namespace par{
           MPI_Allgather(&splt_count      , 1, par::Mpi_datatype<int>::value(),
               &glb_splt_cnts[0], 1, par::Mpi_datatype<int>::value(), comm);
 
-          omp_par::scan(&glb_splt_cnts[0],&glb_splt_disp[0],npes);
+          sctl::omp_par::scan(&glb_splt_cnts[0],&glb_splt_disp[0],npes);
           glb_splt_count=glb_splt_cnts[npes-1]+glb_splt_disp[npes-1];
           std::vector<T> glb_splitters(glb_splt_count);
           MPI_Allgatherv(&    splitters[0], splt_count, par::Mpi_datatype<T>::value(),
@@ -458,11 +452,12 @@ namespace par{
           char *sbuff, *lbuff;
           int     rsize=0,     ssize=0, lsize=0;
           int ext_rsize=0, ext_ssize=0;
-          size_t split_indx=(nelem>0?std::lower_bound(&arr[0], &arr[0]+nelem, split_key)-&arr[0]:0);
+          T* arr_ptr=(nelem>0?&arr[0]:nullptr);
+          size_t split_indx=(nelem>0?std::lower_bound(arr_ptr, arr_ptr+nelem, split_key)-arr_ptr:0);
           ssize=       (myrank> split_id? split_indx: nelem  -split_indx)*sizeof(T);
-          sbuff=(char*)(myrank> split_id? &arr[0]   : &arr[0]+split_indx);
+          sbuff=(char*)(myrank> split_id? arr_ptr   : arr_ptr+split_indx);
           lsize=       (myrank<=split_id? split_indx: nelem  -split_indx)*sizeof(T);
-          lbuff=(char*)(myrank<=split_id? &arr[0]   : &arr[0]+split_indx);
+          lbuff=(char*)(myrank<=split_id? arr_ptr   : arr_ptr+split_indx);
 
           MPI_Status status;
           MPI_Sendrecv                  (&    ssize,1,MPI_INT, partner,0,   &    rsize,1,MPI_INT, partner,   0,comm,&status);
@@ -478,10 +473,11 @@ namespace par{
 
           int nbuff_size=lsize+rsize+ext_rsize;
           nbuff.Resize(nbuff_size/sizeof(T));
-          omp_par::merge<T*>((T*)lbuff, (T*)(lbuff+lsize), rbuff_ptr, rbuff_ptr+(rsize/sizeof(T)), &nbuff[0], omp_p, std::less<T>());
+          T *nbuff_ptr = nbuff.Dim() ? &nbuff[0] : nullptr;
+          sctl::omp_par::merge<T*>((T*)lbuff, (T*)(lbuff+lsize), rbuff_ptr, rbuff_ptr+(rsize/sizeof(T)), nbuff_ptr, omp_p, std::less<T>());
           if(ext_rsize>0 && nbuff.Dim()>0){
             nbuff_ext.Resize(nbuff_size/sizeof(T));
-            omp_par::merge<T*>(&nbuff[0], &nbuff[0]+((lsize+rsize)/sizeof(T)), rbuff_ext_ptr, rbuff_ext_ptr+(ext_rsize/sizeof(T)), &nbuff_ext[0], omp_p, std::less<T>());
+            sctl::omp_par::merge<T*>(&nbuff[0], &nbuff[0]+((lsize+rsize)/sizeof(T)), rbuff_ext_ptr, rbuff_ext_ptr+(ext_rsize/sizeof(T)), &nbuff_ext[0], omp_p, std::less<T>());
             nbuff.Swap(nbuff_ext);
             nbuff_ext.Resize(0);
           }
@@ -518,7 +514,7 @@ namespace par{
       const Vector<T> arr(arr_.size(),sctl::Ptr2Itr<T>((T*)&arr_[0],arr_.size()),false);
 
       int ret = HyperQuickSort(arr, SortedElem, comm_);
-      SortedElem_.assign(&SortedElem[0],&SortedElem[0]+SortedElem.Dim());
+      SortedElem_.assign(SortedElem.Begin(),SortedElem.Begin()+SortedElem.Dim());
       return ret;
     }
 
@@ -599,8 +595,8 @@ namespace par{
             &recvSz[0], 1, par::Mpi_datatype<int>::value(), comm);
 
         // compute offsets ...
-        sendOff[0] = 0; omp_par::scan(&sendSz[0],&sendOff[0],npesLong);
-        recvOff[0] = 0; omp_par::scan(&recvSz[0],&recvOff[0],npesLong);
+        sendOff[0] = 0; sctl::omp_par::scan(&sendSz[0],&sendOff[0],npesLong);
+        recvOff[0] = 0; sctl::omp_par::scan(&recvSz[0],&recvOff[0],npesLong);
 
         // new value of nlSize, ie the local nodes.
         long long nn = recvSz[npesLong-1] + recvOff[npesLong-1];
@@ -672,7 +668,7 @@ namespace par{
           psorted[i].key=scatter_index[i];
           psorted[i].data=i;
         }
-        omp_par::merge_sort(&psorted[0], &psorted[0]+recv_size);
+        sctl::omp_par::merge_sort(&psorted[0], &psorted[0]+recv_size);
       }
 
       // Exchange send, recv indices.
@@ -698,7 +694,7 @@ namespace par{
 
         MPI_Alltoall(&recvSz[0], 1, par::Mpi_datatype<int>::value(),
                      &sendSz[0], 1, par::Mpi_datatype<int>::value(), comm);
-        sendOff[0] = 0; omp_par::scan(&sendSz[0],&sendOff[0],npesLong);
+        sendOff[0] = 0; sctl::omp_par::scan(&sendSz[0],&sendOff[0],npesLong);
         assert(sendOff[npesLong-1]+sendSz[npesLong-1]==send_size);
 
         par::Mpi_Alltoallv_dense<long long>(&recv_indx[0], &recvSz[0], &recvOff[0],
@@ -875,7 +871,7 @@ namespace par{
           psorted[i].key=scatter_index[i];
           psorted[i].data=i;
         }
-        omp_par::merge_sort(&psorted[0], &psorted[0]+send_size);
+        sctl::omp_par::merge_sort(&psorted[0], &psorted[0]+send_size);
       }
 
       // Exchange send, recv indices.
@@ -901,7 +897,7 @@ namespace par{
 
         MPI_Alltoall(&sendSz[0], 1, par::Mpi_datatype<int>::value(),
                      &recvSz[0], 1, par::Mpi_datatype<int>::value(), comm);
-        recvOff[0] = 0; omp_par::scan(&recvSz[0],&recvOff[0],npesLong);
+        recvOff[0] = 0; sctl::omp_par::scan(&recvSz[0],&recvOff[0],npesLong);
         assert(recvOff[npesLong-1]+recvSz[npesLong-1]==recv_size);
 
         par::Mpi_Alltoallv_dense<long long>(&send_indx[0], &sendSz[0], &sendOff[0],

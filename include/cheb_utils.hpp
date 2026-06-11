@@ -52,7 +52,7 @@ T cheb_err(T* cheb_coeff, int deg, int dof);
  * \return Estimate of the truncation error.
  */
 template <class T, class Y>
-T cheb_approx(const T* fn_v, int deg, int dof, T* cheb_coeff, mem::MemoryManager* mem_mgr=NULL);
+T cheb_approx(const T* fn_v, int deg, int dof, T* cheb_coeff);
 
 /**
  * \brief Evaluates polynomial values from input coefficients at points on
@@ -69,7 +69,7 @@ T cheb_approx(const T* fn_v, int deg, int dof, T* cheb_coeff, mem::MemoryManager
  * \param[in] in_z The nodes in [0,1] in the Z-direction.
  */
 template <class T>
-void cheb_eval(const Vector<T>& coeff_, int cheb_deg, const std::vector<T>& in_x, const std::vector<T>& in_y, const std::vector<T>& in_z, Vector<T>& out, mem::MemoryManager* mem_mgr=NULL);
+void cheb_eval(const Vector<T>& coeff_, int cheb_deg, const std::vector<T>& in_x, const std::vector<T>& in_y, const std::vector<T>& in_z, Vector<T>& out);
 
 /**
  * \brief Evaluates polynomial values from input coefficients at points
@@ -118,7 +118,7 @@ template <class T>
 std::vector<T> cheb_nodes(int deg, int dim);
 
 template <class T>
-void cheb_grad(const Vector<T>& A, int deg, Vector<T>& B, mem::MemoryManager* mem_mgr=NULL);
+void cheb_grad(const Vector<T>& A, int deg, Vector<T>& B);
 
 template <class T>
 void cheb_laplacian(T* A, int deg, T* B);

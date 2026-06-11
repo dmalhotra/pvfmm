@@ -13,7 +13,7 @@
 #include <sys/stat.h>
 #endif
 
-#include <mem_mgr.hpp>
+
 #include <profile.hpp>
 #include <vector.hpp>
 
@@ -137,7 +137,7 @@ size_t PrecompMat<T>::CompactData(int level, Mat_Type type, Matrix<char>& comp_d
       for(int tid=0;tid<omp_p;tid++){ // Copy data.
         size_t a=(offset*(tid+0))/omp_p;
         size_t b=(offset*(tid+1))/omp_p;
-        mem::copy<char>(comp_data[0]+a, old_data[0]+a, b-a);
+        sctl::omp_par::memcpy(comp_data[0]+a, old_data[0]+a, b-a);
       }
     }
   }
@@ -184,7 +184,7 @@ size_t PrecompMat<T>::CompactData(int level, Mat_Type type, Matrix<char>& comp_d
       if(M.Dim(0)>0 && M.Dim(1)>0){
         size_t a=(M.Dim(0)*M.Dim(1)* tid   )/omp_p;
         size_t b=(M.Dim(0)*M.Dim(1)*(tid+1))/omp_p;
-        mem::copy<T>((T*)(comp_data[0]+offset_indx[j][0])+a, &M[0][a], (b-a));
+        sctl::omp_par::memcpy((T*)(comp_data[0]+offset_indx[j][0])+a, &M[0][a], b-a);
       }
 
       for(size_t l=l0;l<l1;l++){
@@ -193,14 +193,14 @@ size_t PrecompMat<T>::CompactData(int level, Mat_Type type, Matrix<char>& comp_d
         if(Pr.Dim()>0){
           size_t a=(Pr.Dim()* tid   )/omp_p;
           size_t b=(Pr.Dim()*(tid+1))/omp_p;
-          mem::copy<PVFMM_PERM_INT_T>((PVFMM_PERM_INT_T*)(comp_data[0]+offset_indx[j][1+4*(l-l0)+0])+a, &Pr.perm[a], (b-a));
-          mem::copy<         T>((         T*)(comp_data[0]+offset_indx[j][1+4*(l-l0)+1])+a, &Pr.scal[a], (b-a));
+          sctl::omp_par::memcpy((PVFMM_PERM_INT_T*)(comp_data[0]+offset_indx[j][1+4*(l-l0)+0])+a, &Pr.perm[a], b-a);
+          sctl::omp_par::memcpy((T*)(comp_data[0]+offset_indx[j][1+4*(l-l0)+1])+a, &Pr.scal[a], b-a);
         }
         if(Pc.Dim()>0){
           size_t a=(Pc.Dim()* tid   )/omp_p;
           size_t b=(Pc.Dim()*(tid+1))/omp_p;
-          mem::copy<PVFMM_PERM_INT_T>((PVFMM_PERM_INT_T*)(comp_data[0]+offset_indx[j][1+4*(l-l0)+2])+a, &Pc.perm[a], (b-a));
-          mem::copy<         T>((         T*)(comp_data[0]+offset_indx[j][1+4*(l-l0)+3])+a, &Pc.scal[a], (b-a));
+          sctl::omp_par::memcpy((PVFMM_PERM_INT_T*)(comp_data[0]+offset_indx[j][1+4*(l-l0)+2])+a, &Pc.perm[a], b-a);
+          sctl::omp_par::memcpy((T*)(comp_data[0]+offset_indx[j][1+4*(l-l0)+3])+a, &Pc.scal[a], b-a);
         }
       }
     }
@@ -249,34 +249,18 @@ void PrecompMat<T>::LoadFile(const char* fname, const sctl::Comm& comm){
 
   sctl::Profile::Tic("ReadFile",&comm,true,4);
   size_t f_size=0;
-  char* f_data=NULL;
   const int np = comm.Size();
   const int myrank = comm.Rank();
   (void)np;
+  FILE* rank0_file = NULL;
   if(myrank==0){
-    FILE* f=fopen(fname,"rb");
-    if(f==NULL){
+    rank0_file = fopen(fname,"rb");
+    if(rank0_file==NULL){
       f_size=0;
     }else{
       struct stat fileStat;
       if(stat(fname,&fileStat) < 0) f_size=0;
       else f_size=fileStat.st_size;
-
-      //fseek (f, 0, SEEK_END);
-      //f_size=ftell (f);
-    }
-    if(f_size>0){
-      f_data=(char*)mem::aligned_new<char>(f_size);
-      fseek (f, 0, SEEK_SET);
-      {
-        size_t r_cnt=fread(f_data,sizeof(char),f_size,f);
-        if(r_cnt!=f_size){
-          fputs ("Reading error ",stderr);
-          exit (-1);
-        }
-      }
-
-      fclose(f);
     }
   }
   sctl::Profile::Toc();
@@ -284,12 +268,25 @@ void PrecompMat<T>::LoadFile(const char* fname, const sctl::Comm& comm){
   sctl::Profile::Tic("Broadcast",&comm,true,4);
   MPI_Bcast( &f_size, sizeof(size_t), MPI_BYTE, 0, comm.GetMPI_Comm() );
   if(f_size==0){
+    if(rank0_file) fclose(rank0_file);
     sctl::Profile::Toc();
     sctl::Profile::Toc();
     return;
   }
 
-  if(f_data==NULL) f_data=(char*)mem::aligned_new<char>(f_size);
+  // Allocate the file-buffer scratch only after we know f_size > 0 on all
+  // ranks; lives until end of this function.
+  sctl::ScratchBuf<char> f_data_scratch(f_size);
+  char* f_data = &f_data_scratch.begin()[0];
+  if(myrank==0){
+    fseek(rank0_file, 0, SEEK_SET);
+    size_t r_cnt=fread(f_data,sizeof(char),f_size,rank0_file);
+    if(r_cnt!=f_size){
+      fputs ("Reading error ",stderr);
+      exit (-1);
+    }
+    fclose(rank0_file);
+  }
   char* f_ptr=f_data;
   int max_send_size=1000000000;
   while(f_size>0){
@@ -328,7 +325,7 @@ void PrecompMat<T>::LoadFile(const char* fname, const sctl::Comm& comm){
         n2=*(int*)f_ptr; f_ptr+=sizeof(int);
         if(n1*n2>0){
           M.Resize(n1,n2);
-          mem::copy<T>(&M[0][0], (T*)f_ptr, n1*n2); f_ptr+=sizeof(T)*n1*n2;
+          sctl::omp_par::memcpy(&M[0][0], (T*)f_ptr, n1*n2); f_ptr+=sizeof(T)*n1*n2;
         }
       }
     }
@@ -341,7 +338,7 @@ void PrecompMat<T>::LoadFile(const char* fname, const sctl::Comm& comm){
       perm_c[i].resize(500);
     }
   }
-  mem::aligned_delete<char>(f_data);
+  // f_data freed automatically at scope exit.
   sctl::Profile::Toc();
   sctl::Profile::Toc();
 }

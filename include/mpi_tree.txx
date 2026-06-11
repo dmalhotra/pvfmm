@@ -19,9 +19,8 @@
 #include <set>
 
 #include <dtypes.h>
-#include <ompUtils.h>
 #include <parUtils.h>
-#include <mem_mgr.hpp>
+
 #include <mpi_node.hpp>
 #include <profile.hpp>
 
@@ -133,7 +132,7 @@ inline int points2Octree(const Vector<MortonId>& pt_mid, Vector<MortonId>& nodes
     }
     if(recv_size>0){// Resize pt_sorted.
       Vector<MortonId> pt_sorted_(pt_cnt+recv_size);
-      mem::copy<MortonId>(&pt_sorted_[0], &pt_sorted[0], pt_cnt);
+      sctl::omp_par::memcpy(&pt_sorted_[0], &pt_sorted[0], pt_cnt);
       pt_sorted.Swap(pt_sorted_);
     }
     {// Exchange data.
@@ -322,7 +321,7 @@ void MPI_Tree<TreeNode>::CoarsenTree(){
       n=this->PostorderNxt(n);
     }
     while(myrank){
-      Node_t* n_parent=(Node_t*)n->Parent();
+      Node_t* n_parent=(Node_t*)&n->Parent()[0];
       Node_t* n_      =         n_parent;
       while(n_ && !n_->IsLeaf()){
         n_=this->PostorderNxt(n_);
@@ -390,7 +389,7 @@ void MPI_Tree<TreeNode>::CoarsenTree(){
   for(int i=0;i<omp_p;i++){
     Node_t* n_=FindNode(mid[i], false, this->RootNode());
     while(n_->Depth()>0){
-      n_=(Node_t*)n_->Parent();
+      n_=(Node_t*)&n_->Parent()[0];
       if(!n_->SubdivCond()) n_->Truncate();
       else break;
     }
@@ -563,12 +562,14 @@ void MPI_Tree<TreeNode>::RedistNodes(MortonId* loc_min) {
 
   std::vector<int> sdisp; sdisp.assign(np,0);
   std::vector<int> rdisp; rdisp.assign(np,0);
-  omp_par::scan(&send_size[0],&sdisp[0],np); //TODO Don't need to do a full scan
-  omp_par::scan(&recv_size[0],&rdisp[0],np); //     as most entries will be 0.
+  sctl::omp_par::scan(&send_size[0],&sdisp[0],np); //TODO Don't need to do a full scan
+  sctl::omp_par::scan(&recv_size[0],&rdisp[0],np); //     as most entries will be 0.
   size_t rbuff_size=rdisp[np-1]+recv_size[np-1];
 
-  char* send_buff=(char*)mem::aligned_new<char>(sbuff_size);
-  char* recv_buff=(char*)mem::aligned_new<char>(rbuff_size);
+  sctl::ScratchBuf<char> send_buff_scratch(sbuff_size ? sbuff_size : 1);
+  sctl::ScratchBuf<char> recv_buff_scratch(rbuff_size ? rbuff_size : 1);
+  char* send_buff = &send_buff_scratch.begin()[0];
+  char* recv_buff = &recv_buff_scratch.begin()[0];
   std::vector<char*> data_ptr(leaf_cnt);
   char* s_ptr=send_buff;
   for(size_t i = 0; i < leaf_cnt; i++) {
@@ -581,7 +582,7 @@ void MPI_Tree<TreeNode>::RedistNodes(MortonId* loc_min) {
     size_t a=( p   *leaf_cnt)/omp_p;
     size_t b=((p+1)*leaf_cnt)/omp_p;
     for(size_t i=a;i<b;i++)
-      mem::copy<char>(data_ptr[i], (char*)data[i].data, data[i].length);
+      sctl::omp_par::memcpy(data_ptr[i], (char*)data[i].data, data[i].length);
   }
 
   par::Mpi_Alltoallv_sparse<char>(&send_buff[0], &send_size[0], &sdisp[0],
@@ -642,9 +643,8 @@ void MPI_Tree<TreeNode>::RedistNodes(MortonId* loc_min) {
       node_lst[i]->Unpack(r_data[i]);
   }
 
-  //Free memory buffers.
-  mem::aligned_delete<char>(recv_buff);
-  mem::aligned_delete<char>(send_buff);
+  // send_buff_scratch, recv_buff_scratch freed automatically at scope exit
+  // (LIFO order: recv_buff before send_buff).
 }
 
 
@@ -808,7 +808,7 @@ inline int balanceOctree (std::vector<MortonId > &in, std::vector<MortonId > &ou
     for(unsigned int j=0;j<=maxDepth;j++)
       node_cnt[i]+=nodes[j+i*(maxDepth+1)].size();
   }
-  omp_par::scan(&node_cnt[0],&node_dsp[0], omp_p);
+  sctl::omp_par::scan(&node_cnt[0],&node_dsp[0], omp_p);
   in.resize(node_cnt[omp_p-1]+node_dsp[omp_p-1]);
 
   //Copy leaf nodes to in.
@@ -959,7 +959,7 @@ void MPI_Tree<TreeNode>::Balance21(BoundaryType bndry) {
     std::vector<int> recv_dsp(num_proc);
     MPI_Alltoall(&     cnt[0], 1, MPI_INT,
                  &recv_cnt[0], 1, MPI_INT, Comm().GetMPI_Comm());
-    omp_par::scan(&recv_cnt[0],&recv_dsp[0],num_proc);
+    sctl::omp_par::scan(&recv_cnt[0],&recv_dsp[0],num_proc);
 
     in.resize(recv_cnt[num_proc-1]+recv_dsp[num_proc-1]);
     par::Mpi_Alltoallv_sparse(&out[0], &     cnt[0], &     dsp[0],
@@ -1190,7 +1190,7 @@ void MPI_Tree<TreeNode>::SetColleagues(BoundaryType bndry, Node_t* node){
       if(c[2]<1.0 && c[2]>0.0){
         MortonId m(c,d);
         Node_t* nbr=FindNode(m,false,root_node);
-        while(nbr->Depth()>d) nbr=(Node_t*)nbr->Parent();
+        while(nbr->Depth()>d) nbr=(Node_t*)&nbr->Parent()[0];
         if(nbr->Depth()==d) node->SetColleague(nbr,idx);
       }
       idx++;
@@ -1201,7 +1201,7 @@ void MPI_Tree<TreeNode>::SetColleagues(BoundaryType bndry, Node_t* node){
     Node_t* tmp_node2;
 
     for(int i=0;i<n1;i++)node->SetColleague(NULL,i);
-    parent_node=(Node_t*)node->Parent();
+    parent_node=(Node_t*)&node->Parent()[0];
     if(parent_node==NULL) return;
 
     int l=node->Path2Node();
@@ -1258,7 +1258,7 @@ bool MPI_Tree<TreeNode>::CheckTree(){
       assert(false);
     }
     if(!n->IsGhost() && n->Depth()>0)
-      assert(!((Node_t*)n->Parent())->IsGhost());
+      assert(!((Node_t*)&n->Parent()[0])->IsGhost());
     n=this->PostorderNxt(n);
   }
   while(n!=NULL){
@@ -1469,7 +1469,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Hypercube(BoundaryType bndry){
         size_t i0=((k+0)*mem_size.size())/omp_p;
         size_t i1=((k+1)*mem_size.size())/omp_p;
         for(size_t i=i0;i<i1;i++){
-          mem::copy<char>((char*)srctrg_ptr[2*i+1],(char*)srctrg_ptr[2*i+0],mem_size[i]);
+          sctl::omp_par::memcpy((char*)srctrg_ptr[2*i+1], (char*)srctrg_ptr[2*i+0], mem_size[i]);
         }
       }
     }
@@ -1519,7 +1519,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Hypercube(BoundaryType bndry){
         size_t i0=((k+0)*mem_size.size())/omp_p;
         size_t i1=((k+1)*mem_size.size())/omp_p;
         for(size_t i=i0;i<i1;i++){
-          mem::copy<char>((char*)srctrg_ptr[2*i+1],(char*)srctrg_ptr[2*i+0],mem_size[i]);
+          sctl::omp_par::memcpy((char*)srctrg_ptr[2*i+1], (char*)srctrg_ptr[2*i+0], mem_size[i]);
         }
       }
     }
@@ -1593,15 +1593,18 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
   static std::vector<char> recv_buff;
 
   //sctl::Profile::Tic("SharedNodes",&this->Comm(), false, 5);
-  CommData* node_comm_data=NULL; // CommData for all nodes.
+  sctl::Iterator<char> node_comm_data_iter = sctl::NullIterator<char>();  // owns the char allocation
+  CommData* node_comm_data=NULL; // CommData for all nodes (alias into node_comm_data_iter).
   std::vector<void*> shared_data; // CommData for shared nodes.
+  std::vector<sctl::Iterator<char>> shared_data_storage; // owns fresh allocations corresponding to shared_data entries.
   std::vector<par::SortPair<size_t,size_t> > pid_node_pair; // <pid, shared_data index> list
   { // Set node_comm_data
     MortonId mins_r0=mins[         rank+0         ].getDFD();
     MortonId mins_r1=mins[std::min(rank+1,num_p-1)].getDFD();
 
     std::vector<TreeNode*> nodes=this->GetNodeList();
-    node_comm_data=(CommData*)this->memgr.malloc(sizeof(CommData)*nodes.size());
+    node_comm_data_iter=sctl::aligned_new<char>(sizeof(CommData)*nodes.size());
+    node_comm_data=(CommData*)&node_comm_data_iter[0];
     #pragma omp parallel for
     for(int tid=0;tid<omp_p;tid++){
       std::vector<MortonId> nbr_lst;
@@ -1662,37 +1665,40 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
         }
       }
     }
-    omp_par::merge_sort(&pid_node_pair[0], &pid_node_pair[pid_node_pair.size()]);
+    sctl::omp_par::merge_sort(&pid_node_pair[0], &pid_node_pair[pid_node_pair.size()]);
     //std::cout<<rank<<' '<<shared_data.size()<<' '<<pid_node_pair.size()<<'\n';
   }
   //sctl::Profile::Toc();
 
   //sctl::Profile::Tic("PackNodes",&this->Comm(), false, 5);
   { // Pack shared nodes.
+    shared_data_storage.resize(shared_data.size());
     #pragma omp parallel for
     for(int tid=0;tid<omp_p;tid++){
       size_t buff_length=100l*1024l*1024l; // 100MB buffer per thread.
-      char* buff=(char*)this->memgr.malloc(buff_length);
+      sctl::Iterator<char> buff=sctl::aligned_new<char>(buff_length);
 
       size_t a=( tid   *shared_data.size())/omp_p;
       size_t b=((tid+1)*shared_data.size())/omp_p;
       for(size_t i=a;i<b;i++){
         CommData& comm_data=*(CommData*)shared_data[i];
-        PackedData p0=comm_data.node->Pack(true,buff);
+        PackedData p0=comm_data.node->Pack(true,&buff[0]);
         assert(p0.length<buff_length);
 
-        shared_data[i]=this->memgr.malloc(sizeof(CommData)+p0.length);
+        shared_data_storage[i]=sctl::aligned_new<char>(sizeof(CommData)+p0.length);
+        shared_data[i]=(void*)&shared_data_storage[i][0];
         CommData& new_comm_data=*(CommData*)shared_data[i];
         new_comm_data=comm_data;
 
         new_comm_data.pkd_length=sizeof(CommData)+p0.length;
-        mem::copy<char>(((char*)shared_data[i])+sizeof(CommData),buff,p0.length);
+        sctl::omp_par::memcpy(shared_data_storage[i]+sizeof(CommData), buff, p0.length);
       }
-      this->memgr.free(buff);
+      sctl::aligned_delete(buff);
     }
 
     // now CommData is stored in shared_data
-    this->memgr.free(node_comm_data);
+    sctl::aligned_delete(node_comm_data_iter);
+    node_comm_data_iter=sctl::NullIterator<char>();
     node_comm_data=NULL;
   }
   //sctl::Profile::Toc();
@@ -1707,7 +1713,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
     for(size_t i=0;i<pid_node_pair.size();i++){
       size[i]=((CommData*)shared_data[pid_node_pair[i].data])->pkd_length;
     }
-    omp_par::scan(&size[0],&disp[0],pid_node_pair.size());
+    sctl::omp_par::scan(&size[0],&disp[0],pid_node_pair.size());
 
     // Resize send_buff.
     if(send_buff.size()<size[pid_node_pair.size()-1]+disp[pid_node_pair.size()-1]){
@@ -1718,7 +1724,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
     #pragma omp parallel for
     for(size_t i=0;i<pid_node_pair.size();i++){
       size_t shrd_idx=pid_node_pair[i].data;
-      mem::copy<char>(&send_buff[disp[i]], (char*)shared_data[shrd_idx], size[i]);
+      sctl::omp_par::memcpy(&send_buff[disp[i]], (char*)shared_data[shrd_idx], size[i]);
     }
 
     // Compute send_size, send_disp.
@@ -1742,7 +1748,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
       }
 
       // Compute send_disp.
-      omp_par::scan(&send_size[0],&send_disp[0],num_p);
+      sctl::omp_par::scan(&send_size[0],&send_disp[0],num_p);
     }
   }
   //sctl::Profile::Toc();
@@ -1754,7 +1760,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
     std::vector<MPI_size_t> recv_disp(num_p,0);
     MPI_Alltoall(&send_size[0], 1, par::Mpi_datatype<MPI_size_t>::value(),
                  &recv_size[0], 1, par::Mpi_datatype<MPI_size_t>::value(), Comm().GetMPI_Comm());
-    omp_par::scan(&recv_size[0],&recv_disp[0],num_p);
+    sctl::omp_par::scan(&recv_size[0],&recv_disp[0],num_p);
     recv_length=recv_size[num_p-1]+recv_disp[num_p-1];
     if(recv_buff.size()<recv_length){
       recv_buff.resize(recv_length);
@@ -1783,7 +1789,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
 
     std::vector<Node_t*> recv_nodes(recv_data.size());
     { // Find received octants in tree.
-      omp_par::merge_sort(&mid_indx_pair[0], &mid_indx_pair[0]+mid_indx_pair.size());
+      sctl::omp_par::merge_sort(&mid_indx_pair[0], &mid_indx_pair[0]+mid_indx_pair.size());
       std::vector<size_t> indx(omp_p+1);
       for(int i=0;i<=omp_p;i++){
         size_t j=(mid_indx_pair.size()*i)/omp_p;
@@ -1873,20 +1879,27 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
       }
     }
 
-    std::vector<void*> shrd_data; // CommData for shared nodes.
+    std::vector<sctl::Iterator<char>> shrd_data; // CommData for shared nodes (owning).
     { // Set shrd_data
       for(size_t i=0;i<shared_data.size();i++){
         CommData& comm_data=*(CommData*)shared_data[i];
         assert(comm_data.mid.GetDepth()>0);
         size_t d=comm_data.mid.GetDepth()-1;
+        bool keep=false;
         if(d<shrd_mid.size() && shrd_mid[d].getDFD()>=mins[rank])
         for(size_t j=0;j<comm_data.usr_cnt;j++){
           if(comm_data.usr_mid[j]==shrd_mid[d]){
-            shrd_data.push_back(&comm_data);
+            keep=true;
             break;
           }
         }
-        if(shrd_data.size()==0 || shrd_data.back()!=&comm_data) this->memgr.free(&comm_data);
+        if(keep){
+          shrd_data.push_back(shared_data_storage[i]);
+          shared_data_storage[i]=sctl::NullIterator<char>();  // transferred
+        }else{
+          sctl::aligned_delete(shared_data_storage[i]);
+          shared_data_storage[i]=sctl::NullIterator<char>();
+        }
       }
       for(size_t i=0;i<recv_data.size();i++){
         CommData comm_data=*(CommData*)recv_data[i];
@@ -1895,8 +1908,8 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
         if(d<shrd_mid.size() && shrd_mid[d].getDFD()>=mins[rank])
         for(size_t j=0;j<comm_data.usr_cnt;j++){
           if(comm_data.usr_mid[j]==shrd_mid[d]){
-            char* data_ptr=(char*)this->memgr.malloc(comm_data.pkd_length);
-            mem::copy<char>(data_ptr, (char*)recv_data[i], comm_data.pkd_length);
+            sctl::Iterator<char> data_ptr=sctl::aligned_new<char>(comm_data.pkd_length);
+            sctl::omp_par::memcpy(data_ptr, (char*)recv_data[i], comm_data.pkd_length);
             shrd_data.push_back(data_ptr);
             break;
           }
@@ -1914,7 +1927,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
         std::vector<void*> send_data;
         std::vector<size_t> send_size;
         for(size_t i=0; i<shrd_data.size();i++){
-          CommData& comm_data=*(CommData*)shrd_data[i];
+          CommData& comm_data=*(CommData*)&shrd_data[i][0];
           size_t d=comm_data.mid.GetDepth()-1;
           bool shared=(d<shrd_mid.size() && shrd_mid[d].NextId().getDFD()>mins[send_pid].getDFD());
           if(shared) for(size_t j=0;j<comm_data.usr_cnt;j++){ // if send_pid already has this node then skip
@@ -1929,7 +1942,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
           send_size.push_back(comm_data.pkd_length);
         }
         std::vector<size_t> send_disp(send_data.size(),0);
-        if(send_data.size()) omp_par::scan(&send_size[0],&send_disp[0],send_data.size());
+        if(send_data.size()) sctl::omp_par::scan(&send_size[0],&send_disp[0],send_data.size());
         if(send_data.size()>0) send_length=send_size.back()+send_disp.back();
 
         // Resize send_buff.
@@ -1941,7 +1954,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
         #pragma omp parallel for
         for(size_t i=0;i<send_data.size();i++){
           CommData& comm_data=*(CommData*)send_data[i];
-          mem::copy<char>(&send_buff[send_disp[i]], (char*)&comm_data, comm_data.pkd_length);
+          sctl::omp_par::memcpy(&send_buff[send_disp[i]], (char*)&comm_data, comm_data.pkd_length);
         }
       }
 
@@ -2002,7 +2015,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
 //          recv_nodes[i]=srch_node;
 //        }
         { // Find received octants in tree.
-          if (mid_indx_pair.size()) omp_par::merge_sort(&mid_indx_pair[0], &mid_indx_pair[0]+mid_indx_pair.size());
+          if (mid_indx_pair.size()) sctl::omp_par::merge_sort(&mid_indx_pair[0], &mid_indx_pair[0]+mid_indx_pair.size());
           std::vector<size_t> indx(omp_p+1);
           for(int i=0;i<=omp_p;i++){
             size_t j=(mid_indx_pair.size()*i)/omp_p;
@@ -2099,8 +2112,8 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
           if(d<shrd_mid.size() && shrd_mid[d].isAncestor(mins[rank]) && shrd_mid[d].NextId().getDFD()>mins[send_pid].getDFD())
           for(size_t j=0;j<comm_data.usr_cnt;j++){
             if(comm_data.usr_mid[j]==shrd_mid[d]){
-              char* data_ptr=(char*)this->memgr.malloc(comm_data.pkd_length);
-              mem::copy<char>(data_ptr, (char*)recv_data[i], comm_data.pkd_length);
+              sctl::Iterator<char> data_ptr=sctl::aligned_new<char>(comm_data.pkd_length);
+              sctl::omp_par::memcpy(data_ptr, (char*)recv_data[i], comm_data.pkd_length);
               shrd_data.push_back(data_ptr);
               break;
             }
@@ -2111,7 +2124,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
 
     // Free data
     //sctl::Profile::Tic("Free",&this->Comm(), false, 5);
-    for(size_t i=0;i<shrd_data.size();i++) this->memgr.free(shrd_data[i]);
+    for(size_t i=0;i<shrd_data.size();i++) sctl::aligned_delete(shrd_data[i]);
     //sctl::Profile::Toc();
   }
   //sctl::Profile::Toc();

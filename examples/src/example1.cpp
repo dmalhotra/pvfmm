@@ -35,7 +35,7 @@ void nbody(vec& sl_coord, vec& sl_den,
     std::vector<sctl::Long> recv_cnts(np);
     comm.Allgather(sctl::Ptr2ConstItr<int>(&send_cnt, 1), 1,
                    sctl::Ptr2Itr<sctl::Long>(&recv_cnts[0], np), 1);
-    pvfmm::omp_par::scan(&recv_cnts[0], &recv_disp[0], np);
+    sctl::omp_par::scan(&recv_cnts[0], &recv_disp[0], np);
     comm.Allgatherv(sctl::Ptr2ConstItr<double>(&trg_coord[0], send_cnt), send_cnt,
                     sctl::Ptr2Itr<double>(&glb_trg_coord[0], glb_trg_coord.size()),
                     sctl::Ptr2ConstItr<sctl::Long>(&recv_cnts[0], np),
@@ -52,11 +52,11 @@ void nbody(vec& sl_coord, vec& sl_den,
 
       if(kernel_fn.ker_poten!=NULL)
       kernel_fn.ker_poten(&sl_coord[0], n_sl, &sl_den[0], 1,
-                          &glb_trg_coord[0]+a*PVFMM_COORD_DIM, b-a, &glb_trg_value_[0]+a*kernel_fn.ker_dim[1],NULL);
+                          &glb_trg_coord[0]+a*PVFMM_COORD_DIM, b-a, &glb_trg_value_[0]+a*kernel_fn.ker_dim[1]);
 
       if(kernel_fn.dbl_layer_poten!=NULL)
       kernel_fn.dbl_layer_poten(&dl_coord[0], n_dl, &dl_den[0], 1,
-                                &glb_trg_coord[0]+a*PVFMM_COORD_DIM, b-a, &glb_trg_value_[0]+a*kernel_fn.ker_dim[1],NULL);
+                                &glb_trg_coord[0]+a*PVFMM_COORD_DIM, b-a, &glb_trg_value_[0]+a*kernel_fn.ker_dim[1]);
     }
     comm.Allreduce(sctl::Ptr2ConstItr<double>(&glb_trg_value_[0], glb_trg_value_.size()),
                    sctl::Ptr2Itr<double>(&glb_trg_value[0], glb_trg_value.size()),
@@ -85,15 +85,12 @@ void fmm_test(size_t N, int mult_order, const sctl::Comm& comm){
   for(size_t i=0;i<sl_den.size();i++) sl_den[i]=drand48();
   for(size_t i=0;i<dl_den.size();i++) dl_den[i]=drand48();
 
-  // Create memory-manager (optional)
-  pvfmm::mem::MemoryManager mem_mgr(10000000);
-
   // Construct tree.
   size_t max_pts=600;
   auto* tree=PtFMM_CreateTree(sl_coord,sl_den, dl_coord, dl_den, trg_coord, comm, max_pts, pvfmm::FreeSpace);
 
   // Load matrices.
-  pvfmm::PtFMM<double> matrices(&mem_mgr);
+  pvfmm::PtFMM<double> matrices;
   matrices.Initialize(mult_order, comm, &kernel_fn);
 
   // FMM Setup

@@ -23,7 +23,8 @@ void Cheb_Node<Real_t>::Initialize(TreeNode* parent_, int path2node_, TreeNode::
 
   //Set Cheb_Node specific data.
   NodeData* cheb_data=dynamic_cast<NodeData*>(data_);
-  Cheb_Node<Real_t>* parent=dynamic_cast<Cheb_Node<Real_t>*>(this->Parent());
+  auto par_iter=this->Parent();
+  Cheb_Node<Real_t>* parent=(par_iter==sctl::NullIterator<TreeNode>()?nullptr:dynamic_cast<Cheb_Node<Real_t>*>(&par_iter[0]));
   if(cheb_data!=NULL){
     cheb_deg=cheb_data->cheb_deg;
     input_fn=cheb_data->input_fn;
@@ -73,13 +74,19 @@ void Cheb_Node<Real_t>::ClearData(){
 }
 
 template <class Real_t>
-TreeNode* Cheb_Node<Real_t>::NewNode(TreeNode* n_){
-  Cheb_Node<Real_t>* n=(n_==NULL?(Cheb_Node<Real_t>*)mem::aligned_new<Cheb_Node<Real_t> >():static_cast<Cheb_Node<Real_t>*>(n_));
+sctl::Iterator<TreeNode> Cheb_Node<Real_t>::NewNode(sctl::Iterator<TreeNode> n_){
+  sctl::Iterator<Cheb_Node<Real_t>> n;
+  if (n_==sctl::NullIterator<TreeNode>()) {
+    n=sctl::aligned_new<Cheb_Node<Real_t> >();
+  } else {
+    n=sctl::Iterator<Cheb_Node<Real_t>>(n_);
+  }
   n->cheb_deg=cheb_deg;
   n->input_fn=input_fn;
   n->data_dof=data_dof;
   n->tol=tol;
-  return MPI_Node<Real_t>::NewNode(n);
+  MPI_Node<Real_t>::NewNode(sctl::Iterator<TreeNode>(n));
+  return sctl::Iterator<TreeNode>(n);
 }
 
 template <class Real_t>

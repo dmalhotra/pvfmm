@@ -12,7 +12,7 @@
 
 #include <pvfmm_common.hpp>
 #include <precomp_mat.hpp>
-#include <mem_mgr.hpp>
+
 #include <fmm_pts.hpp>
 #include <vector.hpp>
 #include <matrix.hpp>
@@ -40,7 +40,7 @@ class FMM_Cheb: public FMM_Pts<FMMNode>{
 
    public:
 
-    virtual FMM_Data<Real_t>* NewData(){ return (FMMData*)mem::aligned_new<FMMData>();}
+    virtual sctl::Iterator<FMM_Data<Real_t>> NewData(){ return sctl::Iterator<FMM_Data<Real_t>>(sctl::aligned_new<FMMData>());}
 
     //FMM specific node data.
     Vector<Real_t> cheb_out;
@@ -49,7 +49,7 @@ class FMM_Cheb: public FMM_Pts<FMMNode>{
   /**
    * \brief Constructor.
    */
-  FMM_Cheb(mem::MemoryManager* mem_mgr=NULL){};
+  FMM_Cheb(){};
 
   /**
    * \brief Virtual destructor.

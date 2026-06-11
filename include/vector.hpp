@@ -57,6 +57,11 @@ class Vector{
 
   Vector(const Vector& V);
 
+  // Move-construct: transfer ownership of data_ptr / dev to the new Vector,
+  // leaving the source empty. The implicit move would shallow-copy data_ptr,
+  // causing a double-free when both Vectors are destroyed. This is harmless
+  // under pvfmm's old MemoryManager (free silently tolerated double-free) but
+  // sctl::MemoryManager (used after Phase 3) asserts on it.
   Vector(const std::vector<T>& V);
 
   ~Vector();

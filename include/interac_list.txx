@@ -11,7 +11,6 @@
 #include <cassert>
 
 #include <parUtils.h>
-#include <ompUtils.h>
 
 namespace pvfmm{
 
@@ -128,8 +127,8 @@ void InteracList<Node_t>::BuildList(Node_t* n, Mat_Type t){
     }
     case D2D_Type:
     {
-      if(n->IsGhost() || n->Parent()==NULL) return;
-      Node_t* p=(Node_t*)n->Parent();
+      if(n->IsGhost() || n->Parent()==sctl::NullIterator<TreeNode>()) return;
+      Node_t* p=(Node_t*)&n->Parent()[0];
       int p2n=n->Path2Node();
       {
         rel_coord[0]=-1+(p2n & 1?2:0);
@@ -148,8 +147,8 @@ void InteracList<Node_t>::BuildList(Node_t* n, Mat_Type t){
     }
     case U0_Type:
     {
-      if(n->IsGhost() || n->Parent()==NULL || !n->IsLeaf()) return;
-      Node_t* p=(Node_t*)n->Parent();
+      if(n->IsGhost() || n->Parent()==sctl::NullIterator<TreeNode>() || !n->IsLeaf()) return;
+      Node_t* p=(Node_t*)&n->Parent()[0];
       int p2n=n->Path2Node();
       for(int i=0;i<n_collg;i++){
         Node_t* pc=(Node_t*)p->Colleague(i);
@@ -203,8 +202,8 @@ void InteracList<Node_t>::BuildList(Node_t* n, Mat_Type t){
     }
     case V_Type:
     {
-      if(n->IsGhost() || n->Parent()==NULL) return;
-      Node_t* p=(Node_t*)n->Parent();
+      if(n->IsGhost() || n->Parent()==sctl::NullIterator<TreeNode>()) return;
+      Node_t* p=(Node_t*)&n->Parent()[0];
       int p2n=n->Path2Node();
       for(int i=0;i<n_collg;i++){
         Node_t* pc=(Node_t*)p->Colleague(i);
@@ -257,8 +256,8 @@ void InteracList<Node_t>::BuildList(Node_t* n, Mat_Type t){
     }
     case X_Type:
     {
-      if(n->IsGhost() || n->Parent()==NULL) return;
-      Node_t* p=(Node_t*)n->Parent();
+      if(n->IsGhost() || n->Parent()==sctl::NullIterator<TreeNode>()) return;
+      Node_t* p=(Node_t*)&n->Parent()[0];
       int p2n=n->Path2Node();
       for(int i=0;i<n_collg;i++){
         Node_t* pc=(Node_t*)p->Colleague(i);
@@ -381,7 +380,7 @@ void InteracList<Node_t>::InitList(int max_r, int min_r, int step, Mat_Type t){
     int c[3]={i,j,k};
     class_size_hash[class_hash(c)]++;
   }
-  omp_par::scan(&class_size_hash[0], &class_disp_hash[0], PVFMM_MAX_COORD_HASH);
+  sctl::omp_par::scan(&class_size_hash[0], &class_disp_hash[0], PVFMM_MAX_COORD_HASH);
 
   size_t count_=0;
   for(int k=-max_r;k<=max_r;k+=step)

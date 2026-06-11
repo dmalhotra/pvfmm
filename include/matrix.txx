@@ -14,7 +14,7 @@
 
 #include <device_wrapper.hpp>
 #include <mat_utils.hpp>
-#include <mem_mgr.hpp>
+
 #include <profile.hpp>
 
 namespace pvfmm{
@@ -51,8 +51,8 @@ Matrix<T>::Matrix(size_t dim1, size_t dim2, sctl::Iterator<T> data_, bool own_da
   own_data=own_data_;
   if(own_data){
     if(dim[0]*dim[1]>0){
-      data_ptr=mem::aligned_new<T>(dim[0]*dim[1]);
-      if(data_!=sctl::NullIterator<T>()) mem::copy<T>(data_ptr,(sctl::ConstIterator<T>)data_,dim[0]*dim[1]);
+      data_ptr=sctl::aligned_new<T>(dim[0]*dim[1]);
+      if(data_!=sctl::NullIterator<T>()) sctl::omp_par::copy((sctl::ConstIterator<T>)data_,(sctl::ConstIterator<T>)data_+(sctl::Long)(dim[0]*dim[1]),data_ptr);
     }else data_ptr=sctl::NullIterator<T>();
   }else
     data_ptr=data_;
@@ -65,8 +65,8 @@ Matrix<T>::Matrix(const Matrix<T>& M){
   dim[1]=M.dim[1];
   own_data=true;
   if(dim[0]*dim[1]>0){
-    data_ptr=mem::aligned_new<T>(dim[0]*dim[1]);
-    mem::copy<T>(data_ptr,(sctl::ConstIterator<T>)M.data_ptr,dim[0]*dim[1]);
+    data_ptr=sctl::aligned_new<T>(dim[0]*dim[1]);
+    sctl::omp_par::copy((sctl::ConstIterator<T>)M.data_ptr,(sctl::ConstIterator<T>)M.data_ptr+(sctl::Long)(dim[0]*dim[1]),data_ptr);
   }else
     data_ptr=sctl::NullIterator<T>();
   dev.dev_ptr=(uintptr_t)NULL;
@@ -77,7 +77,7 @@ Matrix<T>::~Matrix(){
   FreeDevice(false);
   if(own_data){
     if(data_ptr!=sctl::NullIterator<T>()){
-      mem::aligned_delete<T>(data_ptr);
+      sctl::aligned_delete<T>(data_ptr);
     }
   }
   data_ptr=sctl::NullIterator<T>();
@@ -113,7 +113,7 @@ void Matrix<T>::ReInit(size_t dim1, size_t dim2, sctl::Iterator<T> data_, bool o
   if(own_data_ && own_data && dim[0]*dim[1]>=dim1*dim2){
     if(dim[0]*dim[1]!=dim1*dim2) FreeDevice(false);
     dim[0]=dim1; dim[1]=dim2;
-    if(data_!=sctl::NullIterator<T>()) mem::copy<T>(data_ptr,(sctl::ConstIterator<T>)data_,dim[0]*dim[1]);
+    if(data_!=sctl::NullIterator<T>()) sctl::omp_par::copy((sctl::ConstIterator<T>)data_,(sctl::ConstIterator<T>)data_+(sctl::Long)(dim[0]*dim[1]),data_ptr);
   }else{
     Matrix<T> tmp(dim1,dim2,data_,own_data_);
     this->Swap(tmp);
@@ -228,7 +228,7 @@ Matrix<T>& Matrix<T>::operator=(const Matrix<T>& M){
       ReInit(M.dim[0],M.dim[1]);
     }
     dim[0]=M.dim[0]; dim[1]=M.dim[1];
-    if(dim[0]*dim[1]>0) mem::copy<T>(data_ptr,(sctl::ConstIterator<T>)M.data_ptr,dim[0]*dim[1]);
+    if(dim[0]*dim[1]>0) sctl::omp_par::copy((sctl::ConstIterator<T>)M.data_ptr,(sctl::ConstIterator<T>)M.data_ptr+(sctl::Long)(dim[0]*dim[1]),data_ptr);
   }
   return *this;
 }
@@ -474,9 +474,9 @@ void Matrix<T>::SVD(Matrix<T>& tU, Matrix<T>& tS, Matrix<T>& tVT){
   int wssize1 = 5*(m<n?m:n);
   wssize = (wssize>wssize1?wssize:wssize1);
 
-  T* wsbuf = (T*)mem::aligned_new<T>(wssize);
+  sctl::ScratchBuf<T> wsbuf_scratch(wssize);
+  T* wsbuf = &wsbuf_scratch.begin()[0];
   pvfmm::mat::svd(&JOBU, &JOBVT, &m, &n, &M[0][0], &m, &tS[0][0], &tVT[0][0], &m, &tU[0][0], &k, wsbuf, &wssize, &INFO);
-  mem::aligned_delete<T>(wsbuf);
 
   if(INFO!=0) std::cout<<INFO<<'\n';
   assert(INFO==0);

@@ -8,7 +8,7 @@
 #include <cmath>
 
 #include <matrix.hpp>
-#include <mem_mgr.hpp>
+
 
 namespace pvfmm{
 
@@ -70,10 +70,16 @@ void MPI_Node<T>::SetCoord(MortonId& mid){
 }
 
 template <class T>
-TreeNode* MPI_Node<T>::NewNode(TreeNode* n_){
-  MPI_Node<Real_t>* n=(n_?static_cast<MPI_Node<Real_t>*>(n_):(MPI_Node<Real_t>*)mem::aligned_new<MPI_Node<Real_t> >());
+sctl::Iterator<TreeNode> MPI_Node<T>::NewNode(sctl::Iterator<TreeNode> n_){
+  sctl::Iterator<MPI_Node<Real_t>> n;
+  if (n_==sctl::NullIterator<TreeNode>()) {
+    n=sctl::aligned_new<MPI_Node<Real_t> >();
+  } else {
+    n=sctl::Iterator<MPI_Node<Real_t>>(n_);
+  }
   n->max_pts=max_pts;
-  return TreeNode::NewNode(n);
+  TreeNode::NewNode(sctl::Iterator<TreeNode>(n));
+  return sctl::Iterator<TreeNode>(n);
 }
 
 template <class T>
@@ -226,7 +232,7 @@ void MPI_Node<T>::Truncate(){
         for(int i=0;i<nchld;i++){
           Vector<Real_t>& chld_vec=*chld_pt_coord[i][j];
           if(chld_vec.Dim()>0){
-            mem::copy<Real_t>(&vec[vec_size],&chld_vec[0],chld_vec.Dim());
+            sctl::omp_par::memcpy(&vec[vec_size], &chld_vec[0], chld_vec.Dim());
             vec_size+=chld_vec.Dim();
           }
         }
@@ -244,7 +250,7 @@ void MPI_Node<T>::Truncate(){
         for(int i=0;i<nchld;i++){
           Vector<Real_t>& chld_vec=*chld_pt_value[i][j];
           if(chld_vec.Dim()>0){
-            mem::copy<Real_t>(&vec[vec_size],&chld_vec[0],chld_vec.Dim());
+            sctl::omp_par::memcpy(&vec[vec_size], &chld_vec[0], chld_vec.Dim());
             vec_size+=chld_vec.Dim();
           }
         }
@@ -262,7 +268,7 @@ void MPI_Node<T>::Truncate(){
         for(int i=0;i<nchld;i++){
           Vector<size_t>& chld_vec=*chld_pt_scatter[i][j];
           if(chld_vec.Dim()>0){
-            mem::copy<size_t>(&vec[vec_size],&chld_vec[0],chld_vec.Dim());
+            sctl::omp_par::memcpy(&vec[vec_size], &chld_vec[0], chld_vec.Dim());
             vec_size+=chld_vec.Dim();
           }
         }
@@ -321,7 +327,7 @@ PackedData MPI_Node<T>::Pack(bool ghost, void* buff_ptr, size_t offset){
       const size_t vec_dim = vec.Dim();
       std::memcpy(data_ptr, &vec_dim, sizeof(size_t)); data_ptr+=sizeof(size_t);
       if(vec.Dim()>0 && data_ptr!=(char*)&vec[0])
-        mem::copy<Real_t>((Real_t*)data_ptr, &vec[0], vec.Dim());
+        sctl::omp_par::memcpy((Real_t*)data_ptr, &vec[0], vec.Dim());
       data_ptr+=vec.Dim()*sizeof(Real_t);
     }else{
       std::memcpy(data_ptr, &zero, sizeof(size_t)); data_ptr+=sizeof(size_t);
@@ -331,7 +337,7 @@ PackedData MPI_Node<T>::Pack(bool ghost, void* buff_ptr, size_t offset){
       const size_t vec_dim = vec.Dim();
       std::memcpy(data_ptr, &vec_dim, sizeof(size_t)); data_ptr+=sizeof(size_t);
       if(vec.Dim()>0 && data_ptr!=(char*)&vec[0])
-        mem::copy<Real_t>((Real_t*)data_ptr, &vec[0], vec.Dim());
+        sctl::omp_par::memcpy((Real_t*)data_ptr, &vec[0], vec.Dim());
       data_ptr+=vec.Dim()*sizeof(Real_t);
     }else{
       std::memcpy(data_ptr, &zero, sizeof(size_t)); data_ptr+=sizeof(size_t);
@@ -341,7 +347,7 @@ PackedData MPI_Node<T>::Pack(bool ghost, void* buff_ptr, size_t offset){
       const size_t vec_dim = vec.Dim();
       std::memcpy(data_ptr, &vec_dim, sizeof(size_t)); data_ptr+=sizeof(size_t);
       if(vec.Dim()>0 && data_ptr!=(char*)&vec[0])
-        mem::copy<size_t>((size_t*)data_ptr, &vec[0], vec.Dim());
+        sctl::omp_par::memcpy((size_t*)data_ptr, &vec[0], vec.Dim());
       data_ptr+=vec.Dim()*sizeof(size_t);
     }else{
       std::memcpy(data_ptr, &zero, sizeof(size_t));

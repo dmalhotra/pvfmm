@@ -67,6 +67,7 @@ class Matrix{
 
   Matrix(const Matrix<T>& M);
 
+  // See Vector<T>'s move ctor — same rationale.
   ~Matrix();
 
   void Swap(Matrix<T>& M);

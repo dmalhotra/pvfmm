@@ -9,8 +9,8 @@ namespace pvfmm{
 
 template <class TreeNode>
 Tree<TreeNode>::~Tree(){
-  if(RootNode()!=NULL){
-    mem::aligned_delete(root_node);
+  if(root_node!=sctl::NullIterator<Node_t>()){
+    sctl::aligned_delete(root_node);
   }
 }
 
@@ -20,8 +20,8 @@ void Tree<TreeNode>::Initialize(typename Node_t::NodeData* init_data_){
   max_depth=init_data_->max_depth;
   if(max_depth>PVFMM_MAX_DEPTH) max_depth=PVFMM_MAX_DEPTH;
 
-  if(root_node) mem::aligned_delete(root_node);
-  root_node=(Node_t*)mem::aligned_new<Node_t>();
+  if(root_node!=sctl::NullIterator<Node_t>()) sctl::aligned_delete(root_node);
+  root_node=sctl::aligned_new<Node_t>();
   root_node->Initialize(NULL,0,init_data_);
 }
 
@@ -47,7 +47,7 @@ void Tree<TreeNode>::RefineTree(){
 
 template <class TreeNode>
 TreeNode* Tree<TreeNode>::PreorderFirst(){
-  return root_node;
+  return (root_node==sctl::NullIterator<Node_t>()?NULL:&root_node[0]);
 }
 
 template <class TreeNode>
@@ -63,8 +63,9 @@ TreeNode* Tree<TreeNode>::PreorderNxt(Node_t* curr_node){
   Node_t* node=curr_node;
   while(true){
     int i=node->Path2Node()+1;
-    node=(Node_t*)node->Parent();
-    if(node==NULL) return NULL;
+    auto par=node->Parent();
+    if(par==sctl::NullIterator<TreeNode>()) return NULL;
+    node=(Node_t*)&par[0];
 
     for(;i<n;i++)
       if(node->Child(i)!=NULL)
@@ -74,7 +75,7 @@ TreeNode* Tree<TreeNode>::PreorderNxt(Node_t* curr_node){
 
 template <class TreeNode>
 TreeNode* Tree<TreeNode>::PostorderFirst(){
-  Node_t* node=root_node;
+  Node_t* node=&root_node[0];
 
   int n=(1UL<<dim);
   while(true){
@@ -93,8 +94,9 @@ TreeNode* Tree<TreeNode>::PostorderNxt(Node_t* curr_node){
   Node_t* node=curr_node;
 
   int j=node->Path2Node()+1;
-  node=(Node_t*)node->Parent();
-  if(node==NULL) return NULL;
+  auto par=node->Parent();
+  if(par==sctl::NullIterator<TreeNode>()) return NULL;
+  node=(Node_t*)&par[0];
 
   int n=(1UL<<dim);
   for(;j<n;j++){

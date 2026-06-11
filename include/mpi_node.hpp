@@ -130,7 +130,7 @@ class MPI_Node: public TreeNode{
    * \brief Allocate a new object of the same type (as the derived class) and
    * return a pointer to it type cast as (TreeNode*).
    */
-  virtual TreeNode* NewNode(TreeNode* n_=NULL);
+  virtual sctl::Iterator<TreeNode> NewNode(sctl::Iterator<TreeNode> n_=sctl::NullIterator<TreeNode>());
 
   /**
    * \brief Evaluates and returns the subdivision condition for this node.

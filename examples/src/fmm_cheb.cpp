@@ -504,6 +504,7 @@ void fmm_test(int test_case, size_t N, size_t M, bool unif, int mult_order, int 
 
 int main(int argc, char **argv){
   sctl::Comm::MPI_Init(&argc, &argv);
+  sctl::Profile::Enable(true);
 
   sctl::Comm comm = sctl::Comm::World();
   if(comm.Size()>8){ // Remove slow processors.

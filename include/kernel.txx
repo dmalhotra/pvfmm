@@ -11,7 +11,7 @@
 #include <vector>
 #include <sctl.hpp>
 
-#include <mem_mgr.hpp>
+
 #include <profile.hpp>
 #include <vector.hpp>
 #include <matrix.hpp>
@@ -160,7 +160,7 @@ void Kernel<T>::Initialize(bool verbose) const{
     trg_scal.Resize(ker_dim[1]); trg_scal.SetZero();
     if(scale_invar){
       Matrix<T> b(ker_dim[0]*ker_dim[1]+1,1); b.SetZero();
-      mem::copy<T>(&b[0][0],&M_scal[0][0],ker_dim[0]*ker_dim[1]);
+      sctl::omp_par::memcpy(&b[0][0], &M_scal[0][0], ker_dim[0]*ker_dim[1]);
 
       Matrix<T> M(ker_dim[0]*ker_dim[1]+1,ker_dim[0]+ker_dim[1]); M.SetZero();
       M[ker_dim[0]*ker_dim[1]][0]=1;
@@ -947,7 +947,7 @@ void Kernel<T>::BuildMatrix(T* r_src, int src_cnt,
       std::vector<T> v_src(ker_dim[0],0);
       v_src[j]=1.0;
       ker_poten(&r_src[i*dim], 1, &v_src[0], 1, r_trg, trg_cnt,
-                &k_out[(i*ker_dim[0]+j)*trg_cnt*ker_dim[1]], NULL);
+                &k_out[(i*ker_dim[0]+j)*trg_cnt*ker_dim[1]]);
     }
 }
 
@@ -958,39 +958,23 @@ void Kernel<T>::BuildMatrix(T* r_src, int src_cnt,
  */
 template <class Real_t, int SRC_DIM, int TRG_DIM, void (*uKernel)(Matrix<Real_t>&, Matrix<Real_t>&, Matrix<Real_t>&, Matrix<Real_t>&)>
 [[deprecated("generic_kernel interface now replaced by easier/cleaner/potentially faster GenericKernel struct")]]
-void generic_kernel(Real_t* r_src, int src_cnt, Real_t* v_src, int dof, Real_t* r_trg, int trg_cnt, Real_t* v_trg, mem::MemoryManager* mem_mgr){
+void generic_kernel(Real_t* r_src, int src_cnt, Real_t* v_src, int dof, Real_t* r_trg, int trg_cnt, Real_t* v_trg){
   assert(dof==1);
   int VecLen=8;
   if(sizeof(Real_t)==sizeof( float)) VecLen=8;
   if(sizeof(Real_t)==sizeof(double)) VecLen=4;
 
-  #define STACK_BUFF_SIZE 4096
-  Real_t stack_buff[STACK_BUFF_SIZE+PVFMM_MEM_ALIGN];
-  Real_t* buff=NULL;
-
   Matrix<Real_t> src_coord;
   Matrix<Real_t> src_value;
   Matrix<Real_t> trg_coord;
   Matrix<Real_t> trg_value;
+  size_t src_cnt_=((src_cnt+VecLen-1)/VecLen)*VecLen;
+  size_t trg_cnt_=((trg_cnt+VecLen-1)/VecLen)*VecLen;
+  size_t buff_size=src_cnt_*(PVFMM_COORD_DIM+SRC_DIM)+
+                   trg_cnt_*(PVFMM_COORD_DIM+TRG_DIM);
+  sctl::ScratchBuf<Real_t> buff_scratch(buff_size);
   { // Rearrange data in src_coord, src_coord, trg_coord, trg_value
-    size_t src_cnt_, trg_cnt_; // counts after zero padding
-    src_cnt_=((src_cnt+VecLen-1)/VecLen)*VecLen;
-    trg_cnt_=((trg_cnt+VecLen-1)/VecLen)*VecLen;
-
-    size_t buff_size=src_cnt_*(PVFMM_COORD_DIM+SRC_DIM)+
-                     trg_cnt_*(PVFMM_COORD_DIM+TRG_DIM);
-    if(buff_size>STACK_BUFF_SIZE){ // Allocate buff
-      buff=(Real_t*)mem::aligned_new<Real_t>(buff_size, mem_mgr);
-    }
-
-    Real_t* buff_ptr=buff;
-    if(!buff_ptr){ // use stack_buff
-      uintptr_t ptr=(uintptr_t)stack_buff;
-      static uintptr_t     ALIGN_MINUS_ONE=PVFMM_MEM_ALIGN-1;
-      static uintptr_t NOT_ALIGN_MINUS_ONE=~ALIGN_MINUS_ONE;
-      ptr=((ptr+ALIGN_MINUS_ONE) & NOT_ALIGN_MINUS_ONE);
-      buff_ptr=(Real_t*)ptr;
-    }
+    Real_t* buff_ptr=&buff_scratch.begin()[0];
     src_coord.ReInit(PVFMM_COORD_DIM, src_cnt_,buff_ptr,false);  buff_ptr+=PVFMM_COORD_DIM*src_cnt_;
     src_value.ReInit(  SRC_DIM, src_cnt_,buff_ptr,false);  buff_ptr+=  SRC_DIM*src_cnt_;
     trg_coord.ReInit(PVFMM_COORD_DIM, trg_cnt_,buff_ptr,false);  buff_ptr+=PVFMM_COORD_DIM*trg_cnt_;
@@ -1051,9 +1035,7 @@ void generic_kernel(Real_t* r_src, int src_cnt, Real_t* v_src, int dof, Real_t* 
       }
     }
   }
-  if(buff){ // Free memory: buff
-    mem::aligned_delete<Real_t>(buff);
-  }
+  // buff_scratch freed automatically at scope exit.
 }
 
 template <class uKernel> template <class Real, int digits>
@@ -1134,15 +1116,11 @@ void GenericKernel<uKernel>::BuildMatrix(Real* r_src, int src_cnt, Real* r_trg, 
   #endif
 }
 
-template <class uKernel> template <class Real, int digits> void GenericKernel<uKernel>::Eval(Real* r_src, int src_cnt, Real* v_src, int dof, Real* r_trg, int trg_cnt, Real* v_trg, mem::MemoryManager* mem_mgr) {
+template <class uKernel> template <class Real, int digits> void GenericKernel<uKernel>::Eval(Real* r_src, int src_cnt, Real* v_src, int dof, Real* r_trg, int trg_cnt, Real* v_trg) {
   static constexpr int digits_ = (digits==-1 ? (int)(sctl::TypeTraits<Real>::SigBits*0.3010299957) : digits); // log(2)/log(10) = 0.3010299957
   static constexpr int VecLen = sctl::DefaultVecLen<Real>();
   using RealVec = sctl::Vec<Real, VecLen>;
   assert(dof==1);
-
-  #define STACK_BUFF_SIZE 4096
-  alignas(sizeof(RealVec)) Real stack_buff[STACK_BUFF_SIZE];
-  Real* buff=nullptr;
 
   Matrix<Real> src_coord;
   Matrix<Real> src_value;
@@ -1151,15 +1129,11 @@ template <class uKernel> template <class Real, int digits> void GenericKernel<uK
 
   const int src_cnt_ = ((src_cnt + VecLen-1)/VecLen)*VecLen; // count after zero padding
   const int trg_cnt_ = ((trg_cnt + VecLen-1)/VecLen)*VecLen; // count after zero padding
+  const int buff_size = src_cnt_*(DIM + KDIM0)+
+                        trg_cnt_*(DIM + KDIM1);
+  sctl::ScratchBuf<Real> buff_scratch(buff_size);
   { // Rearrange data in src_coord, src_coord, trg_coord, trg_value
-    int buff_size = src_cnt_*(DIM + KDIM0)+
-                    trg_cnt_*(DIM + KDIM1);
-    if (buff_size > STACK_BUFF_SIZE) { // Allocate buff
-      buff = (Real*)mem::aligned_new<Real>(buff_size, mem_mgr);
-    }
-
-    Real* buff_ptr = buff;
-    if (!buff_ptr) buff_ptr = (Real*)stack_buff;
+    Real* buff_ptr = &buff_scratch.begin()[0];
     src_coord.ReInit(  DIM, src_cnt_,buff_ptr,false);  buff_ptr+=DIM  *src_cnt_;
     src_value.ReInit(KDIM0, src_cnt_,buff_ptr,false);  buff_ptr+=KDIM0*src_cnt_;
     trg_coord.ReInit(  DIM, trg_cnt_,buff_ptr,false);  buff_ptr+=DIM  *trg_cnt_;
@@ -1259,9 +1233,7 @@ template <class uKernel> template <class Real, int digits> void GenericKernel<uK
       }
     }
   }
-  if(buff){ // Free memory: buff
-    mem::aligned_delete<Real>(buff);
-  }
+  // buff_scratch freed automatically at scope exit.
 }
 
 

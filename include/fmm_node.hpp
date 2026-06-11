@@ -52,7 +52,7 @@ class FMM_Node: public Node{
    */
   FMM_Node(){
     Node_t();
-    fmm_data=NULL;
+    fmm_data=sctl::NullIterator<FMM_Data<Real_t>>();
   }
 
   /**
@@ -100,13 +100,14 @@ class FMM_Node: public Node{
   /**
    * \brief Returns reference to fmm_data.
    */
-  FMM_Data<Real_t>*& FMMData(){return fmm_data;}
+  FMM_Data<Real_t>* FMMData(){return (fmm_data==sctl::NullIterator<FMM_Data<Real_t>>() ? NULL : &fmm_data[0]);}
+  void SetFMMData(sctl::Iterator<FMM_Data<Real_t>> data){fmm_data=data;}
 
   /**
    * \brief Allocate a new object of the same type (as the derived class) and
    * return a pointer to it type cast as (TreeNode*).
    */
-  virtual TreeNode* NewNode(TreeNode* n_=NULL);
+  virtual sctl::Iterator<TreeNode> NewNode(sctl::Iterator<TreeNode> n_=sctl::NullIterator<TreeNode>());
 
   /**
    * \brief Evaluates and returns the subdivision condition for this node.
@@ -175,7 +176,7 @@ class FMM_Node: public Node{
 
  private:
 
-  FMM_Data<Real_t>* fmm_data; //FMM specific data.
+  sctl::Iterator<FMM_Data<Real_t>> fmm_data; //FMM specific data.
   Vector<char> pkd_data; //Temporary variable for storing packed data.
 };
 
