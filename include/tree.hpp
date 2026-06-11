@@ -61,27 +61,27 @@ class Tree{
    * \brief Returns a pointer to the first node in preorder traversal (the root
    * node).
    */
-  Node_t* PreorderFirst();
+  sctl::Iterator<Node_t> PreorderFirst();
 
   /**
    * \brief Returns a pointer to the next node in preorder traversal.
    */
-  Node_t* PreorderNxt(Node_t* curr_node);
+  sctl::Iterator<Node_t> PreorderNxt(sctl::Iterator<Node_t> curr_node);
 
   /**
    * \brief Returns a pointer to the first node in postorder traversal.
    */
-  Node_t* PostorderFirst();
+  sctl::Iterator<Node_t> PostorderFirst();
 
   /**
    * \brief Returns a pointer to the next node in postorder traversal.
    */
-  Node_t* PostorderNxt(Node_t* curr_node);
+  sctl::Iterator<Node_t> PostorderNxt(sctl::Iterator<Node_t> curr_node);
 
   /**
    * \brief Returns a list of all nodes in preorder traversal.
    */
-  std::vector<TreeNode*>& GetNodeList();
+  std::vector<sctl::Iterator<TreeNode>>& GetNodeList();
 
   /**
    * \brief Dimension of the tree.
@@ -93,7 +93,7 @@ class Tree{
   int dim;              // dimension of the tree
   sctl::Iterator<Node_t> root_node;    // owning iterator for root node
   int max_depth;        // maximum tree depth
-  std::vector<TreeNode*> node_lst;
+  std::vector<sctl::Iterator<TreeNode>> node_lst;
 };
 
 }//end namespace

@@ -553,22 +553,22 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
 
     std::vector<Node_t*> nodes;
     { // Get list of leaf nodes.
-      std::vector<Node_t*>& all_nodes=ctx->tree->GetNodeList();
+      std::vector<sctl::Iterator<Node_t>>& all_nodes=ctx->tree->GetNodeList();
       for(size_t i=0;i<all_nodes.size();i++){
         if(all_nodes[i]->IsLeaf() && !all_nodes[i]->IsGhost()){
-          nodes.push_back(all_nodes[i]);
+          nodes.push_back(&all_nodes[i][0]);
         }
       }
     }
 
     pvfmm::MortonId min_mid;
     { // Get first MortonId
-      Node_t* n=ctx->tree->PreorderFirst();
-      while(n!=NULL){
+      sctl::Iterator<Node_t> n=ctx->tree->PreorderFirst();
+      while(n!=sctl::NullIterator<Node_t>()){
         if(!n->IsGhost() && n->IsLeaf()) break;
         n=ctx->tree->PreorderNxt(n);
       }
-      assert(n!=NULL);
+      assert(n!=sctl::NullIterator<Node_t>());
       min_mid=n->GetMortonId();
     }
 
@@ -728,9 +728,9 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
       long nleaf=0, maxdepth=0;
       std::vector<size_t> all_nodes(PVFMM_MAX_DEPTH+1,0);
       std::vector<size_t> leaf_nodes(PVFMM_MAX_DEPTH+1,0);
-      std::vector<Node_t*>& nodes=ctx->tree->GetNodeList();
+      std::vector<sctl::Iterator<Node_t>>& nodes=ctx->tree->GetNodeList();
       for(size_t i=0;i<nodes.size();i++){
-        Node_t* n=nodes[i];
+        sctl::Iterator<Node_t> n=nodes[i];
         if(!n->IsGhost()) all_nodes[n->Depth()]++;
         if(!n->IsGhost() && n->IsLeaf()){
           leaf_nodes[n->Depth()]++;
@@ -780,16 +780,15 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
   { // Get target potential.
     pvfmm::Vector<Real> trg_value;
     { // Get trg data.
-      Node_t* n=NULL;
-      n=ctx->tree->PreorderFirst();
-      while(n!=NULL){
+      sctl::Iterator<Node_t> n=ctx->tree->PreorderFirst();
+      while(n!=sctl::NullIterator<Node_t>()){
         if(!n->IsGhost() && n->IsLeaf()) break;
         n=ctx->tree->PreorderNxt(n);
       }
-      assert(n!=NULL);
+      assert(n!=sctl::NullIterator<Node_t>());
 
       size_t trg_size=0;
-      const std::vector<Node_t*>& nodes=ctx->tree->GetNodeList();
+      const std::vector<sctl::Iterator<Node_t>>& nodes=ctx->tree->GetNodeList();
       #pragma omp parallel for reduction(+:trg_size)
       for(size_t i=0;i<nodes.size();i++){
         if(nodes[i]->IsLeaf() && !nodes[i]->IsGhost()){

@@ -64,7 +64,7 @@ class MPI_Tree: public Tree<TreeNode>{
    * \brief Find the prticular node. If subdiv is true then subdivide
    * (non-ghost) nodes to create this node.
    */
-  TreeNode* FindNode(MortonId& key, bool subdiv, TreeNode* start=NULL);
+  sctl::Iterator<TreeNode> FindNode(MortonId& key, bool subdiv, sctl::Iterator<TreeNode> start=sctl::NullIterator<TreeNode>());
 
   /**
    * \brief Adaptive coarsening of distributed tree.

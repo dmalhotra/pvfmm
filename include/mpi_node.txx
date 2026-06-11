@@ -17,17 +17,18 @@ MPI_Node<T>::~MPI_Node(){
 }
 
 template <class T>
-void MPI_Node<T>::Initialize(TreeNode* parent_,int path2node_, TreeNode::NodeData* data_){
+void MPI_Node<T>::Initialize(sctl::Iterator<TreeNode> parent_,int path2node_, TreeNode::NodeData* data_){
   TreeNode::Initialize(parent_,path2node_,data_);
 
   //Set node coordinates.
   Real_t coord_offset=((Real_t)1.0)/((Real_t)(((uint64_t)1)<<Depth()));
-  if(!parent_){
+  if(parent==sctl::NullIterator<TreeNode>()){
     for(int j=0;j<dim;j++) coord[j]=0;
-  }else if(parent_){
+  }else{
+    sctl::Iterator<MPI_Node<Real_t>> parent_node=(sctl::Iterator<MPI_Node<Real_t>>)parent;
     int flag=1;
     for(int j=0;j<dim;j++){
-      coord[j]=((MPI_Node<Real_t>*)parent_)->coord[j]+
+      coord[j]=parent_node->coord[j]+
                ((Path2Node() & flag)?coord_offset:0.0f);
       flag=flag<<1;
     }
@@ -44,8 +45,9 @@ void MPI_Node<T>::Initialize(TreeNode* parent_,int path2node_, TreeNode::NodeDat
     pt_coord=mpi_data->pt_coord;
     pt_value=mpi_data->pt_value;
   }else if(parent!=sctl::NullIterator<TreeNode>()){
-    max_pts =((MPI_Node<T>*)&parent[0])->max_pts;
-    SetGhost(((MPI_Node<T>*)&parent[0])->IsGhost());
+    sctl::Iterator<MPI_Node<T>> parent_node=(sctl::Iterator<MPI_Node<T>>)parent;
+    max_pts =parent_node->max_pts;
+    SetGhost(parent_node->IsGhost());
   }
 }
 
@@ -89,8 +91,8 @@ bool MPI_Node<T>::SubdivCond(){
   if(this->Depth()>=this->max_depth-1) return false;
   if(!this->IsLeaf()){ // If has non-leaf children, then return true.
     for(int i=0;i<n;i++){
-      MPI_Node<Real_t>* ch=static_cast<MPI_Node<Real_t>*>(this->Child(i));
-      assert(ch); //ch==NULL should never happen
+      sctl::Iterator<MPI_Node<Real_t>> ch=(sctl::Iterator<MPI_Node<Real_t>>)this->Child(i);
+      assert(ch!=sctl::NullIterator<MPI_Node<Real_t>>()); //null child should never happen
       if(!ch->IsLeaf() || ch->IsGhost()) return true;
     }
   }
@@ -101,7 +103,7 @@ bool MPI_Node<T>::SubdivCond(){
   if(!this->IsLeaf()){
     size_t pt_vec_size=0;
     for(int i=0;i<n;i++){
-      MPI_Node<Real_t>* ch=static_cast<MPI_Node<Real_t>*>(this->Child(i));
+      sctl::Iterator<MPI_Node<Real_t>> ch=(sctl::Iterator<MPI_Node<Real_t>>)this->Child(i);
       pt_vec_size+=ch->pt_coord.Dim();
     }
     return pt_vec_size/Dim()>max_pts;
@@ -111,9 +113,9 @@ bool MPI_Node<T>::SubdivCond(){
 }
 
 template <class T>
-void MPI_Node<T>::Subdivide(){
+void MPI_Node<T>::Subdivide(sctl::Iterator<TreeNode> self_){
   if(!this->IsLeaf()) return;
-  TreeNode::Subdivide();
+  TreeNode::Subdivide(self_);
   int nchld=(1UL<<this->Dim());
 
   if(!IsGhost()){ // Partition point coordinates and values.
@@ -126,7 +128,7 @@ void MPI_Node<T>::Subdivide(){
     std::vector<std::vector<Vector<Real_t>*> > chld_pt_value(nchld);
     std::vector<std::vector<Vector<size_t>*> > chld_pt_scatter(nchld);
     for(int i=0;i<nchld;i++){
-      static_cast<MPI_Node<Real_t>*>((MPI_Node<T>*)this->Child(i))
+      ((sctl::Iterator<MPI_Node<Real_t>>)this->Child(i))
         ->NodeDataVec(chld_pt_coord[i], chld_pt_value[i], chld_pt_scatter[i]);
     }
 
@@ -213,7 +215,7 @@ void MPI_Node<T>::Truncate(){
     std::vector<std::vector<Vector<Real_t>*> > chld_pt_value(nchld);
     std::vector<std::vector<Vector<size_t>*> > chld_pt_scatter(nchld);
     for(int i=0;i<nchld;i++){
-      static_cast<MPI_Node<Real_t>*>((MPI_Node<T>*)this->Child(i))
+      ((sctl::Iterator<MPI_Node<Real_t>>)this->Child(i))
         ->NodeDataVec(chld_pt_coord[i], chld_pt_value[i], chld_pt_scatter[i]);
     }
 

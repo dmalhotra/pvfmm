@@ -23,15 +23,15 @@ void CheckFMMOutput(pvfmm::FMM_Tree<FMM_Mat_t>* mytree, const pvfmm::Kernel<type
   // Read source data.
   std::vector<Real_t> src_coord;
   std::vector<Real_t> src_value;
-  FMMNode_t* n=static_cast<FMMNode_t*>(mytree->PreorderFirst());
-  while(n!=NULL){
+  sctl::Iterator<FMMNode_t> n=mytree->PreorderFirst();
+  while(n!=sctl::NullIterator<FMMNode_t>()){
     if(n->IsLeaf() && !n->IsGhost()){
       pvfmm::Vector<Real_t>& coord_vec=n->src_coord;
       pvfmm::Vector<Real_t>& value_vec=n->src_value;
       for(size_t i=0;i<coord_vec.Dim();i++) src_coord.push_back(coord_vec[i]);
       for(size_t i=0;i<value_vec.Dim();i++) src_value.push_back(value_vec[i]);
     }
-    n=static_cast<FMMNode_t*>(mytree->PreorderNxt(n));
+    n=mytree->PreorderNxt(n);
   }
   long long glb_src_cnt=0, src_cnt=src_coord.size()/3;
   c1.Allreduce(sctl::Ptr2ConstItr<long long>(&src_cnt, 1), sctl::Ptr2Itr<long long>(&glb_src_cnt, 1), 1, sctl::CommOp::SUM);
@@ -47,8 +47,8 @@ void CheckFMMOutput(pvfmm::FMM_Tree<FMM_Mat_t>* mytree, const pvfmm::Kernel<type
   std::vector<Real_t> trg_poten_fmm;
   long long trg_iter=0;
   size_t step_size=(size_t)(1+glb_src_cnt*glb_src_cnt*1e-9/p);
-  n=static_cast<FMMNode_t*>(mytree->PreorderFirst());
-  while(n!=NULL){
+  n=mytree->PreorderFirst();
+  while(n!=sctl::NullIterator<FMMNode_t>()){
     if(n->IsLeaf() && !n->IsGhost()){
       pvfmm::Vector<Real_t>& coord_vec=n->trg_coord;
       pvfmm::Vector<Real_t>& poten_vec=n->trg_value;
@@ -60,7 +60,7 @@ void CheckFMMOutput(pvfmm::FMM_Tree<FMM_Mat_t>* mytree, const pvfmm::Kernel<type
         trg_iter++;
       }
     }
-    n=static_cast<FMMNode_t*>(mytree->PreorderNxt(n));
+    n=mytree->PreorderNxt(n);
   }
   int trg_cnt=trg_coord.size()/3;
   int send_cnt=trg_cnt*3;
@@ -125,10 +125,10 @@ void CheckChebOutput(FMMTree_t* mytree, typename TestFn<typename FMMTree_t::Real
   int dof=r_node->DataDOF()/fn_dof;
   std::vector<FMMNode_t*> nodes;
   {
-    FMMNode_t* node=static_cast<FMMNode_t*>(mytree->PreorderFirst());
-    while(node!=NULL){
-      if(node->IsLeaf() && !node->IsGhost()) nodes.push_back(node);
-      node=static_cast<FMMNode_t*>(mytree->PreorderNxt((FMMNode_t*)node));
+    sctl::Iterator<FMMNode_t> node=mytree->PreorderFirst();
+    while(node!=sctl::NullIterator<FMMNode_t>()){
+      if(node->IsLeaf() && !node->IsGhost()) nodes.push_back(&node[0]);
+      node=mytree->PreorderNxt(node);
     }
     if(nodes.size()==0) return;
   }

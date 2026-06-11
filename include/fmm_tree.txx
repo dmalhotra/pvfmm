@@ -29,7 +29,7 @@ void FMM_Tree<FMM_Mat_t>::Initialize(typename Node_t::NodeData* init_data) {
 
   sctl::Profile::Tic("InitFMMData",&this->Comm(),true,5);
   { //Initialize FMM data.
-    std::vector<Node_t*>& nodes=this->GetNodeList();
+    std::vector<sctl::Iterator<Node_t>>& nodes=this->GetNodeList();
     #pragma omp parallel for
     for(size_t i=0;i<nodes.size();i++){
       if(nodes[i]->FMMData()==NULL) nodes[i]->SetFMMData(sctl::Iterator<FMM_Data<Real_t>>(sctl::aligned_new<typename FMM_Mat_t::FMMData>()));
@@ -100,13 +100,13 @@ void FMM_Tree<FMM_Mat_t>::SetupFMM(FMM_Mat_t* fmm_mat_) {
 
   sctl::Profile::Tic("CollectNodeData",&this->Comm(),false,3);
   //Build node list.
-  Node_t* n=dynamic_cast<Node_t*>(this->PostorderFirst());
+  sctl::Iterator<Node_t> n=this->PostorderFirst();
   std::vector<Node_t*> all_nodes;
-  while(n!=NULL){
+  while(n!=sctl::NullIterator<Node_t>()){
     n->pt_cnt[0]=0;
     n->pt_cnt[1]=0;
-    all_nodes.push_back(n);
-    n=static_cast<Node_t*>(this->PostorderNxt(n));
+    all_nodes.push_back(&n[0]);
+    n=this->PostorderNxt(n);
   }
   //Collect node data into continuous array.
   std::vector<Vector<Node_t*> > node_lists; // TODO: Remove this parameter, not really needed
@@ -271,9 +271,9 @@ void FMM_Tree<FMM_Mat_t>::UpwardPass() {
   int max_depth=0;
   { // Get max_depth
     int max_depth_loc=0;
-    std::vector<Node_t*>& nodes=this->GetNodeList();
+    std::vector<sctl::Iterator<Node_t>>& nodes=this->GetNodeList();
     for(size_t i=0;i<nodes.size();i++){
-      Node_t* n=nodes[i];
+      sctl::Iterator<Node_t> n=nodes[i];
       if(n->Depth()>max_depth_loc) max_depth_loc=n->Depth();
     }
     MPI_Allreduce(&max_depth_loc, &max_depth, 1, MPI_INT, MPI_MAX, this->Comm().GetMPI_Comm());
@@ -302,13 +302,13 @@ void FMM_Tree<FMM_Mat_t>::BuildInteracLists() {
   std::vector<Node_t*> n_list_src;
   std::vector<Node_t*> n_list_trg;
   { // Build n_list
-    std::vector<Node_t*>& nodes=this->GetNodeList();
+    std::vector<sctl::Iterator<Node_t>>& nodes=this->GetNodeList();
     for(size_t i=0;i<nodes.size();i++){
       if(!nodes[i]->IsGhost() && nodes[i]->pt_cnt[0]){
-        n_list_src.push_back(nodes[i]);
+        n_list_src.push_back(&nodes[i][0]);
       }
       if(!nodes[i]->IsGhost() && nodes[i]->pt_cnt[1]){
-        n_list_trg.push_back(nodes[i]);
+        n_list_trg.push_back(&nodes[i][0]);
       }
     }
   }
@@ -365,42 +365,43 @@ void FMM_Tree<FMM_Mat_t>::MultipoleReduceBcast() {
   size_t bit_mask=1;
   size_t max_child=(1UL<<this->Dim());
 
-  //Initialize initial send nodes. Tree-owned entries use Ptr2Itr (non-owning
-  //view). Freshly-allocated entries (later, from NewNode) store the owning
+  //Initialize initial send nodes. Tree-owned entries hold the node's
+  //allocation iterator (non-owning copy via TreeNode::self / Parent()).
+  //Freshly-allocated entries (later, from NewNode) store the owning
   //iterator and are aligned_delete'd in cleanup.
   std::vector<sctl::Iterator<Node_t>> send_nodes[2];
 
   //Initialize send_node[0]
-  Node_t* tmp_node=static_cast<Node_t*>(this->RootNode());
+  sctl::Iterator<Node_t> tmp_node=this->root_node;
   assert(!tmp_node->IsGhost());
   while(!tmp_node->IsLeaf()){
-    Node_t* tmp_node_=NULL;
+    sctl::Iterator<Node_t> tmp_node_=sctl::NullIterator<Node_t>();
     for(size_t i=0;i<max_child;i++){
-      tmp_node_=static_cast<Node_t*>(tmp_node->Child(i));
-      if(tmp_node_!=NULL) if(!tmp_node_->IsGhost()) break;
+      tmp_node_=(sctl::Iterator<Node_t>)tmp_node->Child(i);
+      if(tmp_node_!=sctl::NullIterator<Node_t>()) if(!tmp_node_->IsGhost()) break;
     }
-    tmp_node=tmp_node_; assert(tmp_node!=NULL);
+    tmp_node=tmp_node_; assert(tmp_node!=sctl::NullIterator<Node_t>());
   }
   int n[2];
   n[0]=tmp_node->Depth()+1;
   send_nodes[0].resize(n[0]);
-  send_nodes[0][n[0]-1]=sctl::Ptr2Itr<Node_t>(tmp_node,1);
+  send_nodes[0][n[0]-1]=tmp_node;
   for(int i=n[0]-1;i>0;i--)
     send_nodes[0][i-1]=(sctl::Iterator<Node_t>)send_nodes[0][i]->Parent();
 
   //Initialize send_node[1]
-  tmp_node=static_cast<Node_t*>(this->RootNode());
+  tmp_node=this->root_node;
   while(!tmp_node->IsLeaf()){
-    Node_t* tmp_node_=NULL;
+    sctl::Iterator<Node_t> tmp_node_=sctl::NullIterator<Node_t>();
     for(int i=max_child-1;i>=0;i--){
-      tmp_node_=static_cast<Node_t*>(tmp_node->Child(i));
-      if(tmp_node_!=NULL) if(!tmp_node_->IsGhost()) break;
+      tmp_node_=(sctl::Iterator<Node_t>)tmp_node->Child(i);
+      if(tmp_node_!=sctl::NullIterator<Node_t>()) if(!tmp_node_->IsGhost()) break;
     }
-    tmp_node=tmp_node_; assert(tmp_node!=NULL);
+    tmp_node=tmp_node_; assert(tmp_node!=sctl::NullIterator<Node_t>());
   }
   n[1]=tmp_node->Depth()+1;
   send_nodes[1].resize(n[1]);
-  send_nodes[1][n[1]-1]=sctl::Ptr2Itr<Node_t>(tmp_node,1);
+  send_nodes[1][n[1]-1]=tmp_node;
   for(int i=n[1]-1;i>0;i--)
     send_nodes[1][i-1]=(sctl::Iterator<Node_t>)send_nodes[1][i]->Parent();
 
@@ -563,10 +564,10 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
   int max_depth=0;
   { // Build leaf node list
     int max_depth_loc=0;
-    std::vector<Node_t*>& nodes=this->GetNodeList();
+    std::vector<sctl::Iterator<Node_t>>& nodes=this->GetNodeList();
     for(size_t i=0;i<nodes.size();i++){
-      Node_t* n=nodes[i];
-      if(!n->IsGhost() && n->IsLeaf()) leaf_nodes.push_back(n);
+      sctl::Iterator<Node_t> n=nodes[i];
+      if(!n->IsGhost() && n->IsLeaf()) leaf_nodes.push_back(&n[0]);
       if(n->Depth()>max_depth_loc) max_depth_loc=n->Depth();
     }
     MPI_Allreduce(&max_depth_loc, &max_depth, 1, MPI_INT, MPI_MAX, this->Comm().GetMPI_Comm());
@@ -743,7 +744,9 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
 
 template <class FMM_Mat_t>
 void FMM_Tree<FMM_Mat_t>::Copy_FMMOutput() {
-  std::vector<Node_t*>& all_nodes=this->GetNodeList();
+  std::vector<sctl::Iterator<Node_t>>& node_iters=this->GetNodeList();
+  std::vector<Node_t*> all_nodes(node_iters.size());
+  for(size_t i=0;i<node_iters.size();i++) all_nodes[i]=&node_iters[i][0];
   int omp_p=omp_get_max_threads();
 
   // Copy output to the tree.

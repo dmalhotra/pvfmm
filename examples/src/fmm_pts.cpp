@@ -95,7 +95,7 @@ void fmm_test(int ker, size_t N, size_t M, Real_t b, int dist, int mult_order, i
     //Initialize FMM Tree
     sctl::Profile::Tic("SetSrcTrg",&comm,true);
     { // Set src and trg points
-      std::vector<FMMNode_t*>& node=tree.GetNodeList();
+      std::vector<sctl::Iterator<FMMNode_t>>& node=tree.GetNodeList();
       #pragma omp parallel for
       for(size_t i=0;i<node.size();i++){
         node[i]->  trg_coord.ReInit(node[i]->  pt_coord.Dim(), node[i]->  pt_coord.Begin());
@@ -122,7 +122,7 @@ void fmm_test(int ker, size_t N, size_t M, Real_t b, int dist, int mult_order, i
       { // build trg_scatter
         std::vector<Real_t> trg_value_;
         std::vector<size_t> trg_scatter_;
-        std::vector<FMMNode_t*>& nodes=tree.GetNodeList();
+        std::vector<sctl::Iterator<FMMNode_t>>& nodes=tree.GetNodeList();
         for(size_t i=0;i<nodes.size();i++){
           if(nodes[i]->IsLeaf() && !nodes[i]->IsGhost()){
             pvfmm::Vector<Real_t>& trg_value=nodes[i]->trg_value;
@@ -144,9 +144,9 @@ void fmm_test(int ker, size_t N, size_t M, Real_t b, int dist, int mult_order, i
     long nleaf=0, maxdepth=0;
     std::vector<size_t> all_nodes(PVFMM_MAX_DEPTH+1,0);
     std::vector<size_t> leaf_nodes(PVFMM_MAX_DEPTH+1,0);
-    std::vector<FMMNode_t*>& nodes=tree.GetNodeList();
+    std::vector<sctl::Iterator<FMMNode_t>>& nodes=tree.GetNodeList();
     for(size_t i=0;i<nodes.size();i++){
-      FMMNode_t* n=nodes[i];
+      sctl::Iterator<FMMNode_t> n=nodes[i];
       if(!n->IsGhost()) all_nodes[n->Depth()]++;
       if(!n->IsGhost() && n->IsLeaf()){
         leaf_nodes[n->Depth()]++;

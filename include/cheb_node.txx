@@ -18,7 +18,7 @@ template <class Real_t>
 Cheb_Node<Real_t>::~Cheb_Node(){}
 
 template <class Real_t>
-void Cheb_Node<Real_t>::Initialize(TreeNode* parent_, int path2node_, TreeNode::NodeData* data_) {
+void Cheb_Node<Real_t>::Initialize(sctl::Iterator<TreeNode> parent_, int path2node_, TreeNode::NodeData* data_) {
   MPI_Node<Real_t>::Initialize(parent_,path2node_,data_);
 
   //Set Cheb_Node specific data.
@@ -96,8 +96,8 @@ bool Cheb_Node<Real_t>::SubdivCond(){
   if(!this->IsLeaf()){ // If has non-leaf children, then return true.
     int n=(1UL<<this->Dim());
     for(int i=0;i<n;i++){
-      Cheb_Node<Real_t>* ch=static_cast<Cheb_Node<Real_t>*>(this->Child(i));
-      assert(ch!=NULL); //This should never happen
+      sctl::Iterator<Cheb_Node<Real_t>> ch=(sctl::Iterator<Cheb_Node<Real_t>>)this->Child(i);
+      assert(ch!=sctl::NullIterator<Cheb_Node<Real_t>>()); //This should never happen
       if(!ch->IsLeaf() || ch->IsGhost()) return true;
     }
   }
@@ -131,9 +131,9 @@ bool Cheb_Node<Real_t>::SubdivCond(){
 }
 
 template <class Real_t>
-void Cheb_Node<Real_t>::Subdivide() {
+void Cheb_Node<Real_t>::Subdivide(sctl::Iterator<TreeNode> self_) {
   if(!this->IsLeaf()) return;
-  MPI_Node<Real_t>::Subdivide();
+  MPI_Node<Real_t>::Subdivide(self_);
   if(cheb_deg<0 || cheb_coeff.Dim()==0 || !input_fn.IsEmpty()) return;
 
   std::vector<Real_t> x(cheb_deg+1);
@@ -157,7 +157,7 @@ void Cheb_Node<Real_t>::Subdivide() {
     child_cheb_coeff[i].Resize(data_dof*((cheb_deg+1)*(cheb_deg+2)*(cheb_deg+3))/6);
     cheb_approx<Real_t,Real_t>(&val[0],cheb_deg,data_dof,&(child_cheb_coeff[i][0]));
 
-    Cheb_Node<Real_t>* child=static_cast<Cheb_Node<Real_t>*>(this->Child(i));
+    sctl::Iterator<Cheb_Node<Real_t>> child=(sctl::Iterator<Cheb_Node<Real_t>>)this->Child(i);
     child->cheb_coeff=child_cheb_coeff[i];
     assert(child->cheb_deg==cheb_deg);
     assert(child->tol==tol);
@@ -367,7 +367,7 @@ void Cheb_Node<Real_t>::read_val(std::vector<Real_t> x,std::vector<Real_t> y, st
     std::vector<Real_t>& y1_=y1[(i/2)%2];
     std::vector<Real_t>& z1_=z1[(i/4)%2];
     if(x1_.size()>0 && y1_.size()>0 && z1_.size()>0){
-      static_cast<Cheb_Node<Real_t>*>(this->Child(i))->read_val(x1_,y1_,z1_,nx,ny,nz,&val[(i%2?indx[0]-&x[0]:0)+((i/2)%2?indx[1]-&y[0]:0)*nx+((i/4)%2?indx[2]-&z[0]:0)*nx*ny],show_ghost);
+      ((sctl::Iterator<Cheb_Node<Real_t>>)this->Child(i))->read_val(x1_,y1_,z1_,nx,ny,nz,&val[(i%2?indx[0]-&x[0]:0)+((i/2)%2?indx[1]-&y[0]:0)*nx+((i/4)%2?indx[2]-&z[0]:0)*nx*ny],show_ghost);
     }
   }
 }

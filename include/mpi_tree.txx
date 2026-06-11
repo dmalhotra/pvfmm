@@ -269,7 +269,7 @@ void MPI_Tree<TreeNode>::Initialize(typename Node_t::NodeData* init_data){
     rnode->SetGhost(false);
     for(int i=0;i<omp_p;i++){
       size_t idx=(lin_oct.Dim()*i)/omp_p;
-      Node_t* n=FindNode(lin_oct[idx], true);
+      sctl::Iterator<Node_t> n=FindNode(lin_oct[idx], true);
       assert(n->GetMortonId()==lin_oct[idx]);
       PVFMM_UNUSED(n);
     }
@@ -280,13 +280,13 @@ void MPI_Tree<TreeNode>::Initialize(typename Node_t::NodeData* init_data){
       size_t b=(lin_oct.Dim()*(i+1))/omp_p;
 
       size_t idx=a;
-      Node_t* n=FindNode(lin_oct[idx], false);
-      if(a==0) n=rnode;
-      while(n!=NULL && (idx<b || i==omp_p-1)){
+      sctl::Iterator<Node_t> n=FindNode(lin_oct[idx], false);
+      if(a==0) n=this->root_node;
+      while(n!=sctl::NullIterator<Node_t>() && (idx<b || i==omp_p-1)){
         n->SetGhost(false);
         MortonId dn=n->GetMortonId();
         if(idx<b && dn.isAncestor(lin_oct[idx])){
-          if(n->IsLeaf()) n->Subdivide();
+          if(n->IsLeaf()) n->Subdivide((sctl::Iterator<::pvfmm::TreeNode>)n);
         }else if(idx<b && dn==lin_oct[idx]){
           if(!n->IsLeaf()) n->Truncate();
           assert(n->IsLeaf());
@@ -315,19 +315,19 @@ void MPI_Tree<TreeNode>::CoarsenTree(){
 
   //Redistribute.
   {
-    Node_t* n=this->PostorderFirst();
-    while(n){
+    sctl::Iterator<Node_t> n=this->PostorderFirst();
+    while(n!=sctl::NullIterator<Node_t>()){
       if(n->IsLeaf() && !n->IsGhost()) break;
       n=this->PostorderNxt(n);
     }
     while(myrank){
-      Node_t* n_parent=(Node_t*)&n->Parent()[0];
-      Node_t* n_      =         n_parent;
-      while(n_ && !n_->IsLeaf()){
+      sctl::Iterator<Node_t> n_parent=(sctl::Iterator<Node_t>)n->Parent();
+      sctl::Iterator<Node_t> n_      =n_parent;
+      while(n_!=sctl::NullIterator<Node_t>() && !n_->IsLeaf()){
         n_=this->PostorderNxt(n_);
-        if(!n_) break;
+        if(n_==sctl::NullIterator<Node_t>()) break;
       }
-      if(!n_ || n_->IsGhost()) break;
+      if(n_==sctl::NullIterator<Node_t>() || n_->IsGhost()) break;
       if(n->Depth()<=n_->Depth()) break;
       if(n_->Depth()<=1) break;
       n=n_;
@@ -337,22 +337,22 @@ void MPI_Tree<TreeNode>::CoarsenTree(){
   }
 
   //Truncate ghost nodes and build node list
-  std::vector<Node_t*> leaf_nodes;
+  std::vector<sctl::Iterator<Node_t>> leaf_nodes;
   {
-    Node_t* n=this->PostorderFirst();
-    while(n!=NULL){
+    sctl::Iterator<Node_t> n=this->PostorderFirst();
+    while(n!=sctl::NullIterator<Node_t>()){
       if(n->IsLeaf() && !n->IsGhost()) break;
       n->Truncate();
       n->SetGhost(true);
       n->ClearData();
       n=this->PostorderNxt(n);
     }
-    while(n!=NULL){
+    while(n!=sctl::NullIterator<Node_t>()){
       if(n->IsLeaf() && n->IsGhost()) break;
       if(n->IsLeaf()) leaf_nodes.push_back(n);
       n=this->PreorderNxt(n);
     }
-    while(n!=NULL){
+    while(n!=sctl::NullIterator<Node_t>()){
       n->Truncate();
       n->SetGhost(true);
       n->ClearData();
@@ -373,9 +373,9 @@ void MPI_Tree<TreeNode>::CoarsenTree(){
   //Coarsen Tree.
   #pragma omp parallel for
   for(int i=0;i<omp_p;i++){
-    Node_t* n_=leaf_nodes[i*node_cnt/omp_p];
+    sctl::Iterator<Node_t> n_=leaf_nodes[i*node_cnt/omp_p];
     if(i*node_cnt/omp_p<(i+1)*node_cnt/omp_p)
-    while(n_!=NULL){
+    while(n_!=sctl::NullIterator<Node_t>()){
       MortonId n_mid=n_->GetMortonId();
       if(!n_->IsLeaf() && !n_mid.isAncestor(mid[i].getDFD()))
         if(i<omp_p-1? !n_mid.isAncestor(mid[i+1].getDFD()):true)
@@ -387,9 +387,9 @@ void MPI_Tree<TreeNode>::CoarsenTree(){
 
   //Truncate nodes along ancestors of splitters.
   for(int i=0;i<omp_p;i++){
-    Node_t* n_=FindNode(mid[i], false, this->RootNode());
+    sctl::Iterator<Node_t> n_=FindNode(mid[i], false, this->root_node);
     while(n_->Depth()>0){
-      n_=(Node_t*)&n_->Parent()[0];
+      n_=(sctl::Iterator<Node_t>)n_->Parent();
       if(!n_->SubdivCond()) n_->Truncate();
       else break;
     }
@@ -407,10 +407,10 @@ void MPI_Tree<TreeNode>::RefineTree(){
   MPI_Tree<TreeNode>::CoarsenTree();
 
   //Build node list.
-  std::vector<Node_t*> leaf_nodes;
+  std::vector<sctl::Iterator<Node_t>> leaf_nodes;
   {
-    Node_t* n=this->PostorderFirst();
-    while(n!=NULL){
+    sctl::Iterator<Node_t> n=this->PostorderFirst();
+    while(n!=sctl::NullIterator<Node_t>()){
       if(n->IsLeaf() && !n->IsGhost())
         leaf_nodes.push_back(n);
       n=this->PostorderNxt(n);
@@ -421,17 +421,17 @@ void MPI_Tree<TreeNode>::RefineTree(){
   //Adaptive subdivision of leaf nodes with load balancing.
   for(int l=0;l<this->max_depth;l++){
     //Subdivide nodes.
-    std::vector<std::vector<Node_t*> > leaf_nodes_(omp_p);
+    std::vector<std::vector<sctl::Iterator<Node_t>> > leaf_nodes_(omp_p);
     #pragma omp parallel for
     for(int i=0;i<omp_p;i++){
       size_t a=(leaf_nodes.size()* i   )/omp_p;
       size_t b=(leaf_nodes.size()*(i+1))/omp_p;
       for(size_t j=a;j<b;j++){
         if(leaf_nodes[j]->IsLeaf() && !leaf_nodes[j]->IsGhost()){
-          if(leaf_nodes[j]->SubdivCond()) leaf_nodes[j]->Subdivide();
+          if(leaf_nodes[j]->SubdivCond()) leaf_nodes[j]->Subdivide((sctl::Iterator<::pvfmm::TreeNode>)leaf_nodes[j]);
           if(!leaf_nodes[j]->IsLeaf())
             for(int k=0;k<n_child;k++)
-              leaf_nodes_[i].push_back((Node_t*)leaf_nodes[j]->Child(k));
+              leaf_nodes_[i].push_back((sctl::Iterator<Node_t>)leaf_nodes[j]->Child(k));
         }
       }
     }
@@ -455,8 +455,8 @@ void MPI_Tree<TreeNode>::RefineTree(){
 
       //Rebuild node list.
       leaf_nodes.clear();
-      Node_t* n=this->PostorderFirst();
-      while(n!=NULL){
+      sctl::Iterator<Node_t> n=this->PostorderFirst();
+      while(n!=sctl::NullIterator<Node_t>()){
         if(n->IsLeaf() && !n->IsGhost())
           leaf_nodes.push_back(n);
         n=this->PostorderNxt(n);
@@ -493,12 +493,12 @@ void MPI_Tree<TreeNode>::RedistNodes(MortonId* loc_min) {
   if(np==1)return;
 
   //Create a linear tree in dendro format.
-  Node_t* curr_node=this->PreorderFirst();
+  sctl::Iterator<Node_t> curr_node=this->PreorderFirst();
   std::vector<MortonId> in;
   std::vector<Node_t*> node_lst;
-  while(curr_node!=NULL){
+  while(curr_node!=sctl::NullIterator<Node_t>()){
     if(curr_node->IsLeaf() && !curr_node->IsGhost()){
-      node_lst.push_back(curr_node);
+      node_lst.push_back(&curr_node[0]);
       in.push_back(curr_node->GetMortonId());
     }
     curr_node=this->PreorderNxt(curr_node);
@@ -601,18 +601,18 @@ void MPI_Tree<TreeNode>::RedistNodes(MortonId* loc_min) {
   size_t node_iter=0;
   MortonId dn;
   node_lst.resize(recv_cnt);
-  Node_t* n=this->PreorderFirst();
-  while(n!=NULL && node_iter<recv_cnt){
+  sctl::Iterator<Node_t> n=this->PreorderFirst();
+  while(n!=sctl::NullIterator<Node_t>() && node_iter<recv_cnt){
     n->SetGhost(false);
     dn=n->GetMortonId();
     if(dn.isAncestor(out[node_iter]) && dn!=out[node_iter]){
       if(n->IsLeaf()){
         {
           n->SetGhost(true);
-          n->Subdivide();
+          n->Subdivide((sctl::Iterator<::pvfmm::TreeNode>)n);
           n->SetGhost(false);
           for(int j=0;j<nchld;j++){
-            Node_t* ch_node=(Node_t*)n->Child(j);
+            sctl::Iterator<Node_t> ch_node=(sctl::Iterator<Node_t>)n->Child(j);
             ch_node->SetGhost(false);
           }
         }
@@ -622,7 +622,7 @@ void MPI_Tree<TreeNode>::RedistNodes(MortonId* loc_min) {
         n->Truncate();
         n->SetGhost(false);
       }
-      node_lst[node_iter]=n;
+      node_lst[node_iter]=&n[0];
       node_iter++;
     }else{
       n->Truncate(); //This node does not belong to this process.
@@ -630,7 +630,7 @@ void MPI_Tree<TreeNode>::RedistNodes(MortonId* loc_min) {
     }
     n=this->PreorderNxt(n);
   }
-  while(n!=NULL){
+  while(n!=sctl::NullIterator<Node_t>()){
     n->Truncate();
     n->SetGhost(true);
     n=this->PreorderNxt(n);
@@ -649,16 +649,16 @@ void MPI_Tree<TreeNode>::RedistNodes(MortonId* loc_min) {
 
 
 template <class TreeNode>
-TreeNode* MPI_Tree<TreeNode>::FindNode(MortonId& key, bool subdiv,  TreeNode* start){
+sctl::Iterator<TreeNode> MPI_Tree<TreeNode>::FindNode(MortonId& key, bool subdiv,  sctl::Iterator<TreeNode> start){
   int num_child=1UL<<this->Dim();
-  Node_t* n=start;
-  if(n==NULL) n=this->RootNode();
+  sctl::Iterator<Node_t> n=start;
+  if(n==sctl::NullIterator<Node_t>()) n=this->root_node;
   while(n->GetMortonId()<key && (!n->IsLeaf()||subdiv)){
-    if(n->IsLeaf() && !n->IsGhost()) n->Subdivide();
+    if(n->IsLeaf() && !n->IsGhost()) n->Subdivide((sctl::Iterator<::pvfmm::TreeNode>)n);
     if(n->IsLeaf()) break;
     for(int j=0;j<num_child;j++){
-      if(((Node_t*)n->Child(j))->GetMortonId().NextId()>key){
-        n=(Node_t*)n->Child(j);
+      if(((sctl::Iterator<Node_t>)n->Child(j))->GetMortonId().NextId()>key){
+        n=(sctl::Iterator<Node_t>)n->Child(j);
         break;
       }
     }
@@ -930,9 +930,9 @@ void MPI_Tree<TreeNode>::Balance21(BoundaryType bndry) {
 
   //Using Dendro for balancing
   //Create a linear tree in dendro format.
-  Node_t* curr_node=this->PreorderFirst();
+  sctl::Iterator<Node_t> curr_node=this->PreorderFirst();
   std::vector<MortonId> in;
-  while(curr_node!=NULL){
+  while(curr_node!=sctl::NullIterator<Node_t>()){
     if(curr_node->IsLeaf() && !curr_node->IsGhost()){
       in.push_back(curr_node->GetMortonId());
     }
@@ -981,7 +981,7 @@ void MPI_Tree<TreeNode>::Balance21(BoundaryType bndry) {
     std::vector<MortonId> mins=GetMins();
     while(i<num_proc && new_mins[i]<mins[myrank]) i++; //TODO: Use binary search.
     for(;i<num_proc;i++){
-      Node_t* n=FindNode(new_mins[i], true);
+      sctl::Iterator<Node_t> n=FindNode(new_mins[i], true);
       if(n->IsGhost()) break;
       else assert(n->GetMortonId()==new_mins[i]);
     }
@@ -1001,7 +1001,7 @@ void MPI_Tree<TreeNode>::Balance21(BoundaryType bndry) {
   int omp_p=omp_get_max_threads();
   for(int i=0;i<omp_p;i++){
     size_t a=(out.size()*i)/omp_p;
-    Node_t* n=FindNode(out[a], true);
+    sctl::Iterator<Node_t> n=FindNode(out[a], true);
     assert(n->GetMortonId()==out[a]);
     PVFMM_UNUSED(n);
   }
@@ -1012,12 +1012,12 @@ void MPI_Tree<TreeNode>::Balance21(BoundaryType bndry) {
 
     MortonId dn;
     size_t node_iter=a;
-    Node_t* n=FindNode(out[node_iter], false);
-    while(n!=NULL && node_iter<b){
+    sctl::Iterator<Node_t> n=FindNode(out[node_iter], false);
+    while(n!=sctl::NullIterator<Node_t>() && node_iter<b){
       n->SetGhost(false);
       dn=n->GetMortonId();
       if(dn.isAncestor(out[node_iter]) && dn!=out[node_iter]){
-        if(n->IsLeaf()) n->Subdivide();
+        if(n->IsLeaf()) n->Subdivide((sctl::Iterator<::pvfmm::TreeNode>)n);
       }else if(dn==out[node_iter]){
         assert(n->IsLeaf());
         //if(!n->IsLeaf()){ //This should never happen
@@ -1033,7 +1033,7 @@ void MPI_Tree<TreeNode>::Balance21(BoundaryType bndry) {
       n=this->PreorderNxt(n);
     }
     if(i==omp_p-1){
-      while(n!=NULL){
+      while(n!=sctl::NullIterator<Node_t>()){
         n->Truncate();
         n->SetGhost(true);
         n=this->PreorderNxt(n);
@@ -1049,10 +1049,13 @@ void MPI_Tree<TreeNode>::Balance21_local(BoundaryType bndry){
   //SetColleagues(bndry);
 
   std::vector<std::vector<Node_t*> > node_lst(this->max_depth+1);
-  Node_t* curr_node=this->PreorderFirst();
-  while(curr_node!=NULL){
-    node_lst[curr_node->Depth()].push_back(curr_node);
-    curr_node=this->PreorderNxt(curr_node);
+  Node_t* curr_node=NULL;
+  {
+    sctl::Iterator<Node_t> it=this->PreorderFirst();
+    while(it!=sctl::NullIterator<Node_t>()){
+      node_lst[it->Depth()].push_back(&it[0]);
+      it=this->PreorderNxt(it);
+    }
   }
 
   int n1=sctl::pow<unsigned int>(3,this->Dim());
@@ -1076,12 +1079,12 @@ void MPI_Tree<TreeNode>::Balance21_local(BoundaryType bndry){
           if(c0[0]>0 && c0[0]<1)
           if(c0[1]>0 && c0[1]<1)
           if(c0[2]>0 && c0[2]<1){
-            Node_t* node=this->RootNode();
+            sctl::Iterator<Node_t> node=this->root_node;
             while(node->Depth()<i){
               if(node->IsLeaf()){
-                node->Subdivide();
+                node->Subdivide((sctl::Iterator<::pvfmm::TreeNode>)node);
                 for(int l=0;l<n2;l++){
-                  node_lst[node->Depth()+1].push_back((Node_t*)node->Child(l));
+                  node_lst[node->Depth()+1].push_back(&((sctl::Iterator<Node_t>)node->Child(l))[0]);
                   /*
                   SetColleagues(bndry,(Node_t*)node->Child(l));
                   for(int i_=0;i_<n1;i_++){
@@ -1095,7 +1098,7 @@ void MPI_Tree<TreeNode>::Balance21_local(BoundaryType bndry){
               int c_id=((c0[0]-c1[0])>s1?1:0)+
                        ((c0[1]-c1[1])>s1?2:0)+
                        ((c0[2]-c1[2])>s1?4:0);
-              node=(Node_t*)node->Child(c_id);
+              node=(sctl::Iterator<Node_t>)node->Child(c_id);
               /*if(node->Depth()==i){
                 c1=node->Coord();
                 std::cout<<(c0[0]-c1[0])-s1/2<<' '
@@ -1117,28 +1120,28 @@ void MPI_Tree<TreeNode>::SetColleagues(BoundaryType bndry, Node_t* node){
   int n2=(int)sctl::pow<unsigned int>(2,this->Dim());
 
   if(node==NULL){
-    Node_t* curr_node=this->PreorderFirst();
-    if(curr_node!=NULL){ // Set colleagues of root node
+    sctl::Iterator<Node_t> curr_node=this->PreorderFirst();
+    if(curr_node!=sctl::NullIterator<Node_t>()){ // Set colleagues of root node
       const auto colleague_idx = [](long x, long y, long z) {
         return (((z+1)*3+(y+1))*3+(x+1));
       };
       if(bndry==FreeSpace){
-        curr_node->SetColleague(curr_node, colleague_idx(0,0,0) );
+        curr_node->SetColleague(&curr_node[0], colleague_idx(0,0,0) );
       } else if (bndry==BoundaryType::PX) {
         for(long x = -1; x <= 1; x++) {
-          curr_node->SetColleague(curr_node, colleague_idx(x,0,0) );
+          curr_node->SetColleague(&curr_node[0], colleague_idx(x,0,0) );
         }
       } else if (bndry==BoundaryType::PXY) {
         for(long y = -1; y <= 1; y++) {
           for(long x = -1; x <= 1; x++) {
-            curr_node->SetColleague(curr_node, colleague_idx(x,y,0) );
+            curr_node->SetColleague(&curr_node[0], colleague_idx(x,y,0) );
           }
         }
       } else if (bndry==BoundaryType::PXYZ) {
         for(long z = -1; z <= 1; z++) {
           for(long y = -1; y <= 1; y++) {
             for(long x = -1; x <= 1; x++) {
-              curr_node->SetColleague(curr_node, colleague_idx(x,y,z) );
+              curr_node->SetColleague(&curr_node[0], colleague_idx(x,y,z) );
             }
           }
         }
@@ -1149,8 +1152,8 @@ void MPI_Tree<TreeNode>::SetColleagues(BoundaryType bndry, Node_t* node){
     }
 
     Vector<std::vector<Node_t*> > nodes(PVFMM_MAX_DEPTH);
-    while(curr_node!=NULL){
-      nodes[curr_node->Depth()].push_back(curr_node);
+    while(curr_node!=sctl::NullIterator<Node_t>()){
+      nodes[curr_node->Depth()].push_back(&curr_node[0]);
       curr_node=this->PreorderNxt(curr_node);
     }
     for(size_t i=0;i<PVFMM_MAX_DEPTH;i++){
@@ -1201,8 +1204,8 @@ void MPI_Tree<TreeNode>::SetColleagues(BoundaryType bndry, Node_t* node){
     Node_t* tmp_node2;
 
     for(int i=0;i<n1;i++)node->SetColleague(NULL,i);
-    parent_node=(Node_t*)&node->Parent()[0];
-    if(parent_node==NULL) return;
+    if(node->Parent()==sctl::NullIterator<::pvfmm::TreeNode>()) return;
+    parent_node=&((sctl::Iterator<Node_t>)node->Parent())[0];
 
     int l=node->Path2Node();
     for(int i=0;i<n1;i++){ //For each coll of the parent
@@ -1210,7 +1213,8 @@ void MPI_Tree<TreeNode>::SetColleagues(BoundaryType bndry, Node_t* node){
       if(tmp_node1!=NULL)
       if(!tmp_node1->IsLeaf()){
         for(int j=0;j<n2;j++){ //For each child
-          tmp_node2=(Node_t*)tmp_node1->Child(j);
+          sctl::Iterator<Node_t> child_iter=(sctl::Iterator<Node_t>)tmp_node1->Child(j);
+          tmp_node2=(child_iter==sctl::NullIterator<Node_t>()?NULL:&child_iter[0]);
           if(tmp_node2!=NULL){
 
             bool flag=true;
@@ -1244,8 +1248,8 @@ bool MPI_Tree<TreeNode>::CheckTree(){
   st<<"PID_"<<myrank<<" : ";
   std::string str;
 
-  Node_t* n=this->PostorderFirst();
-  while(n!=NULL){
+  sctl::Iterator<Node_t> n=this->PostorderFirst();
+  while(n!=sctl::NullIterator<Node_t>()){
     if(myrank<np-1) if(n->GetMortonId().getDFD()>=mins[myrank+1])break;
     if(n->GetMortonId()>=mins[myrank] && n->IsLeaf() && n->IsGhost()){
       std::cout<<n->GetMortonId()<<'\n';
@@ -1258,10 +1262,10 @@ bool MPI_Tree<TreeNode>::CheckTree(){
       assert(false);
     }
     if(!n->IsGhost() && n->Depth()>0)
-      assert(!((Node_t*)&n->Parent()[0])->IsGhost());
+      assert(!((sctl::Iterator<Node_t>)n->Parent())->IsGhost());
     n=this->PostorderNxt(n);
   }
-  while(n!=NULL){
+  while(n!=sctl::NullIterator<Node_t>()){
     if(n->IsLeaf() && !n->IsGhost()){
       st<<"non-ghost leaf node "<<n->GetMortonId()<<"; after last node.";
       str=st.str(); PVFMM_ASSERT_WITH_MSG(false,str.c_str());
@@ -1534,22 +1538,22 @@ void MPI_Tree<TreeNode>::ConstructLET_Hypercube(BoundaryType bndry){
   std::vector<Node_t*> shrd_nodes(shrd_data.size());
   for(size_t i=0;i<shrd_data.size();i++){ // Find shared nodes.
     MortonId& mid=*(MortonId*)shrd_data[i].data;
-    Node_t* srch_node=this->RootNode();
+    sctl::Iterator<Node_t> srch_node=this->root_node;
     while(srch_node->GetMortonId()!=mid){
-      Node_t* ch_node;
+      sctl::Iterator<Node_t> ch_node;
       if(srch_node->IsLeaf()){
         srch_node->SetGhost(true);
-        srch_node->Subdivide();
+        srch_node->Subdivide((sctl::Iterator<::pvfmm::TreeNode>)srch_node);
       }
       for(int j=nchld-1;j>=0;j--){
-        ch_node=(Node_t*)srch_node->Child(j);
+        ch_node=(sctl::Iterator<Node_t>)srch_node->Child(j);
         if(ch_node->GetMortonId()<=mid){
           srch_node=ch_node;
           break;
         }
       }
     }
-    shrd_nodes[i]=srch_node;
+    shrd_nodes[i]=&srch_node[0];
   }
   #pragma omp parallel for
   for(size_t i=0;i<shrd_data.size();i++){
@@ -1602,7 +1606,12 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
     MortonId mins_r0=mins[         rank+0         ].getDFD();
     MortonId mins_r1=mins[std::min(rank+1,num_p-1)].getDFD();
 
-    std::vector<TreeNode*> nodes=this->GetNodeList();
+    std::vector<TreeNode*> nodes;
+    { // Decay node iterators; entries are only used for member access.
+      std::vector<sctl::Iterator<TreeNode>>& node_iters=this->GetNodeList();
+      nodes.reserve(node_iters.size());
+      for(size_t i=0;i<node_iters.size();i++) nodes.push_back(&node_iters[i][0]);
+    }
     node_comm_data_iter=sctl::aligned_new<char>(sizeof(CommData)*nodes.size());
     node_comm_data=(CommData*)&node_comm_data_iter[0];
     #pragma omp parallel for
@@ -1806,15 +1815,15 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
       for(int tid=0;tid<omp_p;tid++){
         size_t j=indx[tid];
         MortonId& mid=mid_indx_pair[j].key;
-        Node_t* srch_node=this->RootNode();
+        sctl::Iterator<Node_t> srch_node=this->root_node;
         while(srch_node->GetMortonId()!=mid){
-          Node_t* ch_node;
+          sctl::Iterator<Node_t> ch_node;
           if(srch_node->IsLeaf()){
             srch_node->SetGhost(true);
-            srch_node->Subdivide();
+            srch_node->Subdivide((sctl::Iterator<::pvfmm::TreeNode>)srch_node);
           }
           for(int j=nchld-1;j>=0;j--){
-            ch_node=(Node_t*)srch_node->Child(j);
+            ch_node=(sctl::Iterator<Node_t>)srch_node->Child(j);
             if(ch_node->GetMortonId()<=mid){
               srch_node=ch_node;
               break;
@@ -1830,22 +1839,22 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
         for(size_t j=a;j<b;j++){ // Find shared nodes.
           size_t i=mid_indx_pair[j].data;
           MortonId& mid=mid_indx_pair[j].key;
-          Node_t* srch_node=this->RootNode();
+          sctl::Iterator<Node_t> srch_node=this->root_node;
           while(srch_node->GetMortonId()!=mid){
-            Node_t* ch_node;
+            sctl::Iterator<Node_t> ch_node;
             if(srch_node->IsLeaf()){
               srch_node->SetGhost(true);
-              srch_node->Subdivide();
+              srch_node->Subdivide((sctl::Iterator<::pvfmm::TreeNode>)srch_node);
             }
             for(int j=nchld-1;j>=0;j--){
-              ch_node=(Node_t*)srch_node->Child(j);
+              ch_node=(sctl::Iterator<Node_t>)srch_node->Child(j);
               if(ch_node->GetMortonId()<=mid){
                 srch_node=ch_node;
                 break;
               }
             }
           }
-          recv_nodes[i]=srch_node;
+          recv_nodes[i]=&srch_node[0];
         }
       }
     }
@@ -2032,15 +2041,15 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
           for(int tid=0;tid<omp_p;tid++){
             size_t j=indx[tid];
             MortonId& mid=mid_indx_pair[j].key;
-            Node_t* srch_node=this->RootNode();
+            sctl::Iterator<Node_t> srch_node=this->root_node;
             while(srch_node->GetMortonId()!=mid){
-              Node_t* ch_node;
+              sctl::Iterator<Node_t> ch_node;
               if(srch_node->IsLeaf()){
                 srch_node->SetGhost(true);
-                srch_node->Subdivide();
+                srch_node->Subdivide((sctl::Iterator<::pvfmm::TreeNode>)srch_node);
               }
               for(int j=nchld-1;j>=0;j--){
-                ch_node=(Node_t*)srch_node->Child(j);
+                ch_node=(sctl::Iterator<Node_t>)srch_node->Child(j);
                 if(ch_node->GetMortonId()<=mid){
                   srch_node=ch_node;
                   break;
@@ -2056,22 +2065,22 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
             for(size_t j=a;j<b;j++){ // Find shared nodes.
               size_t i=mid_indx_pair[j].data;
               MortonId& mid=mid_indx_pair[j].key;
-              Node_t* srch_node=this->RootNode();
+              sctl::Iterator<Node_t> srch_node=this->root_node;
               while(srch_node->GetMortonId()!=mid){
-                Node_t* ch_node;
+                sctl::Iterator<Node_t> ch_node;
                 if(srch_node->IsLeaf()){
                   srch_node->SetGhost(true);
-                  srch_node->Subdivide();
+                  srch_node->Subdivide((sctl::Iterator<::pvfmm::TreeNode>)srch_node);
                 }
                 for(int j=nchld-1;j>=0;j--){
-                  ch_node=(Node_t*)srch_node->Child(j);
+                  ch_node=(sctl::Iterator<Node_t>)srch_node->Child(j);
                   if(ch_node->GetMortonId()<=mid){
                     srch_node=ch_node;
                     break;
                   }
                 }
               }
-              recv_nodes[i]=srch_node;
+              recv_nodes[i]=&srch_node[0];
             }
           }
         }
@@ -2146,7 +2155,13 @@ void MPI_Tree<TreeNode>::Write2File(const char* fname, int lod){
   myrank = Comm().Rank();
 
   VTUData_t<VTKReal_t> vtu_data;
-  TreeNode::VTU_Data(vtu_data, this->GetNodeList(), lod);
+  std::vector<TreeNode*> vtu_nodes;
+  { // Decay node iterators; entries are only used for member access.
+    std::vector<sctl::Iterator<TreeNode>>& node_iters=this->GetNodeList();
+    vtu_nodes.reserve(node_iters.size());
+    for(size_t i=0;i<node_iters.size();i++) vtu_nodes.push_back(&node_iters[i][0]);
+  }
+  TreeNode::VTU_Data(vtu_data, vtu_nodes, lod);
 
   std::vector<VTKReal_t>&               coord=vtu_data.coord;
   std::vector<std::string>&             name =vtu_data.name;
@@ -2274,12 +2289,12 @@ void MPI_Tree<TreeNode>::Write2File(const char* fname, int lod){
 
 template <class TreeNode>
 const std::vector<MortonId>& MPI_Tree<TreeNode>::GetMins(){
-  Node_t* n=this->PreorderFirst();
-  while(n!=NULL){
+  sctl::Iterator<Node_t> n=this->PreorderFirst();
+  while(n!=sctl::NullIterator<Node_t>()){
     if(!n->IsGhost() && n->IsLeaf()) break;
     n=this->PreorderNxt(n);
   }
-  PVFMM_ASSERT_WITH_MSG(n!=NULL,"No non-ghost nodes found on this process.");
+  PVFMM_ASSERT_WITH_MSG(n!=sctl::NullIterator<Node_t>(),"No non-ghost nodes found on this process.");
 
   MortonId my_min;
   my_min=n->GetMortonId();

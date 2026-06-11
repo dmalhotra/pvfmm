@@ -48,7 +48,7 @@ class TreeNode{
   /**
    * \brief Initialize the node by passing the relevant data.
    */
-  virtual void Initialize(TreeNode* parent_, int path2node_, NodeData* data_) ;
+  virtual void Initialize(sctl::Iterator<TreeNode> parent_, int path2node_, NodeData* data_) ;
 
   /**
    * \brief Clear node data.
@@ -73,7 +73,11 @@ class TreeNode{
   /**
    * \brief Returns the child corresponding to the input parameter.
    */
-  TreeNode* Child(int id);
+  /**
+   * \brief Returns the stored (owning, full-length) allocation iterator of
+   * the child node, as carried forward from its allocation in Subdivide.
+   */
+  sctl::Iterator<TreeNode> Child(int id);
 
   /**
    * \brief Returns the iterator for the parent node.
@@ -100,9 +104,13 @@ class TreeNode{
   virtual bool SubdivCond();
 
   /**
-   * \brief Create child nodes and Initialize them.
+   * \brief Create child nodes and Initialize them. `self_` is this node's
+   * own allocation iterator (C++ erases it at the member-function boundary,
+   * so the caller must supply it). It is copied into the children's `parent`
+   * so node iterators are carried forward from allocation, never
+   * reconstructed from raw pointers.
    */
-  virtual void Subdivide() ;
+  virtual void Subdivide(sctl::Iterator<TreeNode> self_) ;
 
   /**
    * \brief Truncates the tree i.e. makes this a leaf node.

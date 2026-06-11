@@ -63,7 +63,7 @@ class FMM_Node: public Node{
   /**
    * \brief Initialize the node with relevant data.
    */
-  virtual void Initialize(TreeNode* parent_, int path2node_, TreeNode::NodeData*) ;
+  virtual void Initialize(sctl::Iterator<TreeNode> parent_, int path2node_, TreeNode::NodeData*) ;
 
   /**
    * \brief Returns list of coordinate and value vectors which need to be
@@ -118,7 +118,7 @@ class FMM_Node: public Node{
   /**
    * \brief Create child nodes and Initialize them.
    */
-  virtual void Subdivide() ;
+  virtual void Subdivide(sctl::Iterator<TreeNode> self_) ;
 
   /**
    * \brief Truncates the tree i.e. makes this a leaf node.

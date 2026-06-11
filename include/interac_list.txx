@@ -120,8 +120,8 @@ void InteracList<Node_t>::BuildList(Node_t* n, Mat_Type t){
         rel_coord[2]=-1+(j & 4?2:0);
         int c_hash = coord_hash(rel_coord);
         int idx=hash_lut[t][c_hash];
-        Node_t* chld=(Node_t*)n->Child(j);
-        if(idx>=0 && !chld->IsGhost()) interac_list[idx]=chld;
+        sctl::Iterator<Node_t> chld=(sctl::Iterator<Node_t>)n->Child(j);
+        if(idx>=0 && !chld->IsGhost()) interac_list[idx]=&chld[0];
       }
       break;
     }
@@ -193,7 +193,7 @@ void InteracList<Node_t>::BuildList(Node_t* n, Mat_Type t){
             int idx=hash_lut[t][c_hash];
             if(idx>=0){
               assert(col->Child(j)->IsLeaf()); //2:1 balanced
-              interac_list[idx]=(Node_t*)col->Child(j);
+              interac_list[idx]=&((sctl::Iterator<Node_t>)col->Child(j))[0];
             }
           }
         }
@@ -214,7 +214,7 @@ void InteracList<Node_t>::BuildList(Node_t* n, Mat_Type t){
             rel_coord[2]=((i/9)%3)*2-2+(j & 4?1:0)-(p2n & 4?1:0);
             int c_hash = coord_hash(rel_coord);
             int idx=hash_lut[t][c_hash];
-            if(idx>=0) interac_list[idx]=(Node_t*)pc->Child(j);
+            if(idx>=0) interac_list[idx]=&((sctl::Iterator<Node_t>)pc->Child(j))[0];
           }
         }
       }
@@ -248,7 +248,7 @@ void InteracList<Node_t>::BuildList(Node_t* n, Mat_Type t){
             rel_coord[2]=((i/9)%3)*4-4+(j & 4?2:0)-1;
             int c_hash = coord_hash(rel_coord);
             int idx=hash_lut[t][c_hash];
-            if(idx>=0) interac_list[idx]=(Node_t*)col->Child(j);
+            if(idx>=0) interac_list[idx]=&((sctl::Iterator<Node_t>)col->Child(j))[0];
           }
         }
       }

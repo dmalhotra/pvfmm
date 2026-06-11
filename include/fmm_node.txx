@@ -19,7 +19,7 @@ FMM_Node<Node>::~FMM_Node(){
 }
 
 template <class Node>
-void FMM_Node<Node>::Initialize(TreeNode* parent_,int path2node_, TreeNode::NodeData* data_){
+void FMM_Node<Node>::Initialize(sctl::Iterator<TreeNode> parent_,int path2node_, TreeNode::NodeData* data_){
   Node::Initialize(parent_,path2node_,data_);
 
   //Set FMM_Node specific data.
@@ -72,8 +72,8 @@ bool FMM_Node<Node>::SubdivCond(){
   if(this->Depth()>=this->max_depth-1) return false;
   if(!this->IsLeaf()){ // If has non-leaf children, then return true.
     for(int i=0;i<n;i++){
-      MPI_Node<Real_t>* ch=static_cast<MPI_Node<Real_t>*>(this->Child(i));
-      assert(ch!=NULL); //This should never happen
+      sctl::Iterator<MPI_Node<Real_t>> ch=(sctl::Iterator<MPI_Node<Real_t>>)this->Child(i);
+      assert(ch!=sctl::NullIterator<MPI_Node<Real_t>>()); //This should never happen
       if(!ch->IsLeaf() || ch->IsGhost()) return true;
     }
   }
@@ -85,7 +85,7 @@ bool FMM_Node<Node>::SubdivCond(){
   if(!this->IsLeaf()){
     size_t pt_vec_size=0;
     for(int i=0;i<n;i++){
-      FMM_Node<Node>* ch=static_cast<FMM_Node<Node>*>(this->Child(i));
+      sctl::Iterator<FMM_Node<Node>> ch=(sctl::Iterator<FMM_Node<Node>>)this->Child(i);
       pt_vec_size+=ch->src_coord.Dim();
       pt_vec_size+=ch->surf_coord.Dim();
       pt_vec_size+=ch->trg_coord.Dim();
@@ -101,9 +101,9 @@ bool FMM_Node<Node>::SubdivCond(){
 }
 
 template <class Node>
-void FMM_Node<Node>::Subdivide(){
+void FMM_Node<Node>::Subdivide(sctl::Iterator<TreeNode> self_){
   if(!this->IsLeaf()) return;
-  Node::Subdivide();
+  Node::Subdivide(self_);
 }
 
 

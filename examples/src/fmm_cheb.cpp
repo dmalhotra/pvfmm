@@ -332,8 +332,8 @@ void fmm_test(int test_case, size_t N, size_t M, bool unif, int mult_order, int 
     tree->InitFMM_Tree(adap,bndry); //Adaptive refinement.
 
     pt_coord.clear();
-    FMMNode_t* node=static_cast<FMMNode_t*>(tree->PreorderFirst());
-    while(node!=NULL){
+    sctl::Iterator<FMMNode_t> node=tree->PreorderFirst();
+    while(node!=sctl::NullIterator<FMMNode_t>()){
       if(node->IsLeaf() && !node->IsGhost()){
         Real_t* c=node->Coord();
         Real_t s=(Real_t)sctl::pow(0.5,node->Depth()+1);
@@ -341,7 +341,7 @@ void fmm_test(int test_case, size_t N, size_t M, bool unif, int mult_order, int 
         pt_coord.push_back(c[1]+s);
         pt_coord.push_back(c[2]+s);
       }
-      node=static_cast<FMMNode_t*>(tree->PreorderNxt(node));
+      node=tree->PreorderNxt(node);
     }
     delete tree;
     tree_data.pt_coord=pt_coord;
@@ -359,9 +359,9 @@ void fmm_test(int test_case, size_t N, size_t M, bool unif, int mult_order, int 
   { //Output max tree depth.
     std::vector<size_t> all_nodes(PVFMM_MAX_DEPTH+1,0);
     std::vector<size_t> leaf_nodes(PVFMM_MAX_DEPTH+1,0);
-    std::vector<FMMNode_t*>& nodes=tree->GetNodeList();
+    std::vector<sctl::Iterator<FMMNode_t>>& nodes=tree->GetNodeList();
     for(size_t i=0;i<nodes.size();i++){
-      FMMNode_t* n=nodes[i];
+      sctl::Iterator<FMMNode_t> n=nodes[i];
       if(!n->IsGhost()) all_nodes[n->Depth()]++;
       if(!n->IsGhost() && n->IsLeaf()) leaf_nodes[n->Depth()]++;
     }
@@ -402,7 +402,7 @@ void fmm_test(int test_case, size_t N, size_t M, bool unif, int mult_order, int 
 
     { // Redistribute
       size_t node_cnt=0;
-      std::vector<FMMNode_t*> nlist=tree->GetNodeList();
+      std::vector<sctl::Iterator<FMMNode_t>>& nlist=tree->GetNodeList();
       for(size_t i=0;i<nlist.size();i++){
         if(nlist[i]->IsLeaf() && !nlist[i]->IsGhost())
           node_cnt++;
@@ -413,9 +413,9 @@ void fmm_test(int test_case, size_t N, size_t M, bool unif, int mult_order, int 
 
       { //Output max, min tree size.
         long node_cnt=0;
-        std::vector<FMMNode_t*>& nodes=tree->GetNodeList();
+        std::vector<sctl::Iterator<FMMNode_t>>& nodes=tree->GetNodeList();
         for(size_t i=0;i<nodes.size();i++){
-          FMMNode_t* n=nodes[i];
+          sctl::Iterator<FMMNode_t> n=nodes[i];
           if(!n->IsGhost() && n->IsLeaf()) node_cnt++;
         }
 
@@ -430,9 +430,9 @@ void fmm_test(int test_case, size_t N, size_t M, bool unif, int mult_order, int 
       tree->RedistNodes();
       { //Output max, min tree size.
         long node_cnt=0;
-        std::vector<FMMNode_t*>& nodes=tree->GetNodeList();
+        std::vector<sctl::Iterator<FMMNode_t>>& nodes=tree->GetNodeList();
         for(size_t i=0;i<nodes.size();i++){
-          FMMNode_t* n=nodes[i];
+          sctl::Iterator<FMMNode_t> n=nodes[i];
           if(!n->IsGhost() && n->IsLeaf()) node_cnt++;
         }
 
@@ -484,7 +484,7 @@ void fmm_test(int test_case, size_t N, size_t M, bool unif, int mult_order, int 
 
       tree->Copy_FMMOutput(); //Copy FMM output to tree Data.
     }else{
-      std::vector<FMMNode_t*> nlist=tree->GetNodeList();
+      std::vector<sctl::Iterator<FMMNode_t>>& nlist=tree->GetNodeList();
       #pragma omp parallel for
       for(size_t i=0;i<nlist.size();i++) nlist[i]->Gradient();
     }

@@ -690,8 +690,8 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
 
       //Compute FFTW plan.
       int nnn[3]={n1,n1,n1};
-      sctl::ScratchBuf<Real_t> fftw_in_scratch (  n3 *ker_dim[0]*ker_dim[1]*sizeof(Real_t));
-      sctl::ScratchBuf<Real_t> fftw_out_scratch(2*n3_*ker_dim[0]*ker_dim[1]*sizeof(Real_t));
+      sctl::ScratchBuf<Real_t> fftw_in_scratch (  n3 *ker_dim[0]*ker_dim[1]);
+      sctl::ScratchBuf<Real_t> fftw_out_scratch(2*n3_*ker_dim[0]*ker_dim[1]);
       Real_t* fftw_in  = &fftw_in_scratch .begin()[0];
       Real_t* fftw_out = &fftw_out_scratch.begin()[0];
       #pragma omp critical(PVFMM_FFTW_PLAN)
@@ -1334,7 +1334,7 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& n
       for(int i=PVFMM_MAX_DEPTH;i>=0;i--){
         for(size_t j=0;j<node_lst_[i].size();j++){
           for(size_t k=0;k<chld_cnt;k++){
-            FMMNode_t* node=(FMMNode_t*)node_lst_[i][j]->Child(k);
+            sctl::Iterator<FMMNode_t> node=(sctl::Iterator<FMMNode_t>)node_lst_[i][j]->Child(k);
             node_lst_[i][j]->pt_cnt[0]+=node->pt_cnt[0];
           }
         }
@@ -1343,12 +1343,12 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& n
         for(size_t j=0;j<node_lst_[i].size();j++){
           if(node_lst_[i][j]->pt_cnt[0]){
             for(size_t k=0;k<chld_cnt;k++){
-              FMMNode_t* node=(FMMNode_t*)node_lst_[i][j]->Child(k);
-              node_lst.push_back(node);
+              sctl::Iterator<FMMNode_t> node=(sctl::Iterator<FMMNode_t>)node_lst_[i][j]->Child(k);
+              node_lst.push_back(&node[0]);
             }
           }else{
             for(size_t k=0;k<chld_cnt;k++){
-              FMMNode_t* node=(FMMNode_t*)node_lst_[i][j]->Child(k);
+              sctl::Iterator<FMMNode_t> node=(sctl::Iterator<FMMNode_t>)node_lst_[i][j]->Child(k);
               node->FMMData()->upward_equiv.ReInit(0);
             }
           }
@@ -1392,7 +1392,7 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& n
       for(int i=PVFMM_MAX_DEPTH;i>=0;i--){
         for(size_t j=0;j<node_lst_[i].size();j++){
           for(size_t k=0;k<chld_cnt;k++){
-            FMMNode_t* node=(FMMNode_t*)node_lst_[i][j]->Child(k);
+            sctl::Iterator<FMMNode_t> node=(sctl::Iterator<FMMNode_t>)node_lst_[i][j]->Child(k);
             node_lst_[i][j]->pt_cnt[1]+=node->pt_cnt[1];
           }
         }
@@ -1401,12 +1401,12 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& n
         for(size_t j=0;j<node_lst_[i].size();j++){
           if(node_lst_[i][j]->pt_cnt[1]){
             for(size_t k=0;k<chld_cnt;k++){
-              FMMNode_t* node=(FMMNode_t*)node_lst_[i][j]->Child(k);
-              node_lst.push_back(node);
+              sctl::Iterator<FMMNode_t> node=(sctl::Iterator<FMMNode_t>)node_lst_[i][j]->Child(k);
+              node_lst.push_back(&node[0]);
             }
           }else{
             for(size_t k=0;k<chld_cnt;k++){
-              FMMNode_t* node=(FMMNode_t*)node_lst_[i][j]->Child(k);
+              sctl::Iterator<FMMNode_t> node=(sctl::Iterator<FMMNode_t>)node_lst_[i][j]->Child(k);
               node->FMMData()->dnward_equiv.ReInit(0);
             }
           }
@@ -3373,8 +3373,8 @@ void FMM_Pts<FMMNode>::V_ListSetup(SetupData<Real_t>&  setup_data, FMMTree_t* tr
   std::vector<void*>& nodes_out=setup_data.nodes_out;
   std::vector<Vector<Real_t>*>&  input_vector=setup_data. input_vector;  input_vector.clear();
   std::vector<Vector<Real_t>*>& output_vector=setup_data.output_vector; output_vector.clear();
-  for(size_t i=0;i<nodes_in .size();i++)  input_vector.push_back(&((FMMData*)((FMMNode*)((FMMNode*)nodes_in [i])->Child(0))->FMMData())->upward_equiv);
-  for(size_t i=0;i<nodes_out.size();i++) output_vector.push_back(&((FMMData*)((FMMNode*)((FMMNode*)nodes_out[i])->Child(0))->FMMData())->dnward_equiv);
+  for(size_t i=0;i<nodes_in .size();i++)  input_vector.push_back(&((FMMData*)((sctl::Iterator<FMMNode>)((FMMNode*)nodes_in [i])->Child(0))->FMMData())->upward_equiv);
+  for(size_t i=0;i<nodes_out.size();i++) output_vector.push_back(&((FMMData*)((sctl::Iterator<FMMNode>)((FMMNode*)nodes_out[i])->Child(0))->FMMData())->dnward_equiv);
 
   /////////////////////////////////////////////////////////////////////////////
 
