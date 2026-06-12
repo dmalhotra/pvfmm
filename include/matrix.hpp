@@ -19,9 +19,6 @@
 #endif
 namespace pvfmm{
 
-template <class T>
-class Permutation;
-
 // Thin adapter over sctl::Matrix<T> preserving pvfmm's historical API:
 // size_t dimensions, raw-pointer Begin() and operator[], Resize(), the
 // pvfmm::Permutation-based RowPerm/ColPerm, CUBLASGEMM, and copy-only
@@ -80,53 +77,15 @@ class Matrix : public sctl::Matrix<T> {
   // cublasgemm wrapper
   static void CUBLASGEMM(Matrix<T>& M_r, const Matrix<T>& A, const Matrix<T>& B, T beta=0.0);
 
-  void RowPerm(const Permutation<T>& P);
-  void ColPerm(const Permutation<T>& P);
 };
 
 
-/**
- * /brief P=[e(p1)*s1 e(p2)*s2 ... e(pn)*sn],
- * where e(k) is the kth unit vector,
- * perm := [p1 p2 ... pn] is the permutation vector,
- * scal := [s1 s2 ... sn] is the scaling vector.
- */
-#define PVFMM_PERM_INT_T size_t
+// pvfmm::Permutation is sctl::Permutation. perm holds sctl::Long entries —
+// same width as the historical PVFMM_PERM_INT_T (size_t), so the packed
+// precomp data and cache files are byte-compatible.
+#define PVFMM_PERM_INT_T sctl::Long
 template <class T>
-class Permutation{
-
-  template <class Y>
-  friend std::ostream& operator<<(std::ostream& output, const Permutation<Y>& P);
-
-  public:
-
-  Permutation(){}
-
-  Permutation(size_t size);
-
-  static Permutation<T> RandPerm(size_t size);
-
-  Matrix<T> GetMatrix() const;
-
-  size_t Dim() const;
-
-  Permutation<T> Transpose();
-
-  Permutation<T>& operator*=(const Permutation<T>& P);
-
-  Permutation<T> operator*(const Permutation<T>& P);
-
-  Matrix<T> operator*(const Matrix<T>& M);
-
-  template <class Y>
-  friend Matrix<Y> operator*(const Matrix<Y>& M, const Permutation<Y>& P);
-
-  Vector<PVFMM_PERM_INT_T> perm;
-  Vector<T> scal;
-};
-
-template <class T>
-Matrix<T> operator*(const Matrix<T>& M, const Permutation<T>& P);
+using Permutation = sctl::Permutation<T>;
 
 /**
  * Transpose the in_dim1 x in_dim2 row-major matrix at `in` into `out`
@@ -147,9 +106,6 @@ void MatrixTranspose(size_t in_dim1, size_t in_dim2, const T* in, T* out){
       (out? sctl::Ptr2Itr<T>(out, n) : sctl::NullIterator<T>()));
 }
 #endif
-
-template <class Y>
-std::ostream& operator<<(std::ostream& output, const Permutation<Y>& P);
 
 }//end namespace
 #ifdef __INTEL_OFFLOAD

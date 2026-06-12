@@ -378,7 +378,7 @@ void Kernel<T>::Initialize(bool verbose) const{
         std::vector<Permutation<long long> >& Pvec=P1vec;
 
         Permutation<long long> P(Pmat.Dim(0));
-        Vector<PVFMM_PERM_INT_T>& perm=P.perm;
+        sctl::Vector<PVFMM_PERM_INT_T>& perm=P.perm;
         perm.SetZero();
 
         // First permutation
@@ -427,7 +427,7 @@ void Kernel<T>::Initialize(bool verbose) const{
         std::vector<Permutation<long long> >& Pvec=P2vec;
 
         Permutation<long long> P(Pmat.Dim(0));
-        Vector<PVFMM_PERM_INT_T>& perm=P.perm;
+        sctl::Vector<PVFMM_PERM_INT_T>& perm=P.perm;
         perm.SetZero();
 
         // First permutation

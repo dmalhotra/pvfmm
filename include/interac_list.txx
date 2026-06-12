@@ -302,7 +302,7 @@ Permutation<typename Node_t::Real_t>& InteracList<Node_t>::Perm_R(int l, Mat_Typ
     Permutation<Real_t> cumulative=Permutation<Real_t>(M0.Dim(0));
     for(int i=p_list.size()-1; i>=0; i--){
       assert(type!=V_Type);
-      cumulative *= mat->Perm(type, R_Perm + p_list[i]);
+      cumulative = cumulative * mat->Perm(type, R_Perm + p_list[i]);
     }
     row_perm = cumulative.Transpose();
   }
@@ -328,7 +328,7 @@ Permutation<typename Node_t::Real_t>& InteracList<Node_t>::Perm_C(int l, Mat_Typ
     Permutation<Real_t> cumulative=Permutation<Real_t>(M0.Dim(1));
     for(int i=p_list.size()-1; i>=0; i--){
       assert(type!=V_Type);
-      cumulative *= mat->Perm(type, C_Perm + p_list[i]);
+      cumulative = cumulative * mat->Perm(type, C_Perm + p_list[i]);
     }
     col_perm = cumulative;
   }
