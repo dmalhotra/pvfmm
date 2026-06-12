@@ -2,7 +2,9 @@
  * \file matrix.txx
  * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 2-11-2011
- * \brief This file contains inplementation of the class Matrix.
+ * \brief Implementation of the pvfmm-specific parts of the Matrix adapter
+ * (CUBLASGEMM, Permutation-based Row/ColPerm) and the Permutation class.
+ * Everything else is inherited from sctl::Matrix.
  */
 
 #include <omp.h>
@@ -12,273 +14,26 @@
 #include <iostream>
 #include <iomanip>
 
-#include <device_wrapper.hpp>
+#include <device_wrapper.hpp> // CUDA_Lock, used by mat_utils.hpp's cublasgemm declaration
 #include <mat_utils.hpp>
-
-#include <profile.hpp>
 
 namespace pvfmm{
 
-template <class T>
-std::ostream& operator<<(std::ostream& output, const Matrix<T>& M){
-  std::ios::fmtflags f(std::cout.flags());
-  output<<std::fixed<<std::setprecision(4)<<std::setiosflags(std::ios::left);
-  for(size_t i=0;i<M.Dim(0);i++){
-    for(size_t j=0;j<M.Dim(1);j++){
-      float f=((float)M(i,j));
-      if(sctl::fabs<T>(f)<1e-25) f=0;
-      output<<std::setw(10)<<((double)f)<<' ';
-    }
-    output<<";\n";
-  }
-  std::cout.flags(f);
-  return output;
-}
-
-template <class T>
-Matrix<T>::Matrix(){
-  dim[0]=0;
-  dim[1]=0;
-  own_data=true;
-  data_ptr=sctl::NullIterator<T>();
-}
-
-template <class T>
-Matrix<T>::Matrix(size_t dim1, size_t dim2, sctl::Iterator<T> data_, bool own_data_){
-  dim[0]=dim1;
-  dim[1]=dim2;
-  own_data=own_data_;
-  if(own_data){
-    if(dim[0]*dim[1]>0){
-      data_ptr=sctl::aligned_new<T>(dim[0]*dim[1]);
-      if(data_!=sctl::NullIterator<T>()) sctl::omp_par::copy((sctl::ConstIterator<T>)data_,(sctl::ConstIterator<T>)data_+(sctl::Long)(dim[0]*dim[1]),data_ptr);
-    }else data_ptr=sctl::NullIterator<T>();
-  }else
-    data_ptr=data_;
-}
-
-template <class T>
-Matrix<T>::Matrix(const Matrix<T>& M){
-  dim[0]=M.dim[0];
-  dim[1]=M.dim[1];
-  own_data=true;
-  if(dim[0]*dim[1]>0){
-    data_ptr=sctl::aligned_new<T>(dim[0]*dim[1]);
-    sctl::omp_par::copy((sctl::ConstIterator<T>)M.data_ptr,(sctl::ConstIterator<T>)M.data_ptr+(sctl::Long)(dim[0]*dim[1]),data_ptr);
-  }else
-    data_ptr=sctl::NullIterator<T>();
-}
-
-template <class T>
-Matrix<T>::~Matrix(){
-  if(own_data){
-    if(data_ptr!=sctl::NullIterator<T>()){
-      sctl::aligned_delete<T>(data_ptr);
-    }
-  }
-  data_ptr=sctl::NullIterator<T>();
-  dim[0]=0;
-  dim[1]=0;
-}
-
-template <class T>
-void Matrix<T>::Swap(Matrix<T>& M){
-  size_t dim_[2]={dim[0],dim[1]};
-  sctl::Iterator<T> data_ptr_=data_ptr;
-  bool own_data_=own_data;
-
-  dim[0]=M.dim[0];
-  dim[1]=M.dim[1];
-  data_ptr=M.data_ptr;
-  own_data=M.own_data;
-
-  M.dim[0]=dim_[0];
-  M.dim[1]=dim_[1];
-  M.data_ptr=data_ptr_;
-  M.own_data=own_data_;
-}
-
-template <class T>
-void Matrix<T>::ReInit(size_t dim1, size_t dim2, sctl::Iterator<T> data_, bool own_data_){
-  if(own_data_ && own_data && dim[0]*dim[1]>=dim1*dim2){
-    dim[0]=dim1; dim[1]=dim2;
-    if(data_!=sctl::NullIterator<T>()) sctl::omp_par::copy((sctl::ConstIterator<T>)data_,(sctl::ConstIterator<T>)data_+(sctl::Long)(dim[0]*dim[1]),data_ptr);
-  }else{
-    Matrix<T> tmp(dim1,dim2,data_,own_data_);
-    this->Swap(tmp);
-  }
-}
-
-template <class T>
-void Matrix<T>::Write(const char* fname){
-  FILE* f1=fopen(fname,"wb+");
-  if(f1==NULL){
-    std::cout<<"Unable to open file for writing:"<<fname<<'\n';
-    return;
-  }
-  uint32_t dim_[2]={(uint32_t)dim[0],(uint32_t)dim[1]};
-  fwrite(dim_,sizeof(uint32_t),2,f1);
-  if(dim[0]*dim[1]>0) fwrite(&data_ptr[0],sizeof(T),dim[0]*dim[1],f1);
-  fclose(f1);
-}
-
-template <class T>
-void Matrix<T>::Read(const char* fname){
-  FILE* f1=fopen(fname,"r");
-  if(f1==NULL){
-    std::cout<<"Unable to open file for reading:"<<fname<<'\n';
-    return;
-  }
-  uint32_t dim_[2];
-  size_t readlen=fread (dim_, sizeof(uint32_t), 2, f1);
-  assert(readlen==2);
-
-  ReInit(dim_[0],dim_[1]);
-  if(dim[0]*dim[1]>0){
-    readlen=fread(&data_ptr[0],sizeof(T),dim[0]*dim[1],f1);
-    assert(readlen==dim[0]*dim[1]);
-  }
-  fclose(f1);
-}
-
-template <class T>
-size_t Matrix<T>::Dim(size_t i) const{
-  return dim[i];
-}
-
-template <class T>
-void Matrix<T>::Resize(size_t i, size_t j){
-  ReInit(i,j);
-}
-
-template <class T>
-void Matrix<T>::SetZero(){
-  if(dim[0] && dim[1])
-    ::memset(&data_ptr[0],0,dim[0]*dim[1]*sizeof(T));
-}
-
-template <class ValueType>
-ValueType* Matrix<ValueType>::Begin(){
-  return (dim[0]*dim[1]>0 && data_ptr!=sctl::NullIterator<ValueType>() ? &data_ptr[0] : (ValueType*)NULL);
-}
-
-template <class ValueType>
-const ValueType* Matrix<ValueType>::Begin() const{
-  return (dim[0]*dim[1]>0 && data_ptr!=sctl::NullIterator<ValueType>() ? &data_ptr[0] : (const ValueType*)NULL);
-}
-
-template <class T>
-Matrix<T>& Matrix<T>::operator=(const Matrix<T>& M){
-  if(this!=&M){
-    if(dim[0]*dim[1]<M.dim[0]*M.dim[1]){
-      ReInit(M.dim[0],M.dim[1]);
-    }
-    dim[0]=M.dim[0]; dim[1]=M.dim[1];
-    if(dim[0]*dim[1]>0) sctl::omp_par::copy((sctl::ConstIterator<T>)M.data_ptr,(sctl::ConstIterator<T>)M.data_ptr+(sctl::Long)(dim[0]*dim[1]),data_ptr);
-  }
-  return *this;
-}
-
-template <class T>
-Matrix<T>& Matrix<T>::operator+=(const Matrix<T>& M){
-  assert(M.Dim(0)==Dim(0) && M.Dim(1)==Dim(1));
-  sctl::Profile::IncrementCounter(sctl::ProfileCounter::FLOP, dim[0]*dim[1]);
-
-  for(size_t i=0;i<M.Dim(0)*M.Dim(1);i++)
-    data_ptr[i]+=M.data_ptr[i];
-  return *this;
-}
-
-template <class T>
-Matrix<T>& Matrix<T>::operator-=(const Matrix<T>& M){
-  assert(M.Dim(0)==Dim(0) && M.Dim(1)==Dim(1));
-  sctl::Profile::IncrementCounter(sctl::ProfileCounter::FLOP, dim[0]*dim[1]);
-
-  for(size_t i=0;i<M.Dim(0)*M.Dim(1);i++)
-    data_ptr[i]-=M.data_ptr[i];
-  return *this;
-}
-
-template <class T>
-Matrix<T> Matrix<T>::operator+(const Matrix<T>& M2){
-  Matrix<T>& M1=*this;
-  assert(M2.Dim(0)==M1.Dim(0) && M2.Dim(1)==M1.Dim(1));
-  sctl::Profile::IncrementCounter(sctl::ProfileCounter::FLOP, dim[0]*dim[1]);
-
-  Matrix<T> M_r(M1.Dim(0),M1.Dim(1),NULL);
-  for(size_t i=0;i<M1.Dim(0)*M1.Dim(1);i++)
-    M_r[0][i]=M1[0][i]+M2[0][i];
-  return M_r;
-}
-
-template <class T>
-Matrix<T> Matrix<T>::operator-(const Matrix<T>& M2){
-  Matrix<T>& M1=*this;
-  assert(M2.Dim(0)==M1.Dim(0) && M2.Dim(1)==M1.Dim(1));
-  sctl::Profile::IncrementCounter(sctl::ProfileCounter::FLOP, dim[0]*dim[1]);
-
-  Matrix<T> M_r(M1.Dim(0),M1.Dim(1),NULL);
-  for(size_t i=0;i<M1.Dim(0)*M1.Dim(1);i++)
-    M_r[0][i]=M1[0][i]-M2[0][i];
-  return M_r;
-}
-
-template <class T>
-inline const T& Matrix<T>::operator()(size_t i,size_t j) const{
-  assert(i<dim[0] && j<dim[1]);
-  return data_ptr[i*dim[1]+j];
-}
-
-template <class T>
-inline T* Matrix<T>::operator[](size_t i){
-  assert(i<dim[0]);
-  return (dim[1]>0 ? &data_ptr[i*dim[1]] : (T*)NULL);
-}
-
-template <class T>
-inline const T* Matrix<T>::operator[](size_t i) const{
-  assert(i<dim[0]);
-  return (dim[1]>0 ? &data_ptr[i*dim[1]] : (const T*)NULL);
-}
-
-template <class T>
-Matrix<T> Matrix<T>::operator*(const Matrix<T>& M){
-  assert(dim[1]==M.dim[0]);
-  sctl::Profile::IncrementCounter(sctl::ProfileCounter::FLOP, 2*(((long long)dim[0])*dim[1])*M.dim[1]);
-
-  Matrix<T> M_r(dim[0],M.dim[1],NULL);
-  if(M.Dim(0)*M.Dim(1)==0 || this->Dim(0)*this->Dim(1)==0) return M_r;
-  mat::gemm<T>('N','N',M.dim[1],dim[0],dim[1],
-      1.0,&M.data_ptr[0],M.dim[1],&data_ptr[0],dim[1],0.0,&M_r.data_ptr[0],M_r.dim[1]);
-  return M_r;
-}
-
-template <class T>
-void Matrix<T>::GEMM(Matrix<T>& M_r, const Matrix<T>& A, const Matrix<T>& B, T beta){
-  if(A.Dim(0)*A.Dim(1)==0 || B.Dim(0)*B.Dim(1)==0) return;
-  assert(A.dim[1]==B.dim[0]);
-  assert(M_r.dim[0]==A.dim[0]);
-  assert(M_r.dim[1]==B.dim[1]);
-#if !defined(__MIC__) || !defined(__INTEL_OFFLOAD)
-  sctl::Profile::IncrementCounter(sctl::ProfileCounter::FLOP, 2*(((long long)A.dim[0])*A.dim[1])*B.dim[1]);
-#endif
-  mat::gemm<T>('N','N',B.dim[1],A.dim[0],A.dim[1],
-      1.0,&B.data_ptr[0],B.dim[1],&A.data_ptr[0],A.dim[1],beta,&M_r.data_ptr[0],M_r.dim[1]);
-}
-
-// cublasgemm wrapper
 #if defined(PVFMM_HAVE_CUDA)
 template <class T>
 void Matrix<T>::CUBLASGEMM(Matrix<T>& M_r, const Matrix<T>& A, const Matrix<T>& B, T beta){
   if(A.Dim(0)*A.Dim(1)==0 || B.Dim(0)*B.Dim(1)==0) return;
-  assert(A.dim[1]==B.dim[0]);
-  assert(M_r.dim[0]==A.dim[0]);
-  assert(M_r.dim[1]==B.dim[1]);
-  sctl::Profile::IncrementCounter(sctl::ProfileCounter::FLOP, 2*(((long long)A.dim[0])*A.dim[1])*B.dim[1]);
-  mat::cublasgemm('N', 'N', B.dim[1], A.dim[0], A.dim[1],
-      (T)1.0, &B.data_ptr[0], B.dim[1], &A.data_ptr[0], A.dim[1], beta, &M_r.data_ptr[0], M_r.dim[1]);
+  assert(A.Dim(1)==B.Dim(0));
+  assert(M_r.Dim(0)==A.Dim(0));
+  assert(M_r.Dim(1)==B.Dim(1));
+  sctl::Profile::IncrementCounter(sctl::ProfileCounter::FLOP, 2*(((long long)A.Dim(0))*A.Dim(1))*B.Dim(1));
+  // cublasgemm takes non-const T*; the inputs are consumed by the device
+  // call, so casting away const here is terminal.
+  mat::cublasgemm<T>('N', 'N', B.Dim(1), A.Dim(0), A.Dim(1),
+      (T)1.0, (T*)B.Begin(), B.Dim(1), (T*)A.Begin(), A.Dim(1), beta, M_r.Begin(), M_r.Dim(1));
 }
 #endif
+
 
 template <class T>
 void Matrix<T>::RowPerm(const Permutation<T>& P){
@@ -336,119 +91,6 @@ void Matrix<T>::ColPerm(const Permutation<T>& P){
 
 #define PVFMM_B1 128
 #define PVFMM_B2 32
-template <class T>
-Matrix<T> Matrix<T>::Transpose() const{
-  const Matrix<T>& M=*this;
-  size_t d0=M.dim[0];
-  size_t d1=M.dim[1];
-  Matrix<T> M_r(d1,d0,NULL);
-
-  const size_t blk0=((d0+PVFMM_B1-1)/PVFMM_B1);
-  const size_t blk1=((d1+PVFMM_B1-1)/PVFMM_B1);
-  const size_t blks=blk0*blk1;
-//  #pragma omp parallel for
-  for(size_t k=0;k<blks;k++){
-    size_t i=(k%blk0)*PVFMM_B1;
-    size_t j=(k/blk0)*PVFMM_B1;
-//  for(size_t i=0;i<d0;i+=PVFMM_B1)
-//  for(size_t j=0;j<d1;j+=PVFMM_B1){
-    size_t d0_=i+PVFMM_B1; if(d0_>=d0) d0_=d0;
-    size_t d1_=j+PVFMM_B1; if(d1_>=d1) d1_=d1;
-    for(size_t ii=i;ii<d0_;ii+=PVFMM_B2)
-    for(size_t jj=j;jj<d1_;jj+=PVFMM_B2){
-      size_t d0__=ii+PVFMM_B2; if(d0__>=d0) d0__=d0;
-      size_t d1__=jj+PVFMM_B2; if(d1__>=d1) d1__=d1;
-      for(size_t iii=ii;iii<d0__;iii++)
-      for(size_t jjj=jj;jjj<d1__;jjj++){
-        M_r[jjj][iii]=M[iii][jjj];
-      }
-    }
-  }
-//  for(size_t i=0;i<d0;i++)
-//    for(size_t j=0;j<d1;j++)
-//      M_r[j][i]=M[i][j];
-  return M_r;
-}
-
-template <class T>
-void Matrix<T>::Transpose(Matrix<T>& M_r, const Matrix<T>& M){
-  size_t d0=M.dim[0];
-  size_t d1=M.dim[1];
-  if (M_r.Dim(0)!=d1 || M_r.Dim(1)!=d0) M_r.Resize(d1, d0);
-
-  const size_t blk0=((d0+PVFMM_B1-1)/PVFMM_B1);
-  const size_t blk1=((d1+PVFMM_B1-1)/PVFMM_B1);
-  const size_t blks=blk0*blk1;
-  #pragma omp parallel for
-  for(size_t k=0;k<blks;k++){
-    size_t i=(k%blk0)*PVFMM_B1;
-    size_t j=(k/blk0)*PVFMM_B1;
-//  for(size_t i=0;i<d0;i+=PVFMM_B1)
-//  for(size_t j=0;j<d1;j+=PVFMM_B1){
-    size_t d0_=i+PVFMM_B1; if(d0_>=d0) d0_=d0;
-    size_t d1_=j+PVFMM_B1; if(d1_>=d1) d1_=d1;
-    for(size_t ii=i;ii<d0_;ii+=PVFMM_B2)
-    for(size_t jj=j;jj<d1_;jj+=PVFMM_B2){
-      size_t d0__=ii+PVFMM_B2; if(d0__>=d0) d0__=d0;
-      size_t d1__=jj+PVFMM_B2; if(d1__>=d1) d1__=d1;
-      for(size_t iii=ii;iii<d0__;iii++)
-      for(size_t jjj=jj;jjj<d1__;jjj++){
-        M_r[jjj][iii]=M[iii][jjj];
-      }
-    }
-  }
-}
-
-template <class T>
-void Matrix<T>::SVD(Matrix<T>& tU, Matrix<T>& tS, Matrix<T>& tVT){
-  pvfmm::Matrix<T>& M=*this;
-  pvfmm::Matrix<T> M_=M;
-  int n=M.Dim(0);
-  int m=M.Dim(1);
-
-  int k = (m<n?m:n);
-  tU.Resize(n,k); tU.SetZero();
-  tS.Resize(k,k); tS.SetZero();
-  tVT.Resize(k,m); tVT.SetZero();
-
-  //SVD
-  int INFO=0;
-  char JOBU  = 'S';
-  char JOBVT = 'S';
-
-  int wssize = 3*(m<n?m:n)+(m>n?m:n);
-  int wssize1 = 5*(m<n?m:n);
-  wssize = (wssize>wssize1?wssize:wssize1);
-
-  sctl::ScratchBuf<T> wsbuf_scratch(wssize);
-  T* wsbuf = &wsbuf_scratch.begin()[0];
-  pvfmm::mat::svd(&JOBU, &JOBVT, &m, &n, &M[0][0], &m, &tS[0][0], &tVT[0][0], &m, &tU[0][0], &k, wsbuf, &wssize, &INFO);
-
-  if(INFO!=0) std::cout<<INFO<<'\n';
-  assert(INFO==0);
-
-  for(int i=1;i<k;i++){
-    tS[i][i]=tS[0][i];
-    tS[0][i]=0;
-  }
-  //std::cout<<tU*tS*tVT-M_<<'\n';
-}
-
-template <class T>
-Matrix<T> Matrix<T>::pinv(T eps){
-  if(eps<0){
-    eps=1.0;
-    while(eps+(T)1>1) eps*=(T)0.5;
-    eps=sctl::sqrt<T>(eps);
-  }
-  Matrix<T> M_r(dim[1],dim[0]);
-  mat::pinv(&data_ptr[0],dim[0],dim[1],eps,&M_r.data_ptr[0]);
-  this->Resize(0,0);
-  return M_r;
-}
-
-
-
 
 template <class T>
 std::ostream& operator<<(std::ostream& output, const Permutation<T>& P){

@@ -22,31 +22,41 @@ namespace pvfmm{
 template <class T>
 class Permutation;
 
+// Thin adapter over sctl::Matrix<T> preserving pvfmm's historical API:
+// size_t dimensions, raw-pointer Begin() and operator[], Resize(), the
+// pvfmm::Permutation-based RowPerm/ColPerm, CUBLASGEMM, and copy-only
+// semantics (see Vector<T> for the no-moves rationale).
 template <class T>
-class Matrix{
+class Matrix : public sctl::Matrix<T> {
 
-  template <class Y>
-  friend std::ostream& operator<<(std::ostream& output, const Matrix<Y>& M);
+  typedef sctl::Matrix<T> Base;
 
   public:
 
-  Matrix();
+  Matrix() : Base() {}
 
-  Matrix(size_t dim1, size_t dim2, sctl::Iterator<T> data_=sctl::NullIterator<T>(), bool own_data_=true);
+  Matrix(size_t dim1, size_t dim2, sctl::Iterator<T> data_=sctl::NullIterator<T>(), bool own_data_=true) : Base((sctl::Long)dim1, (sctl::Long)dim2, data_, own_data_) {}
 
 #if defined(SCTL_MEMDEBUG)
   Matrix(size_t dim1, size_t dim2, T* data_, bool own_data_=true)
     : Matrix(dim1, dim2, (data_? sctl::Ptr2Itr<T>(data_, (sctl::Long)dim1*(sctl::Long)dim2) : sctl::NullIterator<T>()), own_data_) {}
 #endif
 
-  Matrix(const Matrix<T>& M);
+  Matrix(const Matrix<T>& M) : Base(M) {}
 
-  // See Vector<T>'s move ctor — same rationale.
-  ~Matrix();
+  // Adopt/copy a base-class value (results of Transpose(), pinv(),
+  // operator* etc., which return sctl::Matrix). Same-type rvalues still
+  // prefer the copy ctor, so pvfmm::Matrix itself remains copy-only.
+  Matrix(Base&& M) noexcept : Base(std::move(M)) {}
+  Matrix(const Base& M) : Base(M) {}
 
-  void Swap(Matrix<T>& M);
+  ~Matrix() = default; // user-declared: suppresses implicit moves
 
-  void ReInit(size_t dim1, size_t dim2, sctl::Iterator<T> data_=sctl::NullIterator<T>(), bool own_data_=true);
+  Matrix<T>& operator=(const Matrix<T>& M){ Base::operator=((const Base&)M); return *this; }
+
+  void Swap(Matrix<T>& M){ Base::Swap(M); }
+
+  void ReInit(size_t dim1, size_t dim2, sctl::Iterator<T> data_=sctl::NullIterator<T>(), bool own_data_=true){ Base::ReInit((sctl::Long)dim1, (sctl::Long)dim2, data_, own_data_); }
 
 #if defined(SCTL_MEMDEBUG)
   void ReInit(size_t dim1, size_t dim2, T* data_, bool own_data_=true) {
@@ -54,65 +64,25 @@ class Matrix{
   }
 #endif
 
-  void Write(const char* fname);
+  size_t Dim(size_t i) const { return (size_t)Base::Dim((sctl::Long)i); }
 
-  void Read(const char* fname);
+  // See Vector<T>::Resize for content-preservation semantics.
+  void Resize(size_t i, size_t j){ if(Dim(0)!=i || Dim(1)!=j) Base::ReInit((sctl::Long)i, (sctl::Long)j); }
 
-  size_t Dim(size_t i) const;
+  T* Begin(){ sctl::Iterator<T> it=Base::begin(); return (Dim(0)*Dim(1)>0 && it!=sctl::NullIterator<T>() ? &it[0] : (T*)NULL); }
 
-  void Resize(size_t i, size_t j);
+  const T* Begin() const{ sctl::ConstIterator<T> it=Base::begin(); return (Dim(0)*Dim(1)>0 && it!=sctl::NullIterator<T>() ? &it[0] : (const T*)NULL); }
 
-  void SetZero();
+  T* operator[](size_t i){ return &Base::operator[]((sctl::Long)i)[0]; }
 
-  T* Begin();
-
-  const T* Begin() const;
-
-  Matrix<T>& operator=(const Matrix<T>& M);
-
-  Matrix<T>& operator+=(const Matrix<T>& M);
-
-  Matrix<T>& operator-=(const Matrix<T>& M);
-
-  Matrix<T> operator+(const Matrix<T>& M2);
-
-  Matrix<T> operator-(const Matrix<T>& M2);
-
-  const T& operator()(size_t i,size_t j) const;
-
-  T* operator[](size_t i);
-
-  const T* operator[](size_t i) const;
-
-  Matrix<T> operator*(const Matrix<T>& M);
-
-  static void GEMM(Matrix<T>& M_r, const Matrix<T>& A, const Matrix<T>& B, T beta=0.0);
+  const T* operator[](size_t i) const{ return &Base::operator[]((sctl::Long)i)[0]; }
 
   // cublasgemm wrapper
   static void CUBLASGEMM(Matrix<T>& M_r, const Matrix<T>& A, const Matrix<T>& B, T beta=0.0);
 
   void RowPerm(const Permutation<T>& P);
   void ColPerm(const Permutation<T>& P);
-
-  Matrix<T> Transpose() const;
-
-  static void Transpose(Matrix<T>& M_r, const Matrix<T>& M);
-
-  // Original matrix is destroyed.
-  void SVD(Matrix<T>& tU, Matrix<T>& tS, Matrix<T>& tVT);
-
-  // Original matrix is destroyed.
-  Matrix<T> pinv(T eps=-1);
-
-  private:
-
-  size_t dim[2];
-  sctl::Iterator<T> data_ptr;
-  bool own_data;
 };
-
-template <class Y>
-std::ostream& operator<<(std::ostream& output, const Matrix<Y>& M);
 
 
 /**

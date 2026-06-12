@@ -12,6 +12,7 @@
 #include <cstdlib>
 
 #include <pvfmm_common.hpp>
+#include <device_wrapper.hpp>
 #include <interac_list.hpp>
 #include <precomp_mat.hpp>
 #include <fft_wrapper.hpp>
