@@ -225,9 +225,7 @@ struct FFTW_t{
 
   template <class Y>
   static void transpose(size_t dim1, size_t dim2, Y* A){
-    Matrix<Y> M(dim1, dim2, A);
-    Matrix<Y> Mt(dim2, dim1, A, false);
-    Mt=M.Transpose();
+    MatrixTranspose<Y>(dim1, dim2, A, A);
   }
 
 };

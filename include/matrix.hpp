@@ -158,6 +158,26 @@ class Permutation{
 template <class T>
 Matrix<T> operator*(const Matrix<T>& M, const Permutation<T>& P);
 
+/**
+ * Transpose the in_dim1 x in_dim2 row-major matrix at `in` into `out`
+ * (which receives in_dim2 x in_dim1). If in==out, the transpose is done in
+ * place, staging the input through per-thread scratch storage; otherwise
+ * the two ranges must not overlap.
+ */
+template <class T>
+void MatrixTranspose(size_t in_dim1, size_t in_dim2, sctl::ConstIterator<T> in, sctl::Iterator<T> out);
+
+#if defined(SCTL_MEMDEBUG)
+// Legacy compatibility: accept raw pointers and wrap into iterators.
+template <class T>
+void MatrixTranspose(size_t in_dim1, size_t in_dim2, const T* in, T* out){
+  const sctl::Long n=(sctl::Long)in_dim1*(sctl::Long)in_dim2;
+  MatrixTranspose<T>(in_dim1, in_dim2,
+      (in ? sctl::Ptr2ConstItr<T>(in, n) : sctl::ConstIterator<T>(sctl::NullIterator<T>())),
+      (out? sctl::Ptr2Itr<T>(out, n) : sctl::NullIterator<T>()));
+}
+#endif
+
 template <class Y>
 std::ostream& operator<<(std::ostream& output, const Permutation<Y>& P);
 

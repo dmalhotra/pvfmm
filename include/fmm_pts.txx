@@ -685,9 +685,8 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
       std::vector<Real_t> conv_coord=conv_grid(MultipoleOrder(),coord_diff,level);
       kernel->k_m2l->BuildMatrix(&conv_coord[0],n3,&r_trg[0],1,&conv_poten[0]);
 
-      //Rearrange data.
-      Matrix<Real_t> M_conv(n3,ker_dim[0]*ker_dim[1],&conv_poten[0],false);
-      M_conv=M_conv.Transpose();
+      //Rearrange data: transpose conv_poten in place.
+      MatrixTranspose<Real_t>(n3,ker_dim[0]*ker_dim[1],&conv_poten[0],&conv_poten[0]);
 
       //Compute FFTW plan.
       int nnn[3]={n1,n1,n1};

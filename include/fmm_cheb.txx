@@ -568,8 +568,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
       M.Resize(M_s2t.Dim(0), n_src*this->kernel->k_l2t->ker_dim [1]);
       #pragma omp parallel for schedule(dynamic)
       for(size_t j=0; j<(size_t)M_s2t.Dim(0); j++){
-        Matrix<Real_t> M_trg(n_trg,this->kernel->k_l2t->ker_dim[1],M_s2t[j],false);
-        M_trg=M_trg.Transpose();
+        MatrixTranspose<Real_t>(n_trg,this->kernel->k_l2t->ker_dim[1],M_s2t[j],M_s2t[j]); // transpose M_s2t[j] in place
         cheb_approx<Real_t,Real_t>(M_s2t[j],cheb_deg,this->kernel->k_l2t->ker_dim[1],M[j]);
       }
       #pragma omp critical(PVFMM_PRECOMP_MATRIX_PTS)
@@ -623,8 +622,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
       M.Resize(M_s2t.Dim(0), n_src*this->kernel->k_s2t->ker_dim [1]);
       #pragma omp parallel for schedule(dynamic)
       for(size_t j=0; j<(size_t)M_s2t.Dim(0); j++){
-        Matrix<Real_t> M_trg(n_trg,this->kernel->k_s2t->ker_dim[1],M_s2t[j],false);
-        M_trg=M_trg.Transpose();
+        MatrixTranspose<Real_t>(n_trg,this->kernel->k_s2t->ker_dim[1],M_s2t[j],M_s2t[j]); // transpose M_s2t[j] in place
         cheb_approx<Real_t,Real_t>(M_s2t[j],cheb_deg,this->kernel->k_s2t->ker_dim[1],M[j]);
       }
       break;
@@ -674,8 +672,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
       M.Resize(M_s2t.Dim(0), n_src*this->kernel->k_s2t->ker_dim [1]);
       #pragma omp parallel for schedule(dynamic)
       for(size_t j=0; j<(size_t)M_s2t.Dim(0); j++){
-        Matrix<Real_t> M_trg(n_trg,this->kernel->k_s2t->ker_dim[1],M_s2t[j],false);
-        M_trg=M_trg.Transpose();
+        MatrixTranspose<Real_t>(n_trg,this->kernel->k_s2t->ker_dim[1],M_s2t[j],M_s2t[j]); // transpose M_s2t[j] in place
         cheb_approx<Real_t,Real_t>(M_s2t[j],cheb_deg,this->kernel->k_s2t->ker_dim[1],M[j]);
       }
       break;
@@ -725,8 +722,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
       M.Resize(M_s2t.Dim(0), n_src*this->kernel->k_s2t->ker_dim [1]);
       #pragma omp parallel for schedule(dynamic)
       for(size_t j=0; j<(size_t)M_s2t.Dim(0); j++){
-        Matrix<Real_t> M_trg(n_trg,this->kernel->k_s2t->ker_dim[1],M_s2t[j],false);
-        M_trg=M_trg.Transpose();
+        MatrixTranspose<Real_t>(n_trg,this->kernel->k_s2t->ker_dim[1],M_s2t[j],M_s2t[j]); // transpose M_s2t[j] in place
         cheb_approx<Real_t,Real_t>(M_s2t[j],cheb_deg,this->kernel->k_s2t->ker_dim[1],M[j]);
       }
       break;
@@ -741,8 +737,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
       M.Resize(M_s2t.Dim(0), n_src*this->kernel->k_m2t->ker_dim [1]);
       #pragma omp parallel for schedule(dynamic)
       for(size_t j=0; j<(size_t)M_s2t.Dim(0); j++){
-        Matrix<Real_t> M_trg(n_trg,this->kernel->k_m2t->ker_dim[1],M_s2t[j],false);
-        M_trg=M_trg.Transpose();
+        MatrixTranspose<Real_t>(n_trg,this->kernel->k_m2t->ker_dim[1],M_s2t[j],M_s2t[j]); // transpose M_s2t[j] in place
         cheb_approx<Real_t,Real_t>(M_s2t[j],cheb_deg,this->kernel->k_m2t->ker_dim[1],M[j]);
       }
       #pragma omp critical(PVFMM_PRECOMP_MATRIX_PTS)
