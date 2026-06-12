@@ -10,7 +10,6 @@
 #include <cmath>
 #include <cassert>
 
-#include <parUtils.h>
 
 namespace pvfmm{
 

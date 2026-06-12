@@ -543,7 +543,7 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
     }
   }
 
-  pvfmm::Vector<size_t> scatter_index;
+  pvfmm::Vector<sctl::Long> scatter_index;
   { // Set tree_data
     pvfmm::Vector<Real>&  trg_coord=ctx->tree_data. trg_coord;
     pvfmm::Vector<Real>&  src_coord=ctx->tree_data. src_coord;
@@ -604,11 +604,11 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
         }
 
         // Scatter src coordinates and values.
-        pvfmm::par::SortScatterIndex( pt_mid  , scatter_index, ctx->comm, &min_mid);
-        pvfmm::par::ScatterForward  ( pt_mid  , scatter_index, ctx->comm);
-        pvfmm::par::ScatterForward  (src_coord, scatter_index, ctx->comm);
-        if( src_value.Dim()) pvfmm::par::ScatterForward( src_value, scatter_index, ctx->comm);
-        if(surf_value.Dim()) pvfmm::par::ScatterForward(surf_value, scatter_index, ctx->comm);
+        ctx->sctl_comm.SortScatterIndex( pt_mid  , scatter_index, &min_mid);
+        ctx->sctl_comm.ScatterForward( pt_mid  , scatter_index);
+        ctx->sctl_comm.ScatterForward(src_coord, scatter_index);
+        if( src_value.Dim()) ctx->sctl_comm.ScatterForward( src_value, scatter_index);
+        if(surf_value.Dim()) ctx->sctl_comm.ScatterForward(surf_value, scatter_index);
       }
       { // Set src tree_data
         std::vector<size_t> part_indx(nodes.size()+1);
@@ -679,9 +679,9 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
         }
 
         // Scatter trg coordinates.
-        pvfmm::par::SortScatterIndex( pt_mid  , scatter_index, ctx->comm, &min_mid);
-        pvfmm::par::ScatterForward  ( pt_mid  , scatter_index, ctx->comm);
-        pvfmm::par::ScatterForward  (trg_coord, scatter_index, ctx->comm);
+        ctx->sctl_comm.SortScatterIndex( pt_mid  , scatter_index, &min_mid);
+        ctx->sctl_comm.ScatterForward( pt_mid  , scatter_index);
+        ctx->sctl_comm.ScatterForward(trg_coord, scatter_index);
       }
       { // Set trg tree_data
         std::vector<size_t> part_indx(nodes.size()+1);
@@ -797,7 +797,7 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
       }
       trg_value.ReInit(trg_size,&n->trg_value[0]);
     }
-    pvfmm::par::ScatterReverse  (trg_value, scatter_index, ctx->comm, n_trg);
+    ctx->sctl_comm.ScatterReverse(trg_value, scatter_index, n_trg);
     #pragma omp parallel for
     for(size_t tid=0;tid<omp_p;tid++){
       size_t a=((tid+0)*n_trg)/omp_p;

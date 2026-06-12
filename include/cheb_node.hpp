@@ -106,7 +106,7 @@ class Cheb_Node: public MPI_Node<Real_t>{
    */
   virtual void NodeDataVec(std::vector<Vector<Real_t>*>& coord,
                         std::vector<Vector<Real_t>*>& value,
-                        std::vector<Vector<size_t>*>& scatter){
+                        std::vector<Vector<sctl::Long>*>& scatter){
     MPI_Node<Real_t>::NodeDataVec(coord, value, scatter);
     coord  .push_back(&cheb_coord  );
     value  .push_back(&cheb_value  );
@@ -212,7 +212,7 @@ class Cheb_Node: public MPI_Node<Real_t>{
   Function_t input_fn;
   Vector<Real_t> cheb_coord;   //coordinates of points
   Vector<Real_t> cheb_value;   //value at points
-  Vector<size_t> cheb_scatter; //scatter index mapping original data.
+  Vector<sctl::Long> cheb_scatter; //scatter index mapping original data.
 
  private:
 

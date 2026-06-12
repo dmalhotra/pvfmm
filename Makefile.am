@@ -67,7 +67,6 @@ pvfmm_cpp_header_files = \
 									include/mortonid.hpp \
 									include/mpi_node.hpp \
 									include/mpi_tree.hpp \
-									include/parUtils.h \
 									include/precomp_mat.hpp \
 									include/profile.hpp \
 									include/stacktrace.h \
@@ -87,7 +86,6 @@ pvfmm_cpp_header_files = \
 									include/mortonid.txx \
 									include/mpi_node.txx \
 									include/mpi_tree.txx \
-									include/parUtils.txx \
 									include/precomp_mat.txx \
 									include/tree.txx \
 									include/vector.txx \

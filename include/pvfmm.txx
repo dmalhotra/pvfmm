@@ -5,11 +5,11 @@
  * \brief This file contains the definitions of the wrapper functions for PVFMM.
  */
 
+#include <dtypes.h>
 #include <mpi_node.hpp>
 #include <fmm_tree.hpp>
 #include <fmm_pts.hpp>
 #include <vector.hpp>
-#include <parUtils.h>
 
 namespace pvfmm{
 
@@ -102,10 +102,10 @@ inline void ChebFMM_Evaluate(std::vector<Real>& trg_val, ChebFMM_Tree<Real>* tre
   tree->RunFMM();
 
   Vector<Real> trg_value;
-  Vector<size_t> trg_scatter;
+  Vector<sctl::Long> trg_scatter;
   {// Collect data from each node to trg_value and trg_scatter.
     std::vector<Real> trg_value_;
-    std::vector<size_t> trg_scatter_;
+    std::vector<sctl::Long> trg_scatter_;
     const auto& nodes=tree->GetNodeList();
     for(size_t i=0;i<nodes.size();i++){
       if(nodes[i]->IsLeaf() && !nodes[i]->IsGhost()){
@@ -118,7 +118,7 @@ inline void ChebFMM_Evaluate(std::vector<Real>& trg_val, ChebFMM_Tree<Real>* tre
     trg_value=trg_value_;
     trg_scatter=trg_scatter_;
   }
-  par::ScatterReverse(trg_value,trg_scatter,tree->Comm().GetMPI_Comm(),loc_size);
+  tree->Comm().ScatterReverse(trg_value,trg_scatter,loc_size);
   trg_val.assign(&trg_value[0],&trg_value[0]+trg_value.Dim());;
 }
 
@@ -247,7 +247,7 @@ inline PtFMM_Tree<Real>* PtFMM_CreateTree(const std::vector<Real>& src_coord, co
 template <class Real>
 inline void PtFMM_Evaluate(const PtFMM_Tree<Real>* tree, std::vector<Real>& trg_val, size_t loc_size, const std::vector<Real>* src_val, const std::vector<Real>* surf_val){
   if(src_val){
-    std::vector<size_t> src_scatter_;
+    std::vector<sctl::Long> src_scatter_;
     const auto& nodes=((PtFMM_Tree<Real>*)tree)->GetNodeList();
     for(size_t i=0;i<nodes.size();i++){
       if(nodes[i]->IsLeaf() && !nodes[i]->IsGhost()){
@@ -257,8 +257,8 @@ inline void PtFMM_Evaluate(const PtFMM_Tree<Real>* tree, std::vector<Real>& trg_
     }
 
     Vector<Real> src_value=*src_val;
-    Vector<size_t> src_scatter=src_scatter_;
-    par::ScatterForward(src_value,src_scatter,tree->Comm().GetMPI_Comm());
+    Vector<sctl::Long> src_scatter=src_scatter_;
+    tree->Comm().ScatterForward(src_value,src_scatter);
 
     size_t indx=0;
     for(size_t i=0;i<nodes.size();i++){
@@ -272,7 +272,7 @@ inline void PtFMM_Evaluate(const PtFMM_Tree<Real>* tree, std::vector<Real>& trg_
     }
   }
   if(surf_val){
-    std::vector<size_t> surf_scatter_;
+    std::vector<sctl::Long> surf_scatter_;
     const auto& nodes=((PtFMM_Tree<Real>*)tree)->GetNodeList();
     for(size_t i=0;i<nodes.size();i++){
       if(nodes[i]->IsLeaf() && !nodes[i]->IsGhost()){
@@ -282,8 +282,8 @@ inline void PtFMM_Evaluate(const PtFMM_Tree<Real>* tree, std::vector<Real>& trg_
     }
 
     Vector<Real> surf_value=*surf_val;
-    Vector<size_t> surf_scatter=surf_scatter_;
-    par::ScatterForward(surf_value,surf_scatter,tree->Comm().GetMPI_Comm());
+    Vector<sctl::Long> surf_scatter=surf_scatter_;
+    tree->Comm().ScatterForward(surf_value,surf_scatter);
 
     size_t indx=0;
     for(size_t i=0;i<nodes.size();i++){
@@ -298,10 +298,10 @@ inline void PtFMM_Evaluate(const PtFMM_Tree<Real>* tree, std::vector<Real>& trg_
   }
   ((PtFMM_Tree<Real>*)tree)->RunFMM();
   Vector<Real> trg_value;
-  Vector<size_t> trg_scatter;
+  Vector<sctl::Long> trg_scatter;
   {
     std::vector<Real> trg_value_;
-    std::vector<size_t> trg_scatter_;
+    std::vector<sctl::Long> trg_scatter_;
     const auto& nodes=((PtFMM_Tree<Real>*)tree)->GetNodeList();
     for(size_t i=0;i<nodes.size();i++){
       if(nodes[i]->IsLeaf() && !nodes[i]->IsGhost()){
@@ -314,7 +314,7 @@ inline void PtFMM_Evaluate(const PtFMM_Tree<Real>* tree, std::vector<Real>& trg_
     trg_value=trg_value_;
     trg_scatter=trg_scatter_;
   }
-  par::ScatterReverse(trg_value,trg_scatter,tree->Comm().GetMPI_Comm(),loc_size);
+  tree->Comm().ScatterReverse(trg_value,trg_scatter,loc_size);
   trg_val.assign(&trg_value[0],&trg_value[0]+trg_value.Dim());;
 }
 

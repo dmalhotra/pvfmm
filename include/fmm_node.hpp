@@ -83,7 +83,7 @@ class FMM_Node: public Node{
    */
   virtual void NodeDataVec(std::vector<Vector<Real_t>*>& coord,
                            std::vector<Vector<Real_t>*>& value,
-                           std::vector<Vector<size_t>*>& scatter){
+                           std::vector<Vector<sctl::Long>*>& scatter){
     Node::NodeDataVec(coord, value, scatter);
     coord  .push_back(&src_coord  );
     value  .push_back(&src_value  );
@@ -172,15 +172,15 @@ class FMM_Node: public Node{
 
   Vector<Real_t> src_coord;  //Point sources.
   Vector<Real_t> src_value;
-  Vector<size_t> src_scatter;
+  Vector<sctl::Long> src_scatter;
 
   Vector<Real_t> surf_coord; //Surface sources.
   Vector<Real_t> surf_value; //Normal and src strength.
-  Vector<size_t> surf_scatter;
+  Vector<sctl::Long> surf_scatter;
 
   Vector<Real_t> trg_coord;  //Target coordinates.
   Vector<Real_t> trg_value;
-  Vector<size_t> trg_scatter;
+  Vector<sctl::Long> trg_scatter;
 
   size_t pt_cnt[2]; // Number of source, target pts.
   Vector<sctl::Iterator<FMM_Node>> interac_list[Type_Count]; // allocation iterators (NullIterator = no interaction)

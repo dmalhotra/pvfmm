@@ -19,7 +19,6 @@
 #include <set>
 
 #include <dtypes.h>
-#include <parUtils.h>
 
 #include <mpi_node.hpp>
 #include <profile.hpp>
@@ -28,6 +27,49 @@
 // (ConstructLET) for 1D and 2D periodicity.
 
 namespace pvfmm{
+
+// Key/value pair ordered by key; used with omp_par::merge_sort for local
+// (pid, index) and (MortonId, index) lists. (Moved from the retired
+// parUtils.h.)
+template <typename A, typename B>
+struct SortPair{
+  int operator<(const SortPair<A,B>& p1) const{ return key<p1.key;}
+  A key;
+  B data;
+};
+
+// std::vector adapters for the sctl::Comm collectives (which take
+// sctl::Vector). Data is copied in and out because these collectives
+// redistribute elements across ranks, changing the local size.
+template <class T>
+inline void HyperQuickSort(const std::vector<T>& in, std::vector<T>& out, const sctl::Comm& comm){
+  Vector<T> in_(in), out_;
+  comm.HyperQuickSort(in_, out_);
+  out.resize(out_.Dim());
+  if(out_.Dim()) std::memcpy(&out[0], &out_[0], out_.Dim()*sizeof(T));
+}
+template <class T>
+inline void PartitionW(std::vector<T>& v, const sctl::Comm& comm){
+  Vector<T> v_(v);
+  comm.PartitionW(v_);
+  v.resize(v_.Dim());
+  if(v_.Dim()) std::memcpy(&v[0], &v_[0], v_.Dim()*sizeof(T));
+}
+// Alltoallv on raw buffers with int/size_t counts and displacements, as
+// stored at the call sites; converted to the Long arrays sctl expects.
+template <class T, class CntT>
+inline void Alltoallv(const T* sbuf, const CntT* scnt, const CntT* sdsp, T* rbuf, const CntT* rcnt, const CntT* rdsp, const sctl::Comm& comm){
+  const sctl::Long np=comm.Size();
+  Vector<sctl::Long> scnt_(np), sdsp_(np), rcnt_(np), rdsp_(np);
+  sctl::Long stot=0, rtot=0;
+  for(sctl::Long i=0;i<np;i++){
+    scnt_[i]=(sctl::Long)scnt[i]; sdsp_[i]=(sctl::Long)sdsp[i];
+    rcnt_[i]=(sctl::Long)rcnt[i]; rdsp_[i]=(sctl::Long)rdsp[i];
+    stot=std::max(stot,sdsp_[i]+scnt_[i]); rtot=std::max(rtot,rdsp_[i]+rcnt_[i]);
+  }
+  comm.Alltoallv(sctl::Ptr2ConstItr<T>(sbuf,stot?stot:1), scnt_.begin(), sdsp_.begin(),
+                 sctl::Ptr2Itr<T>(rbuf,rtot?rtot:1), rcnt_.begin(), rdsp_.begin());
+}
 
 /**
  * @author Dhairya Malhotra, dhairya.malhotra@gmail.com
@@ -106,7 +148,7 @@ inline int points2Octree(const Vector<MortonId>& pt_mid, Vector<MortonId>& nodes
   sctl::Profile::Tic("SortMortonId", &comm, true, 10);
   Vector<MortonId> pt_sorted;
   //par::partitionW<MortonId>(pt_mid, NULL, comm.GetMPI_Comm());
-  par::HyperQuickSort(pt_mid, pt_sorted, comm.GetMPI_Comm());
+  comm.HyperQuickSort(pt_mid, pt_sorted);
   size_t pt_cnt=pt_sorted.Dim();
   sctl::Profile::Toc();
 
@@ -191,7 +233,7 @@ inline int points2Octree(const Vector<MortonId>& pt_mid, Vector<MortonId>& nodes
 
   // Repartition nodes.
   sctl::Profile::Tic("partitionW", &comm, false, 10);
-  par::partitionW<MortonId>(nodes, NULL , comm.GetMPI_Comm());
+  comm.PartitionW(nodes);
   sctl::Profile::Toc();
 
   return 0;
@@ -228,13 +270,13 @@ void MPI_Tree<TreeNode>::Initialize(typename Node_t::NodeData* init_data){
   { // Sort and partition point coordinates and values.
     std::vector<Vector<Real_t>*> coord_lst;
     std::vector<Vector<Real_t>*> value_lst;
-    std::vector<Vector<size_t>*> scatter_lst;
+    std::vector<Vector<sctl::Long>*> scatter_lst;
     rnode->NodeDataVec(coord_lst, value_lst, scatter_lst);
     assert(coord_lst.size()==value_lst.size());
     assert(coord_lst.size()==scatter_lst.size());
 
     Vector<MortonId> pt_mid;
-    Vector<size_t> scatter_index;
+    Vector<sctl::Long> scatter_index;
     for(size_t i=0;i<coord_lst.size();i++){
       if(!coord_lst[i]) continue;
       Vector<Real_t>& pt_coord=*coord_lst[i];
@@ -246,14 +288,14 @@ void MPI_Tree<TreeNode>::Initialize(typename Node_t::NodeData* init_data){
           pt_mid[i]=MortonId(pt_coord[i*PVFMM_COORD_DIM+0],pt_coord[i*PVFMM_COORD_DIM+1],pt_coord[i*PVFMM_COORD_DIM+2],this->max_depth);
         }
       }
-      par::SortScatterIndex(pt_mid  , scatter_index, sctl_comm.GetMPI_Comm(), &lin_oct[0]);
-      par::ScatterForward  (pt_coord, scatter_index, sctl_comm.GetMPI_Comm());
+      sctl_comm.SortScatterIndex(pt_mid  , scatter_index, &lin_oct[0]);
+      sctl_comm.ScatterForward(pt_coord, scatter_index);
       if(value_lst[i]!=NULL){
         Vector<Real_t>& pt_value=*value_lst[i];
-        par::ScatterForward(pt_value, scatter_index, sctl_comm.GetMPI_Comm());
+        sctl_comm.ScatterForward(pt_value, scatter_index);
       }
       if(scatter_lst[i]!=NULL){
-        Vector<size_t>& pt_scatter=*scatter_lst[i];
+        Vector<sctl::Long>& pt_scatter=*scatter_lst[i];
         pt_scatter=scatter_index;
       }
     }
@@ -509,13 +551,13 @@ void MPI_Tree<TreeNode>::RedistNodes(MortonId* loc_min) {
   std::vector<MortonId> new_mins(np);
   if(loc_min==NULL){
     //Partition vector of MortonIds using par::partitionW
-    std::vector<MortonId> in_=in;
-    std::vector<long long> wts(in_.size());
+    Vector<MortonId> in_(in);
+    Vector<sctl::Long> wts(in_.Dim());
     #pragma omp parallel for
-    for(size_t i=0;i<wts.size();i++){
+    for(size_t i=0;i<(size_t)wts.Dim();i++){
       wts[i]=node_lst[i]->NodeCost();
     }
-    par::partitionW<MortonId>(in_,&wts[0],Comm().GetMPI_Comm());
+    Comm().PartitionW(in_, &wts);
     MPI_Allgather(&in_[0]     , 1, par::Mpi_datatype<MortonId>::value(),
                   &new_mins[0], 1, par::Mpi_datatype<MortonId>::value(), Comm().GetMPI_Comm());
   }else{
@@ -587,8 +629,8 @@ void MPI_Tree<TreeNode>::RedistNodes(MortonId* loc_min) {
       std::memcpy(data_ptr[i], (char*)data[i].data, data[i].length);
   }
 
-  par::Mpi_Alltoallv_sparse<char>(&send_buff[0], &send_size[0], &sdisp[0],
-    &recv_buff[0], &recv_size[0], &rdisp[0], Comm().GetMPI_Comm());
+  Alltoallv<char>(&send_buff[0], &send_size[0], &sdisp[0],
+    &recv_buff[0], &recv_size[0], &rdisp[0], Comm());
 
   char* r_ptr=recv_buff;
   std::vector<PackedData> r_data(recv_cnt);
@@ -754,7 +796,7 @@ inline int balanceOctree (std::vector<MortonId > &in, std::vector<MortonId > &ou
     //  balance_wt[i]=in[i].GetDepth();
     //}
     //par::partitionW<MortonId>(in, &balance_wt[0], comm.GetMPI_Comm());
-    par::partitionW<MortonId>(in, NULL, comm.GetMPI_Comm());
+    PartitionW(in, comm);
   }
 
   //Build level-by-level set of nodes.
@@ -836,9 +878,9 @@ inline int balanceOctree (std::vector<MortonId > &in, std::vector<MortonId > &ou
   //TODO The following might work better as it reduces the comm bandwidth:
   //Split comm into sqrt(np) processes and sort, linearise for each comm group.
   //Then do the global sort, linearise with the original comm.
-  par::HyperQuickSort(in, out, comm.GetMPI_Comm());
+  HyperQuickSort(in, out, comm);
   lineariseList(out, comm);
-  par::partitionW<MortonId>(out, NULL , comm.GetMPI_Comm());
+  PartitionW(out, comm);
   { // Add children
 
     //Remove empty processors...
@@ -902,7 +944,7 @@ inline int balanceOctree (std::vector<MortonId > &in, std::vector<MortonId > &ou
       out.swap(out1);
     }
     if(new_size<size){
-      par::partitionW<MortonId>(out, NULL , comm.GetMPI_Comm());
+      PartitionW(out, comm);
     }
 
     // new_comm freed automatically when sctl::Comm destructor fires.
@@ -966,8 +1008,8 @@ void MPI_Tree<TreeNode>::Balance21(BoundaryType bndry) {
     sctl::omp_par::scan(&recv_cnt[0],&recv_dsp[0],num_proc);
 
     in.resize(recv_cnt[num_proc-1]+recv_dsp[num_proc-1]);
-    par::Mpi_Alltoallv_sparse(&out[0], &     cnt[0], &     dsp[0],
-                              & in[0], &recv_cnt[0], &recv_dsp[0], Comm().GetMPI_Comm());
+    Alltoallv(&out[0], &     cnt[0], &     dsp[0],
+              & in[0], &recv_cnt[0], &recv_dsp[0], Comm());
     in.swap(out);
   }
   sctl::Profile::Toc();
@@ -1604,7 +1646,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
   CommData* node_comm_data=NULL; // CommData for all nodes (alias into node_comm_data_iter).
   std::vector<void*> shared_data; // CommData for shared nodes.
   std::vector<sctl::Iterator<char>> shared_data_storage; // owns fresh allocations corresponding to shared_data entries.
-  std::vector<par::SortPair<size_t,size_t> > pid_node_pair; // <pid, shared_data index> list
+  std::vector<SortPair<size_t,size_t> > pid_node_pair; // <pid, shared_data index> list
   { // Set node_comm_data
     MortonId mins_r0=mins[         rank+0         ].getDFD();
     MortonId mins_r1=mins[std::min(rank+1,num_p-1)].getDFD();
@@ -1666,7 +1708,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
                 }
               }
               if(unique_pid){
-                par::SortPair<size_t,size_t> p;
+                SortPair<size_t,size_t> p;
                 p.key=comm_data.usr_pid[j];
                 p.data=shared_data.size();
                 pid_node_pair.push_back(p);
@@ -1777,20 +1819,20 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
     if(recv_buff.size()<recv_length){
       recv_buff.resize(recv_length);
     }
-    par::Mpi_Alltoallv_sparse(&send_buff[0], &send_size[0], &send_disp[0],
-                              &recv_buff[0], &recv_size[0], &recv_disp[0], Comm().GetMPI_Comm());
+    Alltoallv(&send_buff[0], &send_size[0], &send_disp[0],
+              &recv_buff[0], &recv_size[0], &recv_disp[0], Comm());
   }
   //sctl::Profile::Toc();
 
   //sctl::Profile::Tic("Unpack",&this->Comm(), false, 5);
   std::vector<void*> recv_data; // CommData for received nodes.
   { // Unpack received octants.
-    std::vector<par::SortPair<MortonId,size_t> > mid_indx_pair;
+    std::vector<SortPair<MortonId,size_t> > mid_indx_pair;
     for(size_t i=0; i<recv_length;){
       recv_data.push_back(&recv_buff[i]);
       CommData comm_data = *(CommData*)&recv_buff[i];
       { // Add mid_indx_pair
-        par::SortPair<MortonId,size_t> p;
+        SortPair<MortonId,size_t> p;
         p.key=comm_data.mid;
         p.data=mid_indx_pair.size();
         mid_indx_pair.push_back(p);
@@ -1990,12 +2032,12 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
 
       std::vector<void*> recv_data; // CommData for received nodes.
       { // Unpack received octants.
-        std::vector<par::SortPair<MortonId,size_t> > mid_indx_pair;
+        std::vector<SortPair<MortonId,size_t> > mid_indx_pair;
         for(size_t i=0; i<(size_t)recv_length;){
           recv_data.push_back(&recv_buff[i]);
           CommData comm_data=*(CommData*)&recv_buff[i];
           { // Add mid_indx_pair
-            par::SortPair<MortonId,size_t> p;
+            SortPair<MortonId,size_t> p;
             p.key=comm_data.mid;
             p.data=mid_indx_pair.size();
             mid_indx_pair.push_back(p);

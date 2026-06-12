@@ -101,7 +101,7 @@ class MPI_Node: public TreeNode{
    */
   virtual void NodeDataVec(std::vector<Vector<Real_t>*>& coord,
                            std::vector<Vector<Real_t>*>& value,
-                           std::vector<Vector<size_t>*>& scatter){
+                           std::vector<Vector<sctl::Long>*>& scatter){
     coord  .push_back(&pt_coord  );
     value  .push_back(&pt_value  );
     scatter.push_back(&pt_scatter);
@@ -200,7 +200,7 @@ class MPI_Node: public TreeNode{
 
   Vector<Real_t> pt_coord;   //coordinates of points
   Vector<Real_t> pt_value;   //value at points
-  Vector<size_t> pt_scatter; //scatter index mapping original data.
+  Vector<sctl::Long> pt_scatter; //scatter index mapping original data.
 
  protected:
 

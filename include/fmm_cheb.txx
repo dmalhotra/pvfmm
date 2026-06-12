@@ -15,7 +15,6 @@
 #endif
 
 #include <dtypes.h>
-#include <parUtils.h>
 #include <cheb_utils.hpp>
 
 #include <profile.hpp>
