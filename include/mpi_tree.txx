@@ -542,8 +542,8 @@ void MPI_Tree<TreeNode>::RedistNodes(MortonId* loc_min) {
         if(p_iter>=b) break;
         send_cnts[p_iter]++;
         data[node_iter]=node_lst[node_iter]->Pack();
-        send_size[p_iter]+=data[node_iter].length+sizeof(size_t)+sizeof(MortonId);
-        sbuff_size       +=data[node_iter].length+sizeof(size_t)+sizeof(MortonId);
+        send_size[p_iter]+=data[node_iter].length+sizeof(MidPayloadHeader);
+        sbuff_size       +=data[node_iter].length+sizeof(MidPayloadHeader);
       }
     }
   }
@@ -573,9 +573,11 @@ void MPI_Tree<TreeNode>::RedistNodes(MortonId* loc_min) {
   std::vector<char*> data_ptr(leaf_cnt);
   char* s_ptr=send_buff;
   for(size_t i = 0; i < leaf_cnt; i++) {
-    std::memcpy(s_ptr, &in[i], sizeof(MortonId))       ; s_ptr += sizeof(MortonId);
-    std::memcpy(s_ptr, &data[i].length, sizeof(size_t)); s_ptr += sizeof(size_t);
-    data_ptr[i] = s_ptr                                ; s_ptr += data[i].length;
+    MidPayloadHeader rec;
+    rec.mid=in[i];
+    rec.length=data[i].length;
+    std::memcpy(s_ptr, &rec, sizeof(MidPayloadHeader)); s_ptr += sizeof(MidPayloadHeader);
+    data_ptr[i] = s_ptr                               ; s_ptr += data[i].length;
   }
   #pragma omp parallel for schedule(static)
   for(int p=0;p<omp_p;p++){
@@ -591,9 +593,11 @@ void MPI_Tree<TreeNode>::RedistNodes(MortonId* loc_min) {
   char* r_ptr=recv_buff;
   std::vector<PackedData> r_data(recv_cnt);
   for(size_t i=0;i<recv_cnt;i++){
-    std::memcpy(&out   [i],        r_ptr, sizeof(MortonId)); r_ptr+=sizeof(MortonId);
-    std::memcpy(&r_data[i].length, r_ptr, sizeof(size_t))  ; r_ptr+=sizeof(size_t);
-    r_data[i].data = r_ptr                                 ; r_ptr+=r_data[i].length;
+    MidPayloadHeader rec;
+    std::memcpy(&rec, r_ptr, sizeof(MidPayloadHeader)); r_ptr+=sizeof(MidPayloadHeader);
+    out[i]=rec.mid;
+    r_data[i].length=rec.length;
+    r_data[i].data = r_ptr                            ; r_ptr+=rec.length;
   }
 
   //Initialize all new nodes.

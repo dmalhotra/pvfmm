@@ -120,11 +120,10 @@ PackedData FMM_Node<Node>::Pack(bool ghost, void* buff_ptr, size_t offset){
     p2=PackMultipole();
   }else{
     char* data_ptr=(char*)buff_ptr+offset;
-    p2=PackMultipole(data_ptr+2*sizeof(size_t));
+    p2=PackMultipole(data_ptr+sizeof(PackedFMMNodeHeader));
   }
 
-  p0.length =sizeof(size_t);
-  p0.length+=sizeof(size_t)+p2.length;
+  p0.length =sizeof(PackedFMMNodeHeader)+p2.length;
   p1=Node_t::Pack(ghost,buff_ptr,p0.length+offset);
   p0.length+=p1.length;
   p0.data=p1.data;
@@ -132,12 +131,15 @@ PackedData FMM_Node<Node>::Pack(bool ghost, void* buff_ptr, size_t offset){
   char* data_ptr=(char*)p0.data;
   data_ptr+=offset;
 
-  // Header
-  ((size_t*)data_ptr)[0]=p0.length;
-  data_ptr+=sizeof(size_t);
+  { // Header
+    PackedFMMNodeHeader hdr;
+    hdr.length=p0.length;
+    hdr.mult_length=p2.length;
+    std::memcpy(data_ptr, &hdr, sizeof(PackedFMMNodeHeader));
+    data_ptr+=sizeof(PackedFMMNodeHeader);
+  }
 
   // Copy multipole data.
-  ((size_t*)data_ptr)[0]=p2.length; data_ptr+=sizeof(size_t);
   std::memcpy(data_ptr, (char*)p2.data, p2.length);
 
   return p0;
@@ -147,14 +149,14 @@ template <class Node>
 void FMM_Node<Node>::Unpack(PackedData p0, bool own_data){
   char* data_ptr=(char*)p0.data;
 
-  // Check header
-  size_t data_ptr_len;
-  std::memcpy(&data_ptr_len, data_ptr, sizeof(size_t));
-  assert(data_ptr_len==p0.length);
-  data_ptr+=sizeof(size_t);
+  // Check and read header
+  PackedFMMNodeHeader hdr;
+  std::memcpy(&hdr, data_ptr, sizeof(PackedFMMNodeHeader));
+  assert(hdr.length==p0.length);
+  data_ptr+=sizeof(PackedFMMNodeHeader);
 
   PackedData p2;
-  std::memcpy(&p2.length, data_ptr, sizeof(size_t)); data_ptr+=sizeof(size_t);
+  p2.length=hdr.mult_length;
   p2.data=(void*)data_ptr; data_ptr+=p2.length;
   InitMultipole(p2,own_data);
 

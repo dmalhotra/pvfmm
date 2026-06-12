@@ -31,6 +31,33 @@ struct PackedData{
 };
 
 /**
+ * \brief Fixed-size header at the start of the data produced by
+ * MPI_Node::Pack. The field order and widths define the wire layout; depth
+ * is widened to long long so that the variable-length vector segments that
+ * follow the header stay 8-byte aligned.
+ */
+struct PackedNodeHeader{
+  size_t length;      // total packed length in bytes, including this header
+  long long depth;
+  long long node_cost;
+  MortonId mid;
+};
+static_assert(sizeof(PackedNodeHeader)==sizeof(size_t)+2*sizeof(long long)+sizeof(MortonId), "PackedNodeHeader must have no internal padding (defines the wire layout)");
+static_assert(sizeof(PackedNodeHeader)%sizeof(size_t)==0, "segments following PackedNodeHeader must stay 8-byte aligned");
+
+/**
+ * \brief Wire record header pairing a MortonId with the byte length of the
+ * payload that follows. Used to frame packed nodes / multipole data in tree
+ * exchange messages. Records may land at non-8-byte offsets in a stream
+ * (payload lengths are Real_t multiples), so read/write with memcpy.
+ */
+struct MidPayloadHeader{
+  MortonId mid;
+  size_t length; // payload bytes that follow this header
+};
+static_assert(sizeof(MidPayloadHeader)==sizeof(MortonId)+sizeof(size_t), "MidPayloadHeader must have no internal padding (defines the wire layout)");
+
+/**
  * \brief Virtual base class for a locally essential tree node.
  */
 template <class T>

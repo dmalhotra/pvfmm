@@ -20,6 +20,17 @@
 namespace pvfmm{
 
 /**
+ * \brief Fixed-size header at the start of the data produced by
+ * FMM_Node::Pack. The multipole segment follows the header, then the
+ * packed base-node data (which begins with its own PackedNodeHeader).
+ */
+struct PackedFMMNodeHeader{
+  size_t length;      // total packed length in bytes, including this header
+  size_t mult_length; // length of the multipole segment that follows
+};
+static_assert(sizeof(PackedFMMNodeHeader)==2*sizeof(size_t), "PackedFMMNodeHeader must have no internal padding (defines the wire layout)");
+
+/**
  * \brief Base class for node of FMM_Node.
  */
 template <class Node>

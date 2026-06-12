@@ -20,6 +20,16 @@
 
 namespace pvfmm{
 
+/**
+ * \brief Wire header for the hypercube exchange in MultipoleReduceBcast:
+ * each message is a MultipoleMsgHeader followed by, for each node, a
+ * MidPayloadHeader and then rec.length bytes of multipole payload.
+ */
+struct MultipoleMsgHeader{
+  size_t node_cnt[2]; // number of nodes along each of the two root-paths
+};
+static_assert(sizeof(MultipoleMsgHeader)==2*sizeof(size_t), "MultipoleMsgHeader must have no internal padding (defines the wire layout)");
+
 template <class FMM_Mat_t>
 void FMM_Tree<FMM_Mat_t>::Initialize(typename Node_t::NodeData* init_data) {
   sctl::Profile::Tic("InitTree",&this->Comm(),true);{
@@ -424,7 +434,7 @@ void FMM_Tree<FMM_Mat_t>::MultipoleReduceBcast() {
 
     //Initialize send data.
     size_t s_node_cnt[2]={send_nodes[0].size(),send_nodes[1].size()};
-    int send_size=2*sizeof(size_t)+(s_node_cnt[0]+s_node_cnt[1])*sizeof(MortonId);
+    int send_size=sizeof(MultipoleMsgHeader)+(s_node_cnt[0]+s_node_cnt[1])*sizeof(MidPayloadHeader);
     std::vector<PackedData> send_data(s_node_cnt[0]+s_node_cnt[1]);
 
     size_t s_iter=0;
@@ -432,25 +442,29 @@ void FMM_Tree<FMM_Mat_t>::MultipoleReduceBcast() {
     for(size_t j=0;j<s_node_cnt[i];j++){
       assert(send_nodes[i][j]!=sctl::NullIterator<Node_t>());
       send_data[s_iter]=send_nodes[i][j]->PackMultipole();
-      send_size+=send_data[s_iter].length+sizeof(size_t);
+      send_size+=send_data[s_iter].length;
       s_iter++;
     }
 
     sctl::ScratchBuf<char> send_buff_scratch(send_size ? send_size : 1);
     char* send_buff = &send_buff_scratch.begin()[0];
     char* buff_iter=send_buff;
-    ((size_t*)buff_iter)[0]=s_node_cnt[0];
-    ((size_t*)buff_iter)[1]=s_node_cnt[1];
-    buff_iter+=2*sizeof(size_t);
+    {
+      MultipoleMsgHeader hdr;
+      hdr.node_cnt[0]=s_node_cnt[0];
+      hdr.node_cnt[1]=s_node_cnt[1];
+      std::memcpy(buff_iter, &hdr, sizeof(MultipoleMsgHeader));
+      buff_iter+=sizeof(MultipoleMsgHeader);
+    }
 
     s_iter=0;
     for(int i=0;i<2;i++)
     for(size_t j=0;j<s_node_cnt[i];j++){
-      ((MortonId*)buff_iter)[0]=send_nodes[i][j]->GetMortonId();
-      buff_iter+=sizeof(MortonId);
-
-      ((size_t*)buff_iter)[0]=send_data[s_iter].length;
-      buff_iter+=sizeof(size_t);
+      MidPayloadHeader rec;
+      rec.mid=send_nodes[i][j]->GetMortonId();
+      rec.length=send_data[s_iter].length;
+      std::memcpy(buff_iter, &rec, sizeof(MidPayloadHeader));
+      buff_iter+=sizeof(MidPayloadHeader);
 
       sctl::omp_par::memcpy((char*)buff_iter, (char*)send_data[s_iter].data, send_data[s_iter].length);
       buff_iter+=send_data[s_iter].length;
@@ -496,8 +510,10 @@ void FMM_Tree<FMM_Mat_t>::MultipoleReduceBcast() {
     //Construct nodes from received data.
     if(recv_size>0){
       buff_iter=&recv_buff[0];
-      size_t r_node_cnt[2]={((size_t*)buff_iter)[0],((size_t*)buff_iter)[1]};
-      buff_iter+=2*sizeof(size_t);
+      MultipoleMsgHeader hdr;
+      std::memcpy(&hdr, buff_iter, sizeof(MultipoleMsgHeader));
+      size_t r_node_cnt[2]={hdr.node_cnt[0],hdr.node_cnt[1]};
+      buff_iter+=sizeof(MultipoleMsgHeader);
       std::vector<MortonId> r_mid[2];
       r_mid[0].resize(r_node_cnt[0]);
       r_mid[1].resize(r_node_cnt[1]);
@@ -509,14 +525,14 @@ void FMM_Tree<FMM_Mat_t>::MultipoleReduceBcast() {
       recv_data[1].resize(r_node_cnt[1]);
       for(int i=0;i<2;i++)
       for(size_t j=0;j<r_node_cnt[i];j++){
-        r_mid[i][j]=((MortonId*)buff_iter)[0];
-        buff_iter+=sizeof(MortonId);
+        MidPayloadHeader rec;
+        std::memcpy(&rec, buff_iter, sizeof(MidPayloadHeader));
+        buff_iter+=sizeof(MidPayloadHeader);
 
-        recv_data[i][j].length=((size_t*)buff_iter)[0];
-        buff_iter+=sizeof(size_t);
-
+        r_mid[i][j]=rec.mid;
+        recv_data[i][j].length=rec.length;
         recv_data[i][j].data=(void*)buff_iter;
-        buff_iter+=recv_data[i][j].length;
+        buff_iter+=rec.length;
       }
 
       // Add multipole expansion to existing nodes.
