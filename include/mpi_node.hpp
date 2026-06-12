@@ -88,12 +88,12 @@ class MPI_Node: public TreeNode{
   /**
    * \brief Returns the colleague corresponding to the input index.
    */
-  MPI_Node<Real_t>* Colleague(int index){return colleague[index];}
+  sctl::Iterator<TreeNode> Colleague(int index){return colleague[index];}
 
   /**
    * \brief Set the colleague corresponding to the input index.
    */
-  void SetColleague(MPI_Node<Real_t>* node_, int index){colleague[index]=node_;}
+  void SetColleague(sctl::Iterator<TreeNode> node_, int index){colleague[index]=node_;}
 
   /**
    * \brief Returns the cost of this node. Used for load balancing.
@@ -182,7 +182,7 @@ class MPI_Node: public TreeNode{
   long long weight;
 
   Real_t coord[PVFMM_COORD_DIM];
-  MPI_Node<Real_t>* colleague[PVFMM_COLLEAGUE_COUNT];
+  sctl::Iterator<TreeNode> colleague[PVFMM_COLLEAGUE_COUNT]; // allocation iterators, like TreeNode::child/parent
   Vector<char> packed_data;
 };
 

@@ -1126,22 +1126,22 @@ void MPI_Tree<TreeNode>::SetColleagues(BoundaryType bndry, Node_t* node){
         return (((z+1)*3+(y+1))*3+(x+1));
       };
       if(bndry==FreeSpace){
-        curr_node->SetColleague(&curr_node[0], colleague_idx(0,0,0) );
+        curr_node->SetColleague((sctl::Iterator<::pvfmm::TreeNode>)curr_node, colleague_idx(0,0,0) );
       } else if (bndry==BoundaryType::PX) {
         for(long x = -1; x <= 1; x++) {
-          curr_node->SetColleague(&curr_node[0], colleague_idx(x,0,0) );
+          curr_node->SetColleague((sctl::Iterator<::pvfmm::TreeNode>)curr_node, colleague_idx(x,0,0) );
         }
       } else if (bndry==BoundaryType::PXY) {
         for(long y = -1; y <= 1; y++) {
           for(long x = -1; x <= 1; x++) {
-            curr_node->SetColleague(&curr_node[0], colleague_idx(x,y,0) );
+            curr_node->SetColleague((sctl::Iterator<::pvfmm::TreeNode>)curr_node, colleague_idx(x,y,0) );
           }
         }
       } else if (bndry==BoundaryType::PXYZ) {
         for(long z = -1; z <= 1; z++) {
           for(long y = -1; y <= 1; y++) {
             for(long x = -1; x <= 1; x++) {
-              curr_node->SetColleague(&curr_node[0], colleague_idx(x,y,z) );
+              curr_node->SetColleague((sctl::Iterator<::pvfmm::TreeNode>)curr_node, colleague_idx(x,y,z) );
             }
           }
         }
@@ -1200,22 +1200,21 @@ void MPI_Tree<TreeNode>::SetColleagues(BoundaryType bndry, Node_t* node){
     }
     / */
     Node_t* parent_node;
-    Node_t* tmp_node1;
-    Node_t* tmp_node2;
+    sctl::Iterator<Node_t> tmp_node1;
+    sctl::Iterator<Node_t> tmp_node2;
 
-    for(int i=0;i<n1;i++)node->SetColleague(NULL,i);
+    for(int i=0;i<n1;i++)node->SetColleague(sctl::NullIterator<::pvfmm::TreeNode>(),i);
     if(node->Parent()==sctl::NullIterator<::pvfmm::TreeNode>()) return;
     parent_node=&((sctl::Iterator<Node_t>)node->Parent())[0];
 
     int l=node->Path2Node();
     for(int i=0;i<n1;i++){ //For each coll of the parent
-      tmp_node1=(Node_t*)parent_node->Colleague(i);
-      if(tmp_node1!=NULL)
+      tmp_node1=(sctl::Iterator<Node_t>)parent_node->Colleague(i);
+      if(tmp_node1!=sctl::NullIterator<Node_t>())
       if(!tmp_node1->IsLeaf()){
         for(int j=0;j<n2;j++){ //For each child
-          sctl::Iterator<Node_t> child_iter=(sctl::Iterator<Node_t>)tmp_node1->Child(j);
-          tmp_node2=(child_iter==sctl::NullIterator<Node_t>()?NULL:&child_iter[0]);
-          if(tmp_node2!=NULL){
+          tmp_node2=(sctl::Iterator<Node_t>)tmp_node1->Child(j);
+          if(tmp_node2!=sctl::NullIterator<Node_t>()){
 
             bool flag=true;
             int a=1,b=1,new_indx=0;
@@ -1226,7 +1225,7 @@ void MPI_Tree<TreeNode>::SetColleagues(BoundaryType bndry, Node_t* node){
               a*=2;b*=3;
             }
             if(flag){
-              node->SetColleague(tmp_node2,new_indx);
+              node->SetColleague((sctl::Iterator<::pvfmm::TreeNode>)tmp_node2,new_indx);
             }
           }
         }

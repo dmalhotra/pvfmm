@@ -102,15 +102,15 @@ void FMM_Tree<FMM_Mat_t>::SetupFMM(FMM_Mat_t* fmm_mat_) {
   sctl::Profile::Tic("CollectNodeData",&this->Comm(),false,3);
   //Build node list.
   sctl::Iterator<Node_t> n=this->PostorderFirst();
-  std::vector<Node_t*> all_nodes;
+  std::vector<sctl::Iterator<Node_t>> all_nodes;
   while(n!=sctl::NullIterator<Node_t>()){
     n->pt_cnt[0]=0;
     n->pt_cnt[1]=0;
-    all_nodes.push_back(&n[0]);
+    all_nodes.push_back(n);
     n=this->PostorderNxt(n);
   }
   //Collect node data into continuous array.
-  std::vector<Vector<Node_t*> > node_lists; // TODO: Remove this parameter, not really needed
+  std::vector<Vector<sctl::Iterator<Node_t>> > node_lists; // TODO: Remove this parameter, not really needed
   fmm_mat->CollectNodeData((MatTree_t*)this,all_nodes, node_data_buff, node_lists);
   sctl::Profile::Toc();
 
@@ -309,23 +309,23 @@ void FMM_Tree<FMM_Mat_t>::UpwardPass() {
 
 template <class FMM_Mat_t>
 void FMM_Tree<FMM_Mat_t>::BuildInteracLists() {
-  std::vector<Node_t*> n_list_src;
-  std::vector<Node_t*> n_list_trg;
+  std::vector<sctl::Iterator<Node_t>> n_list_src;
+  std::vector<sctl::Iterator<Node_t>> n_list_trg;
   { // Build n_list
     std::vector<sctl::Iterator<Node_t>>& nodes=this->GetNodeList();
     for(size_t i=0;i<nodes.size();i++){
       if(!nodes[i]->IsGhost() && nodes[i]->pt_cnt[0]){
-        n_list_src.push_back(&nodes[i][0]);
+        n_list_src.push_back(nodes[i]);
       }
       if(!nodes[i]->IsGhost() && nodes[i]->pt_cnt[1]){
-        n_list_trg.push_back(&nodes[i][0]);
+        n_list_trg.push_back(nodes[i]);
       }
     }
   }
   size_t node_cnt=std::max(n_list_src.size(),n_list_trg.size());
 
   std::vector<Mat_Type> type_lst;
-  std::vector<std::vector<Node_t*>*> type_node_lst;
+  std::vector<std::vector<sctl::Iterator<Node_t>>*> type_node_lst;
   type_lst.push_back(S2U_Type); type_node_lst.push_back(&n_list_src);
   type_lst.push_back(U2U_Type); type_node_lst.push_back(&n_list_src);
   type_lst.push_back(D2D_Type); type_node_lst.push_back(&n_list_trg);
@@ -349,11 +349,11 @@ void FMM_Tree<FMM_Mat_t>::BuildInteracLists() {
   #pragma omp parallel for
   for(int j=0;j<omp_p;j++){
     for(size_t k=0;k<type_lst.size();k++){
-      std::vector<Node_t*>& n_list=*type_node_lst[k];
+      std::vector<sctl::Iterator<Node_t>>& n_list=*type_node_lst[k];
       size_t a=(n_list.size()*(j  ))/omp_p;
       size_t b=(n_list.size()*(j+1))/omp_p;
       for(size_t i=a;i<b;i++){
-        Node_t* n=n_list[i];
+        sctl::Iterator<Node_t> n=n_list[i];
         n->interac_list[type_lst[k]].ReInit(interac_cnt[k],&node_interac_lst[i][interac_dsp[k]],false);
         interac_list.BuildList(n,type_lst[k]);
       }

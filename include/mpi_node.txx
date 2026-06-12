@@ -36,7 +36,7 @@ void MPI_Node<T>::Initialize(sctl::Iterator<TreeNode> parent_,int path2node_, Tr
 
   //Initialize colleagues array.
   int n=sctl::pow<unsigned int>(3,Dim());
-  for(int i=0;i<n;i++) colleague[i]=NULL;
+  for(int i=0;i<n;i++) colleague[i]=sctl::NullIterator<TreeNode>();
 
   //Set MPI_Node specific data.
   typename MPI_Node<Real_t>::NodeData* mpi_data=dynamic_cast<typename MPI_Node<Real_t>::NodeData*>(data_);

@@ -172,7 +172,7 @@ class FMM_Node: public Node{
   Vector<size_t> trg_scatter;
 
   size_t pt_cnt[2]; // Number of source, target pts.
-  Vector<FMM_Node*> interac_list[Type_Count];
+  Vector<sctl::Iterator<FMM_Node>> interac_list[Type_Count]; // allocation iterators (NullIterator = no interaction)
 
  private:
 

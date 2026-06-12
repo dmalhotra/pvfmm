@@ -95,13 +95,13 @@ class FMM_Tree: public MPI_Tree<typename FMM_Mat_t::FMMNode_t>{
  protected:
 
   std::vector<Matrix<Real_t> > node_data_buff;
-  pvfmm::Matrix<Node_t*> node_interac_lst;
+  pvfmm::Matrix<sctl::Iterator<Node_t>> node_interac_lst;
   InteracList<Node_t> interac_list;
   FMM_Mat_t* fmm_mat; //Computes all FMM translations.
   BoundaryType bndry;
 
   std::vector<Matrix<char> > precomp_lst; //Precomputed data for each interaction type.
-  std::vector<SetupData<Real_t> > setup_data;
+  std::vector<SetupData<typename FMM_Mat_t::FMMNode_t> > setup_data;
 
   std::vector<Vector<Real_t> > upwd_check_surf;
   std::vector<Vector<Real_t> > upwd_equiv_surf;
