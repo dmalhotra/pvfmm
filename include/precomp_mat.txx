@@ -155,20 +155,20 @@ size_t PrecompMat<T>::CompactData(int level, Mat_Type type, Matrix<char>& comp_d
     for(size_t j=0;j<mat_cnt;j++){
       Matrix     <T>& M =Mat   (level,type,j);
       offset_indx[j][0]=data_offset; indx_ptr+=sizeof(size_t);
-      data_offset+=M.Dim(0)*M.Dim(1)*sizeof(T); mem_size=mem::align_ptr(mem_size);
+      data_offset+=M.Dim(0)*M.Dim(1)*sizeof(T); data_offset=mem::align_ptr(data_offset);
 
       for(size_t l=l0;l<l1;l++){
         Permutation<T>& Pr=Perm_R(l,type,j);
         offset_indx[j][1+4*(l-l0)+0]=data_offset;
-        data_offset+=Pr.Dim()*sizeof(PVFMM_PERM_INT_T); mem_size=mem::align_ptr(mem_size);
+        data_offset+=Pr.Dim()*sizeof(PVFMM_PERM_INT_T); data_offset=mem::align_ptr(data_offset);
         offset_indx[j][1+4*(l-l0)+1]=data_offset;
-        data_offset+=Pr.Dim()*sizeof(T);          mem_size=mem::align_ptr(mem_size);
+        data_offset+=Pr.Dim()*sizeof(T);          data_offset=mem::align_ptr(data_offset);
 
         Permutation<T>& Pc=Perm_C(l,type,j);
         offset_indx[j][1+4*(l-l0)+2]=data_offset;
-        data_offset+=Pc.Dim()*sizeof(PVFMM_PERM_INT_T); mem_size=mem::align_ptr(mem_size);
+        data_offset+=Pc.Dim()*sizeof(PVFMM_PERM_INT_T); data_offset=mem::align_ptr(data_offset);
         offset_indx[j][1+4*(l-l0)+3]=data_offset;
-        data_offset+=Pc.Dim()*sizeof(T);          mem_size=mem::align_ptr(mem_size);
+        data_offset+=Pc.Dim()*sizeof(T);          data_offset=mem::align_ptr(data_offset);
       }
     }
   }
