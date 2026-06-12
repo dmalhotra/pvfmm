@@ -21,10 +21,10 @@
 namespace pvfmm{
 
 // Thin adapter over sctl::Vector<T> preserving pvfmm's historical API:
-// size_t dimensions, raw-pointer Begin(), Resize(), and copy-only semantics.
-// No move operations: `vec = Vector<T>(n, ptr, false)` must deep-copy
-// (MPI_Node::Unpack relies on it); an implicit move would adopt the alias
-// and leave vec dangling once the underlying buffer is freed.
+// size_t dimensions, Resize(), and raw-T* overloads under SCTL_MEMDEBUG.
+// Copy/move/assignment semantics are sctl's (moves adopt the source's
+// storage, including non-owning views — sites that want a deep copy say
+// so explicitly via ReInit(n, ptr, true)).
 template <class T>
 class Vector : public sctl::Vector<T> {
 
@@ -42,19 +42,12 @@ class Vector : public sctl::Vector<T> {
     : Vector(dim_, (data_? sctl::Ptr2Itr<T>(data_, (sctl::Long)dim_) : sctl::NullIterator<T>()), own_data_) {}
 #endif
 
-  Vector(const Vector& V) : Base(V) {}
-
   Vector(const std::vector<T>& V) : Base(V) {}
 
   // Adopt/copy a base-class value (e.g. the result of an sctl::Vector
-  // returning expression). Same-type rvalues still prefer the copy ctor,
-  // so pvfmm::Vector itself remains copy-only.
+  // returning expression).
   Vector(Base&& V) noexcept : Base(std::move(V)) {}
   Vector(const Base& V) : Base(V) {}
-
-  ~Vector() = default; // user-declared: suppresses implicit moves (see class comment)
-
-  Vector& operator=(const Vector& V){ Base::operator=((const Base&)V); return *this; }
 
   Vector& operator=(const std::vector<T>& V){ Base::operator=(V); return *this; }
 
@@ -76,13 +69,17 @@ class Vector : public sctl::Vector<T> {
   // so contents are not preserved there.
   void Resize(size_t dim_){ if(Dim()!=dim_) Base::ReInit((sctl::Long)dim_); }
 
-  // Raw-pointer view of the data; NULL for empty vectors and for the
-  // dim>0/null-storage placeholder state (ReInit(n,NULL,false)) that
-  // FMM_Pts::CollectNodeData uses to request buffer space.
-  T* Begin(){ sctl::Iterator<T> it=Base::begin(); return (Dim()>0 && it!=sctl::NullIterator<T>() ? &it[0] : (T*)NULL); }
-
-  const T* Begin() const{ sctl::ConstIterator<T> it=Base::begin(); return (Dim()>0 && it!=sctl::NullIterator<T>() ? &it[0] : (const T*)NULL); }
 };
+
+// Null-safe raw-pointer view: NULL for empty vectors and for the
+// dim>0/null-storage placeholder state (ReInit(n,NULL,false)) that
+// FMM_Pts::CollectNodeData uses to request buffer space. Use only at
+// terminal consumption points (MPI, memcpy, device copies); carry
+// iterators (v.begin()) everywhere else.
+template <class T>
+T* VecBegin(sctl::Vector<T>& v){ sctl::Iterator<T> it=v.begin(); return (v.Dim()>0 && it!=sctl::NullIterator<T>() ? &it[0] : (T*)NULL); }
+template <class T>
+const T* VecBegin(const sctl::Vector<T>& v){ sctl::ConstIterator<T> it=v.begin(); return (v.Dim()>0 && it!=sctl::NullIterator<T>() ? &it[0] : (const T*)NULL); }
 
 }//end namespace
 #ifdef __INTEL_OFFLOAD

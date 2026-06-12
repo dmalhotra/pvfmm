@@ -402,7 +402,11 @@ void MPI_Node<T>::Unpack(PackedData p0, bool own_data){
       size_t vec_sz;
       std::memcpy(&vec_sz, data_ptr, sizeof(size_t)); data_ptr+=sizeof(size_t);
       if(own_data){
-        vec=Vector<Real_t>(vec_sz,(Real_t*)data_ptr,false);
+        // Deep-copy the wire data. Copy into vec's existing storage when the
+        // size matches — vec may be a view into node_data_buff and the FMM
+        // reads through that buffer — and rebind to owned storage otherwise.
+        if(vec.Dim()!=vec_sz) vec.ReInit(vec_sz);
+        if(vec_sz) sctl::omp_par::copy(sctl::Ptr2ConstItr<Real_t>((Real_t*)data_ptr,(sctl::Long)vec_sz), sctl::Ptr2ConstItr<Real_t>((Real_t*)data_ptr,(sctl::Long)vec_sz)+(sctl::Long)vec_sz, vec.begin());
       }else{
         vec.ReInit(vec_sz,(Real_t*)data_ptr,false);
       }
@@ -416,7 +420,11 @@ void MPI_Node<T>::Unpack(PackedData p0, bool own_data){
       size_t vec_sz;
       std::memcpy(&vec_sz, data_ptr, sizeof(size_t)); data_ptr+=sizeof(size_t);
       if(own_data){
-        vec=Vector<Real_t>(vec_sz,(Real_t*)data_ptr,false);
+        // Deep-copy the wire data. Copy into vec's existing storage when the
+        // size matches — vec may be a view into node_data_buff and the FMM
+        // reads through that buffer — and rebind to owned storage otherwise.
+        if(vec.Dim()!=vec_sz) vec.ReInit(vec_sz);
+        if(vec_sz) sctl::omp_par::copy(sctl::Ptr2ConstItr<Real_t>((Real_t*)data_ptr,(sctl::Long)vec_sz), sctl::Ptr2ConstItr<Real_t>((Real_t*)data_ptr,(sctl::Long)vec_sz)+(sctl::Long)vec_sz, vec.begin());
       }else{
         vec.ReInit(vec_sz,(Real_t*)data_ptr,false);
       }
@@ -430,7 +438,8 @@ void MPI_Node<T>::Unpack(PackedData p0, bool own_data){
       size_t vec_sz;
       std::memcpy(&vec_sz, data_ptr, sizeof(size_t)); data_ptr+=sizeof(size_t);
       if(own_data){
-        vec=Vector<size_t>(vec_sz,(size_t*)data_ptr,false);
+        if(vec.Dim()!=vec_sz) vec.ReInit(vec_sz); // see pt_coord comment above
+        if(vec_sz) sctl::omp_par::copy(sctl::Ptr2ConstItr<size_t>((size_t*)data_ptr,(sctl::Long)vec_sz), sctl::Ptr2ConstItr<size_t>((size_t*)data_ptr,(sctl::Long)vec_sz)+(sctl::Long)vec_sz, vec.begin());
       }else{
         vec.ReInit(vec_sz,(size_t*)data_ptr,false);
       }

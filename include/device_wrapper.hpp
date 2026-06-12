@@ -59,7 +59,7 @@ struct DeviceVector{
   // Bind a host-side view (CPU/MIC fallback path).
   DeviceVector& operator=(Vector<T>& V){
     dim=V.Dim();
-    dev_ptr=(uintptr_t)V.Begin();
+    dev_ptr=(uintptr_t)VecBegin(V);
     return *this;
   }
 
@@ -89,7 +89,7 @@ struct DeviceMatrix{
   DeviceMatrix& operator=(Matrix<T>& M){
     dim[0]=M.Dim(0);
     dim[1]=M.Dim(1);
-    dev_ptr=(uintptr_t)M.Begin();
+    dev_ptr=(uintptr_t)MatBegin(M);
     return *this;
   }
 

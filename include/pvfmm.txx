@@ -172,7 +172,7 @@ void ChebFMM_Coeff2Nodes(std::vector<Real>& node_val, int ChebDeg, int dof, cons
       const Vector<Real> coeff_(dof*M0, (Real*)coeff.data() + i * dof*M0, false);
       cheb_eval(coeff_, ChebDeg, cheb_nds, cheb_nds, cheb_nds, buff);
 
-      const Matrix<Real> buff_(dof,M1, buff.Begin(), false);
+      const Matrix<Real> buff_(dof,M1, buff.begin(), false);
       Matrix<Real> node_val_(M1,dof, (Real*)node_val.data() + i * M1*dof, false);
       Matrix<Real>::Transpose(node_val_, buff_);
     }
@@ -198,10 +198,10 @@ void ChebFMM_Nodes2Coeff(std::vector<Real>& coeff, int ChebDeg, int dof, const s
     long b = N*(tid+1)/np;
     for (long i = a; i < b; i++) {
       const Matrix<Real> node_val_(M1,dof, (Real*)node_val.data() + i * M1*dof, false);
-      Matrix<Real> buff_(dof,M1, buff.Begin(), false);
+      Matrix<Real> buff_(dof,M1, buff.begin(), false);
       Matrix<Real>::Transpose(buff_, node_val_);
 
-      cheb_approx<Real,Real>(buff.Begin(), ChebDeg, dof, coeff.data()+i*dof*M0);
+      cheb_approx<Real,Real>(VecBegin(buff), ChebDeg, dof, coeff.data()+i*dof*M0);
     }
   }
 }

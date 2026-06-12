@@ -137,21 +137,21 @@ T cheb_approx(const T* fn_v, int cheb_deg, int dof, T* out){
     Matrix<Y> Mo(dof*d*d,d,buff2,false);
     Mo=Mi*(*Mp);
 
-    MatrixTranspose<Y>(Mo.Dim(0),Mo.Dim(1),Mo.Begin(),buff1);
+    MatrixTranspose<Y>(Mo.Dim(0),Mo.Dim(1),buff2,buff1);
   }
   { // Apply Mp along y-dimension
     Matrix<Y> Mi(d*dof*d,d,buff1,false);
     Matrix<Y> Mo(d*dof*d,d,buff2,false);
     Mo=Mi*(*Mp);
 
-    MatrixTranspose<Y>(Mo.Dim(0),Mo.Dim(1),Mo.Begin(),buff1);
+    MatrixTranspose<Y>(Mo.Dim(0),Mo.Dim(1),buff2,buff1);
   }
   { // Apply Mp along z-dimension
     Matrix<Y> Mi(d*d*dof,d,buff1,false);
     Matrix<Y> Mo(d*d*dof,d,buff2,false);
     Mo=Mi*(*Mp);
 
-    MatrixTranspose<Y>(Mo.Dim(0),Mo.Dim(1),Mo.Begin(),buff1);
+    MatrixTranspose<Y>(Mo.Dim(0),Mo.Dim(1),buff2,buff1);
   }
 
   { // Rearrange and write to out
@@ -443,26 +443,26 @@ void cheb_eval(const Vector<T>& coeff_, int cheb_deg, const std::vector<T>& in_x
     Matrix<T> Mo  ( d* d*dof,n1,v2,false);
     Matrix<T>::GEMM(Mo, Mi, Mp1);
 
-    MatrixTranspose<T>(Mo.Dim(0),Mo.Dim(1),Mo.Begin(),v1);
+    MatrixTranspose<T>(Mo.Dim(0),Mo.Dim(1),v2,v1);
   }
   { // Apply Mp2
     Matrix<T> Mi  (n1* d*dof, d,v1,false);
     Matrix<T> Mo  (n1* d*dof,n2,v2,false);
     Matrix<T>::GEMM(Mo, Mi, Mp2);
 
-    MatrixTranspose<T>(Mo.Dim(0),Mo.Dim(1),Mo.Begin(),v1);
+    MatrixTranspose<T>(Mo.Dim(0),Mo.Dim(1),v2,v1);
   }
   { // Apply Mp3
     Matrix<T> Mi  (n2*n1*dof, d,v1,false);
     Matrix<T> Mo  (n2*n1*dof,n3,v2,false);
     Matrix<T>::GEMM(Mo, Mi, Mp3);
 
-    MatrixTranspose<T>(Mo.Dim(0),Mo.Dim(1),Mo.Begin(),v1);
+    MatrixTranspose<T>(Mo.Dim(0),Mo.Dim(1),v2,v1);
   }
 
   { // Copy to out
     Matrix<T> Mo  ( n3*n2*n1,dof,v1,false);
-    MatrixTranspose<T>(Mo.Dim(0),Mo.Dim(1),Mo.Begin(),&out[0]);
+    MatrixTranspose<T>(Mo.Dim(0),Mo.Dim(1),v1,&out[0]);
   }
 
   // buff_scratch freed automatically at scope exit.
@@ -852,7 +852,7 @@ std::vector<T> integ_pyramid(int m, T* s, T r, int nx, const Kernel<T>& kernel, 
         {
           Matrix<T> k_val(ny*nz*kernel.ker_dim[0],kernel.ker_dim[1]);
           kernel.BuildMatrix(&src[0],1,&trg[0],ny*nz,&k_val[0][0]);
-          MatrixTranspose<T>(ny*nz*kernel.ker_dim[0],kernel.ker_dim[1],k_val.Begin(),&k_out[0]);
+          MatrixTranspose<T>(ny*nz*kernel.ker_dim[0],kernel.ker_dim[1],k_val[0],&k_out[0]);
         }
         for(int kk=0; kk<k_dim; kk++){
           for(int i0=0; i0<ny; i0++){

@@ -20,9 +20,9 @@
 namespace pvfmm{
 
 // Thin adapter over sctl::Matrix<T> preserving pvfmm's historical API:
-// size_t dimensions, raw-pointer Begin() and operator[], Resize(), the
-// pvfmm::Permutation-based RowPerm/ColPerm, CUBLASGEMM, and copy-only
-// semantics (see Vector<T> for the no-moves rationale).
+// size_t dimensions, raw-pointer operator[], Resize(), CUBLASGEMM, and
+// raw-T* overloads under SCTL_MEMDEBUG. Copy/move/assignment semantics
+// are sctl's (see Vector<T>).
 template <class T>
 class Matrix : public sctl::Matrix<T> {
 
@@ -39,17 +39,10 @@ class Matrix : public sctl::Matrix<T> {
     : Matrix(dim1, dim2, (data_? sctl::Ptr2Itr<T>(data_, (sctl::Long)dim1*(sctl::Long)dim2) : sctl::NullIterator<T>()), own_data_) {}
 #endif
 
-  Matrix(const Matrix<T>& M) : Base(M) {}
-
   // Adopt/copy a base-class value (results of Transpose(), pinv(),
-  // operator* etc., which return sctl::Matrix). Same-type rvalues still
-  // prefer the copy ctor, so pvfmm::Matrix itself remains copy-only.
+  // operator* etc., which return sctl::Matrix).
   Matrix(Base&& M) noexcept : Base(std::move(M)) {}
   Matrix(const Base& M) : Base(M) {}
-
-  ~Matrix() = default; // user-declared: suppresses implicit moves
-
-  Matrix<T>& operator=(const Matrix<T>& M){ Base::operator=((const Base&)M); return *this; }
 
   void Swap(Matrix<T>& M){ Base::Swap(M); }
 
@@ -66,9 +59,6 @@ class Matrix : public sctl::Matrix<T> {
   // See Vector<T>::Resize for content-preservation semantics.
   void Resize(size_t i, size_t j){ if(Dim(0)!=i || Dim(1)!=j) Base::ReInit((sctl::Long)i, (sctl::Long)j); }
 
-  T* Begin(){ sctl::Iterator<T> it=Base::begin(); return (Dim(0)*Dim(1)>0 && it!=sctl::NullIterator<T>() ? &it[0] : (T*)NULL); }
-
-  const T* Begin() const{ sctl::ConstIterator<T> it=Base::begin(); return (Dim(0)*Dim(1)>0 && it!=sctl::NullIterator<T>() ? &it[0] : (const T*)NULL); }
 
   T* operator[](size_t i){ return &Base::operator[]((sctl::Long)i)[0]; }
 
@@ -79,6 +69,12 @@ class Matrix : public sctl::Matrix<T> {
 
 };
 
+
+// Null-safe raw-pointer view of a matrix (see VecBegin).
+template <class T>
+T* MatBegin(sctl::Matrix<T>& M){ sctl::Iterator<T> it=M.begin(); return (M.Dim(0)*M.Dim(1)>0 && it!=sctl::NullIterator<T>() ? &it[0] : (T*)NULL); }
+template <class T>
+const T* MatBegin(const sctl::Matrix<T>& M){ sctl::ConstIterator<T> it=M.begin(); return (M.Dim(0)*M.Dim(1)>0 && it!=sctl::NullIterator<T>() ? &it[0] : (const T*)NULL); }
 
 // pvfmm::Permutation is sctl::Permutation. perm holds sctl::Long entries —
 // same width as the historical PVFMM_PERM_INT_T (size_t), so the packed

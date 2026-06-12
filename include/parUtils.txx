@@ -287,10 +287,10 @@ namespace par{
       }
 
       Vector<int> int_buff(npesLong*4);
-      Vector<int> sendSz (npesLong,int_buff.Begin()+npesLong*0,false);
-      Vector<int> recvSz (npesLong,int_buff.Begin()+npesLong*1,false);
-      Vector<int> sendOff(npesLong,int_buff.Begin()+npesLong*2,false);
-      Vector<int> recvOff(npesLong,int_buff.Begin()+npesLong*3,false);
+      Vector<int> sendSz (npesLong,int_buff.begin()+npesLong*0,false);
+      Vector<int> recvSz (npesLong,int_buff.begin()+npesLong*1,false);
+      Vector<int> sendOff(npesLong,int_buff.begin()+npesLong*2,false);
+      Vector<int> recvOff(npesLong,int_buff.begin()+npesLong*3,false);
 
       // compute the partition offsets and sizes so that All2Allv can be performed.
       // initialize ...
@@ -335,8 +335,8 @@ namespace par{
       Vector<T> newNodes(nn);
 
       // perform All2All  ...
-      par::Mpi_Alltoallv_sparse<T>(nodeList.Begin(), &sendSz[0], &sendOff[0],
-          newNodes.Begin(), &recvSz[0], &recvOff[0], comm);
+      par::Mpi_Alltoallv_sparse<T>(VecBegin(nodeList), &sendSz[0], &sendOff[0],
+          VecBegin(newNodes), &recvSz[0], &recvOff[0], comm);
 
       // reset the pointer ...
       nodeList=newNodes;
@@ -349,7 +349,7 @@ namespace par{
       Vector<T> nodeList_=nodeList;
       int ret = par::partitionW<T>(nodeList_, wts, comm);
 
-      nodeList.assign(nodeList_.Begin(),nodeList_.Begin()+nodeList_.Dim());
+      nodeList.assign(nodeList_.begin(),nodeList_.begin()+(sctl::Long)nodeList_.Dim());
       return ret;
     }
 
@@ -514,7 +514,7 @@ namespace par{
       const Vector<T> arr(arr_.size(),sctl::Ptr2Itr<T>((T*)&arr_[0],arr_.size()),false);
 
       int ret = HyperQuickSort(arr, SortedElem, comm_);
-      SortedElem_.assign(SortedElem.Begin(),SortedElem.Begin()+SortedElem.Dim());
+      SortedElem_.assign(SortedElem.begin(),SortedElem.begin()+(sctl::Long)SortedElem.Dim());
       return ret;
     }
 
@@ -605,8 +605,8 @@ namespace par{
         Vector<Pair_t> newNodes(nn);
 
         // perform All2All  ...
-        par::Mpi_Alltoallv_sparse<Pair_t>(psorted.Begin(), &sendSz[0], &sendOff[0],
-            newNodes.Begin(), &recvSz[0], &recvOff[0], comm);
+        par::Mpi_Alltoallv_sparse<Pair_t>(VecBegin(psorted), &sendSz[0], &sendOff[0],
+            VecBegin(newNodes), &recvSz[0], &recvOff[0], comm);
 
         // reset the pointer ...
         psorted.Swap(newNodes);

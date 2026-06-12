@@ -34,7 +34,7 @@ void Matrix<T>::CUBLASGEMM(Matrix<T>& M_r, const Matrix<T>& A, const Matrix<T>& 
   // cublasgemm takes non-const T*; the inputs are consumed by the device
   // call, so casting away const here is terminal.
   mat::cublasgemm<T>('N', 'N', B.Dim(1), A.Dim(0), A.Dim(1),
-      (T)1.0, (T*)B.Begin(), B.Dim(1), (T*)A.Begin(), A.Dim(1), beta, M_r.Begin(), M_r.Dim(1));
+      (T)1.0, (T*)MatBegin(B), B.Dim(1), (T*)MatBegin(A), A.Dim(1), beta, MatBegin(M_r), M_r.Dim(1));
 }
 #endif
 

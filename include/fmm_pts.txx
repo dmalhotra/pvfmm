@@ -192,7 +192,10 @@ void FMM_Data<Real_t>::InitMultipole(PackedData p0, bool own_data){
   size_t n=p0.length/sizeof(Real_t);
   if(n==0) return;
   if(own_data){
-    upward_equiv=Vector<Real_t>(n, &data[0], false);
+    // Deep copy, writing through existing storage when the size matches
+    // (upward_equiv may alias node_data_buff; see MPI_Node::Unpack).
+    if(upward_equiv.Dim()!=n) upward_equiv.ReInit(n);
+    sctl::omp_par::copy(sctl::Ptr2ConstItr<Real_t>(data,(sctl::Long)n), sctl::Ptr2ConstItr<Real_t>(data,(sctl::Long)n)+(sctl::Long)n, upward_equiv.begin());
   }else{
     upward_equiv.ReInit(n, &data[0], false);
   }
@@ -1116,7 +1119,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
             { // Compute coefficients for correction terms
               Matrix<Real_t> corner_vals_(n_surf * ker_dim[0] * n_corner, ker_dim[1], (Real_t*)&corner_vals[0][0]);
               corner_vals_ = corner_vals_.Transpose();
-              M_coeff = Matrix<Real_t>(ker_dim[1] * n_surf * ker_dim[0], n_corner, corner_vals_.Begin(), false) * V_pinv;
+              M_coeff = Matrix<Real_t>(ker_dim[1] * n_surf * ker_dim[0], n_corner, corner_vals_.begin(), false) * V_pinv;
             }
 
             if (0) { // for debugging: print max of absolute values of each coefficient
@@ -1147,9 +1150,9 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
             Matrix<Real_t> M_corr; // (n_surf * ker_dim[0], n_surf * ker_dim[1])
             { // Compute correction matrix
               Matrix<Real_t> M0 = M_coeff * CorrecVecs;
-              Matrix<Real_t> M1(ker_dim[1], n_surf * ker_dim[0] * n_surf, M0.Begin());
+              Matrix<Real_t> M1(ker_dim[1], n_surf * ker_dim[0] * n_surf, M0.begin());
               M1 = M1.Transpose();
-              M_corr.ReInit(n_surf * ker_dim[0], n_surf * ker_dim[1], M1.Begin());
+              M_corr.ReInit(n_surf * ker_dim[0], n_surf * ker_dim[1], M1.begin());
             }
             return M_corr;
           };
@@ -1583,11 +1586,11 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& n
       if(!n_vec) continue;
       if(buff.Dim(0)*buff.Dim(1)>0){
         bool init_buff=false;
-        Real_t* buff_start=buff.Begin();
-        Real_t* buff_end=buff.Begin()+buff.Dim(0)*buff.Dim(1);
+        Real_t* buff_start=MatBegin(buff);
+        Real_t* buff_end=MatBegin(buff)+buff.Dim(0)*buff.Dim(1);
         #pragma omp parallel for reduction(||:init_buff)
         for(size_t i=0;i<n_vec;i++){
-          if(vec_lst[i]->Dim() && (vec_lst[i]->Begin()<buff_start || vec_lst[i]->Begin()>=buff_end)){
+          if(vec_lst[i]->Dim() && (VecBegin(*vec_lst[i])<buff_start || VecBegin(*vec_lst[i])>=buff_end)){
             init_buff=true;
           }
         }
@@ -1617,8 +1620,8 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& n
 
       #pragma omp parallel for
       for(size_t i=0;i<n_vec;i++){
-        if(vec_lst[i]->Begin()){
-          std::memcpy(((Real_t*)dev_buffer.Begin())+vec_disp[i], vec_lst[i]->Begin(), vec_size[i]*sizeof(Real_t));
+        if(VecBegin(*vec_lst[i])){
+          std::memcpy(((Real_t*)VecBegin(dev_buffer))+vec_disp[i], VecBegin(*vec_lst[i]), vec_size[i]*sizeof(Real_t));
         }
       }
     }
@@ -1633,13 +1636,13 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& n
       for(int tid=0;tid<omp_p;tid++){
         size_t a=(buff_size*(tid+0))/omp_p;
         size_t b=(buff_size*(tid+1))/omp_p;
-        std::memcpy(buff.Begin()+a, ((Real_t*)dev_buffer.Begin())+a, (b-a)*sizeof(Real_t));
+        std::memcpy(MatBegin(buff)+a, ((Real_t*)VecBegin(dev_buffer))+a, (b-a)*sizeof(Real_t));
       }
     }
 
     #pragma omp parallel for
     for(size_t i=0;i<n_vec;i++){ // ReInit vectors
-      vec_lst[i]->ReInit(vec_size[i],buff.Begin()+vec_disp[i],false);
+      vec_lst[i]->ReInit(vec_size[i],buff.begin()+vec_disp[i],false);
     }
   }
 }
@@ -1729,7 +1732,7 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
         for(size_t i=0;i<n_out;i++){
           if(!((FMMNode*)nodes_out[i])->IsGhost() && (level==-1 || ((FMMNode*)nodes_out[i])->Depth()==level)){
             Vector<FMMNode*>& lst=((FMMNode*)nodes_out[i])->interac_list[interac_type];
-            std::memcpy(trg_interac_list[i], lst.Begin(), lst.Dim()*sizeof(FMMNode*));
+            std::memcpy(trg_interac_list[i], VecBegin(lst), lst.Dim()*sizeof(FMMNode*));
             assert(lst.Dim()==mat_cnt);
           }
         }
@@ -1812,7 +1815,7 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
                 input_perm .push_back(precomp_data_offset[j][1+4*depth+0]); // prem
                 input_perm .push_back(precomp_data_offset[j][1+4*depth+1]); // scal
                 input_perm .push_back(interac_dsp[trg_node->node_id][j]*vec_size*sizeof(Real_t)); // trg_ptr
-                input_perm .push_back((size_t)(input_vector[i]->Begin()- input_data[0])); // src_ptr
+                input_perm .push_back((size_t)(VecBegin(*input_vector[i])- input_data[0])); // src_ptr
                 assert(input_vector[i]->Dim()==vec_size);
               }
             }
@@ -1829,7 +1832,7 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
                 output_perm.push_back(precomp_data_offset[j][1+4*depth+2]); // prem
                 output_perm.push_back(precomp_data_offset[j][1+4*depth+3]); // scal
                 output_perm.push_back(interac_dsp[               i ][j]*vec_size*sizeof(Real_t)); // src_ptr
-                output_perm.push_back((size_t)(output_vector[i]->Begin()-output_data[0])); // trg_ptr
+                output_perm.push_back((size_t)(VecBegin(*output_vector[i])-output_data[0])); // trg_ptr
                 assert(output_vector[i]->Dim()==vec_size);
               }
             }
@@ -1862,7 +1865,7 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<Real_t>& setup_data, bool device){
           Matrix< char> pts_interac_data=interac_data;
           setup_data.interac_data_mirror.Free(); // host buffer is about to be reallocated
           interac_data.ReInit(1,data_size);
-          sctl::omp_par::memcpy(interac_data.Begin(), pts_interac_data.Begin(), pts_data_size);
+          sctl::omp_par::memcpy(interac_data.begin(), pts_interac_data.begin(), pts_data_size);
         }
       }
       char* data_ptr=&interac_data[0][0];

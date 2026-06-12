@@ -98,11 +98,11 @@ void fmm_test(int ker, size_t N, size_t M, Real_t b, int dist, int mult_order, i
       std::vector<sctl::Iterator<FMMNode_t>>& node=tree.GetNodeList();
       #pragma omp parallel for
       for(size_t i=0;i<node.size();i++){
-        node[i]->  trg_coord.ReInit(node[i]->  pt_coord.Dim(), node[i]->  pt_coord.Begin());
-        node[i]->  src_coord.ReInit(node[i]->  pt_coord.Dim(), node[i]->  pt_coord.Begin());
-        node[i]->  src_value.ReInit(node[i]->  pt_value.Dim(), node[i]->  pt_value.Begin());
-        node[i]->trg_scatter.ReInit(node[i]->pt_scatter.Dim(), node[i]->pt_scatter.Begin());
-        node[i]->src_scatter.ReInit(node[i]->pt_scatter.Dim(), node[i]->pt_scatter.Begin());
+        node[i]->  trg_coord.ReInit(node[i]->  pt_coord.Dim(), node[i]->  pt_coord.begin());
+        node[i]->  src_coord.ReInit(node[i]->  pt_coord.Dim(), node[i]->  pt_coord.begin());
+        node[i]->  src_value.ReInit(node[i]->  pt_value.Dim(), node[i]->  pt_value.begin());
+        node[i]->trg_scatter.ReInit(node[i]->pt_scatter.Dim(), node[i]->pt_scatter.begin());
+        node[i]->src_scatter.ReInit(node[i]->pt_scatter.Dim(), node[i]->pt_scatter.begin());
       }
     }
     sctl::Profile::Toc();

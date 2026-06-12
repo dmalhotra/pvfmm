@@ -299,7 +299,7 @@ namespace DeviceWrapper{
 
   template <class T>
   inline DeviceVector<T> DeviceMirror::AllocDevice(Vector<T>& host, bool copy){
-    char* p=(char*)host.Begin();
+    char* p=(char*)VecBegin(host);
     size_t bytes=host.Dim()*sizeof(T);
     if(dev_ptr){ // Already bound: host buffer must not have changed.
       assert(host_ptr==p && len==bytes);
@@ -318,7 +318,7 @@ namespace DeviceWrapper{
 
   template <class T>
   inline DeviceMatrix<T> DeviceMirror::AllocDevice(Matrix<T>& host, bool copy){
-    char* p=(char*)host.Begin();
+    char* p=(char*)MatBegin(host);
     size_t bytes=host.Dim(0)*host.Dim(1)*sizeof(T);
     if(dev_ptr){ // Already bound: host buffer must not have changed.
       assert(host_ptr==p && len==bytes);
