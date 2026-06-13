@@ -60,7 +60,7 @@
 #define PVFMM_ASSERT_WITH_MSG(cond, msg)
 #endif
 
-#include <stacktrace.h>
+#include <sctl/stacktrace.h>
 #include <cstdint>
 
 namespace pvfmm{

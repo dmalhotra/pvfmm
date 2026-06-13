@@ -31,13 +31,10 @@ void quad_rule<double>(int n, double* x, double* w){
   Vector<double> x_(n);
   Vector<double> w_(n);
 
-  { //Gauss-Legendre quadrature nodes and weights
-    double alpha=0.0;
-    double beta=0.0;
-    double a=-1.0;
-    double b= 1.0;
-    int kind = 1;
-    cgqf ( n, kind, (double)alpha, (double)beta, (double)a, (double)b, &x_[0], &w_[0] );
+  { //Gauss-Legendre quadrature nodes and weights, rescaled from sctl's [0,1] to [-1,1].
+    sctl::Vector<double> nds, wts;
+    sctl::LegQuadRule<double>::ComputeNdsWts(&nds, &wts, n);
+    for(int i=0;i<n;i++){ x_[i] = 2*nds[i]-1; w_[i] = 2*wts[i]; }
   }
 
   #pragma omp critical (QUAD_RULE)

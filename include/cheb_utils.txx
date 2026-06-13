@@ -12,7 +12,6 @@
 #include <iostream>
 #include <algorithm>
 
-#include <legendre_rule.hpp>
 #include <mat_utils.hpp>
 
 #include <matrix.hpp>
