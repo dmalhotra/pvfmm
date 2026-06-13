@@ -176,8 +176,8 @@ inline int points2Octree(const Vector<MortonId>& pt_mid, Vector<MortonId>& nodes
     }
     {// Exchange data.
       sctl::Comm::Request recvRequest, sendRequest;
-      if(myrank < (np-1)) recvRequest = comm.Irecv (sctl::Ptr2Itr<MortonId>(&pt_sorted[0]+pt_cnt, recv_size), recv_size, myrank+1, 1);
-      if(myrank >     0 ) sendRequest = comm.Issend(sctl::Ptr2ConstItr<MortonId>(&pt_sorted[0], send_size), send_size, myrank-1, 1);
+      if(myrank < (np-1)) recvRequest = comm.Irecv (pt_sorted.begin()+pt_cnt, recv_size, myrank+1, 1);
+      if(myrank >     0 ) sendRequest = comm.Issend((sctl::ConstIterator<MortonId>)pt_sorted.begin(), send_size, myrank-1, 1);
       if(myrank < (np-1)) comm.Wait(std::move(recvRequest));
       if(myrank >     0 ) comm.Wait(std::move(sendRequest)); //This can be done later.
     }
@@ -551,7 +551,7 @@ void MPI_Tree<TreeNode>::RedistNodes(MortonId* loc_min) {
       wts[i]=node_lst[i]->NodeCost();
     }
     Comm().PartitionW(in_, &wts);
-    Comm().Allgather(sctl::Ptr2ConstItr<MortonId>(&in_[0],1), 1, sctl::Ptr2Itr<MortonId>(&new_mins[0],np), 1);
+    Comm().Allgather((sctl::ConstIterator<MortonId>)in_.begin(), 1, sctl::Ptr2Itr<MortonId>(&new_mins[0],np), 1);
   }else{
     Comm().Allgather(sctl::Ptr2ConstItr<MortonId>(loc_min,1), 1, sctl::Ptr2Itr<MortonId>(&new_mins[0],np), 1);
   }

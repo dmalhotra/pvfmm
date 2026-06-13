@@ -704,8 +704,8 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
 
       sctl::omp_par::memcpy(fftw_in, &conv_poten[0], n3*ker_dim[0]*ker_dim[1]);
       {
-        sctl::Vector<Real_t> in_ (  n3 *ker_dim[0]*ker_dim[1], sctl::Ptr2Itr<Real_t>(fftw_in ,   n3 *ker_dim[0]*ker_dim[1]), false);
-        sctl::Vector<Real_t> out_(2*n3_*ker_dim[0]*ker_dim[1], sctl::Ptr2Itr<Real_t>(fftw_out, 2*n3_*ker_dim[0]*ker_dim[1]), false);
+        sctl::Vector<Real_t> in_ (  n3 *ker_dim[0]*ker_dim[1], fftw_in_scratch.begin(), false);
+        sctl::Vector<Real_t> out_(2*n3_*ker_dim[0]*ker_dim[1], fftw_out_scratch.begin(), false);
         vprecomp_fft.Execute(in_, out_);
       }
       // sctl::FFT is unitary (1/sqrt(N) each way); FFTW was unnormalized. The
@@ -2775,8 +2775,8 @@ void FMM_Pts<FMMNode>::FFT_UpEquiv(size_t dof, size_t m, size_t ker_dim0, Vector
 
         // Compute FFT.
         for(size_t i=0;i<dof;i++){
-          sctl::Vector<Real_t> in_ (  n3 *ker_dim0*chld_cnt, sctl::Ptr2Itr<Real_t>(&upward_equiv_fft[i*  n3 *ker_dim0*chld_cnt],   n3 *ker_dim0*chld_cnt), false);
-          sctl::Vector<Real_t> out_(2*n3_*ker_dim0*chld_cnt, sctl::Ptr2Itr<Real_t>(&buffer          [i*2*n3_*ker_dim0*chld_cnt], 2*n3_*ker_dim0*chld_cnt), false);
+          sctl::Vector<Real_t> in_ (  n3 *ker_dim0*chld_cnt, upward_equiv_fft.begin()+i*n3*ker_dim0*chld_cnt, false);
+          sctl::Vector<Real_t> out_(2*n3_*ker_dim0*chld_cnt, buffer.begin()+i*2*n3_*ker_dim0*chld_cnt, false);
           vlist_fft.Execute(in_, out_);
         }
 
@@ -2847,8 +2847,8 @@ void FMM_Pts<FMMNode>::FFT_Check2Equiv(size_t dof, size_t m, size_t ker_dim1, Ve
 
         // Compute FFT.
         for(size_t i=0;i<dof;i++){
-          sctl::Vector<Real_t> in_ (2*n3_*ker_dim1*chld_cnt, sctl::Ptr2Itr<Real_t>(&buffer0[i*2*n3_*ker_dim1*chld_cnt], 2*n3_*ker_dim1*chld_cnt), false);
-          sctl::Vector<Real_t> out_(  n3 *ker_dim1*chld_cnt, sctl::Ptr2Itr<Real_t>(&buffer1[i*  n3 *ker_dim1*chld_cnt],   n3 *ker_dim1*chld_cnt), false);
+          sctl::Vector<Real_t> in_ (2*n3_*ker_dim1*chld_cnt, buffer0.begin()+i*2*n3_*ker_dim1*chld_cnt, false);
+          sctl::Vector<Real_t> out_(  n3 *ker_dim1*chld_cnt, buffer1.begin()+i*n3*ker_dim1*chld_cnt, false);
           vlist_ifft.Execute(in_, out_);
         }
 
