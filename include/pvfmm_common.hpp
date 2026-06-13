@@ -73,6 +73,12 @@ inline uintptr_t align_ptr(uintptr_t ptr){
 }//end namespace
 }//end namespace
 
+// Keep sctl::Morton<3>'s depth range in lock-step with pvfmm's octree depth
+// (must be set before sctl.hpp so sctl::MortonCode picks the right code width).
+#ifndef SCTL_MAX_DEPTH
+#define SCTL_MAX_DEPTH PVFMM_MAX_DEPTH
+#endif
+
 #include <sctl.hpp>
 
 #endif //_PVFMM_COMMON_HPP_

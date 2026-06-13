@@ -2,14 +2,20 @@
  * \file mortonid.hpp
  * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 2-11-2011
- * \brief This file contains definition of the class MortonId.
+ * \brief pvfmm::MortonId is a thin compatibility shim over sctl::Morton<3>.
+ *
+ * The Morton-code arithmetic now lives in sctl::Morton<3>; this class only
+ * adds the constructor signatures and method names that pvfmm's tree code
+ * uses (MortonId(x,y,z,depth), GetDepth/NextId/getAncestor/getDFD/GetCoord,
+ * Children/NbrList returning std::vector). Build with -DSCTL_MAX_DEPTH=30 so
+ * sctl::Morton<3> matches PVFMM_MAX_DEPTH (the wide multi-word code path).
  */
 
 #include <vector>
 #include <ostream>
 #include <stdint.h>
 
-#include <pvfmm_common.hpp>
+#include <pvfmm_common.hpp>   // pulls in sctl.hpp -> sctl::Morton
 
 #ifndef _PVFMM_MORTONID_HPP_
 #define _PVFMM_MORTONID_HPP_
@@ -20,77 +26,64 @@ namespace pvfmm{
 #define PVFMM_MAX_DEPTH 30
 #endif
 
-#if PVFMM_MAX_DEPTH < 7
-#define PVFMM_MID_UINT_T uint8_t
-#define  PVFMM_MID_INT_T  int8_t
-#elif PVFMM_MAX_DEPTH < 15
-#define PVFMM_MID_UINT_T uint16_t
-#define  PVFMM_MID_INT_T  int16_t
-#elif PVFMM_MAX_DEPTH < 31
-#define PVFMM_MID_UINT_T uint32_t
-#define  PVFMM_MID_INT_T  int32_t
-#elif PVFMM_MAX_DEPTH < 63
-#define PVFMM_MID_UINT_T uint64_t
-#define  PVFMM_MID_INT_T  int64_t
-#endif
-
-class MortonId{
+class MortonId : public sctl::Morton<3> {
+  typedef sctl::Morton<3> Base;
 
  public:
 
-  MortonId();
+  MortonId() : Base() {}
 
-  MortonId(MortonId m, uint8_t depth);
+  // Implicit conversion from the base type so the aliased methods below can
+  // return MortonId from sctl::Morton<3>-returning calls.
+  MortonId(const Base& m) : Base(m) {}
 
-  template <class T>
-  MortonId(T x_f,T y_f, T z_f, uint8_t depth=PVFMM_MAX_DEPTH);
-
-  template <class T>
-  MortonId(T* coord, uint8_t depth=PVFMM_MAX_DEPTH);
-
-  unsigned int GetDepth() const;
+  // Truncate m to the given depth (matches the old "copy code, mask to depth").
+  MortonId(MortonId m, uint8_t depth) : Base(m.Ancestor(depth)) {}
 
   template <class T>
-  void GetCoord(T* coord);
+  MortonId(T x_f, T y_f, T z_f, uint8_t depth=PVFMM_MAX_DEPTH) {
+    const T coord[3] = {x_f, y_f, z_f};
+    *static_cast<Base*>(this) = Base(sctl::Ptr2ConstItr<T>(&coord[0], 3), depth);
+  }
 
-  MortonId NextId() const;
+  template <class T>
+  MortonId(T* coord, uint8_t depth=PVFMM_MAX_DEPTH)
+    : Base(sctl::Ptr2ConstItr<T>(coord, 3), depth) {}
 
-  MortonId getAncestor(uint8_t ancestor_level) const;
+  unsigned int GetDepth() const { return (unsigned int)this->Depth(); }
 
-  /**
-   * \brief Returns the deepest first descendant.
-   */
-  MortonId getDFD(uint8_t level=PVFMM_MAX_DEPTH) const;
+  template <class T>
+  void GetCoord(T* coord) const { this->Coord(coord); }
 
-  void NbrList(std::vector<MortonId>& nbrs,uint8_t level, int periodic) const;
+  MortonId NextId() const { return MortonId(this->Next()); }
 
-  std::vector<MortonId> Children() const;
+  MortonId getAncestor(uint8_t ancestor_level) const { return MortonId(this->Ancestor(ancestor_level)); }
 
-  int operator<(const MortonId& m) const;
+  /** \brief Returns the deepest first descendant. */
+  MortonId getDFD(uint8_t level=PVFMM_MAX_DEPTH) const { return MortonId(this->DFD(level)); }
 
-  int operator>(const MortonId& m) const;
+  void NbrList(std::vector<MortonId>& nbrs, uint8_t level, int periodic) const {
+    nbrs.clear();
+    // pvfmm's `periodic` is isotropic (all axes or none) -> XYZ / NONE.
+    const auto arr = this->Base::NbrList(level, periodic ? sctl::Periodicity::XYZ : sctl::Periodicity::NONE);
+    nbrs.reserve(arr.size());
+    for (const auto& m : arr) {
+      if (periodic || m.Depth() != Base::INVALID_DEPTH) nbrs.push_back(MortonId(m));
+    }
+  }
 
-  int operator==(const MortonId& m) const;
+  std::vector<MortonId> Children() const {
+    const auto arr = this->Base::Children();
+    std::vector<MortonId> child;
+    child.reserve(arr.size());
+    for (const auto& m : arr) child.push_back(MortonId(m));
+    return child;
+  }
 
-  int operator!=(const MortonId& m) const;
-
-  int operator<=(const MortonId& m) const;
-
-  int operator>=(const MortonId& m) const;
-
-  int isAncestor(MortonId const & other) const;
-
-  friend std::ostream& operator<<(std::ostream& out, const MortonId & mid);
-
- private:
-
-  PVFMM_MID_UINT_T x,y,z;
-  uint8_t depth;
-
+  // Comparison operators, isAncestor and operator<< are inherited from
+  // sctl::Morton<3> (a MortonId binds to a const sctl::Morton<3>& argument).
 };
 
 }//end namespace
-
-#include <mortonid.txx>
 
 #endif //_PVFMM_MORTONID_HPP_
