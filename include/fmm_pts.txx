@@ -208,13 +208,10 @@ FMM_Pts<FMMNode>::~FMM_Pts() {
     delete mat;
     mat=NULL;
   }
-  if(vprecomp_fft_flag) FFTW_t<Real_t>::fft_destroy_plan(vprecomp_fftplan);
   #ifdef __INTEL_OFFLOAD0
   #pragma offload target(mic:0)
   #endif
   {
-    if(vlist_fft_flag ) FFTW_t<Real_t>::fft_destroy_plan(vlist_fftplan );
-    if(vlist_ifft_flag) FFTW_t<Real_t>::fft_destroy_plan(vlist_ifftplan);
     vlist_fft_flag =false;
     vlist_ifft_flag=false;
   }
@@ -691,8 +688,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
       //Rearrange data: transpose conv_poten in place.
       MatrixTranspose<Real_t>(n3,ker_dim[0]*ker_dim[1],&conv_poten[0],&conv_poten[0]);
 
-      //Compute FFTW plan.
-      int nnn[3]={n1,n1,n1};
+      //Compute FFT.
       sctl::ScratchBuf<Real_t> fftw_in_scratch (  n3 *ker_dim[0]*ker_dim[1]);
       sctl::ScratchBuf<Real_t> fftw_out_scratch(2*n3_*ker_dim[0]*ker_dim[1]);
       Real_t* fftw_in  = &fftw_in_scratch .begin()[0];
@@ -700,15 +696,26 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
       #pragma omp critical(PVFMM_FFTW_PLAN)
       {
         if (!vprecomp_fft_flag){
-          vprecomp_fftplan = FFTW_t<Real_t>::fft_plan_many_dft_r2c(PVFMM_COORD_DIM, nnn, ker_dim[0]*ker_dim[1],
-              (Real_t*)fftw_in, NULL, 1, n3, (typename FFTW_t<Real_t>::cplx*) fftw_out, NULL, 1, n3_);
+          sctl::Vector<sctl::Long> dim_vec(PVFMM_COORD_DIM); dim_vec[0]=n1; dim_vec[1]=n1; dim_vec[2]=n1;
+          vprecomp_fft.Setup(sctl::FFT_Type::R2C, ker_dim[0]*ker_dim[1], dim_vec);
           vprecomp_fft_flag=true;
         }
       }
 
-      //Compute FFT.
       sctl::omp_par::memcpy(fftw_in, &conv_poten[0], n3*ker_dim[0]*ker_dim[1]);
-      FFTW_t<Real_t>::fft_execute_dft_r2c(vprecomp_fftplan, (Real_t*)fftw_in, (typename FFTW_t<Real_t>::cplx*)(fftw_out));
+      {
+        sctl::Vector<Real_t> in_ (  n3 *ker_dim[0]*ker_dim[1], sctl::Ptr2Itr<Real_t>(fftw_in ,   n3 *ker_dim[0]*ker_dim[1]), false);
+        sctl::Vector<Real_t> out_(2*n3_*ker_dim[0]*ker_dim[1], sctl::Ptr2Itr<Real_t>(fftw_out, 2*n3_*ker_dim[0]*ker_dim[1]), false);
+        vprecomp_fft.Execute(in_, out_);
+      }
+      // sctl::FFT is unitary (1/sqrt(N) each way); FFTW was unnormalized. The
+      // V-list round trip (this precomp r2c, the up-equiv r2c, the dn-check c2r)
+      // accrues 1/N^1.5 vs the old convention, so scale the stored frequency-
+      // domain V-matrix by N^1.5 (N=n3) once here to keep RunFMM output identical.
+      {
+        Real_t fft_scale = sctl::pow<Real_t>((Real_t)n3, (Real_t)1.5);
+        for(int ii=0; ii<2*n3_*ker_dim[0]*ker_dim[1]; ii++) fftw_out[ii] *= fft_scale;
+      }
       Matrix<Real_t> M_(2*n3_*ker_dim[0]*ker_dim[1],1,(Real_t*)fftw_out,false);
       M=M_;
       // fftw_in, fftw_out freed automatically at scope exit.
@@ -2739,15 +2746,9 @@ void FMM_Pts<FMMNode>::FFT_UpEquiv(size_t dof, size_t m, size_t ker_dim0, Vector
   }
   { // Build FFTW plan.
     if(!vlist_fft_flag){
-      int nnn[3]={(int)n1,(int)n1,(int)n1};
-      sctl::ScratchBuf<Real_t> fftw_in_scratch (  n3 *ker_dim0*chld_cnt);
-      sctl::ScratchBuf<Real_t> fftw_out_scratch(2*n3_*ker_dim0*chld_cnt);
-      Real_t* fftw_in  = &fftw_in_scratch .begin()[0];
-      Real_t* fftw_out = &fftw_out_scratch.begin()[0];
-      vlist_fftplan = FFTW_t<Real_t>::fft_plan_many_dft_r2c(PVFMM_COORD_DIM,nnn,ker_dim0*chld_cnt,
-          (Real_t*)fftw_in, NULL, 1, n3, (typename FFTW_t<Real_t>::cplx*)(fftw_out),NULL, 1, n3_);
+      sctl::Vector<sctl::Long> dim_vec(PVFMM_COORD_DIM); dim_vec[0]=(sctl::Long)n1; dim_vec[1]=(sctl::Long)n1; dim_vec[2]=(sctl::Long)n1;
+      vlist_fft.Setup(sctl::FFT_Type::R2C, ker_dim0*chld_cnt, dim_vec);
       vlist_fft_flag=true;
-      // fftw_in, fftw_out freed automatically at scope exit.
     }
   }
 
@@ -2773,18 +2774,11 @@ void FMM_Pts<FMMNode>::FFT_UpEquiv(size_t dof, size_t m, size_t ker_dim0, Vector
         }
 
         // Compute FFT.
-        for(size_t i=0;i<dof;i++)
-          FFTW_t<Real_t>::fft_execute_dft_r2c(vlist_fftplan, (Real_t*)&upward_equiv_fft[i*  n3 *ker_dim0*chld_cnt],
-                                      (typename FFTW_t<Real_t>::cplx*)&buffer          [i*2*n3_*ker_dim0*chld_cnt]);
-
-        //Compute flops.
-        #ifndef PVFMM_FFTW3_MKL
-        double add=0, mul=0, fma=0;
-        FFTW_t<Real_t>::fftw_flops(vlist_fftplan, &add, &mul, &fma);
-        #ifndef __INTEL_OFFLOAD0
-        sctl::Profile::IncrementCounter(sctl::ProfileCounter::FLOP, (long long)(add+mul+2*fma));
-        #endif
-        #endif
+        for(size_t i=0;i<dof;i++){
+          sctl::Vector<Real_t> in_ (  n3 *ker_dim0*chld_cnt, sctl::Ptr2Itr<Real_t>(&upward_equiv_fft[i*  n3 *ker_dim0*chld_cnt],   n3 *ker_dim0*chld_cnt), false);
+          sctl::Vector<Real_t> out_(2*n3_*ker_dim0*chld_cnt, sctl::Ptr2Itr<Real_t>(&buffer          [i*2*n3_*ker_dim0*chld_cnt], 2*n3_*ker_dim0*chld_cnt), false);
+          vlist_fft.Execute(in_, out_);
+        }
 
         for(size_t i=0;i<ker_dim0*dof;i++)
         for(size_t j=0;j<n3_;j++)
@@ -2824,16 +2818,9 @@ void FMM_Pts<FMMNode>::FFT_Check2Equiv(size_t dof, size_t m, size_t ker_dim1, Ve
   }
   { // Build FFTW plan.
     if(!vlist_ifft_flag){
-      //Build FFTW plan.
-      int nnn[3]={(int)n1,(int)n1,(int)n1};
-      sctl::ScratchBuf<Real_t> fftw_in_scratch (2*n3_*ker_dim1*chld_cnt);
-      sctl::ScratchBuf<Real_t> fftw_out_scratch(  n3 *ker_dim1*chld_cnt);
-      Real_t* fftw_in  = &fftw_in_scratch .begin()[0];
-      Real_t* fftw_out = &fftw_out_scratch.begin()[0];
-      vlist_ifftplan = FFTW_t<Real_t>::fft_plan_many_dft_c2r(PVFMM_COORD_DIM,nnn,ker_dim1*chld_cnt,
-          (typename FFTW_t<Real_t>::cplx*)fftw_in, NULL, 1, n3_, (Real_t*)(fftw_out),NULL, 1, n3);
+      sctl::Vector<sctl::Long> dim_vec(PVFMM_COORD_DIM); dim_vec[0]=(sctl::Long)n1; dim_vec[1]=(sctl::Long)n1; dim_vec[2]=(sctl::Long)n1;
+      vlist_ifft.Setup(sctl::FFT_Type::C2R, ker_dim1*chld_cnt, dim_vec);
       vlist_ifft_flag=true;
-      // fftw_in, fftw_out freed automatically at scope exit.
     }
   }
 
@@ -2859,17 +2846,11 @@ void FMM_Pts<FMMNode>::FFT_Check2Equiv(size_t dof, size_t m, size_t ker_dim1, Ve
         }
 
         // Compute FFT.
-        for(size_t i=0;i<dof;i++)
-          FFTW_t<Real_t>::fft_execute_dft_c2r(vlist_ifftplan, (typename FFTW_t<Real_t>::cplx*)&buffer0[i*2*n3_*ker_dim1*chld_cnt],
-                                                                                     (Real_t*)&buffer1[i*  n3 *ker_dim1*chld_cnt]);
-        //Compute flops.
-        #ifndef PVFMM_FFTW3_MKL
-        double add=0, mul=0, fma=0;
-        FFTW_t<Real_t>::fftw_flops(vlist_ifftplan, &add, &mul, &fma);
-        #ifndef __INTEL_OFFLOAD0
-        sctl::Profile::IncrementCounter(sctl::ProfileCounter::FLOP, (long long)(add+mul+2*fma)*dof);
-        #endif
-        #endif
+        for(size_t i=0;i<dof;i++){
+          sctl::Vector<Real_t> in_ (2*n3_*ker_dim1*chld_cnt, sctl::Ptr2Itr<Real_t>(&buffer0[i*2*n3_*ker_dim1*chld_cnt], 2*n3_*ker_dim1*chld_cnt), false);
+          sctl::Vector<Real_t> out_(  n3 *ker_dim1*chld_cnt, sctl::Ptr2Itr<Real_t>(&buffer1[i*  n3 *ker_dim1*chld_cnt],   n3 *ker_dim1*chld_cnt), false);
+          vlist_ifft.Execute(in_, out_);
+        }
 
         // Rearrange downward check data.
         for(size_t k=0;k<n;k++){

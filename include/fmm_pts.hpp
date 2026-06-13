@@ -15,7 +15,6 @@
 #include <device_wrapper.hpp>
 #include <interac_list.hpp>
 #include <precomp_mat.hpp>
-#include <fft_wrapper.hpp>
 #include <mpi_tree.hpp>
 #include <mpi_node.hpp>
 
@@ -243,18 +242,18 @@ class FMM_Pts{
   virtual Permutation<Real_t>& PrecompPerm(Mat_Type type, Perm_Type perm_indx);
 
   virtual Matrix<Real_t>& Precomp(int level, Mat_Type type, size_t mat_indx);
-  typename FFTW_t<Real_t>::plan vprecomp_fftplan;
+  sctl::FFT<Real_t> vprecomp_fft;
   bool vprecomp_fft_flag;
 
   void FFT_UpEquiv(size_t dof, size_t m, size_t ker_dim0, Vector<size_t>& fft_vec, Vector<Real_t>& fft_scl,
       Vector<Real_t>& input_data, Vector<Real_t>& output_data, Vector<Real_t>& buffer_);
-  typename FFTW_t<Real_t>::plan vlist_fftplan;
+  sctl::FFT<Real_t> vlist_fft;
   bool vlist_fft_flag;
   Vector<size_t> vlist_fft_map;
 
   void FFT_Check2Equiv(size_t dof, size_t m, size_t ker_dim0, Vector<size_t>& ifft_vec, Vector<Real_t>& ifft_scl,
       Vector<Real_t>& input_data, Vector<Real_t>& output_data, Vector<Real_t>& buffer_);
-  typename FFTW_t<Real_t>::plan vlist_ifftplan;
+  sctl::FFT<Real_t> vlist_ifft;
   bool vlist_ifft_flag;
   Vector<size_t> vlist_ifft_map;
 
