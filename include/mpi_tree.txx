@@ -18,7 +18,6 @@
 #include <stdint.h>
 #include <set>
 
-#include <dtypes.h>
 
 #include <mpi_node.hpp>
 #include <profile.hpp>
@@ -157,20 +156,18 @@ inline int points2Octree(const Vector<MortonId>& pt_mid, Vector<MortonId>& nodes
   {
     { // Adjust maxNumPts
       size_t glb_pt_cnt=0;
-      MPI_Allreduce(&pt_cnt, &glb_pt_cnt, 1, par::Mpi_datatype<size_t>::value(), par::Mpi_datatype<size_t>::sum(), comm.GetMPI_Comm());
+      comm.Allreduce(sctl::Ptr2ConstItr<size_t>(&pt_cnt,1), sctl::Ptr2Itr<size_t>(&glb_pt_cnt,1), 1, sctl::CommOp::SUM);
       if(glb_pt_cnt<maxNumPts*np) maxNumPts=glb_pt_cnt/np;
     }
 
     size_t recv_size=0;
     size_t send_size=(2*maxNumPts<pt_cnt?2*maxNumPts:pt_cnt);
     {
-      MPI_Request recvRequest;
-      MPI_Request sendRequest;
-      MPI_Status statusWait;
-      if(myrank < (np-1)) MPI_Irecv (&recv_size, 1, par::Mpi_datatype<size_t>::value(), myrank+1, 1, comm.GetMPI_Comm(), &recvRequest);
-      if(myrank >     0 ) MPI_Issend(&send_size, 1, par::Mpi_datatype<size_t>::value(), myrank-1, 1, comm.GetMPI_Comm(), &sendRequest);
-      if(myrank < (np-1)) MPI_Wait(&recvRequest, &statusWait);
-      if(myrank >     0 ) MPI_Wait(&sendRequest, &statusWait); //This can be done later.
+      sctl::Comm::Request recvRequest, sendRequest;
+      if(myrank < (np-1)) recvRequest = comm.Irecv (sctl::Ptr2Itr<size_t>(&recv_size,1), 1, myrank+1, 1);
+      if(myrank >     0 ) sendRequest = comm.Issend(sctl::Ptr2ConstItr<size_t>(&send_size,1), 1, myrank-1, 1);
+      if(myrank < (np-1)) comm.Wait(std::move(recvRequest));
+      if(myrank >     0 ) comm.Wait(std::move(sendRequest)); //This can be done later.
     }
     if(recv_size>0){// Resize pt_sorted.
       Vector<MortonId> pt_sorted_(pt_cnt+recv_size);
@@ -178,13 +175,11 @@ inline int points2Octree(const Vector<MortonId>& pt_mid, Vector<MortonId>& nodes
       pt_sorted.Swap(pt_sorted_);
     }
     {// Exchange data.
-      MPI_Request recvRequest;
-      MPI_Request sendRequest;
-      MPI_Status statusWait;
-      if(myrank < (np-1)) MPI_Irecv (&pt_sorted[0]+pt_cnt, recv_size, par::Mpi_datatype<MortonId>::value(), myrank+1, 1, comm.GetMPI_Comm(), &recvRequest);
-      if(myrank >     0 ) MPI_Issend(&pt_sorted[0]       , send_size, par::Mpi_datatype<MortonId>::value(), myrank-1, 1, comm.GetMPI_Comm(), &sendRequest);
-      if(myrank < (np-1)) MPI_Wait(&recvRequest, &statusWait);
-      if(myrank >     0 ) MPI_Wait(&sendRequest, &statusWait); //This can be done later.
+      sctl::Comm::Request recvRequest, sendRequest;
+      if(myrank < (np-1)) recvRequest = comm.Irecv (sctl::Ptr2Itr<MortonId>(&pt_sorted[0]+pt_cnt, recv_size), recv_size, myrank+1, 1);
+      if(myrank >     0 ) sendRequest = comm.Issend(sctl::Ptr2ConstItr<MortonId>(&pt_sorted[0], send_size), send_size, myrank-1, 1);
+      if(myrank < (np-1)) comm.Wait(std::move(recvRequest));
+      if(myrank >     0 ) comm.Wait(std::move(sendRequest)); //This can be done later.
     }
   }
   sctl::Profile::Toc();
@@ -202,13 +197,11 @@ inline int points2Octree(const Vector<MortonId>& pt_mid, Vector<MortonId>& nodes
     MortonId first_node;
     MortonId  last_node=nodes_local[node_cnt-1];
     { // Send last_node to next process and get first_node from previous process.
-      MPI_Request recvRequest;
-      MPI_Request sendRequest;
-      MPI_Status statusWait;
-      if(myrank < (np-1)) MPI_Issend(& last_node, 1, par::Mpi_datatype<MortonId>::value(), myrank+1, 1, comm.GetMPI_Comm(), &recvRequest);
-      if(myrank >     0 ) MPI_Irecv (&first_node, 1, par::Mpi_datatype<MortonId>::value(), myrank-1, 1, comm.GetMPI_Comm(), &sendRequest);
-      if(myrank < (np-1)) MPI_Wait(&recvRequest, &statusWait);
-      if(myrank >     0 ) MPI_Wait(&sendRequest, &statusWait); //This can be done later.
+      sctl::Comm::Request recvRequest, sendRequest;
+      if(myrank < (np-1)) recvRequest = comm.Issend(sctl::Ptr2ConstItr<MortonId>(& last_node,1), 1, myrank+1, 1);
+      if(myrank >     0 ) sendRequest = comm.Irecv (sctl::Ptr2Itr<MortonId>(&first_node,1), 1, myrank-1, 1);
+      if(myrank < (np-1)) comm.Wait(std::move(recvRequest));
+      if(myrank >     0 ) comm.Wait(std::move(sendRequest)); //This can be done later.
     }
 
     size_t i=0;
@@ -482,8 +475,8 @@ void MPI_Tree<TreeNode>::RefineTree(){
 
     //Determine load imbalance.
     size_t global_max, global_sum;
-    MPI_Allreduce(&tree_node_cnt, &global_max, 1, par::Mpi_datatype<size_t>::value(), par::Mpi_datatype<size_t>::max(), Comm().GetMPI_Comm());
-    MPI_Allreduce(&tree_node_cnt, &global_sum, 1, par::Mpi_datatype<size_t>::value(), par::Mpi_datatype<size_t>::sum(), Comm().GetMPI_Comm());
+    Comm().Allreduce(sctl::Ptr2ConstItr<size_t>(&tree_node_cnt,1), sctl::Ptr2Itr<size_t>(&global_max,1), 1, sctl::CommOp::MAX);
+    Comm().Allreduce(sctl::Ptr2ConstItr<size_t>(&tree_node_cnt,1), sctl::Ptr2Itr<size_t>(&global_sum,1), 1, sctl::CommOp::SUM);
 
     //RedistNodes if needed.
     if(global_max*np>4*global_sum){
@@ -558,11 +551,9 @@ void MPI_Tree<TreeNode>::RedistNodes(MortonId* loc_min) {
       wts[i]=node_lst[i]->NodeCost();
     }
     Comm().PartitionW(in_, &wts);
-    MPI_Allgather(&in_[0]     , 1, par::Mpi_datatype<MortonId>::value(),
-                  &new_mins[0], 1, par::Mpi_datatype<MortonId>::value(), Comm().GetMPI_Comm());
+    Comm().Allgather(sctl::Ptr2ConstItr<MortonId>(&in_[0],1), 1, sctl::Ptr2Itr<MortonId>(&new_mins[0],np), 1);
   }else{
-    MPI_Allgather(loc_min     , 1, par::Mpi_datatype<MortonId>::value(),
-                  &new_mins[0], 1, par::Mpi_datatype<MortonId>::value(), Comm().GetMPI_Comm());
+    Comm().Allgather(sctl::Ptr2ConstItr<MortonId>(loc_min,1), 1, sctl::Ptr2Itr<MortonId>(&new_mins[0],np), 1);
   }
 
   //Now exchange nodes according to new mins
@@ -592,10 +583,8 @@ void MPI_Tree<TreeNode>::RedistNodes(MortonId* loc_min) {
 
   std::vector<int> recv_cnts(np);
   std::vector<int> recv_size(np);
-  MPI_Alltoall(&send_cnts[0], 1, par::Mpi_datatype<int>::value(),
-               &recv_cnts[0], 1, par::Mpi_datatype<int>::value(), Comm().GetMPI_Comm());
-  MPI_Alltoall(&send_size[0], 1, par::Mpi_datatype<int>::value(),
-               &recv_size[0], 1, par::Mpi_datatype<int>::value(), Comm().GetMPI_Comm());
+  Comm().Alltoall(sctl::Ptr2ConstItr<int>(&send_cnts[0],np), 1, sctl::Ptr2Itr<int>(&recv_cnts[0],np), 1);
+  Comm().Alltoall(sctl::Ptr2ConstItr<int>(&send_size[0],np), 1, sctl::Ptr2Itr<int>(&recv_size[0],np), 1);
 
   size_t recv_cnt=0;
   #pragma omp parallel for reduction(+:recv_cnt)
@@ -725,14 +714,13 @@ inline int lineariseList(std::vector<MortonId> & list, const sctl::Comm& comm) {
     MortonId lastOctant = list[list.size()-1];
     MortonId lastOnPrev;
 
-    MPI_Request recvRequest;
-    MPI_Request sendRequest;
+    sctl::Comm::Request recvRequest, sendRequest;
 
     if(new_rank > 0) {
-      MPI_Irecv(&lastOnPrev, 1, par::Mpi_datatype<MortonId>::value(), new_rank-1, 1, new_comm.GetMPI_Comm(), &recvRequest);
+      recvRequest = new_comm.Irecv(sctl::Ptr2Itr<MortonId>(&lastOnPrev,1), 1, new_rank-1, 1);
     }
     if(new_rank < (new_size-1)) {
-      MPI_Issend( &lastOctant, 1, par::Mpi_datatype<MortonId>::value(), new_rank+1, 1, new_comm.GetMPI_Comm(),  &sendRequest);
+      sendRequest = new_comm.Issend(sctl::Ptr2ConstItr<MortonId>(&lastOctant,1), 1, new_rank+1, 1);
     }
 
     if(new_rank > 0) {
@@ -741,8 +729,7 @@ inline int lineariseList(std::vector<MortonId> & list, const sctl::Comm& comm) {
         tmp[i+1] = list[i];
       }
 
-      MPI_Status statusWait;
-      MPI_Wait(&recvRequest, &statusWait);
+      new_comm.Wait(std::move(recvRequest));
       tmp[0] = lastOnPrev;
 
       list.swap(tmp);
@@ -764,8 +751,7 @@ inline int lineariseList(std::vector<MortonId> & list, const sctl::Comm& comm) {
     }
 
     if(new_rank < (new_size-1)) {
-      MPI_Status statusWait;
-      MPI_Wait(&sendRequest, &statusWait);
+      new_comm.Wait(std::move(sendRequest));
     }
   }//not empty procs only
 
@@ -896,25 +882,22 @@ inline int balanceOctree (std::vector<MortonId > &in, std::vector<MortonId > &ou
         MortonId lastOctant = out.back();
         MortonId lastOnPrev;
 
-        MPI_Request recvRequest;
-        MPI_Request sendRequest;
+        sctl::Comm::Request recvRequest, sendRequest;
 
         if(new_rank > 0) {
-          MPI_Irecv(&lastOnPrev, 1, par::Mpi_datatype<MortonId>::value(), new_rank-1, 1, new_comm.GetMPI_Comm(), &recvRequest);
+          recvRequest = new_comm.Irecv(sctl::Ptr2Itr<MortonId>(&lastOnPrev,1), 1, new_rank-1, 1);
         }
         if(new_rank < (new_size-1)) {
-          MPI_Issend( &lastOctant, 1, par::Mpi_datatype<MortonId>::value(), new_rank+1, 1, new_comm.GetMPI_Comm(),  &sendRequest);
+          sendRequest = new_comm.Issend(sctl::Ptr2ConstItr<MortonId>(&lastOctant,1), 1, new_rank+1, 1);
         }
 
         if(new_rank > 0) {
-          MPI_Status statusWait;
-          MPI_Wait(&recvRequest, &statusWait);
+          new_comm.Wait(std::move(recvRequest));
           nxt_mid = lastOnPrev.NextId();
         }
 
         if(new_rank < (new_size-1)) {
-          MPI_Status statusWait;
-          MPI_Wait(&sendRequest, &statusWait);
+          new_comm.Wait(std::move(sendRequest));
         }
       }
 
@@ -955,9 +938,9 @@ inline int balanceOctree (std::vector<MortonId > &in, std::vector<MortonId > &ou
 #ifdef PVFMM_VERBOSE
   long long locOutSize = out.size();
   long long globInSize, globTmpSize, globOutSize;
-  MPI_Allreduce(&locInSize , &globInSize , 1, par::Mpi_datatype<long long>::value(), par::Mpi_datatype<long long>::sum(), comm.GetMPI_Comm());
-  MPI_Allreduce(&locTmpSize, &globTmpSize, 1, par::Mpi_datatype<long long>::value(), par::Mpi_datatype<long long>::sum(), comm.GetMPI_Comm());
-  MPI_Allreduce(&locOutSize, &globOutSize, 1, par::Mpi_datatype<long long>::value(), par::Mpi_datatype<long long>::sum(), comm.GetMPI_Comm());
+  comm.Allreduce(sctl::Ptr2ConstItr<long long>(&locInSize,1), sctl::Ptr2Itr<long long>(&globInSize,1), 1, sctl::CommOp::SUM);
+  comm.Allreduce(sctl::Ptr2ConstItr<long long>(&locTmpSize,1), sctl::Ptr2Itr<long long>(&globTmpSize,1), 1, sctl::CommOp::SUM);
+  comm.Allreduce(sctl::Ptr2ConstItr<long long>(&locOutSize,1), sctl::Ptr2Itr<long long>(&globOutSize,1), 1, sctl::CommOp::SUM);
   if(!comm.Rank()) std::cout<<"Balance Octree. inpSize: "<<globInSize
                                     <<" tmpSize: "<<globTmpSize
                                     <<" outSize: "<<globOutSize
@@ -1003,8 +986,7 @@ void MPI_Tree<TreeNode>::Balance21(BoundaryType bndry) {
 
     std::vector<int> recv_cnt(num_proc);
     std::vector<int> recv_dsp(num_proc);
-    MPI_Alltoall(&     cnt[0], 1, MPI_INT,
-                 &recv_cnt[0], 1, MPI_INT, Comm().GetMPI_Comm());
+    Comm().Alltoall(sctl::Ptr2ConstItr<int>(&cnt[0],num_proc), 1, sctl::Ptr2Itr<int>(&recv_cnt[0],num_proc), 1);
     sctl::omp_par::scan(&recv_cnt[0],&recv_dsp[0],num_proc);
 
     in.resize(recv_cnt[num_proc-1]+recv_dsp[num_proc-1]);
@@ -1016,8 +998,7 @@ void MPI_Tree<TreeNode>::Balance21(BoundaryType bndry) {
 
   //Get new_mins.
   std::vector<MortonId> new_mins(num_proc);
-  MPI_Allgather(&out[0]     , 1, par::Mpi_datatype<MortonId>::value(),
-                &new_mins[0], 1, par::Mpi_datatype<MortonId>::value(), Comm().GetMPI_Comm());
+  Comm().Allgather(sctl::Ptr2ConstItr<MortonId>(&out[0],1), 1, sctl::Ptr2Itr<MortonId>(&new_mins[0],num_proc), 1);
 
 
   // Refine to new_mins in my range of octants
@@ -1470,7 +1451,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Hypercube(BoundaryType bndry){
       if(max_data_size_lcl<(long)p.length) max_data_size_lcl=p.length;
       assert(data_ptr<=&(*shrd_buff_vec0.end())); //TODO: resize if needed.
     }
-    MPI_Allreduce(&max_data_size_lcl, &max_data_size_glb, 1, MPI_LONG, MPI_MAX, Comm().GetMPI_Comm());
+    Comm().Allreduce(sctl::Ptr2ConstItr<long>(&max_data_size_lcl,1), sctl::Ptr2Itr<long>(&max_data_size_glb,1), 1, sctl::CommOp::MAX);
     max_data_size=max_data_size_glb;
   }
 
@@ -1527,15 +1508,22 @@ void MPI_Tree<TreeNode>::ConstructLET_Hypercube(BoundaryType bndry){
     int recv_length=0;
     int extra_recv_length=0;
     int extra_send_length=0;
-    MPI_Status status;
-    MPI_Sendrecv                  (&      send_length,1,MPI_INT,partner,0,      &recv_length,1,MPI_INT,partner,0,Comm().GetMPI_Comm(),&status);
-    if(extra_partner) MPI_Sendrecv(&extra_send_length,1,MPI_INT,split_p,0,&extra_recv_length,1,MPI_INT,split_p,0,Comm().GetMPI_Comm(),&status);
+    { auto rr=Comm().Irecv(sctl::Ptr2Itr<int>(&recv_length,1),1,(int)partner,0);
+      auto sr=Comm().Issend(sctl::Ptr2ConstItr<int>(&send_length,1),1,(int)partner,0);
+      Comm().Wait(std::move(sr)); Comm().Wait(std::move(rr)); }
+    if(extra_partner){ auto rr=Comm().Irecv(sctl::Ptr2Itr<int>(&extra_recv_length,1),1,(int)split_p,0);
+      auto sr=Comm().Issend(sctl::Ptr2ConstItr<int>(&extra_send_length,1),1,(int)split_p,0);
+      Comm().Wait(std::move(sr)); Comm().Wait(std::move(rr)); }
 
     //SendRecv data.
     assert((size_t)send_length                  <=send_buff_vec.size()); send_buff=&send_buff_vec[0];
     assert((size_t)recv_length+extra_recv_length<=recv_buff_vec.size()); recv_buff=&recv_buff_vec[0];
-    MPI_Sendrecv                  (send_buff,send_length,MPI_BYTE,partner,0, recv_buff             ,      recv_length,MPI_BYTE,partner,0,Comm().GetMPI_Comm(),&status);
-    if(extra_partner) MPI_Sendrecv(     NULL,          0,MPI_BYTE,split_p,0,&recv_buff[recv_length],extra_recv_length,MPI_BYTE,split_p,0,Comm().GetMPI_Comm(),&status);
+    { auto rr=Comm().Irecv(sctl::Ptr2Itr<char>(recv_buff,recv_length),recv_length,(int)partner,0);
+      auto sr=Comm().Issend(sctl::Ptr2ConstItr<char>(send_buff,send_length),send_length,(int)partner,0);
+      Comm().Wait(std::move(sr)); Comm().Wait(std::move(rr)); }
+    if(extra_partner){ auto rr=Comm().Irecv(sctl::Ptr2Itr<char>(&recv_buff[recv_length],extra_recv_length),extra_recv_length,(int)split_p,0);
+      auto sr=Comm().Issend(sctl::Ptr2ConstItr<char>(send_buff,0),0,(int)split_p,0);
+      Comm().Wait(std::move(sr)); Comm().Wait(std::move(rr)); }
 
     //Get nodes from received data.
     {
@@ -1812,8 +1800,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
   { // Allocate recv_buff.
     std::vector<MPI_size_t> recv_size(num_p,0);
     std::vector<MPI_size_t> recv_disp(num_p,0);
-    MPI_Alltoall(&send_size[0], 1, par::Mpi_datatype<MPI_size_t>::value(),
-                 &recv_size[0], 1, par::Mpi_datatype<MPI_size_t>::value(), Comm().GetMPI_Comm());
+    Comm().Alltoall(sctl::Ptr2ConstItr<MPI_size_t>(&send_size[0],num_p), 1, sctl::Ptr2Itr<MPI_size_t>(&recv_size[0],num_p), 1);
     sctl::omp_par::scan(&recv_size[0],&recv_disp[0],num_p);
     recv_length=recv_size[num_p-1]+recv_disp[num_p-1];
     if(recv_buff.size()<recv_length){
@@ -2014,20 +2001,19 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
 
       MPI_size_t recv_length=0;
       { // Send-Recv data
-        MPI_Request request;
-        MPI_Status status;
-        if(recv_pid!=rank) MPI_Irecv(&recv_length, 1, par::Mpi_datatype<MPI_size_t>::value(),recv_pid, 1, Comm().GetMPI_Comm(), &request);
-        if(send_pid!=rank) MPI_Send (&send_length, 1, par::Mpi_datatype<MPI_size_t>::value(),send_pid, 1, Comm().GetMPI_Comm());
-        if(recv_pid!=rank) MPI_Wait(&request, &status);
+        sctl::Comm::Request request;
+        if(recv_pid!=rank) request = Comm().Irecv(sctl::Ptr2Itr<MPI_size_t>(&recv_length,1), 1, (int)recv_pid, 1);
+        if(send_pid!=rank){ auto sr=Comm().Issend(sctl::Ptr2ConstItr<MPI_size_t>(&send_length,1), 1, (int)send_pid, 1); Comm().Wait(std::move(sr)); }
+        if(recv_pid!=rank) Comm().Wait(std::move(request));
 
         // Resize recv_buff
         if(recv_buff.size()<(size_t)recv_length){
           recv_buff.resize(recv_length);
         }
 
-        if(recv_length>0) MPI_Irecv(&recv_buff[0], recv_length, par::Mpi_datatype<char>::value(),recv_pid, 1, Comm().GetMPI_Comm(), &request);
-        if(send_length>0) MPI_Send (&send_buff[0], send_length, par::Mpi_datatype<char>::value(),send_pid, 1, Comm().GetMPI_Comm());
-        if(recv_length>0) MPI_Wait(&request, &status);
+        if(recv_length>0) request = Comm().Irecv(sctl::Ptr2Itr<char>(&recv_buff[0],recv_length), recv_length, (int)recv_pid, 1);
+        if(send_length>0){ auto sr=Comm().Issend(sctl::Ptr2ConstItr<char>(&send_buff[0],send_length), send_length, (int)send_pid, 1); Comm().Wait(std::move(sr)); }
+        if(recv_length>0) Comm().Wait(std::move(request));
       }
 
       std::vector<void*> recv_data; // CommData for received nodes.
@@ -2348,8 +2334,7 @@ const std::vector<MortonId>& MPI_Tree<TreeNode>::GetMins(){
   np = Comm().Size();
   mins.resize(np);
 
-  MPI_Allgather(&my_min , 1, par::Mpi_datatype<MortonId>::value(),
-                &mins[0], 1, par::Mpi_datatype<MortonId>::value(), Comm().GetMPI_Comm());
+  Comm().Allgather(sctl::Ptr2ConstItr<MortonId>(&my_min,1), 1, sctl::Ptr2Itr<MortonId>(&mins[0],np), 1);
 
   return mins;
 }

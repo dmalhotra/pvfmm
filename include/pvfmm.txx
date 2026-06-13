@@ -5,7 +5,6 @@
  * \brief This file contains the definitions of the wrapper functions for PVFMM.
  */
 
-#include <dtypes.h>
 #include <mpi_node.hpp>
 #include <fmm_tree.hpp>
 #include <fmm_pts.hpp>
@@ -72,7 +71,7 @@ inline ChebFMM_Tree<Real>* ChebFMM_CreateTree(int cheb_deg, const std::vector<Re
   const long Ncoeff = (cheb_deg+1)*(cheb_deg+2)*(cheb_deg+3)/6;
   { // Set data_dof
     long long glb_size[2], loc_size[2] = {(long long)node_coord.size()/PVFMM_COORD_DIM, (long long)fn_coeff.size()/Ncoeff};
-    MPI_Allreduce(&loc_size, &glb_size, 2, par::Mpi_datatype<long long>::value(), par::Mpi_datatype<long long>::sum(), comm.GetMPI_Comm());
+    comm.Allreduce(sctl::Ptr2ConstItr<long long>(loc_size,2), sctl::Ptr2Itr<long long>(glb_size,2), 2, sctl::CommOp::SUM);
     tree_data.data_dof = glb_size[1]/glb_size[0];
   }
   assert(node_coord.size() && (node_coord.size()/PVFMM_COORD_DIM)*PVFMM_COORD_DIM == node_coord.size());

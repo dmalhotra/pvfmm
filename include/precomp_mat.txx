@@ -267,7 +267,7 @@ void PrecompMat<T>::LoadFile(const char* fname, const sctl::Comm& comm){
   sctl::Profile::Toc();
 
   sctl::Profile::Tic("Broadcast",&comm,true,4);
-  MPI_Bcast( &f_size, sizeof(size_t), MPI_BYTE, 0, comm.GetMPI_Comm() );
+  comm.Bcast(sctl::Ptr2Itr<size_t>(&f_size,1), 1, 0);
   if(f_size==0){
     if(rank0_file) fclose(rank0_file);
     sctl::Profile::Toc();
@@ -292,11 +292,11 @@ void PrecompMat<T>::LoadFile(const char* fname, const sctl::Comm& comm){
   int max_send_size=1000000000;
   while(f_size>0){
     if(f_size>(size_t)max_send_size){
-      MPI_Bcast( f_ptr, max_send_size, MPI_BYTE, 0, comm.GetMPI_Comm() );
+      comm.Bcast(sctl::Ptr2Itr<char>(f_ptr,max_send_size), max_send_size, 0);
       f_size-=max_send_size;
       f_ptr+=max_send_size;
     }else{
-      MPI_Bcast( f_ptr, f_size, MPI_BYTE, 0, comm.GetMPI_Comm() );
+      comm.Bcast(sctl::Ptr2Itr<char>(f_ptr,f_size), f_size, 0);
       f_size=0;
     }
   }

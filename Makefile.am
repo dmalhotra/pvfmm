@@ -50,7 +50,6 @@ pvfmm_cpp_header_files = \
 									include/cheb_node.hpp \
 									include/cheb_utils.hpp \
 									include/device_wrapper.hpp \
-									include/dtypes.h \
 									include/fft_wrapper.hpp \
 									include/fmm_cheb.hpp \
 									include/fmm_node.hpp \

@@ -296,7 +296,7 @@ void FMM_Tree<FMM_Mat_t>::UpwardPass() {
       sctl::Iterator<Node_t> n=nodes[i];
       if(n->Depth()>max_depth_loc) max_depth_loc=n->Depth();
     }
-    MPI_Allreduce(&max_depth_loc, &max_depth, 1, MPI_INT, MPI_MAX, this->Comm().GetMPI_Comm());
+    this->Comm().Allreduce(sctl::Ptr2ConstItr<int>(&max_depth_loc,1), sctl::Ptr2Itr<int>(&max_depth,1), 1, sctl::CommOp::MAX);
   }
 
   //Upward Pass (initialize all leaf nodes)
@@ -474,12 +474,19 @@ void FMM_Tree<FMM_Mat_t>::MultipoleReduceBcast() {
 
     //Exchange send and recv sizes
     int recv_size=0;
-    MPI_Status status;
     sctl::Iterator<char> recv_buff = sctl::NullIterator<char>();
     if(partner<(size_t)num_p){
-      MPI_Sendrecv(&send_size,        1,  MPI_INT, partner, 0, &recv_size,         1,  MPI_INT, partner, 0, this->Comm().GetMPI_Comm(), &status);
+      { // size exchange (Irecv+Issend+Wait replaces blocking Sendrecv)
+        auto rreq=this->Comm().Irecv(sctl::Ptr2Itr<int>(&recv_size,1), 1, partner, 0);
+        auto sreq=this->Comm().Issend(sctl::Ptr2ConstItr<int>(&send_size,1), 1, partner, 0);
+        this->Comm().Wait(std::move(sreq)); this->Comm().Wait(std::move(rreq));
+      }
       recv_buff=sctl::aligned_new<char>(recv_size);
-      MPI_Sendrecv(send_buff, send_size, MPI_BYTE, partner, 0,  &recv_buff[0], recv_size, MPI_BYTE, partner, 0, this->Comm().GetMPI_Comm(), &status);
+      { // data exchange
+        auto rreq=this->Comm().Irecv(recv_buff, recv_size, partner, 0);
+        auto sreq=this->Comm().Issend(sctl::Ptr2ConstItr<char>(send_buff,send_size), send_size, partner, 0);
+        this->Comm().Wait(std::move(sreq)); this->Comm().Wait(std::move(rreq));
+      }
     }
 
     //Need an extra broadcast for incomplete hypercubes.
@@ -493,14 +500,14 @@ void FMM_Tree<FMM_Mat_t>::MultipoleReduceBcast() {
           size_t partner0=rank^bit_mask0;
           if( rank-p0_start < bit_mask0 ){
             //Send
-            MPI_Send(&recv_size,         1, MPI_INT , partner0, 0, this->Comm().GetMPI_Comm());
-            MPI_Send( &recv_buff[0], recv_size, MPI_BYTE, partner0, 0, this->Comm().GetMPI_Comm());
+            { auto r=this->Comm().Issend(sctl::Ptr2ConstItr<int>(&recv_size,1), 1, partner0, 0); this->Comm().Wait(std::move(r)); }
+            { auto r=this->Comm().Issend((sctl::ConstIterator<char>)recv_buff, recv_size, partner0, 0); this->Comm().Wait(std::move(r)); }
           }else if( rank-p0_start < (bit_mask0<<1) ){
             //Receive
             if(recv_size>0) sctl::aligned_delete<char>(recv_buff);
-            MPI_Recv(&recv_size,         1, MPI_INT , partner0, 0, this->Comm().GetMPI_Comm(), &status);
+            { auto r=this->Comm().Irecv(sctl::Ptr2Itr<int>(&recv_size,1), 1, partner0, 0); this->Comm().Wait(std::move(r)); }
             recv_buff=sctl::aligned_new<char>(recv_size);
-            MPI_Recv( &recv_buff[0], recv_size, MPI_BYTE, partner0, 0, this->Comm().GetMPI_Comm(), &status);
+            { auto r=this->Comm().Irecv(recv_buff, recv_size, partner0, 0); this->Comm().Wait(std::move(r)); }
           }
         }
         bit_mask0=bit_mask0<<1;
@@ -596,7 +603,7 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
       if(!n->IsGhost() && n->IsLeaf()) leaf_nodes.push_back(&n[0]);
       if(n->Depth()>max_depth_loc) max_depth_loc=n->Depth();
     }
-    MPI_Allreduce(&max_depth_loc, &max_depth, 1, MPI_INT, MPI_MAX, this->Comm().GetMPI_Comm());
+    this->Comm().Allreduce(sctl::Ptr2ConstItr<int>(&max_depth_loc,1), sctl::Ptr2Itr<int>(&max_depth,1), 1, sctl::CommOp::MAX);
   }
   sctl::Profile::Toc();
 

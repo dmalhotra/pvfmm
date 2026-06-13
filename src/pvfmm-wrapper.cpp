@@ -375,7 +375,7 @@ template<typename Real> struct PVFMMContext{
   int max_depth;
   pvfmm::BoundaryType bndry;
   const pvfmm::Kernel<Real>* ker;
-  MPI_Comm comm;            // kept for par::* / MPI_* call sites below.
+  MPI_Comm comm;            // raw handle kept for the C/Fortran API boundary.
   sctl::Comm sctl_comm;     // sctl wrapper around `comm`, used by sctl::Profile.
 
   typename Node_t::NodeData tree_data;
@@ -418,8 +418,8 @@ template<typename Real> static void* PVFMMCreateContext(Real box_size, int n, in
   ctx->tree_data.max_pts=ctx->max_pts;
   { // ctx->tree_data.pt_coord=... //Set points for initial tree.
     int np, myrank;
-    MPI_Comm_size(ctx->comm, &np);
-    MPI_Comm_rank(ctx->comm, &myrank);
+    np = ctx->sctl_comm.Size();
+    myrank = ctx->sctl_comm.Rank();
 
     std::vector<Real> coord;
     size_t NN=(size_t)ceil(pow((Real)np*ctx->max_pts,1.0/3.0));
@@ -462,7 +462,7 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
     Real s0, x0[PVFMM_COORD_DIM];
     Real s1, x1[PVFMM_COORD_DIM];
 
-    auto PVFMMBoundingBox = [](size_t n_src, const Real* x, Real* scale_xr, Real* shift_xr, MPI_Comm comm){
+    auto PVFMMBoundingBox = [](size_t n_src, const Real* x, Real* scale_xr, Real* shift_xr, const sctl::Comm& comm){
       Real& scale_x=*scale_xr;
       Real* shift_x= shift_xr;
 
@@ -486,8 +486,8 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
 
         double min_x[PVFMM_COORD_DIM];
         double max_x[PVFMM_COORD_DIM];
-        MPI_Allreduce(loc_min_x, min_x, PVFMM_COORD_DIM, MPI_DOUBLE, MPI_MIN, comm);
-        MPI_Allreduce(loc_max_x, max_x, PVFMM_COORD_DIM, MPI_DOUBLE, MPI_MAX, comm);
+        comm.Allreduce(sctl::Ptr2ConstItr<double>(loc_min_x,PVFMM_COORD_DIM), sctl::Ptr2Itr<double>(min_x,PVFMM_COORD_DIM), PVFMM_COORD_DIM, sctl::CommOp::MIN);
+        comm.Allreduce(sctl::Ptr2ConstItr<double>(loc_max_x,PVFMM_COORD_DIM), sctl::Ptr2Itr<double>(max_x,PVFMM_COORD_DIM), PVFMM_COORD_DIM, sctl::CommOp::MAX);
 
         Real eps=sctl::machine_eps<Real>()*64; // Points should be well within the box.
         scale_x=1/(Real)(max_x[0]-min_x[0]+2*eps);
@@ -500,8 +500,8 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
         }
       }
     };
-    PVFMMBoundingBox(n_src, src_pos, &s0, x0, ctx->comm);
-    PVFMMBoundingBox(n_trg, trg_pos, &s1, x1, ctx->comm);
+    PVFMMBoundingBox(n_src, src_pos, &s0, x0, ctx->sctl_comm);
+    PVFMMBoundingBox(n_trg, trg_pos, &s1, x1, ctx->sctl_comm);
 
     Real c0[PVFMM_COORD_DIM]={(Real)(0.5-x0[0])/s0, (Real)(0.5-x0[1])/s0, (Real)(0.5-x0[2])/s0};
     Real c1[PVFMM_COORD_DIM]={(Real)(0.5-x1[0])/s1, (Real)(0.5-x1[1])/s1, (Real)(0.5-x1[2])/s1};
@@ -722,8 +722,8 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
       PVFMMContext<Real>* ctx=(PVFMMContext<Real>*)ctx_;
 
       int np, myrank;
-      MPI_Comm_size(ctx->comm, &np);
-      MPI_Comm_rank(ctx->comm, &myrank);
+      np = ctx->sctl_comm.Size();
+      myrank = ctx->sctl_comm.Rank();
 
       long nleaf=0, maxdepth=0;
       std::vector<size_t> all_nodes(PVFMM_MAX_DEPTH+1,0);
@@ -744,7 +744,7 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
       for(int i=0;i<PVFMM_MAX_DEPTH;i++){
         int local_size=all_nodes[i];
         int global_size;
-        MPI_Allreduce(&local_size, &global_size, 1, MPI_INT, MPI_SUM, ctx->comm);
+        ctx->sctl_comm.Allreduce(sctl::Ptr2ConstItr<int>(&local_size,1), sctl::Ptr2Itr<int>(&global_size,1), 1, sctl::CommOp::SUM);
         os1<<global_size<<' ';
       }
       if(!myrank) std::cout<<os1.str()<<'\n';
@@ -753,15 +753,15 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
       for(int i=0;i<PVFMM_MAX_DEPTH;i++){
         int local_size=leaf_nodes[i];
         int global_size;
-        MPI_Allreduce(&local_size, &global_size, 1, MPI_INT, MPI_SUM, ctx->comm);
+        ctx->sctl_comm.Allreduce(sctl::Ptr2ConstItr<int>(&local_size,1), sctl::Ptr2Itr<int>(&global_size,1), 1, sctl::CommOp::SUM);
         os2<<global_size<<' ';
       }
       if(!myrank) std::cout<<os2.str()<<'\n';
 
       long nleaf_glb=0, maxdepth_glb=0;
       { // MPI_Reduce
-        MPI_Allreduce(&nleaf, &nleaf_glb, 1, MPI_INT, MPI_SUM, ctx->comm);
-        MPI_Allreduce(&maxdepth, &maxdepth_glb, 1, MPI_INT, MPI_MAX, ctx->comm);
+        ctx->sctl_comm.Allreduce(sctl::Ptr2ConstItr<int>(&nleaf,1), sctl::Ptr2Itr<int>((int*)&nleaf_glb,1), 1, sctl::CommOp::SUM);
+        ctx->sctl_comm.Allreduce(sctl::Ptr2ConstItr<int>(&maxdepth,1), sctl::Ptr2Itr<int>((int*)&maxdepth_glb,1), 1, sctl::CommOp::MAX);
       }
       if(!myrank) std::cout<<"Number of Leaf Nodes: "<<nleaf_glb<<'\n';
       if(!myrank) std::cout<<"Tree Depth: "<<maxdepth_glb<<'\n';

@@ -14,7 +14,6 @@
 #include <sys/stat.h>
 #endif
 
-#include <dtypes.h>
 #include <cheb_utils.hpp>
 
 #include <profile.hpp>
@@ -549,7 +548,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
               M_s2c_local[j][i*this->kernel->k_s2m->ker_dim[1]+k] = M_[j+k*M_s2c.Dim(0)];
         }
         if(!myrank) std::cout<<"\r                    \r"<<std::flush;
-        MPI_Allreduce(M_s2c_local[0], M_s2c[0], M_s2c.Dim(0)*M_s2c.Dim(1), par::Mpi_datatype<Real_t>::value(), par::Mpi_datatype<Real_t>::sum(), this->sctl_comm.GetMPI_Comm());
+        this->sctl_comm.Allreduce(sctl::Ptr2ConstItr<Real_t>(M_s2c_local[0], M_s2c.Dim(0)*M_s2c.Dim(1)), sctl::Ptr2Itr<Real_t>(M_s2c[0], M_s2c.Dim(0)*M_s2c.Dim(1)), M_s2c.Dim(0)*M_s2c.Dim(1), sctl::CommOp::SUM);
       }
 
       Matrix<Real_t>& M_c2e0 = this->Precomp(level, UC2UE0_Type, 0);
@@ -614,7 +613,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
               M_s2t_local[j][i*this->kernel->k_s2t->ker_dim[1]+k] = s2t[j+k*M_s2t.Dim(0)];
         }
         if(!myrank) std::cout<<"\r                    \r"<<std::flush;
-        MPI_Allreduce(M_s2t_local[0], M_s2t[0], M_s2t.Dim(0)*M_s2t.Dim(1), par::Mpi_datatype<Real_t>::value(), par::Mpi_datatype<Real_t>::sum(), this->sctl_comm.GetMPI_Comm());
+        this->sctl_comm.Allreduce(sctl::Ptr2ConstItr<Real_t>(M_s2t_local[0], M_s2t.Dim(0)*M_s2t.Dim(1)), sctl::Ptr2Itr<Real_t>(M_s2t[0], M_s2t.Dim(0)*M_s2t.Dim(1)), M_s2t.Dim(0)*M_s2t.Dim(1), sctl::CommOp::SUM);
       }
 
       // Compute Chebyshev approx from target potential.
@@ -664,7 +663,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
               M_s2t_local[j][i*this->kernel->k_s2t->ker_dim[1]+k] = s2t[j+k*M_s2t.Dim(0)];
         }
         if(!myrank) std::cout<<"\r                    \r"<<std::flush;
-        MPI_Allreduce(M_s2t_local[0], M_s2t[0], M_s2t.Dim(0)*M_s2t.Dim(1), par::Mpi_datatype<Real_t>::value(), par::Mpi_datatype<Real_t>::sum(), this->sctl_comm.GetMPI_Comm());
+        this->sctl_comm.Allreduce(sctl::Ptr2ConstItr<Real_t>(M_s2t_local[0], M_s2t.Dim(0)*M_s2t.Dim(1)), sctl::Ptr2Itr<Real_t>(M_s2t[0], M_s2t.Dim(0)*M_s2t.Dim(1)), M_s2t.Dim(0)*M_s2t.Dim(1), sctl::CommOp::SUM);
       }
 
       // Compute Chebyshev approx from target potential.
@@ -714,7 +713,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
               M_s2t_local[j][i*this->kernel->k_s2t->ker_dim[1]+k] = s2t[j+k*M_s2t.Dim(0)];
         }
         if(!myrank) std::cout<<"\r                    \r"<<std::flush;
-        MPI_Allreduce(M_s2t_local[0], M_s2t[0], M_s2t.Dim(0)*M_s2t.Dim(1), par::Mpi_datatype<Real_t>::value(), par::Mpi_datatype<Real_t>::sum(), this->sctl_comm.GetMPI_Comm());
+        this->sctl_comm.Allreduce(sctl::Ptr2ConstItr<Real_t>(M_s2t_local[0], M_s2t.Dim(0)*M_s2t.Dim(1)), sctl::Ptr2Itr<Real_t>(M_s2t[0], M_s2t.Dim(0)*M_s2t.Dim(1)), M_s2t.Dim(0)*M_s2t.Dim(1), sctl::CommOp::SUM);
       }
 
       // Compute Chebyshev approx from target potential.
@@ -778,7 +777,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
               M_xs2c_local[j][i*this->kernel->k_s2l->ker_dim[1]+k] = M_[j+k*M_xs2c.Dim(0)];
         }
         if(!myrank) std::cout<<"\r                    \r"<<std::flush;
-        MPI_Allreduce(M_xs2c_local[0], M_xs2c[0], M_xs2c.Dim(0)*M_xs2c.Dim(1), par::Mpi_datatype<Real_t>::value(), par::Mpi_datatype<Real_t>::sum(), this->sctl_comm.GetMPI_Comm());
+        this->sctl_comm.Allreduce(sctl::Ptr2ConstItr<Real_t>(M_xs2c_local[0], M_xs2c.Dim(0)*M_xs2c.Dim(1)), sctl::Ptr2Itr<Real_t>(M_xs2c[0], M_xs2c.Dim(0)*M_xs2c.Dim(1)), M_xs2c.Dim(0)*M_xs2c.Dim(1), sctl::CommOp::SUM);
       }
       M=M_xs2c;
       break;
