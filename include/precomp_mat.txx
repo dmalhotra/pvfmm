@@ -289,14 +289,15 @@ void PrecompMat<T>::LoadFile(const char* fname, const sctl::Comm& comm){
     fclose(rank0_file);
   }
   char* f_ptr=f_data;
+  size_t f_off=0;
   int max_send_size=1000000000;
   while(f_size>0){
     if(f_size>(size_t)max_send_size){
-      comm.Bcast(sctl::Ptr2Itr<char>(f_ptr,max_send_size), max_send_size, 0);
+      comm.Bcast(f_data_scratch.begin()+f_off, max_send_size, 0);
       f_size-=max_send_size;
-      f_ptr+=max_send_size;
+      f_off+=max_send_size;
     }else{
-      comm.Bcast(sctl::Ptr2Itr<char>(f_ptr,f_size), f_size, 0);
+      comm.Bcast(f_data_scratch.begin()+f_off, f_size, 0);
       f_size=0;
     }
   }

@@ -42,8 +42,8 @@ class MortonId : public sctl::Morton<3> {
 
   template <class T>
   MortonId(T x_f, T y_f, T z_f, uint8_t depth=PVFMM_MAX_DEPTH) {
-    const T coord[3] = {x_f, y_f, z_f};
-    *static_cast<Base*>(this) = Base(sctl::Ptr2ConstItr<T>(&coord[0], 3), depth);
+    sctl::StaticArray<T,3> coord{x_f, y_f, z_f};
+    *static_cast<Base*>(this) = Base((sctl::ConstIterator<T>)coord, depth);
   }
 
   template <class T>

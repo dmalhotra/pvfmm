@@ -484,7 +484,7 @@ void FMM_Tree<FMM_Mat_t>::MultipoleReduceBcast() {
       recv_buff=sctl::aligned_new<char>(recv_size);
       { // data exchange
         auto rreq=this->Comm().Irecv(recv_buff, recv_size, partner, 0);
-        auto sreq=this->Comm().Issend(sctl::Ptr2ConstItr<char>(send_buff,send_size), send_size, partner, 0);
+        auto sreq=this->Comm().Issend(send_buff_scratch.begin(), send_size, partner, 0);
         this->Comm().Wait(std::move(sreq)); this->Comm().Wait(std::move(rreq));
       }
     }
