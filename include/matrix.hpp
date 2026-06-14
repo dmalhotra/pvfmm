@@ -5,9 +5,9 @@
  * \brief pvfmm::Matrix is an alias for sctl::Matrix<T>.
  *
  * Call sites use sctl::Matrix directly (M[i] yields an iterator; use
- * &M[i][0] or MatBegin(M) where a raw pointer is needed). The pvfmm-specific
- * helpers kept as free functions are Resize(), MatBegin(), MatrixTranspose()
- * and the CUDA CUBLASGEMM wrapper.
+ * &M[i][0] where a raw pointer is needed, M.ReInit(i,j) to resize). The
+ * pvfmm-specific helpers kept as free functions are MatrixTranspose() and
+ * the CUDA CUBLASGEMM wrapper.
  */
 
 #include <stdint.h>
@@ -26,22 +26,10 @@ namespace pvfmm{
 
 template <class T> using Matrix = sctl::Matrix<T>;
 
-// Resize-if-needed: matches the historical pvfmm::Matrix::Resize (a no-op when
-// the dimensions are unchanged; otherwise reallocates, NOT preserving data).
-template <class T> inline void Resize(sctl::Matrix<T>& M, size_t i, size_t j){ if((size_t)M.Dim(0)!=i || (size_t)M.Dim(1)!=j) M.ReInit((sctl::Long)i, (sctl::Long)j); }
-
-// Null-safe raw-pointer view of a matrix (see VecBegin).
-template <class T>
-T* MatBegin(sctl::Matrix<T>& M){ sctl::Iterator<T> it=M.begin(); return (M.Dim(0)*M.Dim(1)>0 && it!=sctl::NullIterator<T>() ? &it[0] : (T*)NULL); }
-template <class T>
-const T* MatBegin(const sctl::Matrix<T>& M){ sctl::ConstIterator<T> it=M.begin(); return (M.Dim(0)*M.Dim(1)>0 && it!=sctl::NullIterator<T>() ? &it[0] : (const T*)NULL); }
-
-// pvfmm::Permutation is sctl::Permutation. perm holds sctl::Long entries —
-// same width as the historical PVFMM_PERM_INT_T (size_t), so the packed
-// precomp data and cache files are byte-compatible.
+// Call sites use sctl::Permutation directly. Its perm holds sctl::Long
+// entries (PVFMM_PERM_INT_T) — same width as the historical size_t, so the
+// packed precomp data and cache files are byte-compatible.
 #define PVFMM_PERM_INT_T sctl::Long
-template <class T>
-using Permutation = sctl::Permutation<T>;
 
 /**
  * Transpose the in_dim1 x in_dim2 row-major matrix at `in` into `out`
