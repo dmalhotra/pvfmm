@@ -161,7 +161,7 @@ void MPI_Node<T>::Subdivide(sctl::Iterator<TreeNode> self_){
         size_t dof=vec.Dim()/npts;
         if(dof>0) for(int i=0;i<nchld;i++){
           Vector<Real_t>& chld_vec=*chld_pt_coord[i][j];
-          chld_vec.ReInit((cdata[i+1]-cdata[i])*dof, &vec[0]+cdata[i]*dof);
+          chld_vec.ReInit((cdata[i+1]-cdata[i])*dof, vec.begin()+cdata[i]*dof);
         }
         vec.ReInit(0);
       }
@@ -170,7 +170,7 @@ void MPI_Node<T>::Subdivide(sctl::Iterator<TreeNode> self_){
         size_t dof=vec.Dim()/npts;
         if(dof>0) for(int i=0;i<nchld;i++){
           Vector<Real_t>& chld_vec=*chld_pt_value[i][j];
-          chld_vec.ReInit((cdata[i+1]-cdata[i])*dof, &vec[0]+cdata[i]*dof);
+          chld_vec.ReInit((cdata[i+1]-cdata[i])*dof, vec.begin()+cdata[i]*dof);
         }
         vec.ReInit(0);
       }
@@ -179,7 +179,7 @@ void MPI_Node<T>::Subdivide(sctl::Iterator<TreeNode> self_){
         size_t dof=vec.Dim()/npts;
         if(dof>0) for(int i=0;i<nchld;i++){
           Vector<sctl::Long>& chld_vec=*chld_pt_scatter[i][j];
-          chld_vec.ReInit((cdata[i+1]-cdata[i])*dof, &vec[0]+cdata[i]*dof);
+          chld_vec.ReInit((cdata[i+1]-cdata[i])*dof, vec.begin()+cdata[i]*dof);
         }
         vec.ReInit(0);
       }
@@ -312,7 +312,7 @@ inline char* UnpackVecSegment(char* data_ptr, Vector<Y>* vec, bool own_data){
     if(vec->Dim()!=(sctl::Long)dim) vec->ReInit(dim);
     if(dim) sctl::omp_par::copy((Y*)data_ptr, (Y*)data_ptr+(sctl::Long)dim, vec->begin());
   }else{
-    vec->ReInit(dim,(Y*)data_ptr,false);
+    vec->ReInit(dim,sctl::Ptr2Itr<Y>((Y*)data_ptr,dim),false);
   }
   data_ptr+=((dim*sizeof(Y)+sizeof(size_t)-1)/sizeof(size_t))*sizeof(size_t);
   return data_ptr;
@@ -338,7 +338,7 @@ PackedData MPI_Node<T>::Pack(bool ghost, void* buff_ptr, size_t offset){
   // Allocate memory.
   p0.data=(char*)buff_ptr;
   if(!p0.data){
-    this->packed_data.Resize(p0.length+offset);
+    Resize(this->packed_data, p0.length+offset);
     p0.data=&this->packed_data[0];
   }
 

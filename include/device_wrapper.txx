@@ -372,7 +372,7 @@ namespace DeviceWrapper{
     lock_idx=0;
     static DeviceMirror lock_vec_mirror;
     lock_vec_mirror.Free();
-    lock_vec.Resize(PVFMM_NUM_LOCKS);
+    Resize(lock_vec, PVFMM_NUM_LOCKS);
     lock_vec.SetZero();
     lock_vec_=lock_vec_mirror.AllocDevice(lock_vec,false);
     {for(size_t i=0;i<PVFMM_NUM_LOCKS;i++) lock_vec [i]=1;}

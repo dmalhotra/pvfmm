@@ -149,7 +149,7 @@ void CheckChebOutput(FMMTree_t* mytree, typename TestFn<typename FMMTree_t::Real
       pvfmm::Vector<Real_t> fn_out(dof*fn_dof);
       for(size_t i=(nodes.size()*tid)/omp_p;i<(nodes.size()*(tid+1))/omp_p;i++){
         pvfmm::Vector<Real_t>& cheb_coeff=nodes[i]->ChebData();
-        cheb_eval(cheb_coeff, cheb_deg, cheb_nds, cheb_nds, cheb_nds, out);
+        pvfmm::cheb_eval(cheb_coeff, cheb_deg, cheb_nds, cheb_nds, cheb_nds, out);
 
         Real_t* c=nodes[i]->Coord();
         Real_t s=(Real_t)pow(2,-nodes[i]->Depth());
@@ -233,7 +233,7 @@ void CheckChebOutput(FMMTree_t* mytree, typename TestFn<typename FMMTree_t::Real
     pvfmm::Vector<Real_t> fn_out(dof*fn_dof);
     for(size_t i=(nodes.size()*tid)/omp_p;i<(nodes.size()*(tid+1))/omp_p;i++){
       pvfmm::Vector<Real_t>& cheb_coeff=nodes[i]->ChebData();
-      cheb_eval(cheb_coeff, cheb_deg, cheb_nds, cheb_nds, cheb_nds, out);
+      pvfmm::cheb_eval(cheb_coeff, cheb_deg, cheb_nds, cheb_nds, cheb_nds, out);
 
       Real_t* c=nodes[i]->Coord();
       Real_t s=(Real_t)pow(2,-nodes[i]->Depth());

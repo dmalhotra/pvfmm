@@ -53,7 +53,7 @@ void Cheb_Node<Real_t>::Initialize(sctl::Iterator<TreeNode> parent_, int path2no
       input_fn(&coord[0],n1,&input_val[0]);
       MatrixTranspose<Real_t>(n1,data_dof,&input_val[0],&input_val[0]); // transpose input_val in place
 
-      cheb_coeff.Resize(((cheb_deg+1)*(cheb_deg+2)*(cheb_deg+3))/6*data_dof); cheb_coeff.SetZero();
+      Resize(cheb_coeff, ((cheb_deg+1)*(cheb_deg+2)*(cheb_deg+3))/6*data_dof); cheb_coeff.SetZero();
       cheb_approx<Real_t,Real_t>(&input_val[0], cheb_deg, data_dof, &cheb_coeff[0]);
     }else if(this->cheb_value.Dim()>0){
       size_t n_ptr=this->cheb_coord.Dim()/this->Dim();
@@ -68,7 +68,7 @@ void Cheb_Node<Real_t>::Initialize(sctl::Iterator<TreeNode> parent_, int path2no
 
 template <class Real_t>
 void Cheb_Node<Real_t>::ClearData(){
-  ChebData().Resize(0);
+  Resize(ChebData(), 0);
   MPI_Node<Real_t>::ClearData();
 }
 
@@ -138,7 +138,7 @@ void Cheb_Node<Real_t>::Subdivide(sctl::Iterator<TreeNode> self_) {
   std::vector<Real_t> x(cheb_deg+1);
   std::vector<Real_t> y(cheb_deg+1);
   std::vector<Real_t> z(cheb_deg+1);
-  Vector<Real_t> cheb_node=cheb_nodes<Real_t>(cheb_deg,1);
+  Vector<Real_t> cheb_node(cheb_nodes<Real_t>(cheb_deg,1));
   Vector<Real_t> val(sctl::pow<unsigned int>(cheb_deg+1,this->Dim())*data_dof);
   Vector<Real_t> child_cheb_coeff[8];
   int n=(1UL<<this->Dim());
@@ -153,7 +153,7 @@ void Cheb_Node<Real_t>::Subdivide(sctl::Iterator<TreeNode> self_) {
     }
     cheb_eval(cheb_coeff, cheb_deg, x, y, z, val);
     assert(val.Dim()==sctl::pow<unsigned int>(cheb_deg+1,this->Dim())*data_dof);
-    child_cheb_coeff[i].Resize(data_dof*((cheb_deg+1)*(cheb_deg+2)*(cheb_deg+3))/6);
+    Resize(child_cheb_coeff[i], data_dof*((cheb_deg+1)*(cheb_deg+2)*(cheb_deg+3))/6);
     cheb_approx<Real_t,Real_t>(&val[0],cheb_deg,data_dof,&(child_cheb_coeff[i][0]));
 
     sctl::Iterator<Cheb_Node<Real_t>> child=(sctl::Iterator<Cheb_Node<Real_t>>)this->Child(i);
@@ -181,7 +181,7 @@ void Cheb_Node<Real_t>::Truncate() {
     z[i]=z[i]*s+coord[2];
   }
   read_val(x,y,z, cheb_deg+1, cheb_deg+1, cheb_deg+1, &val[0]);
-  cheb_coeff.Resize(data_dof*((cheb_deg+1)*(cheb_deg+2)*(cheb_deg+3))/6);
+  Resize(cheb_coeff, data_dof*((cheb_deg+1)*(cheb_deg+2)*(cheb_deg+3))/6);
   cheb_approx<Real_t,Real_t>(&val[0],cheb_deg,data_dof,&cheb_coeff[0]);
   MPI_Node<Real_t>::Truncate();
 }

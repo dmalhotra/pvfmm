@@ -623,18 +623,18 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
           for(size_t j=0;j<nodes.size();j++){
             size_t n_pts=part_indx[j+1]-part_indx[j];
             if(src_value.Dim()){
-              nodes[j]-> src_coord.ReInit(n_pts*( PVFMM_COORD_DIM),& src_coord[0]+part_indx[j]*( PVFMM_COORD_DIM),false);
-              nodes[j]-> src_value.ReInit(n_pts*(ker_dim[0]),& src_value[0]+part_indx[j]*(ker_dim[0]),false);
+              nodes[j]-> src_coord.ReInit(n_pts*( PVFMM_COORD_DIM), src_coord.begin()+part_indx[j]*( PVFMM_COORD_DIM),false);
+              nodes[j]-> src_value.ReInit(n_pts*(ker_dim[0]), src_value.begin()+part_indx[j]*(ker_dim[0]),false);
             }else{
-              nodes[j]-> src_coord.ReInit(0,NULL,false);
-              nodes[j]-> src_value.ReInit(0,NULL,false);
+              nodes[j]-> src_coord.ReInit(0,sctl::NullIterator<Real>(),false);
+              nodes[j]-> src_value.ReInit(0,sctl::NullIterator<Real>(),false);
             }
             if(surf_value.Dim()){
-              nodes[j]->surf_coord.ReInit(n_pts*(           PVFMM_COORD_DIM),& src_coord[0]+part_indx[j]*(           PVFMM_COORD_DIM),false);
-              nodes[j]->surf_value.ReInit(n_pts*(ker_dim[0]+PVFMM_COORD_DIM),&surf_value[0]+part_indx[j]*(ker_dim[0]+PVFMM_COORD_DIM),false);
+              nodes[j]->surf_coord.ReInit(n_pts*(           PVFMM_COORD_DIM), src_coord.begin()+part_indx[j]*(           PVFMM_COORD_DIM),false);
+              nodes[j]->surf_value.ReInit(n_pts*(ker_dim[0]+PVFMM_COORD_DIM), surf_value.begin()+part_indx[j]*(ker_dim[0]+PVFMM_COORD_DIM),false);
             }else{
-              nodes[j]->surf_coord.ReInit(0,NULL,false);
-              nodes[j]->surf_value.ReInit(0,NULL,false);
+              nodes[j]->surf_coord.ReInit(0,sctl::NullIterator<Real>(),false);
+              nodes[j]->surf_value.ReInit(0,sctl::NullIterator<Real>(),false);
             }
           }
         }else{
@@ -659,10 +659,10 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
     }
     { // Set trg tree_data
       if(trg_pos==src_pos && n_src==n_trg){ // Scatter trg data
-        trg_coord.ReInit(src_coord.Dim(),&src_coord[0],false);
+        trg_coord.ReInit(src_coord.Dim(),src_coord.begin(),false);
       }else{
         // Compute MortonId and copy coordinates.
-        trg_coord.Resize(n_trg*PVFMM_COORD_DIM);
+        pvfmm::Resize(trg_coord, n_trg*PVFMM_COORD_DIM);
         pt_mid    .ReInit(n_trg);
         #pragma omp parallel for
         for(size_t tid=0;tid<omp_p;tid++){
@@ -696,7 +696,7 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
           for(size_t j=0;j<nodes.size();j++){
             size_t n_pts=part_indx[j+1]-part_indx[j];
             {
-              nodes[j]-> trg_coord.ReInit(n_pts*(PVFMM_COORD_DIM),& trg_coord[0]+part_indx[j]*(PVFMM_COORD_DIM),false);
+              nodes[j]-> trg_coord.ReInit(n_pts*(PVFMM_COORD_DIM), trg_coord.begin()+part_indx[j]*(PVFMM_COORD_DIM),false);
             }
           }
         }else{
@@ -795,7 +795,7 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
           trg_size+=nodes[i]->trg_value.Dim();
         }
       }
-      trg_value.ReInit(trg_size,&n->trg_value[0]);
+      trg_value.ReInit(trg_size,n->trg_value.begin());
     }
     ctx->sctl_comm.ScatterReverse(trg_value, scatter_index, n_trg);
     #pragma omp parallel for

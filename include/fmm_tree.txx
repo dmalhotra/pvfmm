@@ -364,7 +364,7 @@ void FMM_Tree<FMM_Mat_t>::BuildInteracLists() {
       size_t b=(n_list.size()*(j+1))/omp_p;
       for(size_t i=a;i<b;i++){
         sctl::Iterator<Node_t> n=n_list[i];
-        n->interac_list[type_lst[k]].ReInit(interac_cnt[k],&node_interac_lst[i][interac_dsp[k]],false);
+        n->interac_list[type_lst[k]].ReInit(interac_cnt[k],sctl::Ptr2Itr<sctl::Iterator<Node_t>>(&node_interac_lst[i][interac_dsp[k]],interac_cnt[k]),false);
         interac_list.BuildList(n,type_lst[k]);
       }
     }

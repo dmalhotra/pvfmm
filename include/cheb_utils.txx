@@ -125,9 +125,9 @@ T cheb_approx(const T* fn_v, int cheb_deg, int dof, T* out){
 
   Vector<Y> fn_v_in;
   if(SameType<T,Y>()()){ // Initialize fn_v_in
-    fn_v_in.ReInit(d*d*d*dof,(T*)fn_v,false);
+    fn_v_in.ReInit(d*d*d*dof,sctl::Ptr2Itr<Y>((Y*)fn_v,d*d*d*dof),false);
   }else{
-    fn_v_in.ReInit(d*d*d*dof,buff1,false);
+    fn_v_in.ReInit(d*d*d*dof,sctl::Ptr2Itr<Y>(buff1,d*d*d*dof),false);
     for(size_t i=0;i<fn_v_in.Dim();i++) fn_v_in[i]=fn_v[i];
   }
 
@@ -399,7 +399,7 @@ void cheb_eval(const Vector<T>& coeff_, int cheb_deg, const std::vector<T>& in_x
   size_t n1=in_x.size();
   size_t n2=in_y.size();
   size_t n3=in_z.size();
-  out.Resize(n1*n2*n3*dof);
+  Resize(out, n1*n2*n3*dof);
   if(n1==0 || n2==0 || n3==0) return;
 
   // Precomputation
@@ -507,7 +507,7 @@ inline void cheb_eval(Vector<T>& coeff_, int cheb_deg, std::vector<T>& coord, Ve
 
   py = py.Transpose();
   pz = pz.Transpose();
-  out.Resize(n*dof);
+  Resize(out, n*dof);
   for(int i=0; i<n; i++)
     for(int j=0; j<dof; j++){
       Matrix<T> M0_  (d, d, &(M0[i][  j*d*d]), false);
@@ -578,7 +578,7 @@ void points2cheb(int deg, T* coord, T* val, int n, int dim, T* node_coord, T nod
   deg_=(deg_>deg?deg:deg_);
   deg_=(deg_>0?deg_:1);
   int deg3=((deg_+1)*(deg_+2)*(deg_+3))/6;
-  cheb_coeff.Resize(dim*((deg+1)*(deg+2)*(deg+3))/6);
+  Resize(cheb_coeff, dim*((deg+1)*(deg+2)*(deg+3))/6);
   cheb_coeff.SetZero();
 
   //Map coordinates to unit cube
@@ -1137,8 +1137,8 @@ void cheb_grad(const Vector<T>& A, int deg, Vector<T>& B){
   // Create work buffers (per-thread scratch).
   sctl::ScratchBuf<T> buff_scratch(2*n_coeff_*dof);
   T* buff=&buff_scratch.begin()[0];
-  Vector<T> A_(n_coeff_*dof,buff+n_coeff_*dof*0,false); A_.SetZero();
-  Vector<T> B_(n_coeff_*dof,buff+n_coeff_*dof*1,false); B_.SetZero();
+  Vector<T> A_(n_coeff_*dof,sctl::Ptr2Itr<T>(buff+n_coeff_*dof*0,n_coeff_*dof),false); A_.SetZero();
+  Vector<T> B_(n_coeff_*dof,sctl::Ptr2Itr<T>(buff+n_coeff_*dof*1,n_coeff_*dof),false); B_.SetZero();
 
   {// Rearrange data
     size_t indx=0;
@@ -1155,7 +1155,7 @@ void cheb_grad(const Vector<T>& A, int deg, Vector<T>& B){
     }
   }
 
-  B.Resize(A.Dim()*dim);
+  Resize(B, A.Dim()*dim);
   for(size_t q=0;q<dim;q++){
     // Compute derivative in direction q
     cheb_diff(A_,deg,q,B_);

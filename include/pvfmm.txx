@@ -169,7 +169,7 @@ void ChebFMM_Coeff2Nodes(std::vector<Real>& node_val, int ChebDeg, int dof, cons
     long a = N*(tid+0)/np;
     long b = N*(tid+1)/np;
     for (long i = a; i < b; i++) {
-      const Vector<Real> coeff_(dof*M0, (Real*)coeff.data() + i * dof*M0, false);
+      const Vector<Real> coeff_(dof*M0, sctl::Ptr2Itr<Real>((Real*)coeff.data() + i * dof*M0, dof*M0), false);
       cheb_eval(coeff_, ChebDeg, cheb_nds, cheb_nds, cheb_nds, buff);
 
       const Matrix<Real> buff_(dof,M1, buff.begin(), false);
@@ -256,8 +256,8 @@ inline void PtFMM_Evaluate(const PtFMM_Tree<Real>* tree, std::vector<Real>& trg_
       }
     }
 
-    Vector<Real> src_value=*src_val;
-    Vector<sctl::Long> src_scatter=src_scatter_;
+    Vector<Real> src_value(*src_val);
+    Vector<sctl::Long> src_scatter(src_scatter_);
     tree->Comm().ScatterForward(src_value,src_scatter);
 
     size_t indx=0;
@@ -281,8 +281,8 @@ inline void PtFMM_Evaluate(const PtFMM_Tree<Real>* tree, std::vector<Real>& trg_
       }
     }
 
-    Vector<Real> surf_value=*surf_val;
-    Vector<sctl::Long> surf_scatter=surf_scatter_;
+    Vector<Real> surf_value(*surf_val);
+    Vector<sctl::Long> surf_scatter(surf_scatter_);
     tree->Comm().ScatterForward(surf_value,surf_scatter);
 
     size_t indx=0;

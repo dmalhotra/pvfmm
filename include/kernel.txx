@@ -48,9 +48,9 @@ Kernel<T>::Kernel(Ker_t poten, Ker_t dbl_poten, const char* name, int dim_, std:
   vol_poten=NULL;
 
   scale_invar=true;
-  src_scal.Resize(ker_dim[0]); src_scal.SetZero();
-  trg_scal.Resize(ker_dim[1]); trg_scal.SetZero();
-  perm_vec.Resize(Perm_Count);
+  Resize(src_scal, ker_dim[0]); src_scal.SetZero();
+  Resize(trg_scal, ker_dim[1]); trg_scal.SetZero();
+  Resize(perm_vec, Perm_Count);
   for(size_t p_type=0;p_type<C_Perm;p_type++){
     perm_vec[p_type       ]=Permutation<T>(ker_dim[0]);
     perm_vec[p_type+C_Perm]=Permutation<T>(ker_dim[1]);
@@ -156,8 +156,8 @@ void Kernel<T>::Initialize(bool verbose) const{
       }
     }
 
-    src_scal.Resize(ker_dim[0]); src_scal.SetZero();
-    trg_scal.Resize(ker_dim[1]); trg_scal.SetZero();
+    Resize(src_scal, ker_dim[0]); src_scal.SetZero();
+    Resize(trg_scal, ker_dim[1]); trg_scal.SetZero();
     if(scale_invar){
       Matrix<T> b(ker_dim[0]*ker_dim[1]+1,1); b.SetZero();
       std::memcpy(&b[0][0], &M_scal[0][0], ker_dim[0]*ker_dim[1]*sizeof(T));
@@ -579,7 +579,7 @@ void Kernel<T>::Initialize(bool verbose) const{
 
     for(size_t i=0;i<2*C_Perm;i++){
       if(perm_vec[i].Dim()==0){
-        perm_vec.Resize(0);
+        Resize(perm_vec, 0);
         std::cout<<"no-symmetry for: "<<ker_name<<'\n';
         break;
       }
