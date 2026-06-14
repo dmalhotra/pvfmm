@@ -31,10 +31,8 @@ void CUBLASGEMM(Matrix<T>& M_r, const Matrix<T>& A, const Matrix<T>& B, T beta){
   assert(M_r.Dim(0)==A.Dim(0));
   assert(M_r.Dim(1)==B.Dim(1));
   sctl::Profile::IncrementCounter(sctl::ProfileCounter::FLOP, 2*(((long long)A.Dim(0))*A.Dim(1))*B.Dim(1));
-  // cublasgemm takes non-const T*; the inputs are consumed by the device
-  // call, so casting away const here is terminal.
   mat::cublasgemm<T>('N', 'N', B.Dim(1), A.Dim(0), A.Dim(1),
-      (T)1.0, (T*)MatBegin(B), B.Dim(1), (T*)MatBegin(A), A.Dim(1), beta, MatBegin(M_r), M_r.Dim(1));
+      (T)1.0, &B[0][0], B.Dim(1), &A[0][0], A.Dim(1), beta, &M_r[0][0], M_r.Dim(1));
 }
 #endif
 
