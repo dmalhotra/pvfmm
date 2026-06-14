@@ -309,7 +309,7 @@ inline char* UnpackVecSegment(char* data_ptr, Vector<Y>* vec, bool own_data){
   }
   if(own_data){
     if(vec->Dim()!=(sctl::Long)dim) vec->ReInit(dim);
-    if(dim) sctl::omp_par::copy(sctl::Ptr2ConstItr<Y>((Y*)data_ptr,(sctl::Long)dim), sctl::Ptr2ConstItr<Y>((Y*)data_ptr,(sctl::Long)dim)+(sctl::Long)dim, vec->begin());
+    if(dim) sctl::omp_par::copy((Y*)data_ptr, (Y*)data_ptr+(sctl::Long)dim, vec->begin());
   }else{
     vec->ReInit(dim,(Y*)data_ptr,false);
   }

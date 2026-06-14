@@ -195,7 +195,7 @@ void FMM_Data<Real_t>::InitMultipole(PackedData p0, bool own_data){
     // Deep copy, writing through existing storage when the size matches
     // (upward_equiv may alias node_data_buff; see MPI_Node::Unpack).
     if(upward_equiv.Dim()!=n) upward_equiv.ReInit(n);
-    sctl::omp_par::copy(sctl::Ptr2ConstItr<Real_t>(data,(sctl::Long)n), sctl::Ptr2ConstItr<Real_t>(data,(sctl::Long)n)+(sctl::Long)n, upward_equiv.begin());
+    sctl::omp_par::copy(data, data+(sctl::Long)n, upward_equiv.begin());
   }else{
     upward_equiv.ReInit(n, &data[0], false);
   }
