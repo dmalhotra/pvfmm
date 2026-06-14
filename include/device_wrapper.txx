@@ -299,7 +299,7 @@ namespace DeviceWrapper{
 
   template <class T>
   inline DeviceVector<T> DeviceMirror::AllocDevice(Vector<T>& host, bool copy){
-    char* p=(char*)VecBegin(host);
+    char* p=(char*)(host.Dim()?&host[0]:nullptr);
     size_t bytes=host.Dim()*sizeof(T);
     if(dev_ptr){ // Already bound: host buffer must not have changed.
       assert(host_ptr==p && len==bytes);
@@ -318,7 +318,7 @@ namespace DeviceWrapper{
 
   template <class T>
   inline DeviceMatrix<T> DeviceMirror::AllocDevice(sctl::Matrix<T>& host, bool copy){
-    char* p=(char*)MatBegin(host);
+    char* p=(char*)(host.Dim(0)*host.Dim(1)?&host[0][0]:nullptr);
     size_t bytes=host.Dim(0)*host.Dim(1)*sizeof(T);
     if(dev_ptr){ // Already bound: host buffer must not have changed.
       assert(host_ptr==p && len==bytes);
@@ -372,7 +372,7 @@ namespace DeviceWrapper{
     lock_idx=0;
     static DeviceMirror lock_vec_mirror;
     lock_vec_mirror.Free();
-    Resize(lock_vec, PVFMM_NUM_LOCKS);
+    lock_vec.ReInit(PVFMM_NUM_LOCKS);
     lock_vec.SetZero();
     lock_vec_=lock_vec_mirror.AllocDevice(lock_vec,false);
     {for(size_t i=0;i<PVFMM_NUM_LOCKS;i++) lock_vec [i]=1;}
