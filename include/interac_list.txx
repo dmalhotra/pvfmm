@@ -95,7 +95,7 @@ std::vector<Perm_Type>& InteracList<Node_t>::PermutList(Mat_Type t, size_t i){
  */
 template <class Node_t>
 void InteracList<Node_t>::BuildList(sctl::Iterator<Node_t> n, Mat_Type t){
-  Vector<sctl::Iterator<Node_t>>& interac_list=n->interac_list[t];
+  sctl::Vector<sctl::Iterator<Node_t>>& interac_list=n->interac_list[t];
   if(interac_list.Dim()!=ListCount(t)) interac_list.ReInit(ListCount(t));
   for(size_t k=0;k<interac_list.Dim();k++) interac_list[k]=sctl::NullIterator<Node_t>();
 
@@ -277,7 +277,7 @@ void InteracList<Node_t>::BuildList(sctl::Iterator<Node_t> n, Mat_Type t){
 }
 
 template <class Node_t>
-Matrix<typename Node_t::Real_t>& InteracList<Node_t>::ClassMat(int l, Mat_Type type, size_t indx){
+sctl::Matrix<typename Node_t::Real_t>& InteracList<Node_t>::ClassMat(int l, Mat_Type type, size_t indx){
   size_t indx0=InteracClass(type, indx);
   return mat->Mat(l, type, indx0);
 }
@@ -286,7 +286,7 @@ template <class Node_t>
 sctl::Permutation<typename Node_t::Real_t>& InteracList<Node_t>::Perm_R(int l, Mat_Type type, size_t indx){
   assert(l>=0);
   size_t indx0=InteracClass(type, indx);
-  Matrix     <Real_t>& M0      =mat->Mat   (l, type, indx0);
+  sctl::Matrix     <Real_t>& M0      =mat->Mat   (l, type, indx0);
   sctl::Permutation<Real_t>& row_perm=mat->Perm_R(l, type, indx );
   if(M0.Dim(0)==0 || M0.Dim(1)==0) return row_perm;
 
@@ -312,7 +312,7 @@ template <class Node_t>
 sctl::Permutation<typename Node_t::Real_t>& InteracList<Node_t>::Perm_C(int l, Mat_Type type, size_t indx){
   assert(l>=0);
   size_t indx0=InteracClass(type, indx);
-  Matrix     <Real_t>& M0      =mat->Mat   (l, type, indx0);
+  sctl::Matrix     <Real_t>& M0      =mat->Mat   (l, type, indx0);
   sctl::Permutation<Real_t>& col_perm=mat->Perm_C(l, type, indx );
   if(M0.Dim(0)==0 || M0.Dim(1)==0) return col_perm;
 
@@ -366,7 +366,7 @@ template <class Node_t>
 void InteracList<Node_t>::InitList(int max_r, int min_r, int step, Mat_Type t){
   size_t count=           sctl::pow<unsigned int>((max_r*2)/step+1,dim)
                 -(min_r>0?sctl::pow<unsigned int>((min_r*2)/step-1,dim):0);
-  Matrix<int>& M=rel_coord[t];
+  sctl::Matrix<int>& M=rel_coord[t];
   M.ReInit(count,dim);
   hash_lut[t].assign(PVFMM_MAX_COORD_HASH, -1);
 

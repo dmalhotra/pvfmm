@@ -48,14 +48,14 @@ class FMM_Node: public Node{
 
     public:
 
-     Vector<Real_t> src_coord; //Point sources.
-     Vector<Real_t> src_value;
+     sctl::Vector<Real_t> src_coord; //Point sources.
+     sctl::Vector<Real_t> src_value;
 
-     Vector<Real_t> surf_coord; //Surface sources.
-     Vector<Real_t> surf_value;
+     sctl::Vector<Real_t> surf_coord; //Surface sources.
+     sctl::Vector<Real_t> surf_value;
 
-     Vector<Real_t> trg_coord; //Target coordinates.
-     Vector<Real_t> trg_value;
+     sctl::Vector<Real_t> trg_coord; //Target coordinates.
+     sctl::Vector<Real_t> trg_value;
   };
 
   /**
@@ -81,9 +81,9 @@ class FMM_Node: public Node{
    * sorted and partitioned across MPI processes and the scatter index is
    * saved.
    */
-  virtual void NodeDataVec(std::vector<Vector<Real_t>*>& coord,
-                           std::vector<Vector<Real_t>*>& value,
-                           std::vector<Vector<sctl::Long>*>& scatter){
+  virtual void NodeDataVec(std::vector<sctl::Vector<Real_t>*>& coord,
+                           std::vector<sctl::Vector<Real_t>*>& value,
+                           std::vector<sctl::Vector<sctl::Long>*>& scatter){
     Node::NodeDataVec(coord, value, scatter);
     coord  .push_back(&src_coord  );
     value  .push_back(&src_value  );
@@ -170,25 +170,25 @@ class FMM_Node: public Node{
   template <class VTUData_t, class VTUNode_t>
   static void VTU_Data(VTUData_t& vtu_data, std::vector<VTUNode_t*>& nodes, int lod);
 
-  Vector<Real_t> src_coord;  //Point sources.
-  Vector<Real_t> src_value;
-  Vector<sctl::Long> src_scatter;
+  sctl::Vector<Real_t> src_coord;  //Point sources.
+  sctl::Vector<Real_t> src_value;
+  sctl::Vector<sctl::Long> src_scatter;
 
-  Vector<Real_t> surf_coord; //Surface sources.
-  Vector<Real_t> surf_value; //Normal and src strength.
-  Vector<sctl::Long> surf_scatter;
+  sctl::Vector<Real_t> surf_coord; //Surface sources.
+  sctl::Vector<Real_t> surf_value; //Normal and src strength.
+  sctl::Vector<sctl::Long> surf_scatter;
 
-  Vector<Real_t> trg_coord;  //Target coordinates.
-  Vector<Real_t> trg_value;
-  Vector<sctl::Long> trg_scatter;
+  sctl::Vector<Real_t> trg_coord;  //Target coordinates.
+  sctl::Vector<Real_t> trg_value;
+  sctl::Vector<sctl::Long> trg_scatter;
 
   size_t pt_cnt[2]; // Number of source, target pts.
-  Vector<sctl::Iterator<FMM_Node>> interac_list[Type_Count]; // allocation iterators (NullIterator = no interaction)
+  sctl::Vector<sctl::Iterator<FMM_Node>> interac_list[Type_Count]; // allocation iterators (NullIterator = no interaction)
 
  private:
 
   sctl::Iterator<FMM_Data<Real_t>> fmm_data; //FMM specific data.
-  Vector<char> pkd_data; //Temporary variable for storing packed data.
+  sctl::Vector<char> pkd_data; //Temporary variable for storing packed data.
 };
 
 }//end namespace

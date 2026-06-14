@@ -91,8 +91,8 @@ T cheb_approx(const T* fn_v, int cheb_deg, int dof, T* out){
   int d=cheb_deg+1;
 
   // Precompute
-  Matrix<Y>* Mp=NULL;
-  static std::vector<Matrix<Y> > precomp;
+  sctl::Matrix<Y>* Mp=NULL;
+  static std::vector<sctl::Matrix<Y> > precomp;
   #pragma omp critical(PVFMM_CHEB_APPROX)
   {
     if(precomp.size()<=(size_t)d){
@@ -109,8 +109,8 @@ T cheb_approx(const T* fn_v, int cheb_deg, int dof, T* out){
         p[i]=p[i]*2;
       for(int i=0;i<d*d;i++)
         p[i]=p[i]/d;
-      Matrix<Y> Mp1(d,d, sctl::Ptr2Itr<Y>(&p[0], (d)*(d)),false);
-      Matrix<Y> Mp1_=Mp1.Transpose();
+      sctl::Matrix<Y> Mp1(d,d, sctl::Ptr2Itr<Y>(&p[0], (d)*(d)),false);
+      sctl::Matrix<Y> Mp1_=Mp1.Transpose();
       precomp[d]=Mp1_;
     }
     Mp=&precomp[d];
@@ -123,7 +123,7 @@ T cheb_approx(const T* fn_v, int cheb_deg, int dof, T* out){
   Y* buff1=buff+buff_size*0;
   Y* buff2=buff+buff_size*1;
 
-  Vector<Y> fn_v_in;
+  sctl::Vector<Y> fn_v_in;
   if(SameType<T,Y>()()){ // Initialize fn_v_in
     fn_v_in.ReInit(d*d*d*dof,sctl::Ptr2Itr<Y>((Y*)fn_v,d*d*d*dof),false);
   }else{
@@ -132,22 +132,22 @@ T cheb_approx(const T* fn_v, int cheb_deg, int dof, T* out){
   }
 
   { // Apply Mp along x-dimension
-    Matrix<Y> Mi(dof*d*d,d, sctl::Ptr2Itr<Y>(&fn_v_in[0], (dof*d*d)*(d)),false);
-    Matrix<Y> Mo(dof*d*d,d, sctl::Ptr2Itr<Y>(buff2, (dof*d*d)*(d)),false);
+    sctl::Matrix<Y> Mi(dof*d*d,d, sctl::Ptr2Itr<Y>(&fn_v_in[0], (dof*d*d)*(d)),false);
+    sctl::Matrix<Y> Mo(dof*d*d,d, sctl::Ptr2Itr<Y>(buff2, (dof*d*d)*(d)),false);
     Mo=Mi*(*Mp);
 
     MatrixTranspose<Y>(Mo.Dim(0),Mo.Dim(1),buff2,buff1);
   }
   { // Apply Mp along y-dimension
-    Matrix<Y> Mi(d*dof*d,d, sctl::Ptr2Itr<Y>(buff1, (d*dof*d)*(d)),false);
-    Matrix<Y> Mo(d*dof*d,d, sctl::Ptr2Itr<Y>(buff2, (d*dof*d)*(d)),false);
+    sctl::Matrix<Y> Mi(d*dof*d,d, sctl::Ptr2Itr<Y>(buff1, (d*dof*d)*(d)),false);
+    sctl::Matrix<Y> Mo(d*dof*d,d, sctl::Ptr2Itr<Y>(buff2, (d*dof*d)*(d)),false);
     Mo=Mi*(*Mp);
 
     MatrixTranspose<Y>(Mo.Dim(0),Mo.Dim(1),buff2,buff1);
   }
   { // Apply Mp along z-dimension
-    Matrix<Y> Mi(d*d*dof,d, sctl::Ptr2Itr<Y>(buff1, (d*d*dof)*(d)),false);
-    Matrix<Y> Mo(d*d*dof,d, sctl::Ptr2Itr<Y>(buff2, (d*d*dof)*(d)),false);
+    sctl::Matrix<Y> Mi(d*d*dof,d, sctl::Ptr2Itr<Y>(buff1, (d*d*dof)*(d)),false);
+    sctl::Matrix<Y> Mo(d*d*dof,d, sctl::Ptr2Itr<Y>(buff2, (d*d*dof)*(d)),false);
     Mo=Mi*(*Mp);
 
     MatrixTranspose<Y>(Mo.Dim(0),Mo.Dim(1),buff2,buff1);
@@ -217,13 +217,13 @@ void gll_quadrature(int deg, T* x_, T* w){//*
   assert(d>1);
   int N=deg;
 
-  Vector<T> x(d,x_,false);
+  sctl::Vector<T> x(d,x_,false);
   for(int i=0;i<d;i++)
     x[i]=-sctl::cos<T>((sctl::const_pi<T>()*i)/N);
-  Matrix<T> P(d,d); P.SetZero();
+  sctl::Matrix<T> P(d,d); P.SetZero();
 
   T err=1;
-  Vector<T> xold(d);
+  sctl::Vector<T> xold(d);
   while(err>eps){
     xold=x;
     for(int i=0;i<d;i++){
@@ -252,10 +252,10 @@ T gll2cheb(T* fn_v, int deg, int dof, T* out){//*
   //T eps=sctl::machine_eps<T>()*64;
 
   int d=deg+1;
-  static std::vector<Matrix<Y> > precomp;
-  static std::vector<Matrix<Y> > precomp_;
-  Matrix<Y>* Mp ;
-  Matrix<Y>* Mp_;
+  static std::vector<sctl::Matrix<Y> > precomp;
+  static std::vector<sctl::Matrix<Y> > precomp_;
+  sctl::Matrix<Y>* Mp ;
+  sctl::Matrix<Y>* Mp_;
   #pragma omp critical(PVFMM_GLL_TO_CHEB)
   {
     if(precomp.size()<=(size_t)d){
@@ -266,30 +266,30 @@ T gll2cheb(T* fn_v, int deg, int dof, T* out){//*
       for(int i=0;i<d;i++)
         x[i]=-sctl::cos<Y>((i+(T)0.5)*sctl::const_pi<Y>()/d);
 
-      Vector<T> w(d);
-      Vector<T> x_legn(d); // GLL nodes.
+      sctl::Vector<T> w(d);
+      sctl::Vector<T> x_legn(d); // GLL nodes.
       gll_quadrature(deg, &x_legn[0], &w[0]);
 
-      Matrix<T> P(d,d); //GLL node 2 GLL coeff.
+      sctl::Matrix<T> P(d,d); //GLL node 2 GLL coeff.
       legn_poly(deg,&x_legn[0],d,&P[0][0]);
       for(int i=0;i<d;i++)
         for(int j=0;j<d;j++)
           P[i][j]*=w[j]*0.5*(i<deg?(2*i+1):(i));
 
-      Matrix<T> M_gll2cheb(d,d); //GLL coeff 2 cheb node.
+      sctl::Matrix<T> M_gll2cheb(d,d); //GLL coeff 2 cheb node.
       legn_poly(deg,&x[0],d,&M_gll2cheb[0][0]);
 
-      Matrix<T> M_g2c; //GLL node to cheb node.
+      sctl::Matrix<T> M_g2c; //GLL node to cheb node.
       M_g2c=M_gll2cheb.Transpose()*P;
 
       std::vector<Y> p(d*d);
       cheb_poly(deg,&x[0],d,&p[0]);
       for(int i=0;i<d*d;i++)
         p[i]=p[i]*2.0/d;
-      Matrix<Y> Mp1(d,d, sctl::Ptr2Itr<Y>(&p[0], (d)*(d)),false);
+      sctl::Matrix<Y> Mp1(d,d, sctl::Ptr2Itr<Y>(&p[0], (d)*(d)),false);
       Mp1=Mp1*M_g2c;
 
-      Matrix<Y> Mp1_=Mp1.Transpose();
+      sctl::Matrix<Y> Mp1_=Mp1.Transpose();
       precomp [d]=Mp1 ;
       precomp_[d]=Mp1_;
     }
@@ -308,18 +308,18 @@ T gll2cheb(T* fn_v, int deg, int dof, T* out){//*
   int indx=0;
   for(int l=0;l<dof;l++){
     {
-      Matrix<Y> M0(d*d,d, sctl::Ptr2Itr<Y>(&fn_v0[d*d*d*l], (d*d)*(d)),false);
-      Matrix<Y> M1(d*d,d, sctl::Ptr2Itr<Y>(&fn_v1[0], (d*d)*(d)),false);
+      sctl::Matrix<Y> M0(d*d,d, sctl::Ptr2Itr<Y>(&fn_v0[d*d*d*l], (d*d)*(d)),false);
+      sctl::Matrix<Y> M1(d*d,d, sctl::Ptr2Itr<Y>(&fn_v1[0], (d*d)*(d)),false);
       M1=M0*(*Mp_);
     }
     {
-      Matrix<Y> M0(d,d*d, sctl::Ptr2Itr<Y>(&fn_v1[0], (d)*(d*d)),false);
-      Matrix<Y> M1(d,d*d, sctl::Ptr2Itr<Y>(&fn_v2[0], (d)*(d*d)),false);
+      sctl::Matrix<Y> M0(d,d*d, sctl::Ptr2Itr<Y>(&fn_v1[0], (d)*(d*d)),false);
+      sctl::Matrix<Y> M1(d,d*d, sctl::Ptr2Itr<Y>(&fn_v2[0], (d)*(d*d)),false);
       M1=(*Mp)*M0;
     }
     for(int i=0;i<d;i++){
-      Matrix<Y> M0(d,d, sctl::Ptr2Itr<Y>(&fn_v2[d*d*i], (d)*(d)),false);
-      Matrix<Y> M1(d,d, sctl::Ptr2Itr<Y>(&fn_v3[d*d*i], (d)*(d)),false);
+      sctl::Matrix<Y> M0(d,d, sctl::Ptr2Itr<Y>(&fn_v2[d*d*i], (d)*(d)),false);
+      sctl::Matrix<Y> M1(d,d, sctl::Ptr2Itr<Y>(&fn_v3[d*d*i], (d)*(d)),false);
       M1=(*Mp)*M0;
     }
 
@@ -389,7 +389,7 @@ T cheb_approx(T (*fn)(T,T,T), int cheb_deg, T* coord, T s, std::vector<T>& out){
  * a regular grid defined by in_x, in_y, in_z the values in the input vector.
  */
 template <class T>
-void cheb_eval(const Vector<T>& coeff_, int cheb_deg, const std::vector<T>& in_x, const std::vector<T>& in_y, const std::vector<T>& in_z, Vector<T>& out){
+void cheb_eval(const sctl::Vector<T>& coeff_, int cheb_deg, const std::vector<T>& in_x, const std::vector<T>& in_y, const std::vector<T>& in_z, sctl::Vector<T>& out){
   size_t d=(size_t)cheb_deg+1;
   size_t n_coeff=(d*(d+1)*(d+2))/6;
   size_t dof=coeff_.Dim()/n_coeff;
@@ -409,9 +409,9 @@ void cheb_eval(const Vector<T>& coeff_, int cheb_deg, const std::vector<T>& in_x
   cheb_poly(cheb_deg,&in_x[0],n1,&p1[0]);
   cheb_poly(cheb_deg,&in_y[0],n2,&p2[0]);
   cheb_poly(cheb_deg,&in_z[0],n3,&p3[0]);
-  Matrix<T> Mp1(d,n1, sctl::Ptr2Itr<T>(&p1[0], (d)*(n1)),false);
-  Matrix<T> Mp2(d,n2, sctl::Ptr2Itr<T>(&p2[0], (d)*(n2)),false);
-  Matrix<T> Mp3(d,n3, sctl::Ptr2Itr<T>(&p3[0], (d)*(n3)),false);
+  sctl::Matrix<T> Mp1(d,n1, sctl::Ptr2Itr<T>(&p1[0], (d)*(n1)),false);
+  sctl::Matrix<T> Mp2(d,n2, sctl::Ptr2Itr<T>(&p2[0], (d)*(n2)),false);
+  sctl::Matrix<T> Mp3(d,n3, sctl::Ptr2Itr<T>(&p3[0], (d)*(n3)),false);
 
   // Create work buffers (per-thread scratch). v1 and v2 are half-and-half
   // views into the single ScratchBuf; we use raw pointers for the Matrix
@@ -438,29 +438,29 @@ void cheb_eval(const Vector<T>& coeff_, int cheb_deg, const std::vector<T>& in_x
   }
 
   { // Apply Mp1
-    Matrix<T> Mi  ( d* d*dof, d, sctl::Ptr2Itr<T>(v1, (d* d*dof)*(d)),false);
-    Matrix<T> Mo  ( d* d*dof,n1, sctl::Ptr2Itr<T>(v2, (d* d*dof)*(n1)),false);
-    Matrix<T>::GEMM(Mo, Mi, Mp1);
+    sctl::Matrix<T> Mi  ( d* d*dof, d, sctl::Ptr2Itr<T>(v1, (d* d*dof)*(d)),false);
+    sctl::Matrix<T> Mo  ( d* d*dof,n1, sctl::Ptr2Itr<T>(v2, (d* d*dof)*(n1)),false);
+    sctl::Matrix<T>::GEMM(Mo, Mi, Mp1);
 
     MatrixTranspose<T>(Mo.Dim(0),Mo.Dim(1),v2,v1);
   }
   { // Apply Mp2
-    Matrix<T> Mi  (n1* d*dof, d, sctl::Ptr2Itr<T>(v1, (n1* d*dof)*(d)),false);
-    Matrix<T> Mo  (n1* d*dof,n2, sctl::Ptr2Itr<T>(v2, (n1* d*dof)*(n2)),false);
-    Matrix<T>::GEMM(Mo, Mi, Mp2);
+    sctl::Matrix<T> Mi  (n1* d*dof, d, sctl::Ptr2Itr<T>(v1, (n1* d*dof)*(d)),false);
+    sctl::Matrix<T> Mo  (n1* d*dof,n2, sctl::Ptr2Itr<T>(v2, (n1* d*dof)*(n2)),false);
+    sctl::Matrix<T>::GEMM(Mo, Mi, Mp2);
 
     MatrixTranspose<T>(Mo.Dim(0),Mo.Dim(1),v2,v1);
   }
   { // Apply Mp3
-    Matrix<T> Mi  (n2*n1*dof, d, sctl::Ptr2Itr<T>(v1, (n2*n1*dof)*(d)),false);
-    Matrix<T> Mo  (n2*n1*dof,n3, sctl::Ptr2Itr<T>(v2, (n2*n1*dof)*(n3)),false);
-    Matrix<T>::GEMM(Mo, Mi, Mp3);
+    sctl::Matrix<T> Mi  (n2*n1*dof, d, sctl::Ptr2Itr<T>(v1, (n2*n1*dof)*(d)),false);
+    sctl::Matrix<T> Mo  (n2*n1*dof,n3, sctl::Ptr2Itr<T>(v2, (n2*n1*dof)*(n3)),false);
+    sctl::Matrix<T>::GEMM(Mo, Mi, Mp3);
 
     MatrixTranspose<T>(Mo.Dim(0),Mo.Dim(1),v2,v1);
   }
 
   { // Copy to out
-    Matrix<T> Mo  ( n3*n2*n1,dof, sctl::Ptr2Itr<T>(v1, (n3*n2*n1)*(dof)),false);
+    sctl::Matrix<T> Mo  ( n3*n2*n1,dof, sctl::Ptr2Itr<T>(v1, (n3*n2*n1)*(dof)),false);
     MatrixTranspose<T>(Mo.Dim(0),Mo.Dim(1),v1,&out[0]);
   }
 
@@ -472,7 +472,7 @@ void cheb_eval(const Vector<T>& coeff_, int cheb_deg, const std::vector<T>& in_x
  * in the coord vector.
  */
 template <class T>
-inline void cheb_eval(Vector<T>& coeff_, int cheb_deg, std::vector<T>& coord, Vector<T>& out){
+inline void cheb_eval(sctl::Vector<T>& coeff_, int cheb_deg, std::vector<T>& coord, sctl::Vector<T>& out){
   if(!coord.size()) return;
   int dim=3;
   int d=cheb_deg+1;
@@ -492,29 +492,29 @@ inline void cheb_eval(Vector<T>& coeff_, int cheb_deg, std::vector<T>& coord, Ve
     }
   }
 
-  Matrix<T> coord_(n,dim, sctl::Ptr2Itr<T>(&coord[0], (n)*(dim)));
+  sctl::Matrix<T> coord_(n,dim, sctl::Ptr2Itr<T>(&coord[0], (n)*(dim)));
   coord_=coord_.Transpose();
 
-  Matrix<T> px(d,n);
-  Matrix<T> py(d,n);
-  Matrix<T> pz(d,n);
+  sctl::Matrix<T> px(d,n);
+  sctl::Matrix<T> py(d,n);
+  sctl::Matrix<T> pz(d,n);
   cheb_poly(cheb_deg,&(coord_[0][0]),n,&(px[0][0]));
   cheb_poly(cheb_deg,&(coord_[1][0]),n,&(py[0][0]));
   cheb_poly(cheb_deg,&(coord_[2][0]),n,&(pz[0][0]));
 
-  Matrix<T> M_coeff0(d*d*dof, d, sctl::Ptr2Itr<T>(&coeff[0], (d*d*dof)*(d)), false);
-  Matrix<T> M0 = (M_coeff0 * px).Transpose(); // {n, dof*d*d}
+  sctl::Matrix<T> M_coeff0(d*d*dof, d, sctl::Ptr2Itr<T>(&coeff[0], (d*d*dof)*(d)), false);
+  sctl::Matrix<T> M0 = (M_coeff0 * px).Transpose(); // {n, dof*d*d}
 
   py = py.Transpose();
   pz = pz.Transpose();
   if((size_t)out.Dim()!=(size_t)(n*dof)) out.ReInit(n*dof);
   for(int i=0; i<n; i++)
     for(int j=0; j<dof; j++){
-      Matrix<T> M0_  (d, d, sctl::Ptr2Itr<T>(&(M0[i][  j*d*d]), (d)*(d)), false);
-      Matrix<T> py_  (d, 1, sctl::Ptr2Itr<T>(&(py[i][      0]), (d)*(1)), false);
-      Matrix<T> pz_  (1, d, sctl::Ptr2Itr<T>(&(pz[i][      0]), (1)*(d)), false);
+      sctl::Matrix<T> M0_  (d, d, sctl::Ptr2Itr<T>(&(M0[i][  j*d*d]), (d)*(d)), false);
+      sctl::Matrix<T> py_  (d, 1, sctl::Ptr2Itr<T>(&(py[i][      0]), (d)*(1)), false);
+      sctl::Matrix<T> pz_  (1, d, sctl::Ptr2Itr<T>(&(pz[i][      0]), (1)*(d)), false);
 
-      Matrix<T> M_out(1, 1, sctl::Ptr2Itr<T>(&(  out[i*dof+j]), (1)*(1)), false);
+      sctl::Matrix<T> M_out(1, 1, sctl::Ptr2Itr<T>(&(  out[i*dof+j]), (1)*(1)), false);
       M_out += pz_ * M0_ * py_;
     }
 }
@@ -539,15 +539,15 @@ inline void cheb_eval(int cheb_deg, T* coord, T* coeff0,T* buff){
   }
   T* coeff_=&buff[2*3*d];
 
-  Matrix<T> v_p0    (1, d, sctl::Ptr2Itr<T>(&    p_[0], (1)*(d)),false);
-  Matrix<T> v_p1    (d, 1, sctl::Ptr2Itr<T>(&    p_[d], (d)*(1)),false);
-  Matrix<T> M_coeff_(d, d, sctl::Ptr2Itr<T>(&coeff_[0], (d)*(d)),false);
+  sctl::Matrix<T> v_p0    (1, d, sctl::Ptr2Itr<T>(&    p_[0], (1)*(d)),false);
+  sctl::Matrix<T> v_p1    (d, 1, sctl::Ptr2Itr<T>(&    p_[d], (d)*(1)),false);
+  sctl::Matrix<T> M_coeff_(d, d, sctl::Ptr2Itr<T>(&coeff_[0], (d)*(d)),false);
   M_coeff_ = v_p1 * v_p0; // */
   //mat::gemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,d,d,1,1.0,&p_[d],1,&p_[0],d,0.0,&coeff_[0],d);
 
-  Matrix<T> v_p2    (d,   1, sctl::Ptr2Itr<T>(&    p_[2*d], (d)*(1)),false);
-  Matrix<T> v_coeff_(1, d*d, sctl::Ptr2Itr<T>(&coeff_[  0], (1)*(d*d)),false);
-  Matrix<T> M_coeff (d, d*d, sctl::Ptr2Itr<T>(&coeff [  0], (d)*(d*d)),false);
+  sctl::Matrix<T> v_p2    (d,   1, sctl::Ptr2Itr<T>(&    p_[2*d], (d)*(1)),false);
+  sctl::Matrix<T> v_coeff_(1, d*d, sctl::Ptr2Itr<T>(&coeff_[  0], (1)*(d*d)),false);
+  sctl::Matrix<T> M_coeff (d, d*d, sctl::Ptr2Itr<T>(&coeff [  0], (d)*(d*d)),false);
   M_coeff = v_p2 * v_coeff_; // */
   //mat::gemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,d,d*d,1,1.0,&p_[2*d],1,&coeff_[0],d*d,0.0,&coeff[0],d*d);
 
@@ -572,7 +572,7 @@ inline void cheb_eval(int cheb_deg, T* coord, T* coeff0,T* buff){
  * \param[out] cheb_coeff Output coefficients.
  */
 template <class T>
-void points2cheb(int deg, T* coord, T* val, int n, int dim, T* node_coord, T node_size, Vector<T>& cheb_coeff){
+void points2cheb(int deg, T* coord, T* val, int n, int dim, T* node_coord, T node_size, sctl::Vector<T>& cheb_coeff){
   if(n==0) return;
   int deg_=((int)(sctl::pow<T>(n*6,1.0/3.0)+0.5))/2;
   deg_=(deg_>deg?deg:deg_);
@@ -590,15 +590,15 @@ void points2cheb(int deg, T* coord, T* val, int n, int dim, T* node_coord, T nod
   }
 
   //Compute the matrix M
-  Matrix<T> M(n,deg3);
+  sctl::Matrix<T> M(n,deg3);
   std::vector<T> buff((deg_+1)*(deg_+1+3*2));
   for(int i=0;i<n;i++)
     cheb_eval(deg_,&coord_[i*3],&(M[i][0]),&buff[0]);
 
   //Compute the pinv and get the cheb_coeff.
-  Matrix<T> M_val(n,dim, sctl::Ptr2Itr<T>(&val[0], (n)*(dim)));
+  sctl::Matrix<T> M_val(n,dim, sctl::Ptr2Itr<T>(&val[0], (n)*(dim)));
   T eps=sctl::machine_eps<T>()*64;
-  Matrix<T> cheb_coeff_=(M.pinv(eps)*M_val).Transpose();
+  sctl::Matrix<T> cheb_coeff_=(M.pinv(eps)*M_val).Transpose();
 
   //Set the output
   int indx=0;
@@ -619,15 +619,15 @@ void points2cheb(int deg, T* coord, T* val, int n, int dim, T* node_coord, T nod
 
 template <class T>
 void quad_rule(int n, T* x, T* w){
-  static std::vector<Vector<T> > x_lst(10000);
-  static std::vector<Vector<T> > w_lst(10000);
+  static std::vector<sctl::Vector<T> > x_lst(10000);
+  static std::vector<sctl::Vector<T> > w_lst(10000);
   assert(n<10000);
 
   bool done=false;
   #pragma omp critical(PVFMM_QUAD_RULE)
   if(x_lst[n].Dim()>0){
-    Vector<T>& x_=x_lst[n];
-    Vector<T>& w_=w_lst[n];
+    sctl::Vector<T>& x_=x_lst[n];
+    sctl::Vector<T>& w_=w_lst[n];
     for(int i=0;i<n;i++){
       x[i]=x_[i];
       w[i]=w_[i];
@@ -636,15 +636,15 @@ void quad_rule(int n, T* x, T* w){
   }
   if(done) return;
 
-  Vector<T> x_(n);
-  Vector<T> w_(n);
+  sctl::Vector<T> x_(n);
+  sctl::Vector<T> w_(n);
 
   { //Chebyshev quadrature nodes and weights
     for(int i=0;i<n;i++){
       x_[i]=-sctl::cos<T>((2*i+1)*sctl::const_pi<T>()/(2*n));
       w_[i]=0;//sctl::sqrt<T>(1.0-x_[i]*x_[i])*sctl::const_pi<T>()/n;
     }
-    Matrix<T> M(n,n);
+    sctl::Matrix<T> M(n,n);
     cheb_poly(n-1, &x_[0], n, &M[0][0]);
     for(int i=0;i<n;i++) M[0][i]/=2;
 
@@ -673,7 +673,7 @@ void quad_rule(int n, T* x, T* w){
     //    size_t N=(n-1)*iter;
     //    std::vector<T> x_sample(N,0);
 
-    //    Matrix<T> M_sample(n,N);
+    //    sctl::Matrix<T> M_sample(n,N);
     //    for(size_t i=0;i<iter;i++){
     //      for(size_t j=0;j<n-1;j++){
     //        x_sample[j+i*(n-1)]=(2*i+qx[j]+1)/iter-1;
@@ -849,7 +849,7 @@ std::vector<T> integ_pyramid(int m, T* s, T r, int nx, const Kernel<T>& kernel, 
           }
         }
         {
-          Matrix<T> k_val(ny*nz*kernel.ker_dim[0],kernel.ker_dim[1]);
+          sctl::Matrix<T> k_val(ny*nz*kernel.ker_dim[0],kernel.ker_dim[1]);
           kernel.BuildMatrix(&src[0],1,&trg[0],ny*nz,&k_val[0][0]);
           MatrixTranspose<T>(ny*nz*kernel.ker_dim[0],kernel.ker_dim[1],(sctl::ConstIterator<T>)k_val[0],k_out.begin());
         }
@@ -1072,11 +1072,11 @@ std::vector<T> cheb_nodes(int deg, int dim){
 
 
 template <class T>
-void cheb_diff(const Vector<T>& A, int deg, int diff_dim, Vector<T>& B){
+void cheb_diff(const sctl::Vector<T>& A, int deg, int diff_dim, sctl::Vector<T>& B){
   size_t d=deg+1;
 
   // Precompute
-  static Matrix<T> M;
+  static sctl::Matrix<T> M;
   #pragma omp critical(PVFMM_CHEB_DIFF1)
   if(M.Dim(0)!=(size_t)d){
     M.ReInit(d,d);
@@ -1100,8 +1100,8 @@ void cheb_diff(const Vector<T>& A, int deg, int diff_dim, Vector<T>& B){
   size_t n2=A.Dim()/(n1*d);
 
   for(size_t k=0;k<n2;k++){ // Rearrange A to make diff_dim the last array dimension
-    Matrix<T> Mi(d,       n1, sctl::Ptr2Itr<T>((T*)&A[d*n1*k], (d)*(n1)),false);
-    Matrix<T> Mo(d,A.Dim()/d, sctl::Ptr2Itr<T>(&buff1[  n1*k], (d)*(A.Dim()/d)),false);
+    sctl::Matrix<T> Mi(d,       n1, sctl::Ptr2Itr<T>((T*)&A[d*n1*k], (d)*(n1)),false);
+    sctl::Matrix<T> Mo(d,A.Dim()/d, sctl::Ptr2Itr<T>(&buff1[  n1*k], (d)*(A.Dim()/d)),false);
     for(size_t i=0;i< d;i++)
     for(size_t j=0;j<n1;j++){
       Mo[i][j]=Mi[i][j];
@@ -1109,14 +1109,14 @@ void cheb_diff(const Vector<T>& A, int deg, int diff_dim, Vector<T>& B){
   }
 
   { // Apply M
-    Matrix<T> Mi(d,A.Dim()/d, sctl::Ptr2Itr<T>(&buff1[0], (d)*(A.Dim()/d)),false);
-    Matrix<T> Mo(d,A.Dim()/d, sctl::Ptr2Itr<T>(&buff2[0], (d)*(A.Dim()/d)),false);
-    Matrix<T>::GEMM(Mo, M, Mi);
+    sctl::Matrix<T> Mi(d,A.Dim()/d, sctl::Ptr2Itr<T>(&buff1[0], (d)*(A.Dim()/d)),false);
+    sctl::Matrix<T> Mo(d,A.Dim()/d, sctl::Ptr2Itr<T>(&buff2[0], (d)*(A.Dim()/d)),false);
+    sctl::Matrix<T>::GEMM(Mo, M, Mi);
   }
 
   for(size_t k=0;k<n2;k++){ // Rearrange and write output to B
-    Matrix<T> Mi(d,A.Dim()/d, sctl::Ptr2Itr<T>(&buff2[  n1*k], (d)*(A.Dim()/d)),false);
-    Matrix<T> Mo(d,       n1, sctl::Ptr2Itr<T>(&B[d*n1*k], (d)*(n1)),false);
+    sctl::Matrix<T> Mi(d,A.Dim()/d, sctl::Ptr2Itr<T>(&buff2[  n1*k], (d)*(A.Dim()/d)),false);
+    sctl::Matrix<T> Mo(d,       n1, sctl::Ptr2Itr<T>(&B[d*n1*k], (d)*(n1)),false);
     for(size_t i=0;i< d;i++)
     for(size_t j=0;j<n1;j++){
       Mo[i][j]=Mi[i][j];
@@ -1127,7 +1127,7 @@ void cheb_diff(const Vector<T>& A, int deg, int diff_dim, Vector<T>& B){
 }
 
 template <class T>
-void cheb_grad(const Vector<T>& A, int deg, Vector<T>& B){
+void cheb_grad(const sctl::Vector<T>& A, int deg, sctl::Vector<T>& B){
   size_t dim=3;
   size_t d=(size_t)deg+1;
   size_t n_coeff =(d*(d+1)*(d+2))/6;
@@ -1137,8 +1137,8 @@ void cheb_grad(const Vector<T>& A, int deg, Vector<T>& B){
   // Create work buffers (per-thread scratch).
   sctl::ScratchBuf<T> buff_scratch(2*n_coeff_*dof);
   T* buff=&buff_scratch.begin()[0];
-  Vector<T> A_(n_coeff_*dof,sctl::Ptr2Itr<T>(buff+n_coeff_*dof*0,n_coeff_*dof),false); A_.SetZero();
-  Vector<T> B_(n_coeff_*dof,sctl::Ptr2Itr<T>(buff+n_coeff_*dof*1,n_coeff_*dof),false); B_.SetZero();
+  sctl::Vector<T> A_(n_coeff_*dof,sctl::Ptr2Itr<T>(buff+n_coeff_*dof*0,n_coeff_*dof),false); A_.SetZero();
+  sctl::Vector<T> B_(n_coeff_*dof,sctl::Ptr2Itr<T>(buff+n_coeff_*dof*1,n_coeff_*dof),false); B_.SetZero();
 
   {// Rearrange data
     size_t indx=0;
@@ -1182,8 +1182,8 @@ void cheb_div(T* A_, int deg, T* B_){
   int dim=3;
   int d=deg+1;
   int n1 =sctl::pow<unsigned int>(d,dim);
-  Vector<T> A(n1*dim); A.SetZero();
-  Vector<T> B(n1    ); B.SetZero();
+  sctl::Vector<T> A(n1*dim); A.SetZero();
+  sctl::Vector<T> B(n1    ); B.SetZero();
 
   {// Rearrange data
     int indx=0;
@@ -1195,12 +1195,12 @@ void cheb_div(T* A_, int deg, T* B_){
       indx++;
     }
   }
-  Matrix<T> MB(n1,1, sctl::Ptr2Itr<T>(&B[0], (n1)*(1)),false);
-  Matrix<T> MC(n1,1);
+  sctl::Matrix<T> MB(n1,1, sctl::Ptr2Itr<T>(&B[0], (n1)*(1)),false);
+  sctl::Matrix<T> MC(n1,1);
   for(int i=0;i<3;i++){
     {
-      Vector<T> A_vec(n1,&A[n1*i],false);
-      Vector<T> B_vec(n1,MC[0],false);
+      sctl::Vector<T> A_vec(n1,&A[n1*i],false);
+      sctl::Vector<T> B_vec(n1,MC[0],false);
       cheb_diff(A_vec,deg,i,B_vec);
     }
     MB+=MC;
@@ -1221,8 +1221,8 @@ void cheb_curl(T* A_, int deg, T* B_){
   int dim=3;
   int d=deg+1;
   int n1 =sctl::pow<unsigned int>(d,dim);
-  Vector<T> A(n1*dim); A.SetZero();
-  Vector<T> B(n1*dim); B.SetZero();
+  sctl::Vector<T> A(n1*dim); A.SetZero();
+  sctl::Vector<T> B(n1*dim); B.SetZero();
 
   {// Rearrange data
     int indx=0;
@@ -1234,17 +1234,17 @@ void cheb_curl(T* A_, int deg, T* B_){
       indx++;
     }
   }
-  Matrix<T> MC1(n1,1);
-  Matrix<T> MC2(n1,1);
+  sctl::Matrix<T> MC1(n1,1);
+  sctl::Matrix<T> MC2(n1,1);
   for(int i=0;i<3;i++){
-    Matrix<T> MB(n1,1, sctl::Ptr2Itr<T>(&B[n1*i], (n1)*(1)),false);
+    sctl::Matrix<T> MB(n1,1, sctl::Ptr2Itr<T>(&B[n1*i], (n1)*(1)),false);
     int j1=(i+1)%3;
     int j2=(i+2)%3;
     {
-      Vector<T> A1(n1,&A[n1*j1],false);
-      Vector<T> A2(n1,&A[n1*j2],false);
-      Vector<T> B1(n1,MC1[0],false);
-      Vector<T> B2(n1,MC2[0],false);
+      sctl::Vector<T> A1(n1,&A[n1*j1],false);
+      sctl::Vector<T> A2(n1,&A[n1*j2],false);
+      sctl::Vector<T> B1(n1,MC1[0],false);
+      sctl::Vector<T> B2(n1,MC2[0],false);
       cheb_diff(A1,deg,j2,B1);
       cheb_diff(A2,deg,j1,B2);
     }
@@ -1276,9 +1276,9 @@ void cheb_laplacian(T* A, int deg, T* B){
   T* C1 = &C1_buf.begin()[0];
   T* C2 = &C2_buf.begin()[0];
 
-  Matrix<T> M_(1,n1, sctl::Ptr2Itr<T>(C2, (1)*(n1)),false);
+  sctl::Matrix<T> M_(1,n1, sctl::Ptr2Itr<T>(C2, (1)*(n1)),false);
   for(int i=0;i<3;i++){
-    Matrix<T> M (1,n1, sctl::Ptr2Itr<T>(&B[n1*i], (1)*(n1)),false);
+    sctl::Matrix<T> M (1,n1, sctl::Ptr2Itr<T>(&B[n1*i], (1)*(n1)),false);
     for(int j=0;j<n1;j++) M[0][j]=0;
     for(int j=0;j<3;j++){
       cheb_diff(&A[n1*i],deg,3,j,C1);

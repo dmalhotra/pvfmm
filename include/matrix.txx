@@ -25,7 +25,7 @@ namespace pvfmm{
 
 #if defined(PVFMM_HAVE_CUDA)
 template <class T>
-void CUBLASGEMM(Matrix<T>& M_r, const Matrix<T>& A, const Matrix<T>& B, T beta){
+void CUBLASGEMM(sctl::Matrix<T>& M_r, const sctl::Matrix<T>& A, const sctl::Matrix<T>& B, T beta){
   if(A.Dim(0)*A.Dim(1)==0 || B.Dim(0)*B.Dim(1)==0) return;
   assert(A.Dim(1)==B.Dim(0));
   assert(M_r.Dim(0)==A.Dim(0));

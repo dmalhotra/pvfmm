@@ -85,7 +85,7 @@ void fmm_test(int ker, size_t N, size_t M, Real_t b, int dist, int mult_order, i
   //Create Tree.
   FMM_Tree_t tree(comm);
 
-  pvfmm::Vector<Real_t> trg_value;
+  sctl::Vector<Real_t> trg_value;
   for(size_t i=0;i<2;i++){ // Compute potential
     sctl::Profile::Tic("TotalTime",&comm,true);
 
@@ -118,15 +118,15 @@ void fmm_test(int ker, size_t N, size_t M, Real_t b, int dist, int mult_order, i
 
     { // Scatter trg values
       sctl::Profile::Tic("Scatter",&comm,true);
-      pvfmm::Vector<sctl::Long> trg_scatter;
+      sctl::Vector<sctl::Long> trg_scatter;
       { // build trg_scatter
         std::vector<Real_t> trg_value_;
         std::vector<sctl::Long> trg_scatter_;
         std::vector<sctl::Iterator<FMMNode_t>>& nodes=tree.GetNodeList();
         for(size_t i=0;i<nodes.size();i++){
           if(nodes[i]->IsLeaf() && !nodes[i]->IsGhost()){
-            pvfmm::Vector<Real_t>& trg_value=nodes[i]->trg_value;
-            pvfmm::Vector<sctl::Long>& trg_scatter=nodes[i]->trg_scatter;
+            sctl::Vector<Real_t>& trg_value=nodes[i]->trg_value;
+            sctl::Vector<sctl::Long>& trg_scatter=nodes[i]->trg_scatter;
             for(size_t j=0;j<trg_value.Dim();j++) trg_value_.push_back(trg_value[j]);
             for(size_t j=0;j<trg_scatter.Dim();j++) trg_scatter_.push_back(trg_scatter[j]);
           }

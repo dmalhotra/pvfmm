@@ -26,8 +26,8 @@ void CheckFMMOutput(pvfmm::FMM_Tree<FMM_Mat_t>* mytree, const pvfmm::Kernel<type
   sctl::Iterator<FMMNode_t> n=mytree->PreorderFirst();
   while(n!=sctl::NullIterator<FMMNode_t>()){
     if(n->IsLeaf() && !n->IsGhost()){
-      pvfmm::Vector<Real_t>& coord_vec=n->src_coord;
-      pvfmm::Vector<Real_t>& value_vec=n->src_value;
+      sctl::Vector<Real_t>& coord_vec=n->src_coord;
+      sctl::Vector<Real_t>& value_vec=n->src_value;
       for(size_t i=0;i<coord_vec.Dim();i++) src_coord.push_back(coord_vec[i]);
       for(size_t i=0;i<value_vec.Dim();i++) src_value.push_back(value_vec[i]);
     }
@@ -50,8 +50,8 @@ void CheckFMMOutput(pvfmm::FMM_Tree<FMM_Mat_t>* mytree, const pvfmm::Kernel<type
   n=mytree->PreorderFirst();
   while(n!=sctl::NullIterator<FMMNode_t>()){
     if(n->IsLeaf() && !n->IsGhost()){
-      pvfmm::Vector<Real_t>& coord_vec=n->trg_coord;
-      pvfmm::Vector<Real_t>& poten_vec=n->trg_value;
+      sctl::Vector<Real_t>& coord_vec=n->trg_coord;
+      sctl::Vector<Real_t>& poten_vec=n->trg_value;
       for(size_t i=0;i<coord_vec.Dim()/3          ;i++){
         if(trg_iter%step_size==0){
           for(int j=0;j<3        ;j++) trg_coord    .push_back(coord_vec[i*3        +j]);
@@ -145,10 +145,10 @@ void CheckChebOutput(FMMTree_t* mytree, typename TestFn<typename FMMTree_t::Real
     std::vector<Real_t> err_avg(omp_p*dof*fn_dof,0);
     #pragma omp parallel for
     for(int tid=0;tid<omp_p;tid++){
-      pvfmm::Vector<Real_t> out; out.SetZero();
-      pvfmm::Vector<Real_t> fn_out(dof*fn_dof);
+      sctl::Vector<Real_t> out; out.SetZero();
+      sctl::Vector<Real_t> fn_out(dof*fn_dof);
       for(size_t i=(nodes.size()*tid)/omp_p;i<(nodes.size()*(tid+1))/omp_p;i++){
-        pvfmm::Vector<Real_t>& cheb_coeff=nodes[i]->ChebData();
+        sctl::Vector<Real_t>& cheb_coeff=nodes[i]->ChebData();
         pvfmm::cheb_eval(cheb_coeff, cheb_deg, cheb_nds, cheb_nds, cheb_nds, out);
 
         Real_t* c=nodes[i]->Coord();
@@ -195,8 +195,8 @@ void CheckChebOutput(FMMTree_t* mytree, typename TestFn<typename FMMTree_t::Real
     int fn_dof=r_node->DataDOF()/dof;
 
     Real_t* fn_out=new Real_t[dof*fn_dof];
-    pvfmm::Matrix<Real_t> M_out    (nn_z*fn_dof*dof,nn_y*nn_x, sctl::Ptr2Itr<Real_t>(NULL, (nn_z*fn_dof*dof)*(nn_y*nn_x)),true); M_out    .SetZero();
-    pvfmm::Matrix<Real_t> M_out_err(nn_z*fn_dof*dof,nn_y*nn_x, sctl::Ptr2Itr<Real_t>(NULL, (nn_z*fn_dof*dof)*(nn_y*nn_x)),true); M_out_err.SetZero();
+    sctl::Matrix<Real_t> M_out    (nn_z*fn_dof*dof,nn_y*nn_x, sctl::Ptr2Itr<Real_t>(NULL, (nn_z*fn_dof*dof)*(nn_y*nn_x)),true); M_out    .SetZero();
+    sctl::Matrix<Real_t> M_out_err(nn_z*fn_dof*dof,nn_y*nn_x, sctl::Ptr2Itr<Real_t>(NULL, (nn_z*fn_dof*dof)*(nn_y*nn_x)),true); M_out_err.SetZero();
     r_node->ReadVal(x,y,z,&M_out[0][0],false);
     for(int l0=0;l0<dof;l0++)
     for(int l1=0;l1<fn_dof;l1++)
@@ -213,8 +213,8 @@ void CheckChebOutput(FMMTree_t* mytree, typename TestFn<typename FMMTree_t::Real
       }
     }
     delete[] fn_out;
-    pvfmm::Matrix<Real_t> M_global    (nn_z*fn_dof*dof,nn_y*nn_x, sctl::Ptr2Itr<Real_t>(NULL, (nn_z*fn_dof*dof)*(nn_y*nn_x)),true);
-    pvfmm::Matrix<Real_t> M_global_err(nn_z*fn_dof*dof,nn_y*nn_x, sctl::Ptr2Itr<Real_t>(NULL, (nn_z*fn_dof*dof)*(nn_y*nn_x)),true);
+    sctl::Matrix<Real_t> M_global    (nn_z*fn_dof*dof,nn_y*nn_x, sctl::Ptr2Itr<Real_t>(NULL, (nn_z*fn_dof*dof)*(nn_y*nn_x)),true);
+    sctl::Matrix<Real_t> M_global_err(nn_z*fn_dof*dof,nn_y*nn_x, sctl::Ptr2Itr<Real_t>(NULL, (nn_z*fn_dof*dof)*(nn_y*nn_x)),true);
     const sctl::Long n_elem = (sctl::Long)nn_x*nn_y*nn_z*fn_dof*dof;
     c1.Allreduce(sctl::Ptr2ConstItr<Real_t>(&M_out    [0][0], n_elem), sctl::Ptr2Itr<Real_t>(&M_global    [0][0], n_elem), n_elem, sctl::CommOp::SUM);
     c1.Allreduce(sctl::Ptr2ConstItr<Real_t>(&M_out_err[0][0], n_elem), sctl::Ptr2Itr<Real_t>(&M_global_err[0][0], n_elem), n_elem, sctl::CommOp::SUM);
@@ -229,10 +229,10 @@ void CheckChebOutput(FMMTree_t* mytree, typename TestFn<typename FMMTree_t::Real
   std::vector<Real_t> max_err(omp_p,0), l2_err(omp_p,0);
   #pragma omp parallel for
   for(int tid=0;tid<omp_p;tid++){
-    pvfmm::Vector<Real_t> out; out.SetZero();
-    pvfmm::Vector<Real_t> fn_out(dof*fn_dof);
+    sctl::Vector<Real_t> out; out.SetZero();
+    sctl::Vector<Real_t> fn_out(dof*fn_dof);
     for(size_t i=(nodes.size()*tid)/omp_p;i<(nodes.size()*(tid+1))/omp_p;i++){
-      pvfmm::Vector<Real_t>& cheb_coeff=nodes[i]->ChebData();
+      sctl::Vector<Real_t>& cheb_coeff=nodes[i]->ChebData();
       pvfmm::cheb_eval(cheb_coeff, cheb_deg, cheb_nds, cheb_nds, cheb_nds, out);
 
       Real_t* c=nodes[i]->Coord();

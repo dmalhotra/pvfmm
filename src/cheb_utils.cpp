@@ -11,15 +11,15 @@ namespace pvfmm{
 
 template <>
 void quad_rule<double>(int n, double* x, double* w){
-  static std::vector<Vector<double> > x_lst(10000);
-  static std::vector<Vector<double> > w_lst(10000);
+  static std::vector<sctl::Vector<double> > x_lst(10000);
+  static std::vector<sctl::Vector<double> > w_lst(10000);
   assert(n<10000);
 
   bool done=false;
   #pragma omp critical (QUAD_RULE)
   if(x_lst[n].Dim()>0){
-    Vector<double>& x_=x_lst[n];
-    Vector<double>& w_=w_lst[n];
+    sctl::Vector<double>& x_=x_lst[n];
+    sctl::Vector<double>& w_=w_lst[n];
     for(int i=0;i<n;i++){
       x[i]=x_[i];
       w[i]=w_[i];
@@ -28,8 +28,8 @@ void quad_rule<double>(int n, double* x, double* w){
   }
   if(done) return;
 
-  Vector<double> x_(n);
-  Vector<double> w_(n);
+  sctl::Vector<double> x_(n);
+  sctl::Vector<double> w_(n);
 
   { //Gauss-Legendre quadrature nodes and weights, rescaled from sctl's [0,1] to [-1,1].
     sctl::Vector<double> nds, wts;

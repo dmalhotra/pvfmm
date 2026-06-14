@@ -510,9 +510,9 @@ int main(int argc, char **argv){
   if(comm.Size()>8){ // Remove slow processors.
     const sctl::Comm comm_ = sctl::Comm::World();
     size_t N=2048;
-    pvfmm::Matrix<double> A(N,N);
-    pvfmm::Matrix<double> B(N,N);
-    pvfmm::Matrix<double> C(N,N);
+    sctl::Matrix<double> A(N,N);
+    sctl::Matrix<double> B(N,N);
+    sctl::Matrix<double> C(N,N);
     for(size_t i=0;i<N;i++)
     for(size_t j=0;j<N;j++){
       A[i][j]=i+j;

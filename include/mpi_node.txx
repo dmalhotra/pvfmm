@@ -120,14 +120,14 @@ void MPI_Node<T>::Subdivide(sctl::Iterator<TreeNode> self_){
   int nchld=(1UL<<this->Dim());
 
   if(!IsGhost()){ // Partition point coordinates and values.
-    std::vector<Vector<Real_t>*> pt_coord;
-    std::vector<Vector<Real_t>*> pt_value;
-    std::vector<Vector<sctl::Long>*> pt_scatter;
+    std::vector<sctl::Vector<Real_t>*> pt_coord;
+    std::vector<sctl::Vector<Real_t>*> pt_value;
+    std::vector<sctl::Vector<sctl::Long>*> pt_scatter;
     this->NodeDataVec(pt_coord, pt_value, pt_scatter);
 
-    std::vector<std::vector<Vector<Real_t>*> > chld_pt_coord(nchld);
-    std::vector<std::vector<Vector<Real_t>*> > chld_pt_value(nchld);
-    std::vector<std::vector<Vector<sctl::Long>*> > chld_pt_scatter(nchld);
+    std::vector<std::vector<sctl::Vector<Real_t>*> > chld_pt_coord(nchld);
+    std::vector<std::vector<sctl::Vector<Real_t>*> > chld_pt_value(nchld);
+    std::vector<std::vector<sctl::Vector<sctl::Long>*> > chld_pt_scatter(nchld);
     for(int i=0;i<nchld;i++){
       ((sctl::Iterator<MPI_Node<Real_t>>)this->Child(i))
         ->NodeDataVec(chld_pt_coord[i], chld_pt_value[i], chld_pt_scatter[i]);
@@ -137,10 +137,10 @@ void MPI_Node<T>::Subdivide(sctl::Iterator<TreeNode> self_){
     Real_t s=sctl::pow<Real_t>(0.5,this->Depth()+1);
     for(size_t j=0;j<pt_coord.size();j++){
       if(!pt_coord[j] || !pt_coord[j]->Dim()) continue;
-      Vector<Real_t>& coord=*pt_coord[j];
+      sctl::Vector<Real_t>& coord=*pt_coord[j];
       size_t npts=coord.Dim()/this->dim;
 
-      Vector<size_t> cdata(nchld+1);
+      sctl::Vector<size_t> cdata(nchld+1);
       for(int i=0;i<nchld+1;i++){
         long long pt1=-1, pt2=npts;
         while(pt2-pt1>1){ // binary search
@@ -157,37 +157,37 @@ void MPI_Node<T>::Subdivide(sctl::Iterator<TreeNode> self_){
       }
 
       if(pt_coord[j]){
-        Vector<Real_t>& vec=*pt_coord[j];
+        sctl::Vector<Real_t>& vec=*pt_coord[j];
         size_t dof=vec.Dim()/npts;
         if(dof>0) for(int i=0;i<nchld;i++){
-          Vector<Real_t>& chld_vec=*chld_pt_coord[i][j];
+          sctl::Vector<Real_t>& chld_vec=*chld_pt_coord[i][j];
           chld_vec.ReInit((cdata[i+1]-cdata[i])*dof, vec.begin()+cdata[i]*dof);
         }
         vec.ReInit(0);
       }
       if(pt_value[j]){
-        Vector<Real_t>& vec=*pt_value[j];
+        sctl::Vector<Real_t>& vec=*pt_value[j];
         size_t dof=vec.Dim()/npts;
         if(dof>0) for(int i=0;i<nchld;i++){
-          Vector<Real_t>& chld_vec=*chld_pt_value[i][j];
+          sctl::Vector<Real_t>& chld_vec=*chld_pt_value[i][j];
           chld_vec.ReInit((cdata[i+1]-cdata[i])*dof, vec.begin()+cdata[i]*dof);
         }
         vec.ReInit(0);
       }
       if(pt_scatter[j]){
-        Vector<sctl::Long>& vec=*pt_scatter[j];
+        sctl::Vector<sctl::Long>& vec=*pt_scatter[j];
         size_t dof=vec.Dim()/npts;
         if(dof>0) for(int i=0;i<nchld;i++){
-          Vector<sctl::Long>& chld_vec=*chld_pt_scatter[i][j];
+          sctl::Vector<sctl::Long>& chld_vec=*chld_pt_scatter[i][j];
           chld_vec.ReInit((cdata[i+1]-cdata[i])*dof, vec.begin()+cdata[i]*dof);
         }
         vec.ReInit(0);
       }
     }
   }else{
-    std::vector<Vector<Real_t>*> pt_coord;
-    std::vector<Vector<Real_t>*> pt_value;
-    std::vector<Vector<sctl::Long>*> pt_scatter;
+    std::vector<sctl::Vector<Real_t>*> pt_coord;
+    std::vector<sctl::Vector<Real_t>*> pt_value;
+    std::vector<sctl::Vector<sctl::Long>*> pt_scatter;
     this->NodeDataVec(pt_coord, pt_value, pt_scatter);
     for(size_t j=0;j<pt_coord.size();j++){
       if(pt_coord[j]) pt_coord[j]->ReInit(0);
@@ -207,14 +207,14 @@ void MPI_Node<T>::Truncate(){
       }
     }
 
-    std::vector<Vector<Real_t>*> pt_coord;
-    std::vector<Vector<Real_t>*> pt_value;
-    std::vector<Vector<sctl::Long>*> pt_scatter;
+    std::vector<sctl::Vector<Real_t>*> pt_coord;
+    std::vector<sctl::Vector<Real_t>*> pt_value;
+    std::vector<sctl::Vector<sctl::Long>*> pt_scatter;
     this->NodeDataVec(pt_coord, pt_value, pt_scatter);
 
-    std::vector<std::vector<Vector<Real_t>*> > chld_pt_coord(nchld);
-    std::vector<std::vector<Vector<Real_t>*> > chld_pt_value(nchld);
-    std::vector<std::vector<Vector<sctl::Long>*> > chld_pt_scatter(nchld);
+    std::vector<std::vector<sctl::Vector<Real_t>*> > chld_pt_coord(nchld);
+    std::vector<std::vector<sctl::Vector<Real_t>*> > chld_pt_value(nchld);
+    std::vector<std::vector<sctl::Vector<sctl::Long>*> > chld_pt_scatter(nchld);
     for(int i=0;i<nchld;i++){
       ((sctl::Iterator<MPI_Node<Real_t>>)this->Child(i))
         ->NodeDataVec(chld_pt_coord[i], chld_pt_value[i], chld_pt_scatter[i]);
@@ -225,15 +225,15 @@ void MPI_Node<T>::Truncate(){
       if(pt_coord[j]){
         size_t vec_size=0;
         for(int i=0;i<nchld;i++){
-          Vector<Real_t>& chld_vec=*chld_pt_coord[i][j];
+          sctl::Vector<Real_t>& chld_vec=*chld_pt_coord[i][j];
           vec_size+=chld_vec.Dim();
         }
-        Vector<Real_t>& vec=*pt_coord[j];
+        sctl::Vector<Real_t>& vec=*pt_coord[j];
         vec.ReInit(vec_size);
 
         vec_size=0;
         for(int i=0;i<nchld;i++){
-          Vector<Real_t>& chld_vec=*chld_pt_coord[i][j];
+          sctl::Vector<Real_t>& chld_vec=*chld_pt_coord[i][j];
           if(chld_vec.Dim()>0){
             sctl::omp_par::memcpy(&vec[vec_size], &chld_vec[0], chld_vec.Dim());
             vec_size+=chld_vec.Dim();
@@ -243,15 +243,15 @@ void MPI_Node<T>::Truncate(){
       if(pt_value[j]){
         size_t vec_size=0;
         for(int i=0;i<nchld;i++){
-          Vector<Real_t>& chld_vec=*chld_pt_value[i][j];
+          sctl::Vector<Real_t>& chld_vec=*chld_pt_value[i][j];
           vec_size+=chld_vec.Dim();
         }
-        Vector<Real_t>& vec=*pt_value[j];
+        sctl::Vector<Real_t>& vec=*pt_value[j];
         vec.ReInit(vec_size);
 
         vec_size=0;
         for(int i=0;i<nchld;i++){
-          Vector<Real_t>& chld_vec=*chld_pt_value[i][j];
+          sctl::Vector<Real_t>& chld_vec=*chld_pt_value[i][j];
           if(chld_vec.Dim()>0){
             sctl::omp_par::memcpy(&vec[vec_size], &chld_vec[0], chld_vec.Dim());
             vec_size+=chld_vec.Dim();
@@ -261,15 +261,15 @@ void MPI_Node<T>::Truncate(){
       if(pt_scatter[j]){
         size_t vec_size=0;
         for(int i=0;i<nchld;i++){
-          Vector<sctl::Long>& chld_vec=*chld_pt_scatter[i][j];
+          sctl::Vector<sctl::Long>& chld_vec=*chld_pt_scatter[i][j];
           vec_size+=chld_vec.Dim();
         }
-        Vector<sctl::Long>& vec=*pt_scatter[j];
+        sctl::Vector<sctl::Long>& vec=*pt_scatter[j];
         vec.ReInit(vec_size);
 
         vec_size=0;
         for(int i=0;i<nchld;i++){
-          Vector<sctl::Long>& chld_vec=*chld_pt_scatter[i][j];
+          sctl::Vector<sctl::Long>& chld_vec=*chld_pt_scatter[i][j];
           if(chld_vec.Dim()>0){
             sctl::omp_par::memcpy(&vec[vec_size], &chld_vec[0], chld_vec.Dim());
             vec_size+=chld_vec.Dim();
@@ -287,7 +287,7 @@ void MPI_Node<T>::Truncate(){
 // which assert on alignment under SCTL_MEMDEBUG). A null vec writes an
 // empty segment. Returns the advanced pointer.
 template <class Y>
-inline char* PackVecSegment(char* data_ptr, Vector<Y>* vec){
+inline char* PackVecSegment(char* data_ptr, sctl::Vector<Y>* vec){
   const size_t dim=(vec?(size_t)vec->Dim():0);
   std::memcpy(data_ptr, &dim, sizeof(size_t)); data_ptr+=sizeof(size_t);
   if(dim>0 && data_ptr!=(char*)&(*vec)[0])
@@ -301,7 +301,7 @@ inline char* PackVecSegment(char* data_ptr, Vector<Y>* vec){
 // node_data_buff and the FMM reads through that buffer), rebinding to owned
 // storage otherwise. !own_data => bind vec as a view into the wire buffer.
 template <class Y>
-inline char* UnpackVecSegment(char* data_ptr, Vector<Y>* vec, bool own_data){
+inline char* UnpackVecSegment(char* data_ptr, sctl::Vector<Y>* vec, bool own_data){
   size_t dim;
   std::memcpy(&dim, data_ptr, sizeof(size_t)); data_ptr+=sizeof(size_t);
   if(!vec){
@@ -320,9 +320,9 @@ inline char* UnpackVecSegment(char* data_ptr, Vector<Y>* vec, bool own_data){
 
 template <class T>
 PackedData MPI_Node<T>::Pack(bool ghost, void* buff_ptr, size_t offset){
-  std::vector<Vector<Real_t>*> pt_coord;
-  std::vector<Vector<Real_t>*> pt_value;
-  std::vector<Vector<sctl::Long>*> pt_scatter;
+  std::vector<sctl::Vector<Real_t>*> pt_coord;
+  std::vector<sctl::Vector<Real_t>*> pt_value;
+  std::vector<sctl::Vector<sctl::Long>*> pt_scatter;
   this->NodeDataVec(pt_coord, pt_value, pt_scatter);
 
   PackedData p0;
@@ -367,9 +367,9 @@ PackedData MPI_Node<T>::Pack(bool ghost, void* buff_ptr, size_t offset){
 
 template <class T>
 void MPI_Node<T>::Unpack(PackedData p0, bool own_data){
-  std::vector<Vector<Real_t>*> pt_coord;
-  std::vector<Vector<Real_t>*> pt_value;
-  std::vector<Vector<sctl::Long>*> pt_scatter;
+  std::vector<sctl::Vector<Real_t>*> pt_coord;
+  std::vector<sctl::Vector<Real_t>*> pt_value;
+  std::vector<sctl::Vector<sctl::Long>*> pt_scatter;
   this->NodeDataVec(pt_coord, pt_value, pt_scatter);
 
   char* data_ptr=(char*)p0.data;

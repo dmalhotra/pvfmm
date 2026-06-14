@@ -41,7 +41,7 @@ struct SortPair{
  * @author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * @date 08 Feb 2011
  */
-inline int p2oLocal(Vector<MortonId> & nodes, Vector<MortonId>& leaves,
+inline int p2oLocal(sctl::Vector<MortonId> & nodes, sctl::Vector<MortonId>& leaves,
     unsigned int maxNumPts, unsigned int maxDepth, bool complete) {
   assert(maxDepth<=PVFMM_MAX_DEPTH);
 
@@ -105,14 +105,14 @@ inline int p2oLocal(Vector<MortonId> & nodes, Vector<MortonId>& leaves,
   return 0;
 }
 
-inline int points2Octree(const Vector<MortonId>& pt_mid, Vector<MortonId>& nodes,
+inline int points2Octree(const sctl::Vector<MortonId>& pt_mid, sctl::Vector<MortonId>& nodes,
           unsigned int maxDepth, unsigned int maxNumPts, const sctl::Comm& comm) {
   const int myrank = comm.Rank();
   const int np     = comm.Size();
 
   // Sort morton id of points.
   sctl::Profile::Tic("SortMortonId", &comm, true, 10);
-  Vector<MortonId> pt_sorted;
+  sctl::Vector<MortonId> pt_sorted;
   //par::partitionW<MortonId>(pt_mid, NULL, comm.GetMPI_Comm());
   comm.HyperQuickSort(pt_mid, pt_sorted);
   size_t pt_cnt=pt_sorted.Dim();
@@ -137,7 +137,7 @@ inline int points2Octree(const Vector<MortonId>& pt_mid, Vector<MortonId>& nodes
       if(myrank >     0 ) comm.Wait(std::move(sendRequest)); //This can be done later.
     }
     if(recv_size>0){// Resize pt_sorted.
-      Vector<MortonId> pt_sorted_(pt_cnt+recv_size);
+      sctl::Vector<MortonId> pt_sorted_(pt_cnt+recv_size);
       sctl::omp_par::memcpy(&pt_sorted_[0], &pt_sorted[0], pt_cnt);
       pt_sorted.Swap(pt_sorted_);
     }
@@ -153,7 +153,7 @@ inline int points2Octree(const Vector<MortonId>& pt_mid, Vector<MortonId>& nodes
 
   // Construct local octree.
   sctl::Profile::Tic("p2o_local", &comm, false, 10);
-  Vector<MortonId> nodes_local(1); nodes_local[0]=MortonId();
+  sctl::Vector<MortonId> nodes_local(1); nodes_local[0]=MortonId();
   p2oLocal(pt_sorted, nodes_local, maxNumPts, maxDepth, myrank==np-1);
   sctl::Profile::Toc();
 
@@ -209,11 +209,11 @@ void MPI_Tree<TreeNode>::Initialize(typename Node_t::NodeData* init_data){
   sctl::Profile::Toc();
 
   sctl::Profile::Tic("Points2Octree",&this->sctl_comm,true,5);
-  Vector<MortonId> lin_oct;
+  sctl::Vector<MortonId> lin_oct;
   { //Get the linear tree.
     // Compute MortonId from pt_coord.
-    Vector<MortonId> pt_mid;
-    Vector<Real_t>& pt_coord=rnode->pt_coord;
+    sctl::Vector<MortonId> pt_mid;
+    sctl::Vector<Real_t>& pt_coord=rnode->pt_coord;
     size_t pt_cnt=pt_coord.Dim()/this->dim;
     pt_mid.ReInit(pt_cnt);
     #pragma omp parallel for
@@ -228,18 +228,18 @@ void MPI_Tree<TreeNode>::Initialize(typename Node_t::NodeData* init_data){
 
   sctl::Profile::Tic("ScatterPoints",&this->sctl_comm,true,5);
   { // Sort and partition point coordinates and values.
-    std::vector<Vector<Real_t>*> coord_lst;
-    std::vector<Vector<Real_t>*> value_lst;
-    std::vector<Vector<sctl::Long>*> scatter_lst;
+    std::vector<sctl::Vector<Real_t>*> coord_lst;
+    std::vector<sctl::Vector<Real_t>*> value_lst;
+    std::vector<sctl::Vector<sctl::Long>*> scatter_lst;
     rnode->NodeDataVec(coord_lst, value_lst, scatter_lst);
     assert(coord_lst.size()==value_lst.size());
     assert(coord_lst.size()==scatter_lst.size());
 
-    Vector<MortonId> pt_mid;
-    Vector<sctl::Long> scatter_index;
+    sctl::Vector<MortonId> pt_mid;
+    sctl::Vector<sctl::Long> scatter_index;
     for(size_t i=0;i<coord_lst.size();i++){
       if(!coord_lst[i]) continue;
-      Vector<Real_t>& pt_coord=*coord_lst[i];
+      sctl::Vector<Real_t>& pt_coord=*coord_lst[i];
       { // Compute MortonId from pt_coord.
         size_t pt_cnt=pt_coord.Dim()/this->dim;
         pt_mid.ReInit(pt_cnt);
@@ -251,11 +251,11 @@ void MPI_Tree<TreeNode>::Initialize(typename Node_t::NodeData* init_data){
       sctl_comm.SortScatterIndex(pt_mid  , scatter_index, &lin_oct[0]);
       sctl_comm.ScatterForward(pt_coord, scatter_index);
       if(value_lst[i]!=NULL){
-        Vector<Real_t>& pt_value=*value_lst[i];
+        sctl::Vector<Real_t>& pt_value=*value_lst[i];
         sctl_comm.ScatterForward(pt_value, scatter_index);
       }
       if(scatter_lst[i]!=NULL){
-        Vector<sctl::Long>& pt_scatter=*scatter_lst[i];
+        sctl::Vector<sctl::Long>& pt_scatter=*scatter_lst[i];
         pt_scatter=scatter_index;
       }
     }
@@ -511,8 +511,8 @@ void MPI_Tree<TreeNode>::RedistNodes(sctl::ConstIterator<MortonId> loc_min) {
   std::vector<MortonId> new_mins(np);
   if(loc_min==sctl::NullIterator<MortonId>()){
     //Partition vector of MortonIds using par::partitionW
-    Vector<MortonId> in_(in);
-    Vector<sctl::Long> wts(in_.Dim());
+    sctl::Vector<MortonId> in_(in);
+    sctl::Vector<sctl::Long> wts(in_.Dim());
     #pragma omp parallel for
     for(size_t i=0;i<(size_t)wts.Dim();i++){
       wts[i]=node_lst[i]->NodeCost();
@@ -743,7 +743,7 @@ inline int balanceOctree (sctl::Vector<MortonId > &in, sctl::Vector<MortonId > &
   //////////////////////////////////////////////////////////////////////////////////////////////////
 
   { //Redistribute.
-    //Vector<long long> balance_wt(size);
+    //sctl::Vector<long long> balance_wt(size);
     //#pragma omp parallel for
     //for(size_t i=0;i<size;i++){
     //  balance_wt[i]=in[i].Depth();
@@ -1141,7 +1141,7 @@ void MPI_Tree<TreeNode>::SetColleagues(BoundaryType bndry, Node_t* node){
       curr_node=this->PreorderNxt(curr_node);
     }
 
-    Vector<std::vector<Node_t*> > nodes(PVFMM_MAX_DEPTH);
+    sctl::Vector<std::vector<Node_t*> > nodes(PVFMM_MAX_DEPTH);
     while(curr_node!=sctl::NullIterator<Node_t>()){
       nodes[curr_node->Depth()].push_back(&curr_node[0]);
       curr_node=this->PreorderNxt(curr_node);

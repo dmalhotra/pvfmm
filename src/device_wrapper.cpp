@@ -12,7 +12,7 @@
 
 namespace pvfmm{
 
-  Vector<char> MIC_Lock::lock_vec;
+  sctl::Vector<char> MIC_Lock::lock_vec;
   DeviceVector<char> MIC_Lock::lock_vec_;
   int MIC_Lock::lock_idx;
 

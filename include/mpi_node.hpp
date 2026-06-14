@@ -75,8 +75,8 @@ class MPI_Node: public TreeNode{
    public:
 
      size_t max_pts;
-     Vector<Real_t> pt_coord;
-     Vector<Real_t> pt_value;
+     sctl::Vector<Real_t> pt_coord;
+     sctl::Vector<Real_t> pt_value;
   };
 
   /**
@@ -99,9 +99,9 @@ class MPI_Node: public TreeNode{
    * sorted and partitioned across MPI processes and the scatter index is
    * saved.
    */
-  virtual void NodeDataVec(std::vector<Vector<Real_t>*>& coord,
-                           std::vector<Vector<Real_t>*>& value,
-                           std::vector<Vector<sctl::Long>*>& scatter){
+  virtual void NodeDataVec(std::vector<sctl::Vector<Real_t>*>& coord,
+                           std::vector<sctl::Vector<Real_t>*>& value,
+                           std::vector<sctl::Vector<sctl::Long>*>& scatter){
     coord  .push_back(&pt_coord  );
     value  .push_back(&pt_value  );
     scatter.push_back(&pt_scatter);
@@ -198,9 +198,9 @@ class MPI_Node: public TreeNode{
   template <class VTUData_t, class Node_t>
   static void VTU_Data(VTUData_t& vtu_data, std::vector<Node_t*>& nodes, int lod);
 
-  Vector<Real_t> pt_coord;   //coordinates of points
-  Vector<Real_t> pt_value;   //value at points
-  Vector<sctl::Long> pt_scatter; //scatter index mapping original data.
+  sctl::Vector<Real_t> pt_coord;   //coordinates of points
+  sctl::Vector<Real_t> pt_value;   //value at points
+  sctl::Vector<sctl::Long> pt_scatter; //scatter index mapping original data.
 
  protected:
 
@@ -210,7 +210,7 @@ class MPI_Node: public TreeNode{
 
   Real_t coord[PVFMM_COORD_DIM];
   sctl::Iterator<TreeNode> colleague[PVFMM_COLLEAGUE_COUNT]; // allocation iterators, like TreeNode::child/parent
-  Vector<char> packed_data;
+  sctl::Vector<char> packed_data;
 };
 
 }//end namespace

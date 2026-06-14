@@ -44,7 +44,7 @@ PrecompMat<T>::PrecompMat(bool scale_invar_): scale_invar(scale_invar_){
 }
 
 template <class T>
-Matrix<T>& PrecompMat<T>::Mat(int l, Mat_Type type, size_t indx){
+sctl::Matrix<T>& PrecompMat<T>::Mat(int l, Mat_Type type, size_t indx){
   int level=(scale_invar?0:l+PVFMM_PRECOMP_MIN_DEPTH);
   assert(level*Type_Count+type<(int)mat.size());
   //#pragma omp critical(PVFMM_PrecompMAT)
@@ -79,7 +79,7 @@ sctl::Permutation<T>& PrecompMat<T>::Perm(Mat_Type type, size_t indx){
 
 
 template <class T>
-size_t PrecompMat<T>::CompactData(int level, Mat_Type type, Matrix<char>& comp_data, size_t offset){
+size_t PrecompMat<T>::CompactData(int level, Mat_Type type, sctl::Matrix<char>& comp_data, size_t offset){
   struct HeaderData{
     size_t total_size;
     size_t      level;
@@ -95,7 +95,7 @@ size_t PrecompMat<T>::CompactData(int level, Mat_Type type, Matrix<char>& comp_d
     }
   }
 
-  std::vector<Matrix<T> >& mat_=mat[(scale_invar?0:level+PVFMM_PRECOMP_MIN_DEPTH)*Type_Count+type];
+  std::vector<sctl::Matrix<T> >& mat_=mat[(scale_invar?0:level+PVFMM_PRECOMP_MIN_DEPTH)*Type_Count+type];
   size_t mat_cnt=mat_.size();
   size_t indx_size=0;
   size_t mem_size=0;
@@ -110,7 +110,7 @@ size_t PrecompMat<T>::CompactData(int level, Mat_Type type, Matrix<char>& comp_d
     indx_size=mem::align_ptr(indx_size);
 
     for(size_t j=0;j<mat_cnt;j++){
-      Matrix     <T>& M =Mat   (level,type,j);
+      sctl::Matrix     <T>& M =Mat   (level,type,j);
       if(M.Dim(0)>0 && M.Dim(1)>0){
         mem_size+=M.Dim(0)*M.Dim(1)*sizeof(T); mem_size=mem::align_ptr(mem_size);
       }
@@ -130,7 +130,7 @@ size_t PrecompMat<T>::CompactData(int level, Mat_Type type, Matrix<char>& comp_d
     }
   }
   if(comp_data.Dim(0)*comp_data.Dim(1)<offset+indx_size+mem_size){ // Resize if needed.
-    Matrix<char> old_data;
+    sctl::Matrix<char> old_data;
     if(offset>0) old_data=comp_data;
     comp_data.ReInit(1,offset+indx_size+mem_size);
     if(offset>0){
@@ -145,7 +145,7 @@ size_t PrecompMat<T>::CompactData(int level, Mat_Type type, Matrix<char>& comp_d
   { // Create indx.
     char* indx_ptr=&comp_data[0][0]+offset;
     HeaderData& header=*(HeaderData*)indx_ptr; indx_ptr+=sizeof(HeaderData);
-    Matrix<size_t> offset_indx(mat_cnt,1+(2+2)*(l1-l0), sctl::Ptr2Itr<size_t>((size_t*)indx_ptr, (mat_cnt)*(1+(2+2)*(l1-l0))), false);
+    sctl::Matrix<size_t> offset_indx(mat_cnt,1+(2+2)*(l1-l0), sctl::Ptr2Itr<size_t>((size_t*)indx_ptr, (mat_cnt)*(1+(2+2)*(l1-l0))), false);
 
     header.total_size=indx_size+mem_size;
     header.     level=level             ;
@@ -154,7 +154,7 @@ size_t PrecompMat<T>::CompactData(int level, Mat_Type type, Matrix<char>& comp_d
 
     size_t data_offset=offset+indx_size;
     for(size_t j=0;j<mat_cnt;j++){
-      Matrix     <T>& M =Mat   (level,type,j);
+      sctl::Matrix     <T>& M =Mat   (level,type,j);
       offset_indx[j][0]=data_offset; indx_ptr+=sizeof(size_t);
       data_offset+=M.Dim(0)*M.Dim(1)*sizeof(T); data_offset=mem::align_ptr(data_offset);
 
@@ -178,10 +178,10 @@ size_t PrecompMat<T>::CompactData(int level, Mat_Type type, Matrix<char>& comp_d
     char* indx_ptr=&comp_data[0][0]+offset;
     //HeaderData& header=*(HeaderData*)indx_ptr;
     indx_ptr+=sizeof(HeaderData);
-    Matrix<size_t> offset_indx(mat_cnt,1+(2+2)*(l1-l0), sctl::Ptr2Itr<size_t>((size_t*)indx_ptr, (mat_cnt)*(1+(2+2)*(l1-l0))), false);
+    sctl::Matrix<size_t> offset_indx(mat_cnt,1+(2+2)*(l1-l0), sctl::Ptr2Itr<size_t>((size_t*)indx_ptr, (mat_cnt)*(1+(2+2)*(l1-l0))), false);
 
     for(size_t j=0;j<mat_cnt;j++){
-      Matrix     <T>& M =Mat   (level,type,j);
+      sctl::Matrix     <T>& M =Mat   (level,type,j);
       if(M.Dim(0)>0 && M.Dim(1)>0){
         size_t a=(M.Dim(0)*M.Dim(1)* tid   )/omp_p;
         size_t b=(M.Dim(0)*M.Dim(1)*(tid+1))/omp_p;
@@ -232,7 +232,7 @@ void PrecompMat<T>::Save2File(const char* fname, bool replace){
     fwrite(&n,sizeof(int),1,f);
 
     for(int j=0;j<n;j++){
-      Matrix<T>& M=mat[i][j];
+      sctl::Matrix<T>& M=mat[i][j];
       int n1=M.Dim(0);
       fwrite(&n1,sizeof(int),1,f);
       int n2=M.Dim(1);
@@ -320,7 +320,7 @@ void PrecompMat<T>::LoadFile(const char* fname, const sctl::Comm& comm){
         mat[i].resize(n);
 
       for(int j=0;j<n;j++){
-        Matrix<T>& M=mat[i][j];
+        sctl::Matrix<T>& M=mat[i][j];
         int n1;
         n1=*(int*)f_ptr; f_ptr+=sizeof(int);
         int n2;

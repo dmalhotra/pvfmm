@@ -32,37 +32,37 @@ FMM_Cheb<FMMNode>::~FMM_Cheb() {
           Mat_Type type=W_Type;
           for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
           for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
-            Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
+            sctl::Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
             M.ReInit(0,0);
           }
           type=V_Type;
           for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
           for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
-            Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
+            sctl::Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
             M.ReInit(0,0);
           }
           type=V1_Type;
           for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
           for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
-            Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
+            sctl::Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
             M.ReInit(0,0);
           }
           type=U2U_Type;
           for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
           for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
-            Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
+            sctl::Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
             M.ReInit(0,0);
           }
           type=D2D_Type;
           for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
           for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
-            Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
+            sctl::Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
             M.ReInit(0,0);
           }
           type=D2T_Type;
           for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
           for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
-            Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
+            sctl::Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
             M.ReInit(0,0);
           }
         }
@@ -156,37 +156,37 @@ void FMM_Cheb<FMMNode>::Initialize(int mult_order, int cheb_deg_, const sctl::Co
         Mat_Type type=W_Type;
         for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
         for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
-          Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
+          sctl::Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
           M.ReInit(0,0);
         }
         type=V_Type;
         for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
         for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
-          Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
+          sctl::Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
           M.ReInit(0,0);
         }
         type=V1_Type;
         for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
         for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
-          Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
+          sctl::Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
           M.ReInit(0,0);
         }
         type=U2U_Type;
         for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
         for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
-          Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
+          sctl::Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
           M.ReInit(0,0);
         }
         type=D2D_Type;
         for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
         for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
-          Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
+          sctl::Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
           M.ReInit(0,0);
         }
         type=D2T_Type;
         for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
         for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
-          Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
+          sctl::Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
           M.ReInit(0,0);
         }
       }
@@ -211,7 +211,7 @@ void FMM_Cheb<FMMNode>::Initialize(int mult_order, int cheb_deg_, const sctl::Co
 
 
 template <class Real_t>
-sctl::Permutation<Real_t> cheb_perm(size_t q, size_t p_indx, const sctl::Permutation<Real_t>& ker_perm, const Vector<Real_t>* scal_exp=NULL){
+sctl::Permutation<Real_t> cheb_perm(size_t q, size_t p_indx, const sctl::Permutation<Real_t>& ker_perm, const sctl::Vector<Real_t>* scal_exp=NULL){
   int dim=3; //Only supporting 3D
   int dof=ker_perm.Dim();
 
@@ -221,7 +221,7 @@ sctl::Permutation<Real_t> cheb_perm(size_t q, size_t p_indx, const sctl::Permuta
   sctl::Permutation<Real_t> P0(n3*dof);
   if(scal_exp && p_indx==Scaling){ // Set level-by-level scaling
     assert(dof==(int)scal_exp->Dim());
-    Vector<Real_t> scal(scal_exp->Dim());
+    sctl::Vector<Real_t> scal(scal_exp->Dim());
     for(size_t i=0;i<scal.Dim();i++){
       scal[i]=sctl::pow<Real_t>(2.0,(*scal_exp)[i]);
     }
@@ -306,7 +306,7 @@ sctl::Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_
 
     case S2U_Type:
     {
-      Vector<Real_t> scal_exp;
+      sctl::Vector<Real_t> scal_exp;
       sctl::Permutation<Real_t> ker_perm;
       if(perm_indx<C_Perm){
         ker_perm=this->kernel->k_s2m->perm_vec[0     +p_indx];
@@ -337,8 +337,8 @@ sctl::Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_
 
         Real_t s=0;
         // Check that target scaling for the two kernels agree.
-        const Vector<Real_t>& scal_exp0=this->kernel->k_s2m->trg_scal;
-        const Vector<Real_t>& scal_exp1=this->kernel->k_m2m->trg_scal;
+        const sctl::Vector<Real_t>& scal_exp0=this->kernel->k_s2m->trg_scal;
+        const sctl::Vector<Real_t>& scal_exp1=this->kernel->k_m2m->trg_scal;
         assert(scal_exp0.Dim()>0 && scal_exp0.Dim()==scal_exp1.Dim());
         if(scal_exp0.Dim()>0){
           s=(scal_exp0[0]-scal_exp1[0]);
@@ -357,7 +357,7 @@ sctl::Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_
     }
     case D2T_Type:
     {
-      Vector<Real_t> scal_exp;
+      sctl::Vector<Real_t> scal_exp;
       sctl::Permutation<Real_t> ker_perm;
       if(perm_indx<C_Perm){ // Source permutation
         ker_perm=this->kernel->k_l2l->perm_vec[C_Perm+p_indx];
@@ -383,8 +383,8 @@ sctl::Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_
 
         Real_t s=0;
         // Check that source scaling for the two kernels agree.
-        const Vector<Real_t>& scal_exp0=this->kernel->k_l2t->src_scal;
-        const Vector<Real_t>& scal_exp1=this->kernel->k_l2l->src_scal;
+        const sctl::Vector<Real_t>& scal_exp0=this->kernel->k_l2t->src_scal;
+        const sctl::Vector<Real_t>& scal_exp1=this->kernel->k_l2l->src_scal;
         assert(scal_exp0.Dim()>0 && scal_exp0.Dim()==scal_exp1.Dim());
         if(scal_exp0.Dim()>0){
           s=(scal_exp0[0]-scal_exp1[0]);
@@ -407,7 +407,7 @@ sctl::Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_
     }
     case U0_Type:
     {
-      Vector<Real_t> scal_exp;
+      sctl::Vector<Real_t> scal_exp;
       sctl::Permutation<Real_t> ker_perm;
       if(perm_indx<C_Perm){
         ker_perm=this->kernel->k_s2t->perm_vec[0     +p_indx];
@@ -432,7 +432,7 @@ sctl::Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_
     }
     case W_Type:
     {
-      Vector<Real_t> scal_exp;
+      sctl::Vector<Real_t> scal_exp;
       sctl::Permutation<Real_t> ker_perm;
       if(perm_indx<C_Perm){ // Source permutation
         ker_perm=this->kernel->k_m2t->perm_vec[0     +p_indx];
@@ -447,7 +447,7 @@ sctl::Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_
     }
     case X_Type:
     {
-      Vector<Real_t> scal_exp;
+      sctl::Vector<Real_t> scal_exp;
       sctl::Permutation<Real_t> ker_perm;
       if(perm_indx<C_Perm){
         ker_perm=this->kernel->k_s2l->perm_vec[0     +p_indx];
@@ -475,17 +475,17 @@ sctl::Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_
 
 
 template <class FMMNode>
-Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type type, size_t mat_indx){
+sctl::Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type type, size_t mat_indx){
   if(this->ScaleInvar()) level=0;
 
   //Check if the matrix already exists.
   //Compute matrix from symmetry class (if possible).
-  Matrix<Real_t>& M_ = this->mat->Mat(level, type, mat_indx);
+  sctl::Matrix<Real_t>& M_ = this->mat->Mat(level, type, mat_indx);
   if(M_.Dim(0)!=0 && M_.Dim(1)!=0) return M_;
   else{ //Compute matrix from symmetry class (if possible).
     size_t class_indx = this->interac_list.InteracClass(type, mat_indx);
     if(class_indx!=mat_indx){
-      Matrix<Real_t>& M0 = this->Precomp(level, type, class_indx);
+      sctl::Matrix<Real_t>& M0 = this->Precomp(level, type, class_indx);
       sctl::Permutation<Real_t>& Pr = this->interac_list.Perm_R(level, type, mat_indx);
       sctl::Permutation<Real_t>& Pc = this->interac_list.Perm_C(level, type, mat_indx);
       if(Pr.Dim()>0 && Pc.Dim()>0 && M0.Dim(0)>0 && M0.Dim(1)>0) return M_;
@@ -511,7 +511,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
   #endif
 
   //Compute the matrix.
-  Matrix<Real_t> M;
+  sctl::Matrix<Real_t> M;
   int n_src=((cheb_deg+1)*(cheb_deg+2)*(cheb_deg+3))/6;
   switch (type){
 
@@ -526,8 +526,8 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
       size_t n_uc=uc_coord.size()/3;
 
       // Evaluate potential at check surface.
-      Matrix<Real_t> M_s2c(n_src*this->kernel->k_s2m->ker_dim[0],n_uc*this->kernel->k_s2m->ker_dim[1]); //source 2 check
-      Matrix<Real_t> M_s2c_local(n_src*this->kernel->k_s2m->ker_dim[0],n_uc*this->kernel->k_s2m->ker_dim[1]);
+      sctl::Matrix<Real_t> M_s2c(n_src*this->kernel->k_s2m->ker_dim[0],n_uc*this->kernel->k_s2m->ker_dim[1]); //source 2 check
+      sctl::Matrix<Real_t> M_s2c_local(n_src*this->kernel->k_s2m->ker_dim[0],n_uc*this->kernel->k_s2m->ker_dim[1]);
       {
         M_s2c.SetZero();
         M_s2c_local.SetZero();
@@ -551,15 +551,15 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
         this->sctl_comm.Allreduce(M_s2c_local.begin(), M_s2c.begin(), M_s2c.Dim(0)*M_s2c.Dim(1), sctl::CommOp::SUM);
       }
 
-      Matrix<Real_t>& M_c2e0 = this->Precomp(level, UC2UE0_Type, 0);
-      Matrix<Real_t>& M_c2e1 = this->Precomp(level, UC2UE1_Type, 0);
+      sctl::Matrix<Real_t>& M_c2e0 = this->Precomp(level, UC2UE0_Type, 0);
+      sctl::Matrix<Real_t>& M_c2e1 = this->Precomp(level, UC2UE1_Type, 0);
       M=(M_s2c*M_c2e0)*M_c2e1;
       break;
     }
     case D2T_Type:
     {
       if(this->MultipoleOrder()==0) break;
-      Matrix<Real_t>& M_s2t=FMM_Pts<FMMNode>::Precomp(level, type, mat_indx);
+      sctl::Matrix<Real_t>& M_s2t=FMM_Pts<FMMNode>::Precomp(level, type, mat_indx);
       int n_trg=M_s2t.Dim(1)/this->kernel->k_l2t->ker_dim[1];
 
       // Compute Chebyshev approx from target potential.
@@ -591,8 +591,8 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
       }
 
       // Evaluate potential at target points.
-      Matrix<Real_t> M_s2t(n_src*this->kernel->k_s2t->ker_dim [0], n_trg*this->kernel->k_s2t->ker_dim [1]);
-      Matrix<Real_t> M_s2t_local(n_src*this->kernel->k_s2t->ker_dim [0], n_trg*this->kernel->k_s2t->ker_dim [1]);
+      sctl::Matrix<Real_t> M_s2t(n_src*this->kernel->k_s2t->ker_dim [0], n_trg*this->kernel->k_s2t->ker_dim [1]);
+      sctl::Matrix<Real_t> M_s2t_local(n_src*this->kernel->k_s2t->ker_dim [0], n_trg*this->kernel->k_s2t->ker_dim [1]);
       {
         M_s2t.SetZero();
         M_s2t_local.SetZero();
@@ -641,8 +641,8 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
       }
 
       // Evaluate potential at target points.
-      Matrix<Real_t> M_s2t(n_src*this->kernel->k_s2t->ker_dim [0], n_trg*this->kernel->k_s2t->ker_dim [1]);
-      Matrix<Real_t> M_s2t_local(n_src*this->kernel->k_s2t->ker_dim [0], n_trg*this->kernel->k_s2t->ker_dim [1]);
+      sctl::Matrix<Real_t> M_s2t(n_src*this->kernel->k_s2t->ker_dim [0], n_trg*this->kernel->k_s2t->ker_dim [1]);
+      sctl::Matrix<Real_t> M_s2t_local(n_src*this->kernel->k_s2t->ker_dim [0], n_trg*this->kernel->k_s2t->ker_dim [1]);
       {
         M_s2t.SetZero();
         M_s2t_local.SetZero();
@@ -691,8 +691,8 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
       }
 
       // Evaluate potential at target points.
-      Matrix<Real_t> M_s2t(n_src*this->kernel->k_s2t->ker_dim [0], n_trg*this->kernel->k_s2t->ker_dim [1]);
-      Matrix<Real_t> M_s2t_local(n_src*this->kernel->k_s2t->ker_dim [0], n_trg*this->kernel->k_s2t->ker_dim [1]);
+      sctl::Matrix<Real_t> M_s2t(n_src*this->kernel->k_s2t->ker_dim [0], n_trg*this->kernel->k_s2t->ker_dim [1]);
+      sctl::Matrix<Real_t> M_s2t_local(n_src*this->kernel->k_s2t->ker_dim [0], n_trg*this->kernel->k_s2t->ker_dim [1]);
       {
         M_s2t.SetZero();
         M_s2t_local.SetZero();
@@ -728,7 +728,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
     case W_Type:
     {
       if(this->MultipoleOrder()==0) break;
-      Matrix<Real_t>& M_s2t=FMM_Pts<FMMNode>::Precomp(level, type, mat_indx);
+      sctl::Matrix<Real_t>& M_s2t=FMM_Pts<FMMNode>::Precomp(level, type, mat_indx);
       int n_trg=M_s2t.Dim(1)/this->kernel->k_m2t->ker_dim[1];
 
       // Compute Chebyshev approx from target potential.
@@ -755,8 +755,8 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
       size_t n_trg=trg_coord.size()/3;
 
       // Evaluate potential at target points.
-      Matrix<Real_t> M_xs2c(n_src*this->kernel->k_s2l->ker_dim[0], n_trg*this->kernel->k_s2l->ker_dim[1]);
-      Matrix<Real_t> M_xs2c_local(n_src*this->kernel->k_s2l->ker_dim[0], n_trg*this->kernel->k_s2l->ker_dim[1]);
+      sctl::Matrix<Real_t> M_xs2c(n_src*this->kernel->k_s2l->ker_dim[0], n_trg*this->kernel->k_s2l->ker_dim[1]);
+      sctl::Matrix<Real_t> M_xs2c_local(n_src*this->kernel->k_s2l->ker_dim[0], n_trg*this->kernel->k_s2l->ker_dim[1]);
       {
         M_xs2c.SetZero();
         M_xs2c_local.SetZero();
@@ -798,7 +798,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
 
 
 template <class FMMNode>
-void FMM_Cheb<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<sctl::Iterator<FMMNode>>& node, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<sctl::Iterator<FMMNode_t>> >& n_list, std::vector<std::vector<Vector<Real_t>* > > vec_list){
+void FMM_Cheb<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<sctl::Iterator<FMMNode>>& node, std::vector<sctl::Matrix<Real_t> >& buff, std::vector<sctl::Vector<sctl::Iterator<FMMNode_t>> >& n_list, std::vector<std::vector<sctl::Vector<Real_t>* > > vec_list){
   if(vec_list.size()<6) vec_list.resize(6);
   size_t n_coeff=(cheb_deg+1)*(cheb_deg+2)*(cheb_deg+3)/6;
   if(node.size()==0) return;
@@ -807,7 +807,7 @@ void FMM_Cheb<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<sctl::Itera
     size_t vec_sz=this->kernel->ker_dim[0]*n_coeff;
     for(size_t i=0;i<node.size();i++){
       if(node[i]->IsLeaf()){
-        Vector<Real_t>& data_vec=node[i]->ChebData();
+        sctl::Vector<Real_t>& data_vec=node[i]->ChebData();
         if(data_vec.Dim()!=vec_sz) data_vec.ReInit(vec_sz);
         vec_list[indx].push_back(&data_vec);
       }else{
@@ -820,7 +820,7 @@ void FMM_Cheb<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<sctl::Itera
     size_t vec_sz=this->kernel->ker_dim[1]*n_coeff;
     for(size_t i=0;i<node.size();i++){
       if(node[i]->IsLeaf() && !node[i]->IsGhost()){
-        Vector<Real_t>& data_vec=((FMMData*)node[i]->FMMData())->cheb_out;
+        sctl::Vector<Real_t>& data_vec=((FMMData*)node[i]->FMMData())->cheb_out;
         if(data_vec.Dim()!=vec_sz) data_vec.ReInit(vec_sz);
         vec_list[indx].push_back(&data_vec);
       }else{
@@ -842,7 +842,7 @@ void FMM_Cheb<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<sctl::Itera
 
 
 template <class FMMNode>
-void FMM_Cheb<FMMNode>::Source2UpSetup(SetupData<FMMNode_t>& setup_data, FMMTree_t* tree, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<sctl::Iterator<FMMNode_t>> >& n_list, int level, bool device){
+void FMM_Cheb<FMMNode>::Source2UpSetup(SetupData<FMMNode_t>& setup_data, FMMTree_t* tree, std::vector<sctl::Matrix<Real_t> >& buff, std::vector<sctl::Vector<sctl::Iterator<FMMNode_t>> >& n_list, int level, bool device){
   if(!this->MultipoleOrder()) return;
   FMM_Pts<FMMNode>::Source2UpSetup(setup_data, tree, buff, n_list, level, device);
 
@@ -856,8 +856,8 @@ void FMM_Cheb<FMMNode>::Source2UpSetup(SetupData<FMMNode_t>& setup_data, FMMTree
     setup_data.input_data_mirror=&tree->node_data_buff_mirror[4];
     setup_data.output_data=&buff[0];
     setup_data.output_data_mirror=&tree->node_data_buff_mirror[0];
-    Vector<sctl::Iterator<FMMNode_t>>& nodes_in =n_list[4];
-    Vector<sctl::Iterator<FMMNode_t>>& nodes_out=n_list[0];
+    sctl::Vector<sctl::Iterator<FMMNode_t>>& nodes_in =n_list[4];
+    sctl::Vector<sctl::Iterator<FMMNode_t>>& nodes_out=n_list[0];
 
     setup_data.nodes_in .clear();
     setup_data.nodes_out.clear();
@@ -867,8 +867,8 @@ void FMM_Cheb<FMMNode>::Source2UpSetup(SetupData<FMMNode_t>& setup_data, FMMTree
 
   std::vector<sctl::Iterator<FMMNode_t>>& nodes_in =setup_data.nodes_in ;
   std::vector<sctl::Iterator<FMMNode_t>>& nodes_out=setup_data.nodes_out;
-  std::vector<Vector<Real_t>*>&  input_vector=setup_data. input_vector;  input_vector.clear();
-  std::vector<Vector<Real_t>*>& output_vector=setup_data.output_vector; output_vector.clear();
+  std::vector<sctl::Vector<Real_t>*>&  input_vector=setup_data. input_vector;  input_vector.clear();
+  std::vector<sctl::Vector<Real_t>*>& output_vector=setup_data.output_vector; output_vector.clear();
   for(size_t i=0;i<nodes_in .size();i++)  input_vector.push_back(&(          (nodes_in[i])           )->ChebData()  );
   for(size_t i=0;i<nodes_out.size();i++) output_vector.push_back(&((FMMData*)(nodes_out[i])->FMMData())->upward_equiv);
 
@@ -886,7 +886,7 @@ void FMM_Cheb<FMMNode>::Source2Up     (SetupData<FMMNode_t>& setup_data, bool de
 
 
 template <class FMMNode>
-void FMM_Cheb<FMMNode>::X_ListSetup(SetupData<FMMNode_t>& setup_data, FMMTree_t* tree, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<sctl::Iterator<FMMNode_t>> >& n_list, int level, bool device){
+void FMM_Cheb<FMMNode>::X_ListSetup(SetupData<FMMNode_t>& setup_data, FMMTree_t* tree, std::vector<sctl::Matrix<Real_t> >& buff, std::vector<sctl::Vector<sctl::Iterator<FMMNode_t>> >& n_list, int level, bool device){
   if(!this->MultipoleOrder()) return;
   FMM_Pts<FMMNode>::X_ListSetup(setup_data, tree, buff, n_list, level, device);
 
@@ -900,8 +900,8 @@ void FMM_Cheb<FMMNode>::X_ListSetup(SetupData<FMMNode_t>& setup_data, FMMTree_t*
     setup_data.input_data_mirror=&tree->node_data_buff_mirror[4];
     setup_data.output_data=&buff[1];
     setup_data.output_data_mirror=&tree->node_data_buff_mirror[1];
-    Vector<sctl::Iterator<FMMNode_t>>& nodes_in =n_list[4];
-    Vector<sctl::Iterator<FMMNode_t>>& nodes_out=n_list[1];
+    sctl::Vector<sctl::Iterator<FMMNode_t>>& nodes_in =n_list[4];
+    sctl::Vector<sctl::Iterator<FMMNode_t>>& nodes_out=n_list[1];
 
     setup_data.nodes_in .clear();
     setup_data.nodes_out.clear();
@@ -911,8 +911,8 @@ void FMM_Cheb<FMMNode>::X_ListSetup(SetupData<FMMNode_t>& setup_data, FMMTree_t*
 
   std::vector<sctl::Iterator<FMMNode_t>>& nodes_in =setup_data.nodes_in ;
   std::vector<sctl::Iterator<FMMNode_t>>& nodes_out=setup_data.nodes_out;
-  std::vector<Vector<Real_t>*>&  input_vector=setup_data. input_vector;  input_vector.clear();
-  std::vector<Vector<Real_t>*>& output_vector=setup_data.output_vector; output_vector.clear();
+  std::vector<sctl::Vector<Real_t>*>&  input_vector=setup_data. input_vector;  input_vector.clear();
+  std::vector<sctl::Vector<Real_t>*>& output_vector=setup_data.output_vector; output_vector.clear();
   for(size_t i=0;i<nodes_in .size();i++)  input_vector.push_back(&(          (nodes_in[i])           )->ChebData()  );
   for(size_t i=0;i<nodes_out.size();i++) output_vector.push_back(&((FMMData*)(nodes_out[i])->FMMData())->dnward_equiv);
 
@@ -934,7 +934,7 @@ void FMM_Cheb<FMMNode>::X_List     (SetupData<FMMNode_t>& setup_data, bool devic
 
 
 template <class FMMNode>
-void FMM_Cheb<FMMNode>::W_ListSetup(SetupData<FMMNode_t>& setup_data, FMMTree_t* tree, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<sctl::Iterator<FMMNode_t>> >& n_list, int level, bool device){
+void FMM_Cheb<FMMNode>::W_ListSetup(SetupData<FMMNode_t>& setup_data, FMMTree_t* tree, std::vector<sctl::Matrix<Real_t> >& buff, std::vector<sctl::Vector<sctl::Iterator<FMMNode_t>> >& n_list, int level, bool device){
   if(!this->MultipoleOrder()) return;
   { // Set setup_data
     setup_data.level=level;
@@ -946,8 +946,8 @@ void FMM_Cheb<FMMNode>::W_ListSetup(SetupData<FMMNode_t>& setup_data, FMMTree_t*
     setup_data.input_data_mirror=&tree->node_data_buff_mirror[0];
     setup_data.output_data=&buff[5];
     setup_data.output_data_mirror=&tree->node_data_buff_mirror[5];
-    Vector<sctl::Iterator<FMMNode_t>>& nodes_in =n_list[0];
-    Vector<sctl::Iterator<FMMNode_t>>& nodes_out=n_list[5];
+    sctl::Vector<sctl::Iterator<FMMNode_t>>& nodes_in =n_list[0];
+    sctl::Vector<sctl::Iterator<FMMNode_t>>& nodes_out=n_list[5];
 
     setup_data.nodes_in .clear();
     setup_data.nodes_out.clear();
@@ -957,8 +957,8 @@ void FMM_Cheb<FMMNode>::W_ListSetup(SetupData<FMMNode_t>& setup_data, FMMTree_t*
 
   std::vector<sctl::Iterator<FMMNode_t>>& nodes_in =setup_data.nodes_in ;
   std::vector<sctl::Iterator<FMMNode_t>>& nodes_out=setup_data.nodes_out;
-  std::vector<Vector<Real_t>*>&  input_vector=setup_data. input_vector;  input_vector.clear();
-  std::vector<Vector<Real_t>*>& output_vector=setup_data.output_vector; output_vector.clear();
+  std::vector<sctl::Vector<Real_t>*>&  input_vector=setup_data. input_vector;  input_vector.clear();
+  std::vector<sctl::Vector<Real_t>*>& output_vector=setup_data.output_vector; output_vector.clear();
   for(size_t i=0;i<nodes_in .size();i++)  input_vector.push_back(&((FMMData*)(nodes_in[i])->FMMData())->upward_equiv);
   for(size_t i=0;i<nodes_out.size();i++) output_vector.push_back(&((FMMData*)(nodes_out[i])->FMMData())->cheb_out    );
 
@@ -979,7 +979,7 @@ void FMM_Cheb<FMMNode>::W_List     (SetupData<FMMNode_t>& setup_data, bool devic
 
 
 template <class FMMNode>
-void FMM_Cheb<FMMNode>::U_ListSetup(SetupData<FMMNode_t>& setup_data, FMMTree_t* tree, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<sctl::Iterator<FMMNode_t>> >& n_list, int level, bool device){
+void FMM_Cheb<FMMNode>::U_ListSetup(SetupData<FMMNode_t>& setup_data, FMMTree_t* tree, std::vector<sctl::Matrix<Real_t> >& buff, std::vector<sctl::Vector<sctl::Iterator<FMMNode_t>> >& n_list, int level, bool device){
   FMM_Pts<FMMNode>::U_ListSetup(setup_data, tree, buff, n_list, level, device);
 
   { // Set setup_data
@@ -994,8 +994,8 @@ void FMM_Cheb<FMMNode>::U_ListSetup(SetupData<FMMNode_t>& setup_data, FMMTree_t*
     setup_data.input_data_mirror=&tree->node_data_buff_mirror[4];
     setup_data.output_data=&buff[5];
     setup_data.output_data_mirror=&tree->node_data_buff_mirror[5];
-    Vector<sctl::Iterator<FMMNode_t>>& nodes_in =n_list[4];
-    Vector<sctl::Iterator<FMMNode_t>>& nodes_out=n_list[5];
+    sctl::Vector<sctl::Iterator<FMMNode_t>>& nodes_in =n_list[4];
+    sctl::Vector<sctl::Iterator<FMMNode_t>>& nodes_out=n_list[5];
 
     setup_data.nodes_in .clear();
     setup_data.nodes_out.clear();
@@ -1005,8 +1005,8 @@ void FMM_Cheb<FMMNode>::U_ListSetup(SetupData<FMMNode_t>& setup_data, FMMTree_t*
 
   std::vector<sctl::Iterator<FMMNode_t>>& nodes_in =setup_data.nodes_in ;
   std::vector<sctl::Iterator<FMMNode_t>>& nodes_out=setup_data.nodes_out;
-  std::vector<Vector<Real_t>*>&  input_vector=setup_data. input_vector;  input_vector.clear();
-  std::vector<Vector<Real_t>*>& output_vector=setup_data.output_vector; output_vector.clear();
+  std::vector<sctl::Vector<Real_t>*>&  input_vector=setup_data. input_vector;  input_vector.clear();
+  std::vector<sctl::Vector<Real_t>*>& output_vector=setup_data.output_vector; output_vector.clear();
   for(size_t i=0;i<nodes_in .size();i++)  input_vector.push_back(&(          (nodes_in[i])           )->ChebData());
   for(size_t i=0;i<nodes_out.size();i++) output_vector.push_back(&((FMMData*)(nodes_out[i])->FMMData())->cheb_out  );
 
@@ -1027,7 +1027,7 @@ void FMM_Cheb<FMMNode>::U_List     (SetupData<FMMNode_t>& setup_data, bool devic
 
 
 template <class FMMNode>
-void FMM_Cheb<FMMNode>::Down2TargetSetup(SetupData<FMMNode_t>& setup_data, FMMTree_t* tree, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<sctl::Iterator<FMMNode_t>> >& n_list, int level, bool device){
+void FMM_Cheb<FMMNode>::Down2TargetSetup(SetupData<FMMNode_t>& setup_data, FMMTree_t* tree, std::vector<sctl::Matrix<Real_t> >& buff, std::vector<sctl::Vector<sctl::Iterator<FMMNode_t>> >& n_list, int level, bool device){
   if(!this->MultipoleOrder()) return;
   { // Set setup_data
     setup_data.level=level;
@@ -1039,8 +1039,8 @@ void FMM_Cheb<FMMNode>::Down2TargetSetup(SetupData<FMMNode_t>& setup_data, FMMTr
     setup_data.input_data_mirror=&tree->node_data_buff_mirror[1];
     setup_data.output_data=&buff[5];
     setup_data.output_data_mirror=&tree->node_data_buff_mirror[5];
-    Vector<sctl::Iterator<FMMNode_t>>& nodes_in =n_list[1];
-    Vector<sctl::Iterator<FMMNode_t>>& nodes_out=n_list[5];
+    sctl::Vector<sctl::Iterator<FMMNode_t>>& nodes_in =n_list[1];
+    sctl::Vector<sctl::Iterator<FMMNode_t>>& nodes_out=n_list[5];
 
     setup_data.nodes_in .clear();
     setup_data.nodes_out.clear();
@@ -1050,8 +1050,8 @@ void FMM_Cheb<FMMNode>::Down2TargetSetup(SetupData<FMMNode_t>& setup_data, FMMTr
 
   std::vector<sctl::Iterator<FMMNode_t>>& nodes_in =setup_data.nodes_in ;
   std::vector<sctl::Iterator<FMMNode_t>>& nodes_out=setup_data.nodes_out;
-  std::vector<Vector<Real_t>*>&  input_vector=setup_data. input_vector;  input_vector.clear();
-  std::vector<Vector<Real_t>*>& output_vector=setup_data.output_vector; output_vector.clear();
+  std::vector<sctl::Vector<Real_t>*>&  input_vector=setup_data. input_vector;  input_vector.clear();
+  std::vector<sctl::Vector<Real_t>*>& output_vector=setup_data.output_vector; output_vector.clear();
   for(size_t i=0;i<nodes_in .size();i++)  input_vector.push_back(&((FMMData*)(nodes_in[i])->FMMData())->dnward_equiv);
   for(size_t i=0;i<nodes_out.size();i++) output_vector.push_back(&((FMMData*)(nodes_out[i])->FMMData())->cheb_out    );
 
@@ -1072,8 +1072,8 @@ void FMM_Cheb<FMMNode>::PostProcessing(FMMTree_t* tree, std::vector<FMMNode_t*>&
     const Kernel<Real_t>& k_m2t=*this->kernel->k_m2t;
     int ker_dim[2]={k_m2t.ker_dim[0],k_m2t.ker_dim[1]};
 
-    Vector<Real_t>& up_equiv=((FMMData*)tree->RootNode()->FMMData())->upward_equiv;
-    Matrix<Real_t> avg_density(1,ker_dim[0]); avg_density.SetZero();
+    sctl::Vector<Real_t>& up_equiv=((FMMData*)tree->RootNode()->FMMData())->upward_equiv;
+    sctl::Matrix<Real_t> avg_density(1,ker_dim[0]); avg_density.SetZero();
     for(size_t i0=0;i0<up_equiv.Dim();i0+=ker_dim[0]){
       for(int i1=0;i1<ker_dim[0];i1++){
         avg_density[0][i1]+=up_equiv[i0+i1];
@@ -1091,12 +1091,12 @@ void FMM_Cheb<FMMNode>::PostProcessing(FMMTree_t* tree, std::vector<FMMNode_t*>&
       size_t a=((pid+0)*n)/omp_p;
       size_t b=((pid+1)*n)/omp_p;
 
-      Vector<Real_t> node_pts(Npts * PVFMM_COORD_DIM);
-      Vector<Real_t> M_vol(Npts * ker_dim[0] * ker_dim[1]);
-      Vector<Real_t> vol_poten_coeff(Ncoeff * ker_dim[1]);
-      Vector<Real_t> vol_poten(Npts * ker_dim[1]);
+      sctl::Vector<Real_t> node_pts(Npts * PVFMM_COORD_DIM);
+      sctl::Vector<Real_t> M_vol(Npts * ker_dim[0] * ker_dim[1]);
+      sctl::Vector<Real_t> vol_poten_coeff(Ncoeff * ker_dim[1]);
+      sctl::Vector<Real_t> vol_poten(Npts * ker_dim[1]);
       for(size_t i=a;i<b;i++){
-        Vector<Real_t>& cheb_out =((FMMData*)nodes[i]->FMMData())->cheb_out;
+        sctl::Vector<Real_t>& cheb_out =((FMMData*)nodes[i]->FMMData())->cheb_out;
         if(cheb_out.Dim()>0){
           Real_t* c = nodes[i]->Coord();
           Real_t s = sctl::pow<Real_t>(0.5,nodes[i]->Depth());
@@ -1135,9 +1135,9 @@ void FMM_Cheb<FMMNode>::PostProcessing(FMMTree_t* tree, std::vector<FMMNode_t*>&
 
     std::vector<Real_t> tmp_vec; // pre-allocate
     for(size_t i=a;i<b;i++){
-      Vector<Real_t>& trg_coord=nodes[i]->trg_coord;
-      Vector<Real_t>& trg_value=nodes[i]->trg_value;
-      Vector<Real_t>& cheb_out =((FMMData*)nodes[i]->FMMData())->cheb_out;
+      sctl::Vector<Real_t>& trg_coord=nodes[i]->trg_coord;
+      sctl::Vector<Real_t>& trg_value=nodes[i]->trg_value;
+      sctl::Vector<Real_t>& cheb_out =((FMMData*)nodes[i]->FMMData())->cheb_out;
 
       //Evaluate potential at target points.
       size_t trg_cnt=trg_coord.Dim()/PVFMM_COORD_DIM;

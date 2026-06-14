@@ -522,12 +522,12 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
     shift_x[2]=0;
   }
 
-  pvfmm::Vector<Real>  src_scal;
-  pvfmm::Vector<Real>  trg_scal;
-  pvfmm::Vector<Real> surf_scal;
+  sctl::Vector<Real>  src_scal;
+  sctl::Vector<Real>  trg_scal;
+  sctl::Vector<Real> surf_scal;
   { // Set src_scal, trg_scal
-    pvfmm::Vector<Real>& src_scal_exp=ctx->ker->src_scal;
-    pvfmm::Vector<Real>& trg_scal_exp=ctx->ker->trg_scal;
+    sctl::Vector<Real>& src_scal_exp=ctx->ker->src_scal;
+    sctl::Vector<Real>& trg_scal_exp=ctx->ker->trg_scal;
     src_scal .ReInit(ctx->ker->src_scal.Dim());
     trg_scal .ReInit(ctx->ker->trg_scal.Dim());
     surf_scal.ReInit(PVFMM_COORD_DIM+src_scal.Dim());
@@ -543,13 +543,13 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
     }
   }
 
-  pvfmm::Vector<sctl::Long> scatter_index;
+  sctl::Vector<sctl::Long> scatter_index;
   { // Set tree_data
-    pvfmm::Vector<Real>&  trg_coord=ctx->tree_data. trg_coord;
-    pvfmm::Vector<Real>&  src_coord=ctx->tree_data. src_coord;
-    pvfmm::Vector<Real>&  src_value=ctx->tree_data. src_value;
-    pvfmm::Vector<Real>& surf_value=ctx->tree_data.surf_value;
-    pvfmm::Vector<pvfmm::MortonId> pt_mid;
+    sctl::Vector<Real>&  trg_coord=ctx->tree_data. trg_coord;
+    sctl::Vector<Real>&  src_coord=ctx->tree_data. src_coord;
+    sctl::Vector<Real>&  src_value=ctx->tree_data. src_value;
+    sctl::Vector<Real>& surf_value=ctx->tree_data.surf_value;
+    sctl::Vector<pvfmm::MortonId> pt_mid;
 
     std::vector<Node_t*> nodes;
     { // Get list of leaf nodes.
@@ -778,7 +778,7 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
   ctx->tree->RunFMM();
 
   { // Get target potential.
-    pvfmm::Vector<Real> trg_value;
+    sctl::Vector<Real> trg_value;
     { // Get trg data.
       sctl::Iterator<Node_t> n=ctx->tree->PreorderFirst();
       while(n!=sctl::NullIterator<Node_t>()){

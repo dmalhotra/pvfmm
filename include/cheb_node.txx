@@ -138,9 +138,9 @@ void Cheb_Node<Real_t>::Subdivide(sctl::Iterator<TreeNode> self_) {
   std::vector<Real_t> x(cheb_deg+1);
   std::vector<Real_t> y(cheb_deg+1);
   std::vector<Real_t> z(cheb_deg+1);
-  Vector<Real_t> cheb_node(cheb_nodes<Real_t>(cheb_deg,1));
-  Vector<Real_t> val(sctl::pow<unsigned int>(cheb_deg+1,this->Dim())*data_dof);
-  Vector<Real_t> child_cheb_coeff[8];
+  sctl::Vector<Real_t> cheb_node(cheb_nodes<Real_t>(cheb_deg,1));
+  sctl::Vector<Real_t> val(sctl::pow<unsigned int>(cheb_deg+1,this->Dim())*data_dof);
+  sctl::Vector<Real_t> child_cheb_coeff[8];
   int n=(1UL<<this->Dim());
   for(int i=0;i<n;i++){
     Real_t coord[3]={(Real_t)((i  )%2?0:-1.0),
@@ -225,7 +225,7 @@ void Cheb_Node<Real_t>::VTU_Data(VTUData_t& vtu_data, std::vector<Node_t*>& node
       grid_pts[0]=0.0; grid_pts[gridpt_cnt-1]=1.0;
     }
 
-    Vector<Real_t> gridval;
+    sctl::Vector<Real_t> gridval;
     for(size_t nid=0;nid<nodes.size();nid++){
       Node_t* n=nodes[nid];
       if(n->IsGhost() || !n->IsLeaf()) continue;
@@ -283,7 +283,7 @@ void Cheb_Node<Real_t>::Gradient(){
     for(size_t i=0;i<ChebData().Dim();i++)
       ChebData()[i]*=scale;
 
-    Vector<Real_t> coeff(ChebData().Dim()*dim);
+    sctl::Vector<Real_t> coeff(ChebData().Dim()*dim);
     cheb_grad(ChebData(),cheb_deg,coeff);
     ChebData().Swap(coeff);
   }
@@ -296,7 +296,7 @@ void Cheb_Node<Real_t>::Divergence(){
   if(this->IsLeaf() && ChebData().Dim()>0){
     assert(data_dof%3==0);
     int n3=((cheb_deg+1)*(cheb_deg+2)*(cheb_deg+3))/6;
-    Vector<Real_t> coeff(ChebData().Dim()/dim);
+    sctl::Vector<Real_t> coeff(ChebData().Dim()/dim);
     for(int i=0;i<data_dof;i=i+dim)
       cheb_div(&(ChebData()[n3*i]),cheb_deg,&coeff[n3*(i/dim)]);
     ChebData().Swap(coeff);
@@ -314,7 +314,7 @@ void Cheb_Node<Real_t>::Curl(){
   if(this->IsLeaf() && ChebData().Dim()>0){
     assert(data_dof%dim==0);
     int n3=((cheb_deg+1)*(cheb_deg+2)*(cheb_deg+3))/6;
-    Vector<Real_t> coeff(ChebData().Dim());
+    sctl::Vector<Real_t> coeff(ChebData().Dim());
     for(int i=0;i<data_dof;i=i+dim)
       cheb_curl(&(ChebData()[n3*i]),cheb_deg,&coeff[n3*i]);
     ChebData().Swap(coeff);
@@ -333,7 +333,7 @@ void Cheb_Node<Real_t>::read_val(std::vector<Real_t> x,std::vector<Real_t> y, st
   if(this->IsLeaf()){
     if(cheb_coeff.Dim()!=(size_t)((cheb_deg+1)*(cheb_deg+2)*(cheb_deg+3))/6*data_dof
         || (this->IsGhost() && !show_ghost)) return;
-    Vector<Real_t> out;
+    sctl::Vector<Real_t> out;
     std::vector<Real_t> x_=x;
     std::vector<Real_t> y_=y;
     std::vector<Real_t> z_=z;

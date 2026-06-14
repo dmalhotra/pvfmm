@@ -90,9 +90,9 @@ struct Kernel{
 
   mutable bool init;
   mutable bool scale_invar;
-  mutable Vector<T> src_scal;
-  mutable Vector<T> trg_scal;
-  mutable Vector<sctl::Permutation<T> > perm_vec;
+  mutable sctl::Vector<T> src_scal;
+  mutable sctl::Vector<T> trg_scal;
+  mutable sctl::Vector<sctl::Permutation<T> > perm_vec;
 
   mutable const Kernel<T>* k_s2m;
   mutable const Kernel<T>* k_s2l;

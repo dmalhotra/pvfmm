@@ -298,7 +298,7 @@ namespace DeviceWrapper{
   // Implementation of DeviceMirror
 
   template <class T>
-  inline DeviceVector<T> DeviceMirror::AllocDevice(Vector<T>& host, bool copy){
+  inline DeviceVector<T> DeviceMirror::AllocDevice(sctl::Vector<T>& host, bool copy){
     char* p=(char*)(host.Dim()?&host[0]:nullptr);
     size_t bytes=host.Dim()*sizeof(T);
     if(dev_ptr){ // Already bound: host buffer must not have changed.

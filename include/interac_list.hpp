@@ -65,7 +65,7 @@ class InteracList{
      */
     size_t InteracClass(Mat_Type t, size_t i);
 
-    Matrix<Real_t>& ClassMat(int l, Mat_Type type, size_t indx);
+    sctl::Matrix<Real_t>& ClassMat(int l, Mat_Type type, size_t indx);
 
     sctl::Permutation<Real_t>& Perm_R(int l, Mat_Type type, size_t indx);
 
@@ -93,7 +93,7 @@ class InteracList{
     int class_hash(int* c);
 
     unsigned int dim;                                //Spatial dimension.
-    std::vector<Matrix<int> > rel_coord;             //Relative coordinates of interacting octant.
+    std::vector<sctl::Matrix<int> > rel_coord;             //Relative coordinates of interacting octant.
     std::vector<std::vector<int> > hash_lut;         //Lookup table for hash code of relative coordinates.
     std::vector<std::vector<size_t> > interac_class; //The symmetry class corresponding to each interaction.
     std::vector<std::vector<std::vector<Perm_Type> > > perm_list; //Permutation to convert it to it's interac_class.

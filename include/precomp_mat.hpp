@@ -57,7 +57,7 @@ class PrecompMat{
 
   PrecompMat(bool scale_invar);
 
-  Matrix<T>& Mat(int l, Mat_Type type, size_t indx);
+  sctl::Matrix<T>& Mat(int l, Mat_Type type, size_t indx);
 
   sctl::Permutation<T>& Perm_R(int l, Mat_Type type, size_t indx);
 
@@ -65,7 +65,7 @@ class PrecompMat{
 
   sctl::Permutation<T>& Perm(Mat_Type type, size_t indx);
 
-  size_t CompactData(int l, Mat_Type type, Matrix<char>& comp_data, size_t offset=0);
+  size_t CompactData(int l, Mat_Type type, sctl::Matrix<char>& comp_data, size_t offset=0);
 
   void Save2File(const char* fname, bool replace=false);
 
@@ -77,7 +77,7 @@ class PrecompMat{
 
  private:
 
-  std::vector<std::vector<Matrix     <T> > > mat;
+  std::vector<std::vector<sctl::Matrix     <T> > > mat;
   std::vector<std::vector<sctl::Permutation<T> > > perm;
   std::vector<std::vector<sctl::Permutation<T> > > perm_r;
   std::vector<std::vector<sctl::Permutation<T> > > perm_c;

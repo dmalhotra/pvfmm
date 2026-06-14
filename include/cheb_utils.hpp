@@ -69,14 +69,14 @@ T cheb_approx(const T* fn_v, int deg, int dof, T* cheb_coeff);
  * \param[in] in_z The nodes in [0,1] in the Z-direction.
  */
 template <class T>
-void cheb_eval(const Vector<T>& coeff_, int cheb_deg, const std::vector<T>& in_x, const std::vector<T>& in_y, const std::vector<T>& in_z, Vector<T>& out);
+void cheb_eval(const sctl::Vector<T>& coeff_, int cheb_deg, const std::vector<T>& in_x, const std::vector<T>& in_y, const std::vector<T>& in_z, sctl::Vector<T>& out);
 
 /**
  * \brief Evaluates polynomial values from input coefficients at points
  * defined by the values in the coord vector.
  */
 template <class T>
-void cheb_eval(Vector<T>& coeff_, int cheb_deg, std::vector<T>& coord, Vector<T>& out);
+void cheb_eval(sctl::Vector<T>& coeff_, int cheb_deg, std::vector<T>& coord, sctl::Vector<T>& out);
 
 /**
  * \brief Computes a least squares solution for Chebyshev approximation over a
@@ -93,7 +93,7 @@ void cheb_eval(Vector<T>& coeff_, int cheb_deg, std::vector<T>& coord, Vector<T>
  * \param[out] cheb_coeff Output coefficients.
  */
 template <class T>
-void points2cheb(int deg, T* coord, T* val, int n, int dim, T* node_coord, T node_size, Vector<T>& cheb_coeff);
+void points2cheb(int deg, T* coord, T* val, int n, int dim, T* node_coord, T node_size, sctl::Vector<T>& cheb_coeff);
 
 /**
  * \brief Returns an n-point quadrature rule with points 'x' and weights 'w'.
@@ -118,7 +118,7 @@ template <class T>
 std::vector<T> cheb_nodes(int deg, int dim);
 
 template <class T>
-void cheb_grad(const Vector<T>& A, int deg, Vector<T>& B);
+void cheb_grad(const sctl::Vector<T>& A, int deg, sctl::Vector<T>& B);
 
 template <class T>
 void cheb_laplacian(T* A, int deg, T* B);

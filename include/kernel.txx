@@ -71,13 +71,13 @@ void Kernel<T>::Initialize(bool verbose) const{
 
   T scal=1.0;
   if(ker_dim[0]*ker_dim[1]>0){ // Determine scaling
-    Matrix<T> M_scal(ker_dim[0],ker_dim[1]);
+    sctl::Matrix<T> M_scal(ker_dim[0],ker_dim[1]);
     size_t N=1024;
     T eps_=N*eps;
 
     T src_coord[3]={0,0,0};
     std::vector<T> trg_coord1(N*PVFMM_COORD_DIM);
-    Matrix<T> M1(N,ker_dim[0]*ker_dim[1]);
+    sctl::Matrix<T> M1(N,ker_dim[0]*ker_dim[1]);
     while(true){
       T abs_sum=0;
       for(size_t i=0;i<N/2;i++){
@@ -113,7 +113,7 @@ void Kernel<T>::Initialize(bool verbose) const{
     }
 
     std::vector<T> trg_coord2(N*PVFMM_COORD_DIM);
-    Matrix<T> M2(N,ker_dim[0]*ker_dim[1]);
+    sctl::Matrix<T> M2(N,ker_dim[0]*ker_dim[1]);
     for(size_t i=0;i<N*PVFMM_COORD_DIM;i++){
       trg_coord2[i]=trg_coord1[i]*(T)0.5;
     }
@@ -159,10 +159,10 @@ void Kernel<T>::Initialize(bool verbose) const{
     src_scal.ReInit(ker_dim[0]); src_scal.SetZero();
     trg_scal.ReInit(ker_dim[1]); trg_scal.SetZero();
     if(scale_invar){
-      Matrix<T> b(ker_dim[0]*ker_dim[1]+1,1); b.SetZero();
+      sctl::Matrix<T> b(ker_dim[0]*ker_dim[1]+1,1); b.SetZero();
       sctl::omp_par::memcpy(b.begin(), M_scal.begin(), ker_dim[0]*ker_dim[1]);
 
-      Matrix<T> M(ker_dim[0]*ker_dim[1]+1,ker_dim[0]+ker_dim[1]); M.SetZero();
+      sctl::Matrix<T> M(ker_dim[0]*ker_dim[1]+1,ker_dim[0]+ker_dim[1]); M.SetZero();
       M[ker_dim[0]*ker_dim[1]][0]=1;
       for(int i0=0;i0<ker_dim[0];i0++)
       for(int i1=0;i1<ker_dim[1];i1++){
@@ -172,7 +172,7 @@ void Kernel<T>::Initialize(bool verbose) const{
           M[j][i1+ker_dim[0]]=1;
         }
       }
-      Matrix<T> x=M.pinv()*b;
+      sctl::Matrix<T> x=M.pinv()*b;
 
       for(int i=0;i<ker_dim[0];i++){
         src_scal[i]=x[i][0];
@@ -274,16 +274,16 @@ void Kernel<T>::Initialize(bool verbose) const{
           }
       }
 
-      Matrix<long long> M11, M22;
+      sctl::Matrix<long long> M11, M22;
       {
-        Matrix<T> M1(N,ker_dim[0]*ker_dim[1]); M1.SetZero();
-        Matrix<T> M2(N,ker_dim[0]*ker_dim[1]); M2.SetZero();
+        sctl::Matrix<T> M1(N,ker_dim[0]*ker_dim[1]); M1.SetZero();
+        sctl::Matrix<T> M2(N,ker_dim[0]*ker_dim[1]); M2.SetZero();
         BuildMatrix(&trg_coord1[0], (int)N, &src_coord[0], 1, &M1[0][0]);
         BuildMatrix(&trg_coord2[0], (int)N, &src_coord[0], 1, &M2[0][0]);
 
-        Matrix<T> dot11(ker_dim[0]*ker_dim[1],ker_dim[0]*ker_dim[1]);dot11.SetZero();
-        Matrix<T> dot12(ker_dim[0]*ker_dim[1],ker_dim[0]*ker_dim[1]);dot12.SetZero();
-        Matrix<T> dot22(ker_dim[0]*ker_dim[1],ker_dim[0]*ker_dim[1]);dot22.SetZero();
+        sctl::Matrix<T> dot11(ker_dim[0]*ker_dim[1],ker_dim[0]*ker_dim[1]);dot11.SetZero();
+        sctl::Matrix<T> dot12(ker_dim[0]*ker_dim[1],ker_dim[0]*ker_dim[1]);dot12.SetZero();
+        sctl::Matrix<T> dot22(ker_dim[0]*ker_dim[1],ker_dim[0]*ker_dim[1]);dot22.SetZero();
         std::vector<T> norm1(ker_dim[0]*ker_dim[1]);
         std::vector<T> norm2(ker_dim[0]*ker_dim[1]);
         {
@@ -324,11 +324,11 @@ void Kernel<T>::Initialize(bool verbose) const{
         }
       }
 
-      Matrix<long long> P1, P2;
+      sctl::Matrix<long long> P1, P2;
       { // P1
-        Matrix<long long>& P=P1;
-        Matrix<long long>  M1=M11;
-        Matrix<long long>  M2=M22;
+        sctl::Matrix<long long>& P=P1;
+        sctl::Matrix<long long>  M1=M11;
+        sctl::Matrix<long long>  M2=M22;
         for(size_t i=0;i<M1.Dim(0);i++){
           for(size_t j=0;j<M1.Dim(1);j++){
             if(M1[i][j]<0) M1[i][j]=-M1[i][j];
@@ -349,9 +349,9 @@ void Kernel<T>::Initialize(bool verbose) const{
         }
       }
       { // P2
-        Matrix<long long>& P=P2;
-        Matrix<long long>  M1=M11.Transpose();
-        Matrix<long long>  M2=M22.Transpose();
+        sctl::Matrix<long long>& P=P2;
+        sctl::Matrix<long long>  M1=M11.Transpose();
+        sctl::Matrix<long long>  M2=M22.Transpose();
         for(size_t i=0;i<M1.Dim(0);i++){
           for(size_t j=0;j<M1.Dim(1);j++){
             if(M1[i][j]<0) M1[i][j]=-M1[i][j];
@@ -374,7 +374,7 @@ void Kernel<T>::Initialize(bool verbose) const{
 
       std::vector<sctl::Permutation<long long> > P1vec, P2vec;
       { // P1vec
-        Matrix<long long>& Pmat=P1;
+        sctl::Matrix<long long>& Pmat=P1;
         std::vector<sctl::Permutation<long long> >& Pvec=P1vec;
 
         sctl::Permutation<long long> P(Pmat.Dim(0));
@@ -390,7 +390,7 @@ void Kernel<T>::Initialize(bool verbose) const{
           }
         }
 
-        Vector<PVFMM_PERM_INT_T> perm_tmp;
+        sctl::Vector<PVFMM_PERM_INT_T> perm_tmp;
         while(true){ // Next permutation
           perm_tmp=perm;
           std::sort(&perm_tmp[0],&perm_tmp[0]+perm_tmp.Dim());
@@ -423,7 +423,7 @@ void Kernel<T>::Initialize(bool verbose) const{
         }
       }
       { // P2vec
-        Matrix<long long>& Pmat=P2;
+        sctl::Matrix<long long>& Pmat=P2;
         std::vector<sctl::Permutation<long long> >& Pvec=P2vec;
 
         sctl::Permutation<long long> P(Pmat.Dim(0));
@@ -439,7 +439,7 @@ void Kernel<T>::Initialize(bool verbose) const{
           }
         }
 
-        Vector<PVFMM_PERM_INT_T> perm_tmp;
+        sctl::Vector<PVFMM_PERM_INT_T> perm_tmp;
         while(true){ // Next permutation
           perm_tmp=perm;
           std::sort(&perm_tmp[0],&perm_tmp[0]+perm_tmp.Dim());
@@ -474,8 +474,8 @@ void Kernel<T>::Initialize(bool verbose) const{
 
       { // Find pairs which acutally work (neglect scaling)
         std::vector<sctl::Permutation<long long> > P1vec_, P2vec_;
-        Matrix<long long>  M1=M11;
-        Matrix<long long>  M2=M22;
+        sctl::Matrix<long long>  M1=M11;
+        sctl::Matrix<long long>  M2=M22;
         for(size_t i=0;i<M1.Dim(0);i++){
           for(size_t j=0;j<M1.Dim(1);j++){
             if(M1[i][j]<0) M1[i][j]=-M1[i][j];
@@ -483,7 +483,7 @@ void Kernel<T>::Initialize(bool verbose) const{
           }
         }
 
-        Matrix<long long> M;
+        sctl::Matrix<long long> M;
         for(size_t i=0;i<P1vec.size();i++)
         for(size_t j=0;j<P2vec.size();j++){
           M=P1vec[i]*M2*P2vec[j];
@@ -505,10 +505,10 @@ void Kernel<T>::Initialize(bool verbose) const{
         for(size_t k=0;k<P1vec.size();k++){
           sctl::Permutation<long long> P1=P1vec[k];
           sctl::Permutation<long long> P2=P2vec[k];
-          Matrix<long long>  M1=   M11   ;
-          Matrix<long long>  M2=P1*M22*P2;
+          sctl::Matrix<long long>  M1=   M11   ;
+          sctl::Matrix<long long>  M2=P1*M22*P2;
 
-          Matrix<T> M(M1.Dim(0)*M1.Dim(1)+1,M1.Dim(0)+M1.Dim(1));
+          sctl::Matrix<T> M(M1.Dim(0)*M1.Dim(1)+1,M1.Dim(0)+M1.Dim(1));
           M.SetZero(); M[M1.Dim(0)*M1.Dim(1)][0]=1.0;
           for(size_t i=0;i<M1.Dim(0);i++)
           for(size_t j=0;j<M1.Dim(1);j++){
@@ -531,7 +531,7 @@ void Kernel<T>::Initialize(bool verbose) const{
           }
 
           bool done=true;
-          Matrix<long long> Merr=P1*M22*P2-M11;
+          sctl::Matrix<long long> Merr=P1*M22*P2-M11;
           for(size_t i=0;i<Merr.Dim(0)*Merr.Dim(1);i++){
             if(Merr[0][i]){
               done=false;
@@ -594,8 +594,8 @@ void Kernel<T>::Initialize(bool verbose) const{
     std::cout<<"Scale Invariant: "<<(scale_invar?"yes":"no")<<'\n';
     if(scale_invar && ker_dim[0]*ker_dim[1]>0){
       std::cout<<"Scaling Matrix :\n";
-      Matrix<T> Src(ker_dim[0],1);
-      Matrix<T> Trg(1,ker_dim[1]);
+      sctl::Matrix<T> Src(ker_dim[0],1);
+      sctl::Matrix<T> Trg(1,ker_dim[1]);
       for(int i=0;i<ker_dim[0];i++) Src[i][0]=sctl::pow<T>(2.0,src_scal[i]);
       for(int i=0;i<ker_dim[1];i++) Trg[0][i]=sctl::pow<T>(2.0,trg_scal[i]);
       std::cout<<Src*Trg;
@@ -652,16 +652,16 @@ void Kernel<T>::Initialize(bool verbose) const{
           trg_coord.push_back(z/r*sctl::sqrt<T>((T)PVFMM_COORD_DIM)*rad*(T)(1+drand48()));
         }
 
-        Matrix<T> M_s2c(n_src*ker_dim[0],n_check*ker_dim[1]);
+        sctl::Matrix<T> M_s2c(n_src*ker_dim[0],n_check*ker_dim[1]);
         BuildMatrix( &src_coord[0], n_src,
                     &check_surf[0], n_check, &(M_s2c[0][0]));
 
-        Matrix<T> M_e2c(n_equiv*ker_dim[0],n_check*ker_dim[1]);
+        sctl::Matrix<T> M_e2c(n_equiv*ker_dim[0],n_check*ker_dim[1]);
         BuildMatrix(&equiv_surf[0], n_equiv,
                     &check_surf[0], n_check, &(M_e2c[0][0]));
-        Matrix<T> M_c2e0, M_c2e1;
+        sctl::Matrix<T> M_c2e0, M_c2e1;
         {
-          Matrix<T> U,S,V;
+          sctl::Matrix<T> U,S,V;
           M_e2c.SVD(U,S,V);
           T eps=1, max_S=0;
           while(eps*(T)0.5+(T)1>1) eps*=(T)0.5;
@@ -673,15 +673,15 @@ void Kernel<T>::Initialize(bool verbose) const{
           M_c2e1=U.Transpose();
         }
 
-        Matrix<T> M_e2t(n_equiv*ker_dim[0],n_trg*ker_dim[1]);
+        sctl::Matrix<T> M_e2t(n_equiv*ker_dim[0],n_trg*ker_dim[1]);
         BuildMatrix(&equiv_surf[0], n_equiv,
                      &trg_coord[0], n_trg  , &(M_e2t[0][0]));
 
-        Matrix<T> M_s2t(n_src*ker_dim[0],n_trg*ker_dim[1]);
+        sctl::Matrix<T> M_s2t(n_src*ker_dim[0],n_trg*ker_dim[1]);
         BuildMatrix( &src_coord[0], n_src,
                      &trg_coord[0], n_trg  , &(M_s2t[0][0]));
 
-        Matrix<T> M=(M_s2c*M_c2e0)*(M_c2e1*M_e2t)-M_s2t;
+        sctl::Matrix<T> M=(M_s2c*M_c2e0)*(M_c2e1*M_e2t)-M_s2t;
         T max_error=0, max_value=0;
         for(size_t i=0;i<M.Dim(0);i++)
         for(size_t j=0;j<M.Dim(1);j++){
@@ -746,16 +746,16 @@ void Kernel<T>::Initialize(bool verbose) const{
           src_coord.push_back(z/r*sctl::sqrt<T>((T)PVFMM_COORD_DIM)*rad*(T)(1+drand48()));
         }
 
-        Matrix<T> M_s2c(n_src*ker_dim[0],n_check*ker_dim[1]);
+        sctl::Matrix<T> M_s2c(n_src*ker_dim[0],n_check*ker_dim[1]);
         BuildMatrix( &src_coord[0], n_src,
                     &check_surf[0], n_check, &(M_s2c[0][0]));
 
-        Matrix<T> M_e2c(n_equiv*ker_dim[0],n_check*ker_dim[1]);
+        sctl::Matrix<T> M_e2c(n_equiv*ker_dim[0],n_check*ker_dim[1]);
         BuildMatrix(&equiv_surf[0], n_equiv,
                     &check_surf[0], n_check, &(M_e2c[0][0]));
-        Matrix<T> M_c2e0, M_c2e1;
+        sctl::Matrix<T> M_c2e0, M_c2e1;
         {
-          Matrix<T> U,S,V;
+          sctl::Matrix<T> U,S,V;
           M_e2c.SVD(U,S,V);
           T eps=1, max_S=0;
           while(eps*(T)0.5+(T)1>1) eps*=(T)0.5;
@@ -767,15 +767,15 @@ void Kernel<T>::Initialize(bool verbose) const{
           M_c2e1=U.Transpose();
         }
 
-        Matrix<T> M_e2t(n_equiv*ker_dim[0],n_trg*ker_dim[1]);
+        sctl::Matrix<T> M_e2t(n_equiv*ker_dim[0],n_trg*ker_dim[1]);
         BuildMatrix(&equiv_surf[0], n_equiv,
                      &trg_coord[0], n_trg  , &(M_e2t[0][0]));
 
-        Matrix<T> M_s2t(n_src*ker_dim[0],n_trg*ker_dim[1]);
+        sctl::Matrix<T> M_s2t(n_src*ker_dim[0],n_trg*ker_dim[1]);
         BuildMatrix( &src_coord[0], n_src,
                      &trg_coord[0], n_trg  , &(M_s2t[0][0]));
 
-        Matrix<T> M=(M_s2c*M_c2e0)*(M_c2e1*M_e2t)-M_s2t;
+        sctl::Matrix<T> M=(M_s2c*M_c2e0)*(M_c2e1*M_e2t)-M_s2t;
         T max_error=0, max_value=0;
         for(size_t i=0;i<M.Dim(0);i++)
         for(size_t j=0;j<M.Dim(1);j++){
@@ -822,11 +822,11 @@ void Kernel<T>::Initialize(bool verbose) const{
       size_t n_check=equiv_surf.size()/PVFMM_COORD_DIM;
       size_t n_trg  =trg_coord .size()/PVFMM_COORD_DIM;
 
-      Matrix<T> M_local, M_analytic;
-      Matrix<T> T_local, T_analytic;
+      sctl::Matrix<T> M_local, M_analytic;
+      sctl::Matrix<T> T_local, T_analytic;
       { // Compute local expansions M_local, T_local
-        Matrix<T> M_near(ker_dim[0],n_check*ker_dim[1]);
-        Matrix<T> T_near(ker_dim[0],n_trg  *ker_dim[1]);
+        sctl::Matrix<T> M_near(ker_dim[0],n_check*ker_dim[1]);
+        sctl::Matrix<T> T_near(ker_dim[0],n_trg  *ker_dim[1]);
         #pragma omp parallel for schedule(dynamic)
         for(size_t i=0;i<n_check;i++){ // Compute near-interaction for operator M_near
           std::vector<T> M_=cheb_integ<T>(0, &check_surf[i*3], 3.0, *this);
@@ -854,19 +854,19 @@ void Kernel<T>::Initialize(bool verbose) const{
         }
       }
 
-      Matrix<T> T_err;
+      sctl::Matrix<T> T_err;
       { // Now we should be able to compute T_local from M_local
-        Matrix<T> M_e2c(n_equiv*ker_dim[0],n_check*ker_dim[1]);
+        sctl::Matrix<T> M_e2c(n_equiv*ker_dim[0],n_check*ker_dim[1]);
         BuildMatrix(&equiv_surf[0], n_equiv,
                     &check_surf[0], n_check, &(M_e2c[0][0]));
 
-        Matrix<T> M_e2t(n_equiv*ker_dim[0],n_trg  *ker_dim[1]);
+        sctl::Matrix<T> M_e2t(n_equiv*ker_dim[0],n_trg  *ker_dim[1]);
         BuildMatrix(&equiv_surf[0], n_equiv,
                     &trg_coord [0], n_trg  , &(M_e2t[0][0]));
 
-        Matrix<T> M_c2e0, M_c2e1;
+        sctl::Matrix<T> M_c2e0, M_c2e1;
         {
-          Matrix<T> U,S,V;
+          sctl::Matrix<T> U,S,V;
           M_e2c.SVD(U,S,V);
           T eps=1, max_S=0;
           while(eps*(T)0.5+(T)1>1) eps*=(T)0.5;
@@ -956,7 +956,7 @@ void Kernel<T>::BuildMatrix(T* r_src, int src_cnt,
  * \brief Generic kernel which rearranges data for vectorization, calls the
  * actual uKernel and copies data to the output array in the original order.
  */
-template <class Real_t, int SRC_DIM, int TRG_DIM, void (*uKernel)(Matrix<Real_t>&, Matrix<Real_t>&, Matrix<Real_t>&, Matrix<Real_t>&)>
+template <class Real_t, int SRC_DIM, int TRG_DIM, void (*uKernel)(sctl::Matrix<Real_t>&, sctl::Matrix<Real_t>&, sctl::Matrix<Real_t>&, sctl::Matrix<Real_t>&)>
 [[deprecated("generic_kernel interface now replaced by easier/cleaner/potentially faster GenericKernel struct")]]
 void generic_kernel(Real_t* r_src, int src_cnt, Real_t* v_src, int dof, Real_t* r_trg, int trg_cnt, Real_t* v_trg){
   assert(dof==1);
@@ -964,10 +964,10 @@ void generic_kernel(Real_t* r_src, int src_cnt, Real_t* v_src, int dof, Real_t* 
   if(sizeof(Real_t)==sizeof( float)) VecLen=8;
   if(sizeof(Real_t)==sizeof(double)) VecLen=4;
 
-  Matrix<Real_t> src_coord;
-  Matrix<Real_t> src_value;
-  Matrix<Real_t> trg_coord;
-  Matrix<Real_t> trg_value;
+  sctl::Matrix<Real_t> src_coord;
+  sctl::Matrix<Real_t> src_value;
+  sctl::Matrix<Real_t> trg_coord;
+  sctl::Matrix<Real_t> trg_value;
   size_t src_cnt_=((src_cnt+VecLen-1)/VecLen)*VecLen;
   size_t trg_cnt_=((trg_cnt+VecLen-1)/VecLen)*VecLen;
   size_t buff_size=src_cnt_*(PVFMM_COORD_DIM+SRC_DIM)+
@@ -1122,10 +1122,10 @@ template <class uKernel> template <class Real, int digits> void GenericKernel<uK
   using RealVec = sctl::Vec<Real, VecLen>;
   assert(dof==1);
 
-  Matrix<Real> src_coord;
-  Matrix<Real> src_value;
-  Matrix<Real> trg_coord;
-  Matrix<Real> trg_value;
+  sctl::Matrix<Real> src_coord;
+  sctl::Matrix<Real> src_value;
+  sctl::Matrix<Real> trg_coord;
+  sctl::Matrix<Real> trg_value;
 
   const int src_cnt_ = ((src_cnt + VecLen-1)/VecLen)*VecLen; // count after zero padding
   const int trg_cnt_ = ((trg_cnt + VecLen-1)/VecLen)*VecLen; // count after zero padding

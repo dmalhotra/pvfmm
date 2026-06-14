@@ -2,12 +2,11 @@
  * \file matrix.hpp
  * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 2-11-2011
- * \brief pvfmm::Matrix is an alias for sctl::Matrix<T>.
+ * \brief Compatibility header: pvfmm uses sctl::Matrix<T> directly.
  *
- * Call sites use sctl::Matrix directly (M[i] yields an iterator; use
- * &M[i][0] where a raw pointer is needed, M.ReInit(i,j) to resize). The
- * pvfmm-specific helpers kept as free functions are MatrixTranspose() and
- * the CUDA CUBLASGEMM wrapper.
+ * Call sites name sctl::Matrix (M[i] yields an iterator; use &M[i][0] where a
+ * raw pointer is needed, M.ReInit(i,j) to resize). The pvfmm-specific helpers
+ * kept here are MatrixTranspose() and the CUDA CUBLASGEMM wrapper.
  */
 
 #include <stdint.h>
@@ -23,8 +22,6 @@
 #pragma offload_attribute(push,target(mic))
 #endif
 namespace pvfmm{
-
-template <class T> using Matrix = sctl::Matrix<T>;
 
 // Call sites use sctl::Permutation directly. Its perm holds sctl::Long
 // entries (PVFMM_PERM_INT_T) — same width as the historical size_t, so the
@@ -54,7 +51,7 @@ void MatrixTranspose(size_t in_dim1, size_t in_dim2, const T* in, T* out){
 #if defined(PVFMM_HAVE_CUDA)
 // cublasgemm wrapper (device GEMM).
 template <class T>
-void CUBLASGEMM(Matrix<T>& M_r, const Matrix<T>& A, const Matrix<T>& B, T beta=0.0);
+void CUBLASGEMM(sctl::Matrix<T>& M_r, const sctl::Matrix<T>& A, const sctl::Matrix<T>& B, T beta=0.0);
 #endif
 
 }//end namespace

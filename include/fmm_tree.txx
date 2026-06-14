@@ -120,7 +120,7 @@ void FMM_Tree<FMM_Mat_t>::SetupFMM(FMM_Mat_t* fmm_mat_) {
     n=this->PostorderNxt(n);
   }
   //Collect node data into continuous array.
-  std::vector<Vector<sctl::Iterator<Node_t>> > node_lists; // TODO: Remove this parameter, not really needed
+  std::vector<sctl::Vector<sctl::Iterator<Node_t>> > node_lists; // TODO: Remove this parameter, not really needed
   fmm_mat->CollectNodeData((MatTree_t*)this,all_nodes, node_data_buff, node_lists);
   sctl::Profile::Toc();
 
@@ -210,7 +210,7 @@ void FMM_Tree<FMM_Mat_t>::ClearFMMData() {
   int omp_p=omp_get_max_threads();
   #pragma omp parallel for
   for(int j=0;j<omp_p;j++){
-    Matrix<Real_t>* mat;
+    sctl::Matrix<Real_t>* mat;
 
     mat=setup_data[0+PVFMM_MAX_DEPTH*1]. input_data;
     if(mat && mat->Dim(0)*mat->Dim(1)>0){
@@ -667,7 +667,7 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
     if(device) if(i==(fmm_mat->ScaleInvar()?0:max_depth)){ // Device2Host: LocalExp
       sctl::Profile::Tic("Device2Host:LocExp",&this->Comm(),false,5);
       if(setup_data[0+PVFMM_MAX_DEPTH*2].output_data!=NULL){
-        Matrix<Real_t>& output_data=*setup_data[0+PVFMM_MAX_DEPTH*2].output_data;
+        sctl::Matrix<Real_t>& output_data=*setup_data[0+PVFMM_MAX_DEPTH*2].output_data;
         if(fmm_mat->staging_buffer.Dim()){
           assert(fmm_mat->staging_buffer.Dim()*sizeof(Real_t)>=output_data.Dim(0)*output_data.Dim(1));
           setup_data[0+PVFMM_MAX_DEPTH*2].output_data_mirror->Device2Host((char*)&fmm_mat->staging_buffer[0]);
@@ -711,7 +711,7 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
   if(device) if(setup_data[0+PVFMM_MAX_DEPTH*2].output_data!=NULL){
     if(fmm_mat->staging_buffer.Dim()){
       Real_t* dev_ptr=(Real_t*)&fmm_mat->staging_buffer[0];
-      Matrix<Real_t>& output_data=*setup_data[0+PVFMM_MAX_DEPTH*2].output_data;
+      sctl::Matrix<Real_t>& output_data=*setup_data[0+PVFMM_MAX_DEPTH*2].output_data;
       size_t n=output_data.Dim(0)*output_data.Dim(1);
       Real_t* host_ptr=output_data[0];
       setup_data[0+PVFMM_MAX_DEPTH*2].output_data_mirror->Device2HostWait();
@@ -726,7 +726,7 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
 
   sctl::Profile::Tic("Device2Host:Trg",&this->Comm(),false,5);
   if(device) if(setup_data[0+PVFMM_MAX_DEPTH*0].output_data!=NULL){ // Device2Host: Target
-    Matrix<Real_t>& output_data=*setup_data[0+PVFMM_MAX_DEPTH*0].output_data;
+    sctl::Matrix<Real_t>& output_data=*setup_data[0+PVFMM_MAX_DEPTH*0].output_data;
     if(fmm_mat->staging_buffer.Dim()){
       assert(fmm_mat->staging_buffer.Dim()>=sizeof(Real_t)*output_data.Dim(0)*output_data.Dim(1));
       setup_data[0+PVFMM_MAX_DEPTH*0].output_data_mirror->Device2Host((char*)&fmm_mat->staging_buffer[0]);
@@ -754,7 +754,7 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
   if(device) if(setup_data[0+PVFMM_MAX_DEPTH*0].output_data!=NULL){
     if(fmm_mat->staging_buffer.Dim()){
       Real_t* dev_ptr=(Real_t*)&fmm_mat->staging_buffer[0];
-      Matrix<Real_t>& output_data=*setup_data[0+PVFMM_MAX_DEPTH*0].output_data;
+      sctl::Matrix<Real_t>& output_data=*setup_data[0+PVFMM_MAX_DEPTH*0].output_data;
       size_t n=output_data.Dim(0)*output_data.Dim(1);
       Real_t* host_ptr=output_data[0];
       setup_data[0+PVFMM_MAX_DEPTH*0].output_data_mirror->Device2HostWait();

@@ -48,7 +48,7 @@ namespace DeviceWrapper{
 
 /**
  * \brief Lightweight handle describing a vector buffer (device or host) to
- * kernel/offload code. Formerly nested as Vector<T>::Device.
+ * kernel/offload code. Formerly nested as sctl::Vector<T>::Device.
  */
 template <class T>
 struct DeviceVector{
@@ -56,7 +56,7 @@ struct DeviceVector{
   DeviceVector(): dim(0), dev_ptr(0) {}
 
   // Bind a host-side view (CPU/MIC fallback path).
-  DeviceVector& operator=(Vector<T>& V){
+  DeviceVector& operator=(sctl::Vector<T>& V){
     dim=V.Dim();
     dev_ptr=(uintptr_t)(V.Dim()?&V[0]:nullptr);
     return *this;
@@ -72,7 +72,7 @@ struct DeviceVector{
 
 /**
  * \brief Lightweight handle describing a matrix buffer (device or host) to
- * kernel/offload code. Formerly nested as Matrix<T>::Device.
+ * kernel/offload code. Formerly nested as sctl::Matrix<T>::Device.
  */
 template <class T>
 struct DeviceMatrix{
@@ -142,7 +142,7 @@ class DeviceMirror{
    * (no-op when already bound to the same range). If copy, enqueue an
    * asynchronous host-to-device copy of the full range.
    */
-  template <class T> DeviceVector<T> AllocDevice(Vector<T>& host, bool copy);
+  template <class T> DeviceVector<T> AllocDevice(sctl::Vector<T>& host, bool copy);
   template <class T> DeviceMatrix<T> AllocDevice(sctl::Matrix<T>& host, bool copy);
 
   /**
@@ -216,7 +216,7 @@ transfer, use:
 
       static int curr_lock();
 
-      static Vector<char> lock_vec;
+      static sctl::Vector<char> lock_vec;
       static DeviceVector<char> lock_vec_;
 
     private:

@@ -2,9 +2,9 @@
  * \file vector.hpp
  * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 2-11-2011
- * \brief pvfmm::Vector is an alias for sctl::Vector<T>.
+ * \brief Compatibility header: pvfmm uses sctl::Vector<T> directly.
  *
- * Call sites use sctl::Vector directly (e.g. v.ReInit(n) to resize).
+ * This header now just pulls in <sctl.hpp>; call sites name sctl::Vector.
  */
 
 #include <vector>
@@ -21,8 +21,6 @@
 #pragma offload_attribute(push,target(mic))
 #endif
 namespace pvfmm{
-
-template <class T> using Vector = sctl::Vector<T>;
 
 }//end namespace
 #ifdef __INTEL_OFFLOAD
