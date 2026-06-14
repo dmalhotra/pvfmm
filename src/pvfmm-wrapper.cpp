@@ -589,7 +589,7 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
               while(src_coord[i*PVFMM_COORD_DIM+j]< 0.0) src_coord[i*PVFMM_COORD_DIM+j]+=1;
               while(src_coord[i*PVFMM_COORD_DIM+j]>=1.0) src_coord[i*PVFMM_COORD_DIM+j]-=1;
             }
-            pt_mid[i]=pvfmm::MortonId(&src_coord[i*PVFMM_COORD_DIM]);
+            pt_mid[i]=pvfmm::MortonId(sctl::Ptr2ConstItr<Real>(&src_coord[i*PVFMM_COORD_DIM],3));
           }
           if(src_value.Dim()) for(size_t i=a;i<b;i++){
             for(int j=0;j<ker_dim[0];j++){
@@ -674,7 +674,7 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
               while(trg_coord[i*PVFMM_COORD_DIM+j]< 0.0) trg_coord[i*PVFMM_COORD_DIM+j]+=1;
               while(trg_coord[i*PVFMM_COORD_DIM+j]>=1.0) trg_coord[i*PVFMM_COORD_DIM+j]-=1;
             }
-            pt_mid[i]=pvfmm::MortonId(&trg_coord[i*PVFMM_COORD_DIM]);
+            pt_mid[i]=pvfmm::MortonId(sctl::Ptr2ConstItr<Real>(&trg_coord[i*PVFMM_COORD_DIM],3));
           }
         }
 
