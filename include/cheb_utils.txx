@@ -399,7 +399,7 @@ void cheb_eval(const Vector<T>& coeff_, int cheb_deg, const std::vector<T>& in_x
   size_t n1=in_x.size();
   size_t n2=in_y.size();
   size_t n3=in_z.size();
-  Resize(out, n1*n2*n3*dof);
+  if((size_t)out.Dim()!=(size_t)(n1*n2*n3*dof)) out.ReInit(n1*n2*n3*dof);
   if(n1==0 || n2==0 || n3==0) return;
 
   // Precomputation
@@ -507,7 +507,7 @@ inline void cheb_eval(Vector<T>& coeff_, int cheb_deg, std::vector<T>& coord, Ve
 
   py = py.Transpose();
   pz = pz.Transpose();
-  Resize(out, n*dof);
+  if((size_t)out.Dim()!=(size_t)(n*dof)) out.ReInit(n*dof);
   for(int i=0; i<n; i++)
     for(int j=0; j<dof; j++){
       Matrix<T> M0_  (d, d, sctl::Ptr2Itr<T>(&(M0[i][  j*d*d]), (d)*(d)), false);
@@ -578,7 +578,7 @@ void points2cheb(int deg, T* coord, T* val, int n, int dim, T* node_coord, T nod
   deg_=(deg_>deg?deg:deg_);
   deg_=(deg_>0?deg_:1);
   int deg3=((deg_+1)*(deg_+2)*(deg_+3))/6;
-  Resize(cheb_coeff, dim*((deg+1)*(deg+2)*(deg+3))/6);
+  if((size_t)cheb_coeff.Dim()!=(size_t)(dim*((deg+1)*(deg+2)*(deg+3))/6)) cheb_coeff.ReInit(dim*((deg+1)*(deg+2)*(deg+3))/6);
   cheb_coeff.SetZero();
 
   //Map coordinates to unit cube
@@ -1079,7 +1079,7 @@ void cheb_diff(const Vector<T>& A, int deg, int diff_dim, Vector<T>& B){
   static Matrix<T> M;
   #pragma omp critical(PVFMM_CHEB_DIFF1)
   if(M.Dim(0)!=(size_t)d){
-    Resize(M, d,d);
+    M.ReInit(d,d);
     for(size_t i=0;i<d;i++){
       for(size_t j=0;j<d;j++) M[j][i]=0;
       for(size_t j=1-(i%2);j<i;j=j+2){
@@ -1155,7 +1155,7 @@ void cheb_grad(const Vector<T>& A, int deg, Vector<T>& B){
     }
   }
 
-  Resize(B, A.Dim()*dim);
+  if((size_t)B.Dim()!=(size_t)(A.Dim()*dim)) B.ReInit(A.Dim()*dim);
   for(size_t q=0;q<dim;q++){
     // Compute derivative in direction q
     cheb_diff(A_,deg,q,B_);

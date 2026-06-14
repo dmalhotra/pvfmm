@@ -239,7 +239,7 @@ class FMM_Pts{
 
   virtual void PrecompAll(Mat_Type type, int level=-1);
 
-  virtual Permutation<Real_t>& PrecompPerm(Mat_Type type, Perm_Type perm_indx);
+  virtual sctl::Permutation<Real_t>& PrecompPerm(Mat_Type type, Perm_Type perm_indx);
 
   virtual Matrix<Real_t>& Precomp(int level, Mat_Type type, size_t mat_indx);
   sctl::FFT<Real_t> vprecomp_fft;

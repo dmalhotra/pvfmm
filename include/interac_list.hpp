@@ -67,9 +67,9 @@ class InteracList{
 
     Matrix<Real_t>& ClassMat(int l, Mat_Type type, size_t indx);
 
-    Permutation<Real_t>& Perm_R(int l, Mat_Type type, size_t indx);
+    sctl::Permutation<Real_t>& Perm_R(int l, Mat_Type type, size_t indx);
 
-    Permutation<Real_t>& Perm_C(int l, Mat_Type type, size_t indx);
+    sctl::Permutation<Real_t>& Perm_C(int l, Mat_Type type, size_t indx);
 
   private:
 

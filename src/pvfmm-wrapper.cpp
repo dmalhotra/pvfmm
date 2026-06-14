@@ -662,7 +662,7 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
         trg_coord.ReInit(src_coord.Dim(),src_coord.begin(),false);
       }else{
         // Compute MortonId and copy coordinates.
-        pvfmm::Resize(trg_coord, n_trg*PVFMM_COORD_DIM);
+        if((size_t)trg_coord.Dim()!=(size_t)(n_trg*PVFMM_COORD_DIM)) trg_coord.ReInit(n_trg*PVFMM_COORD_DIM);
         pt_mid    .ReInit(n_trg);
         #pragma omp parallel for
         for(size_t tid=0;tid<omp_p;tid++){

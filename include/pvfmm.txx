@@ -190,7 +190,7 @@ void ChebFMM_Nodes2Coeff(std::vector<Real>& coeff, int ChebDeg, int dof, const s
 
   #pragma omp parallel
   {
-    Vector<Real> buff(dof*M1);
+    sctl::ScratchBuf<Real> buff(dof*M1);
 
     int np = omp_get_num_threads();
     int tid = omp_get_thread_num();
@@ -201,7 +201,7 @@ void ChebFMM_Nodes2Coeff(std::vector<Real>& coeff, int ChebDeg, int dof, const s
       Matrix<Real> buff_(dof,M1, buff.begin(), false);
       Matrix<Real>::Transpose(buff_, node_val_);
 
-      cheb_approx<Real,Real>(VecBegin(buff), ChebDeg, dof, coeff.data()+i*dof*M0);
+      cheb_approx<Real,Real>(&buff[0], ChebDeg, dof, coeff.data()+i*dof*M0);
     }
   }
 }

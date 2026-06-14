@@ -283,11 +283,11 @@ Matrix<typename Node_t::Real_t>& InteracList<Node_t>::ClassMat(int l, Mat_Type t
 }
 
 template <class Node_t>
-Permutation<typename Node_t::Real_t>& InteracList<Node_t>::Perm_R(int l, Mat_Type type, size_t indx){
+sctl::Permutation<typename Node_t::Real_t>& InteracList<Node_t>::Perm_R(int l, Mat_Type type, size_t indx){
   assert(l>=0);
   size_t indx0=InteracClass(type, indx);
   Matrix     <Real_t>& M0      =mat->Mat   (l, type, indx0);
-  Permutation<Real_t>& row_perm=mat->Perm_R(l, type, indx );
+  sctl::Permutation<Real_t>& row_perm=mat->Perm_R(l, type, indx );
   if(M0.Dim(0)==0 || M0.Dim(1)==0) return row_perm;
 
   //Get the necessary permutations.
@@ -298,7 +298,7 @@ Permutation<typename Node_t::Real_t>& InteracList<Node_t>::Perm_R(int l, Mat_Typ
     std::vector<Perm_Type> p_list=PermutList(type, indx);
     for(int i=0;i<l;i++) p_list.push_back(Scaling);
 
-    Permutation<Real_t> cumulative=Permutation<Real_t>(M0.Dim(0));
+    sctl::Permutation<Real_t> cumulative=sctl::Permutation<Real_t>(M0.Dim(0));
     for(int i=p_list.size()-1; i>=0; i--){
       assert(type!=V_Type);
       cumulative = cumulative * mat->Perm(type, R_Perm + p_list[i]);
@@ -309,11 +309,11 @@ Permutation<typename Node_t::Real_t>& InteracList<Node_t>::Perm_R(int l, Mat_Typ
 }
 
 template <class Node_t>
-Permutation<typename Node_t::Real_t>& InteracList<Node_t>::Perm_C(int l, Mat_Type type, size_t indx){
+sctl::Permutation<typename Node_t::Real_t>& InteracList<Node_t>::Perm_C(int l, Mat_Type type, size_t indx){
   assert(l>=0);
   size_t indx0=InteracClass(type, indx);
   Matrix     <Real_t>& M0      =mat->Mat   (l, type, indx0);
-  Permutation<Real_t>& col_perm=mat->Perm_C(l, type, indx );
+  sctl::Permutation<Real_t>& col_perm=mat->Perm_C(l, type, indx );
   if(M0.Dim(0)==0 || M0.Dim(1)==0) return col_perm;
 
   //Get the necessary permutations.
@@ -324,7 +324,7 @@ Permutation<typename Node_t::Real_t>& InteracList<Node_t>::Perm_C(int l, Mat_Typ
     std::vector<Perm_Type> p_list=PermutList(type, indx);
     for(int i=0;i<l;i++) p_list.push_back(Scaling);
 
-    Permutation<Real_t> cumulative=Permutation<Real_t>(M0.Dim(1));
+    sctl::Permutation<Real_t> cumulative=sctl::Permutation<Real_t>(M0.Dim(1));
     for(int i=p_list.size()-1; i>=0; i--){
       assert(type!=V_Type);
       cumulative = cumulative * mat->Perm(type, C_Perm + p_list[i]);
@@ -367,7 +367,7 @@ void InteracList<Node_t>::InitList(int max_r, int min_r, int step, Mat_Type t){
   size_t count=           sctl::pow<unsigned int>((max_r*2)/step+1,dim)
                 -(min_r>0?sctl::pow<unsigned int>((min_r*2)/step-1,dim):0);
   Matrix<int>& M=rel_coord[t];
-  Resize(M, count,dim);
+  M.ReInit(count,dim);
   hash_lut[t].assign(PVFMM_MAX_COORD_HASH, -1);
 
   std::vector<int> class_size_hash(PVFMM_MAX_COORD_HASH, 0);

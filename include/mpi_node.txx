@@ -338,7 +338,7 @@ PackedData MPI_Node<T>::Pack(bool ghost, void* buff_ptr, size_t offset){
   // Allocate memory.
   p0.data=(char*)buff_ptr;
   if(!p0.data){
-    Resize(this->packed_data, p0.length+offset);
+    this->packed_data.ReInit(p0.length+offset);
     p0.data=&this->packed_data[0];
   }
 

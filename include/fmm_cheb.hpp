@@ -124,7 +124,7 @@ class FMM_Cheb: public FMM_Pts<FMMNode>{
 
  protected:
 
-  virtual Permutation<Real_t>& PrecompPerm(Mat_Type type, Perm_Type perm_indx);
+  virtual sctl::Permutation<Real_t>& PrecompPerm(Mat_Type type, Perm_Type perm_indx);
 
   virtual Matrix<Real_t>& Precomp(int level, Mat_Type type, size_t mat_indx);
 

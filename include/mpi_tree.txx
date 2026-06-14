@@ -215,7 +215,7 @@ void MPI_Tree<TreeNode>::Initialize(typename Node_t::NodeData* init_data){
     Vector<MortonId> pt_mid;
     Vector<Real_t>& pt_coord=rnode->pt_coord;
     size_t pt_cnt=pt_coord.Dim()/this->dim;
-    Resize(pt_mid, pt_cnt);
+    pt_mid.ReInit(pt_cnt);
     #pragma omp parallel for
     for(size_t i=0;i<pt_cnt;i++){
       pt_mid[i]=MortonId(sctl::Ptr2ConstItr<Real_t>(&pt_coord[i*PVFMM_COORD_DIM],3),this->max_depth);
@@ -242,7 +242,7 @@ void MPI_Tree<TreeNode>::Initialize(typename Node_t::NodeData* init_data){
       Vector<Real_t>& pt_coord=*coord_lst[i];
       { // Compute MortonId from pt_coord.
         size_t pt_cnt=pt_coord.Dim()/this->dim;
-        Resize(pt_mid, pt_cnt);
+        pt_mid.ReInit(pt_cnt);
         #pragma omp parallel for
         for(size_t i=0;i<pt_cnt;i++){
           pt_mid[i]=MortonId(sctl::Ptr2ConstItr<Real_t>(&pt_coord[i*PVFMM_COORD_DIM],3),this->max_depth);

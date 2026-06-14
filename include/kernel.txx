@@ -48,12 +48,12 @@ Kernel<T>::Kernel(Ker_t poten, Ker_t dbl_poten, const char* name, int dim_, std:
   vol_poten=NULL;
 
   scale_invar=true;
-  Resize(src_scal, ker_dim[0]); src_scal.SetZero();
-  Resize(trg_scal, ker_dim[1]); trg_scal.SetZero();
-  Resize(perm_vec, Perm_Count);
+  src_scal.ReInit(ker_dim[0]); src_scal.SetZero();
+  trg_scal.ReInit(ker_dim[1]); trg_scal.SetZero();
+  perm_vec.ReInit(Perm_Count);
   for(size_t p_type=0;p_type<C_Perm;p_type++){
-    perm_vec[p_type       ]=Permutation<T>(ker_dim[0]);
-    perm_vec[p_type+C_Perm]=Permutation<T>(ker_dim[1]);
+    perm_vec[p_type       ]=sctl::Permutation<T>(ker_dim[0]);
+    perm_vec[p_type+C_Perm]=sctl::Permutation<T>(ker_dim[1]);
   }
   init=false;
 }
@@ -156,11 +156,11 @@ void Kernel<T>::Initialize(bool verbose) const{
       }
     }
 
-    Resize(src_scal, ker_dim[0]); src_scal.SetZero();
-    Resize(trg_scal, ker_dim[1]); trg_scal.SetZero();
+    src_scal.ReInit(ker_dim[0]); src_scal.SetZero();
+    trg_scal.ReInit(ker_dim[1]); trg_scal.SetZero();
     if(scale_invar){
       Matrix<T> b(ker_dim[0]*ker_dim[1]+1,1); b.SetZero();
-      std::memcpy(&b[0][0], &M_scal[0][0], ker_dim[0]*ker_dim[1]*sizeof(T));
+      sctl::omp_par::memcpy(b.begin(), M_scal.begin(), ker_dim[0]*ker_dim[1]);
 
       Matrix<T> M(ker_dim[0]*ker_dim[1]+1,ker_dim[0]+ker_dim[1]); M.SetZero();
       M[ker_dim[0]*ker_dim[1]][0]=1;
@@ -307,8 +307,8 @@ void Kernel<T>::Initialize(bool verbose) const{
         }
 
         long long flag=1;
-        Resize(M11, ker_dim[0],ker_dim[1]); M11.SetZero();
-        Resize(M22, ker_dim[0],ker_dim[1]); M22.SetZero();
+        M11.ReInit(ker_dim[0],ker_dim[1]); M11.SetZero();
+        M22.ReInit(ker_dim[0],ker_dim[1]); M22.SetZero();
         for(int i=0;i<ker_dim[0]*ker_dim[1];i++){
           if(norm1[i]>eps_ && M11[0][i]==0){
             for(int j=0;j<ker_dim[0]*ker_dim[1];j++){
@@ -337,7 +337,7 @@ void Kernel<T>::Initialize(bool verbose) const{
           std::sort(&M1[i][0],&M1[i][0]+M1.Dim(1));
           std::sort(&M2[i][0],&M2[i][0]+M2.Dim(1));
         }
-        Resize(P, M1.Dim(0),M1.Dim(0));
+        P.ReInit(M1.Dim(0),M1.Dim(0));
         for(size_t i=0;i<M1.Dim(0);i++)
         for(size_t j=0;j<M1.Dim(0);j++){
           P[i][j]=1;
@@ -360,7 +360,7 @@ void Kernel<T>::Initialize(bool verbose) const{
           std::sort(&M1[i][0],&M1[i][0]+M1.Dim(1));
           std::sort(&M2[i][0],&M2[i][0]+M2.Dim(1));
         }
-        Resize(P, M1.Dim(0),M1.Dim(0));
+        P.ReInit(M1.Dim(0),M1.Dim(0));
         for(size_t i=0;i<M1.Dim(0);i++)
         for(size_t j=0;j<M1.Dim(0);j++){
           P[i][j]=1;
@@ -372,12 +372,12 @@ void Kernel<T>::Initialize(bool verbose) const{
         }
       }
 
-      std::vector<Permutation<long long> > P1vec, P2vec;
+      std::vector<sctl::Permutation<long long> > P1vec, P2vec;
       { // P1vec
         Matrix<long long>& Pmat=P1;
-        std::vector<Permutation<long long> >& Pvec=P1vec;
+        std::vector<sctl::Permutation<long long> >& Pvec=P1vec;
 
-        Permutation<long long> P(Pmat.Dim(0));
+        sctl::Permutation<long long> P(Pmat.Dim(0));
         sctl::Vector<PVFMM_PERM_INT_T>& perm=P.perm;
         perm.SetZero();
 
@@ -424,9 +424,9 @@ void Kernel<T>::Initialize(bool verbose) const{
       }
       { // P2vec
         Matrix<long long>& Pmat=P2;
-        std::vector<Permutation<long long> >& Pvec=P2vec;
+        std::vector<sctl::Permutation<long long> >& Pvec=P2vec;
 
-        Permutation<long long> P(Pmat.Dim(0));
+        sctl::Permutation<long long> P(Pmat.Dim(0));
         sctl::Vector<PVFMM_PERM_INT_T>& perm=P.perm;
         perm.SetZero();
 
@@ -473,7 +473,7 @@ void Kernel<T>::Initialize(bool verbose) const{
       }
 
       { // Find pairs which acutally work (neglect scaling)
-        std::vector<Permutation<long long> > P1vec_, P2vec_;
+        std::vector<sctl::Permutation<long long> > P1vec_, P2vec_;
         Matrix<long long>  M1=M11;
         Matrix<long long>  M2=M22;
         for(size_t i=0;i<M1.Dim(0);i++){
@@ -500,11 +500,11 @@ void Kernel<T>::Initialize(bool verbose) const{
         P2vec=P2vec_;
       }
 
-      Permutation<T> P1_, P2_;
+      sctl::Permutation<T> P1_, P2_;
       { // Find pairs which acutally work
         for(size_t k=0;k<P1vec.size();k++){
-          Permutation<long long> P1=P1vec[k];
-          Permutation<long long> P2=P2vec[k];
+          sctl::Permutation<long long> P1=P1vec[k];
+          sctl::Permutation<long long> P2=P2vec[k];
           Matrix<long long>  M1=   M11   ;
           Matrix<long long>  M2=P1*M22*P2;
 
@@ -518,8 +518,8 @@ void Kernel<T>::Initialize(bool verbose) const{
           }
           M=M.pinv();
           { // Construct new permutation
-            Permutation<long long> P1_(M1.Dim(0));
-            Permutation<long long> P2_(M1.Dim(1));
+            sctl::Permutation<long long> P1_(M1.Dim(0));
+            sctl::Permutation<long long> P2_(M1.Dim(1));
             for(size_t i=0;i<M1.Dim(0);i++){
               P1_.scal[i]=(M[i][M1.Dim(0)*M1.Dim(1)]>0?1:-1);
             }
@@ -539,8 +539,8 @@ void Kernel<T>::Initialize(bool verbose) const{
             }
           }
           { // Check if permutation is symmetric
-            Permutation<long long> P1_=P1.Transpose();
-            Permutation<long long> P2_=P2.Transpose();
+            sctl::Permutation<long long> P1_=P1.Transpose();
+            sctl::Permutation<long long> P2_=P2.Transpose();
             for(size_t i=0;i<P1.Dim();i++){
               if(P1_.perm[i]!=P1.perm[i] || P1_.scal[i]!=P1.scal[i]){
                 done=false;
@@ -555,8 +555,8 @@ void Kernel<T>::Initialize(bool verbose) const{
             }
           }
           if(done){
-            P1_=Permutation<T>(P1.Dim());
-            P2_=Permutation<T>(P2.Dim());
+            P1_=sctl::Permutation<T>(P1.Dim());
+            P2_=sctl::Permutation<T>(P2.Dim());
             for(size_t i=0;i<P1.Dim();i++){
               P1_.perm[i]=P1.perm[i];
               P1_.scal[i]=P1.scal[i];
@@ -579,7 +579,7 @@ void Kernel<T>::Initialize(bool verbose) const{
 
     for(size_t i=0;i<2*C_Perm;i++){
       if(perm_vec[i].Dim()==0){
-        Resize(perm_vec, 0);
+        perm_vec.ReInit(0);
         std::cout<<"no-symmetry for: "<<ker_name<<'\n';
         break;
       }

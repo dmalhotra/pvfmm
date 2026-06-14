@@ -162,7 +162,7 @@ std::vector<Real_t> conv_grid(int p, Real_t* c, int depth){
 
 template <class Real_t>
 void FMM_Data<Real_t>::Clear(){
-  Resize(upward_equiv, 0);
+  upward_equiv.ReInit(0);
 }
 
 template <class Real_t>
@@ -290,7 +290,7 @@ void FMM_Pts<FMMNode>::Initialize(int mult_order, const sctl::Comm& comm_, const
     for(int l=0;l<PVFMM_MAX_DEPTH;l++)
     for(size_t indx=0;indx<this->interac_list.ListCount((Mat_Type)type);indx++){
       Matrix<Real_t>& M=this->mat->Mat(l, (Mat_Type)type, indx);
-      Resize(M, 0,0);
+      M.ReInit(0,0);
     } // */
     mat->Mat(0, BC_Type, BoundaryType::BoundaryTypeCount-1);
     for (int mat_indx = 0; mat_indx < BoundaryType::BoundaryTypeCount; mat_indx++) {
@@ -329,7 +329,7 @@ void FMM_Pts<FMMNode>::Initialize(int mult_order, const sctl::Comm& comm_, const
 }
 
 template <class Real_t>
-Permutation<Real_t> equiv_surf_perm(size_t m, size_t p_indx, const Permutation<Real_t>& ker_perm, const Vector<Real_t>* scal_exp=NULL){
+sctl::Permutation<Real_t> equiv_surf_perm(size_t m, size_t p_indx, const sctl::Permutation<Real_t>& ker_perm, const Vector<Real_t>* scal_exp=NULL){
   Real_t eps=(Real_t)1e-10;
   int dof=ker_perm.Dim();
 
@@ -337,7 +337,7 @@ Permutation<Real_t> equiv_surf_perm(size_t m, size_t p_indx, const Permutation<R
   std::vector<Real_t> trg_coord=d_check_surf(m,c,0);
   int n_trg=trg_coord.size()/3;
 
-  Permutation<Real_t> P=Permutation<Real_t>(n_trg*dof);
+  sctl::Permutation<Real_t> P=sctl::Permutation<Real_t>(n_trg*dof);
   if(p_indx==ReflecX || p_indx==ReflecY || p_indx==ReflecZ){ // Set P.perm
     for(int i=0;i<n_trg;i++)
     for(int j=0;j<n_trg;j++){
@@ -392,10 +392,10 @@ Permutation<Real_t> equiv_surf_perm(size_t m, size_t p_indx, const Permutation<R
 }
 
 template <class FMMNode>
-Permutation<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::PrecompPerm(Mat_Type type, Perm_Type perm_indx){
+sctl::Permutation<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::PrecompPerm(Mat_Type type, Perm_Type perm_indx){
 
   //Check if the matrix already exists.
-  Permutation<Real_t>& P_ = mat->Perm((Mat_Type)type, perm_indx);
+  sctl::Permutation<Real_t>& P_ = mat->Perm((Mat_Type)type, perm_indx);
   if(P_.Dim()!=0) return P_;
 
 
@@ -403,12 +403,12 @@ Permutation<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::PrecompPerm(Mat_Type ty
   size_t p_indx=perm_indx % C_Perm;
 
   //Compute the matrix.
-  Permutation<Real_t> P;
+  sctl::Permutation<Real_t> P;
   switch (type){
     case U2U_Type:
     {
       Vector<Real_t> scal_exp;
-      Permutation<Real_t> ker_perm;
+      sctl::Permutation<Real_t> ker_perm;
       if(perm_indx<C_Perm){ // Source permutation
         ker_perm=kernel->k_m2m->perm_vec[0     +p_indx];
         scal_exp=kernel->k_m2m->src_scal;
@@ -423,7 +423,7 @@ Permutation<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::PrecompPerm(Mat_Type ty
     case D2D_Type:
     {
       Vector<Real_t> scal_exp;
-      Permutation<Real_t> ker_perm;
+      sctl::Permutation<Real_t> ker_perm;
       if(perm_indx<C_Perm){ // Source permutation
         ker_perm=kernel->k_l2l->perm_vec[C_Perm+p_indx];
         scal_exp=kernel->k_l2l->trg_scal;
@@ -462,8 +462,8 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
       if(M0.Dim(0)==0 || M0.Dim(1)==0) return M_;
 
       for(size_t i=0;i<Perm_Count;i++) this->PrecompPerm(type, (Perm_Type) i);
-      Permutation<Real_t>& Pr = this->interac_list.Perm_R(abs(level), type, mat_indx);
-      Permutation<Real_t>& Pc = this->interac_list.Perm_C(abs(level), type, mat_indx);
+      sctl::Permutation<Real_t>& Pr = this->interac_list.Perm_R(abs(level), type, mat_indx);
+      sctl::Permutation<Real_t>& Pc = this->interac_list.Perm_C(abs(level), type, mat_indx);
       if(Pr.Dim()>0 && Pc.Dim()>0 && M0.Dim(0)>0 && M0.Dim(1)>0) return M_;
     }
   }
@@ -625,15 +625,15 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
       Matrix<Real_t> M_c2e0=Precomp(level-1,DC2DE0_Type,0);
       Matrix<Real_t> M_c2e1=Precomp(level-1,DC2DE1_Type,0);
       if(ScaleInvar()){ // Scale M_c2e0 for level-1
-        Permutation<Real_t> ker_perm=this->kernel->k_l2l->perm_vec[C_Perm+Scaling];
+        sctl::Permutation<Real_t> ker_perm=this->kernel->k_l2l->perm_vec[C_Perm+Scaling];
         Vector<Real_t> scal_exp=this->kernel->k_l2l->trg_scal;
-        Permutation<Real_t> P=equiv_surf_perm(MultipoleOrder(), Scaling, ker_perm, &scal_exp);
+        sctl::Permutation<Real_t> P=equiv_surf_perm(MultipoleOrder(), Scaling, ker_perm, &scal_exp);
         M_c2e0=P*M_c2e0;
       }
       if(ScaleInvar()){ // Scale M_c2e1 for level-1
-        Permutation<Real_t> ker_perm=this->kernel->k_l2l->perm_vec[0     +Scaling];
+        sctl::Permutation<Real_t> ker_perm=this->kernel->k_l2l->perm_vec[0     +Scaling];
         Vector<Real_t> scal_exp=this->kernel->k_l2l->src_scal;
-        Permutation<Real_t> P=equiv_surf_perm(MultipoleOrder(), Scaling, ker_perm, &scal_exp);
+        sctl::Permutation<Real_t> P=equiv_surf_perm(MultipoleOrder(), Scaling, ker_perm, &scal_exp);
         M_c2e1=M_c2e1*P;
       }
       M=M_c2e0*(M_c2e1*M_pe2c);
@@ -658,7 +658,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
 
       // Evaluate potential at target points due to equivalent surface.
       {
-        Resize(M, n_eq*ker_dim [0], n_trg*ker_dim [1]);
+        M.ReInit(n_eq*ker_dim [0], n_trg*ker_dim [1]);
         kernel->k_l2t->BuildMatrix(&equiv_surf[0], n_eq, &trg_coord[0], n_trg, &(M     [0][0]));
       }
       Matrix<Real_t>& M_c2e0=Precomp(level,DC2DE0_Type,0);
@@ -758,7 +758,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
       }
 
       // Build matrix ker_dim0 x ker_dim1 x M_dim x 8 x 8
-      Resize(M, ker_dim[0]*ker_dim[1]*M_dim, 2*chld_cnt*chld_cnt);
+      M.ReInit(ker_dim[0]*ker_dim[1]*M_dim, 2*chld_cnt*chld_cnt);
       for(size_t j=0;j<ker_dim[0]*ker_dim[1]*M_dim;j++){
         for(size_t k=0;k<chld_cnt*chld_cnt;k++){
           M[j][k*2+0]=M_ptr[k][j*2+0]/n3;
@@ -787,7 +787,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
 
       // Evaluate potential at target points due to equivalent surface.
       {
-        Resize(M, n_eq*ker_dim [0],n_trg*ker_dim [1]);
+        M.ReInit(n_eq*ker_dim [0],n_trg*ker_dim [1]);
         kernel->k_m2t->BuildMatrix(&equiv_surf[0], n_eq, &trg_coord[0], n_trg, &(M     [0][0]));
       }
       break;
@@ -986,15 +986,15 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
           L2L = M_check_zero_avg * L2L * M_check_zero_avg;
           M2L = M_equiv_zero_avg * M2L * M_check_zero_avg;
 
-          Permutation<Real_t> Pr, Pc; // scaling for next level
+          sctl::Permutation<Real_t> Pr, Pc; // scaling for next level
           { // Set Pr
-            Permutation<Real_t> ker_perm = kernel->k_m2l->perm_vec[0 + Scaling];
+            sctl::Permutation<Real_t> ker_perm = kernel->k_m2l->perm_vec[0 + Scaling];
             Vector<Real_t> scal_exp = kernel->k_m2l->src_scal;
             for(size_t i = 0; i < scal_exp.Dim(); i++) scal_exp[i] = -scal_exp[i];
             Pr = equiv_surf_perm(mult_order, Scaling, ker_perm, &scal_exp);
           }
           { // Set Pc
-            Permutation<Real_t> ker_perm = kernel->k_m2l->perm_vec[C_Perm + Scaling];
+            sctl::Permutation<Real_t> ker_perm = kernel->k_m2l->perm_vec[C_Perm + Scaling];
             Vector<Real_t> scal_exp = kernel->k_m2l->trg_scal;
             for(size_t i = 0; i < scal_exp.Dim(); i++) scal_exp[i] = -scal_exp[i];
             Pc = equiv_surf_perm(mult_order, Scaling, ker_perm, &scal_exp);
@@ -1248,7 +1248,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat_Type 
   if(M_.Dim(0)==0 && M_.Dim(1)==0){
     M_=M;
     /*
-    Resize(M_, M.Dim(0),M.Dim(1));
+    M_.ReInit(M.Dim(0),M.Dim(1));
     int dof=ker_dim[0]*ker_dim[1];
     for(int j=0;j<dof;j++){
       size_t a=(M.Dim(0)*M.Dim(1)* j   )/dof;
@@ -1301,8 +1301,8 @@ void FMM_Pts<FMMNode>::PrecompAll(Mat_Type type, int level){
     //#pragma omp parallel for //lets use fine grained parallelism
     for(size_t mat_indx=0;mat_indx<mat_cnt;mat_indx++){
       Matrix<Real_t>& M0=interac_list.ClassMat(level,(Mat_Type)type,mat_indx);
-      Permutation<Real_t>& pr=interac_list.Perm_R(abs(level), (Mat_Type)type, mat_indx);
-      Permutation<Real_t>& pc=interac_list.Perm_C(abs(level), (Mat_Type)type, mat_indx);
+      sctl::Permutation<Real_t>& pr=interac_list.Perm_R(abs(level), (Mat_Type)type, mat_indx);
+      sctl::Permutation<Real_t>& pc=interac_list.Perm_C(abs(level), (Mat_Type)type, mat_indx);
       if(pr.Dim()!=M0.Dim(0) || pc.Dim()!=M0.Dim(1)) Precomp(level, (Mat_Type)type, mat_indx);
     }
   }
@@ -1593,11 +1593,11 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<sctl::Iterat
       if(!n_vec) continue;
       if(buff.Dim(0)*buff.Dim(1)>0){
         bool init_buff=false;
-        Real_t* buff_start=MatBegin(buff);
-        Real_t* buff_end=MatBegin(buff)+buff.Dim(0)*buff.Dim(1);
+        sctl::ConstIterator<Real_t> buff_start=buff.begin();
+        sctl::ConstIterator<Real_t> buff_end=buff.begin()+buff.Dim(0)*buff.Dim(1);
         #pragma omp parallel for reduction(||:init_buff)
         for(size_t i=0;i<n_vec;i++){
-          if(vec_lst[i]->Dim() && (VecBegin(*vec_lst[i])<buff_start || VecBegin(*vec_lst[i])>=buff_end)){
+          if(vec_lst[i]->Dim() && (vec_lst[i]->begin()<buff_start || vec_lst[i]->begin()>=buff_end)){
             init_buff=true;
           }
         }
@@ -1627,8 +1627,8 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<sctl::Iterat
 
       #pragma omp parallel for
       for(size_t i=0;i<n_vec;i++){
-        if(VecBegin(*vec_lst[i])){
-          std::memcpy(((Real_t*)VecBegin(dev_buffer))+vec_disp[i], VecBegin(*vec_lst[i]), vec_size[i]*sizeof(Real_t));
+        if(vec_lst[i]->begin()!=sctl::NullIterator<Real_t>()){
+          sctl::omp_par::memcpy((sctl::Iterator<Real_t>)dev_buffer.begin()+vec_disp[i], vec_lst[i]->begin(), vec_size[i]);
         }
       }
     }
@@ -1639,12 +1639,7 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<sctl::Iterat
     }
 
     if(keep_data){ // Copy to buff (from dev_buffer)
-      #pragma omp parallel for
-      for(int tid=0;tid<omp_p;tid++){
-        size_t a=(buff_size*(tid+0))/omp_p;
-        size_t b=(buff_size*(tid+1))/omp_p;
-        std::memcpy(MatBegin(buff)+a, ((Real_t*)VecBegin(dev_buffer))+a, (b-a)*sizeof(Real_t));
-      }
+      sctl::omp_par::memcpy(buff.begin(), (sctl::Iterator<Real_t>)dev_buffer.begin(), buff_size);
     }
 
     #pragma omp parallel for
@@ -1824,7 +1819,7 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<FMMNode_t>& setup_data, bool devic
                 input_perm .push_back(precomp_data_offset[j][1+4*depth+0]); // prem
                 input_perm .push_back(precomp_data_offset[j][1+4*depth+1]); // scal
                 input_perm .push_back(interac_dsp[trg_node->node_id][j]*vec_size*sizeof(Real_t)); // trg_ptr
-                input_perm .push_back((size_t)(VecBegin(*input_vector[i])- &input_data[0][0])); // src_ptr
+                input_perm .push_back((size_t)(input_vector[i]->begin() - input_data.begin())); // src_ptr
                 assert(input_vector[i]->Dim()==vec_size);
               }
             }
@@ -1841,7 +1836,7 @@ void FMM_Pts<FMMNode>::SetupInterac(SetupData<FMMNode_t>& setup_data, bool devic
                 output_perm.push_back(precomp_data_offset[j][1+4*depth+2]); // prem
                 output_perm.push_back(precomp_data_offset[j][1+4*depth+3]); // scal
                 output_perm.push_back(interac_dsp[               i ][j]*vec_size*sizeof(Real_t)); // src_ptr
-                output_perm.push_back((size_t)(VecBegin(*output_vector[i])-&output_data[0][0])); // trg_ptr
+                output_perm.push_back((size_t)(output_vector[i]->begin() - output_data.begin())); // trg_ptr
                 assert(output_vector[i]->Dim()==vec_size);
               }
             }
@@ -2739,7 +2734,7 @@ void FMM_Pts<FMMNode>::FFT_UpEquiv(size_t dof, size_t m, size_t ker_dim0, Vector
     if(n_old!=n){
       Real_t c[3]={0,0,0};
       Vector<Real_t> surf(surface(m, c, (Real_t)(m-1), 0));
-      Resize(map, surf.Dim()/PVFMM_COORD_DIM);
+      map.ReInit(surf.Dim()/PVFMM_COORD_DIM);
       for(size_t i=0;i<map.Dim();i++)
         map[i]=((size_t)(m-1-surf[i*3]+0.5))+((size_t)(m-1-surf[i*3+1]+0.5))*n1+((size_t)(m-1-surf[i*3+2]+0.5))*n2;
     }
@@ -2810,7 +2805,7 @@ void FMM_Pts<FMMNode>::FFT_Check2Equiv(size_t dof, size_t m, size_t ker_dim1, Ve
     if(n_old!=n){
       Real_t c[3]={0,0,0};
       Vector<Real_t> surf(surface(m, c, (Real_t)(m-1), 0));
-      Resize(map, surf.Dim()/PVFMM_COORD_DIM);
+      map.ReInit(surf.Dim()/PVFMM_COORD_DIM);
       for(size_t i=0;i<map.Dim();i++)
         map[i]=((size_t)(m*2-0.5-surf[i*3]))+((size_t)(m*2-0.5-surf[i*3+1]))*n1+((size_t)(m*2-0.5-surf[i*3+2]))*n2;
       //map;//.AllocDevice(true);
@@ -3938,12 +3933,12 @@ void FMM_Pts<FMMNode>::V_List     (SetupData<FMMNode_t>&  setup_data, bool devic
       data_ptr+=sizeof(size_t)+interac_mat_ptr.Dim()*sizeof(Real_t*);
 
 #if 0 // Since we skip SetupPrecomp for V-list
-      Resize(precomp_mat, interac_mat.Dim());
+      precomp_mat.ReInit(interac_mat.Dim());
       for(size_t i=0;i<interac_mat.Dim();i++){
         precomp_mat[i]=(Real_t*)(precomp_data[0]+interac_mat[i]);
       }
 #else
-      Resize(precomp_mat, interac_mat_ptr.Dim());
+      precomp_mat.ReInit(interac_mat_ptr.Dim());
       for(size_t i=0;i<interac_mat_ptr.Dim();i++){
         precomp_mat[i]=interac_mat_ptr[i];
       }

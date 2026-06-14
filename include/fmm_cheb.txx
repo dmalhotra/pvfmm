@@ -33,37 +33,37 @@ FMM_Cheb<FMMNode>::~FMM_Cheb() {
           for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
           for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
             Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
-            Resize(M, 0,0);
+            M.ReInit(0,0);
           }
           type=V_Type;
           for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
           for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
             Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
-            Resize(M, 0,0);
+            M.ReInit(0,0);
           }
           type=V1_Type;
           for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
           for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
             Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
-            Resize(M, 0,0);
+            M.ReInit(0,0);
           }
           type=U2U_Type;
           for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
           for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
             Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
-            Resize(M, 0,0);
+            M.ReInit(0,0);
           }
           type=D2D_Type;
           for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
           for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
             Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
-            Resize(M, 0,0);
+            M.ReInit(0,0);
           }
           type=D2T_Type;
           for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
           for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
             Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
-            Resize(M, 0,0);
+            M.ReInit(0,0);
           }
         }
         this->mat->Save2File(this->mat_fname.c_str());
@@ -157,37 +157,37 @@ void FMM_Cheb<FMMNode>::Initialize(int mult_order, int cheb_deg_, const sctl::Co
         for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
         for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
           Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
-          Resize(M, 0,0);
+          M.ReInit(0,0);
         }
         type=V_Type;
         for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
         for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
           Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
-          Resize(M, 0,0);
+          M.ReInit(0,0);
         }
         type=V1_Type;
         for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
         for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
           Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
-          Resize(M, 0,0);
+          M.ReInit(0,0);
         }
         type=U2U_Type;
         for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
         for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
           Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
-          Resize(M, 0,0);
+          M.ReInit(0,0);
         }
         type=D2D_Type;
         for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
         for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
           Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
-          Resize(M, 0,0);
+          M.ReInit(0,0);
         }
         type=D2T_Type;
         for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
         for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
           Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
-          Resize(M, 0,0);
+          M.ReInit(0,0);
         }
       }
       this->mat->Save2File(this->mat_fname.c_str());
@@ -211,14 +211,14 @@ void FMM_Cheb<FMMNode>::Initialize(int mult_order, int cheb_deg_, const sctl::Co
 
 
 template <class Real_t>
-Permutation<Real_t> cheb_perm(size_t q, size_t p_indx, const Permutation<Real_t>& ker_perm, const Vector<Real_t>* scal_exp=NULL){
+sctl::Permutation<Real_t> cheb_perm(size_t q, size_t p_indx, const sctl::Permutation<Real_t>& ker_perm, const Vector<Real_t>* scal_exp=NULL){
   int dim=3; //Only supporting 3D
   int dof=ker_perm.Dim();
 
   int coeff_cnt=((q+1)*(q+2)*(q+3))/6;
   int n3=sctl::pow<unsigned int>(q+1,dim);
 
-  Permutation<Real_t> P0(n3*dof);
+  sctl::Permutation<Real_t> P0(n3*dof);
   if(scal_exp && p_indx==Scaling){ // Set level-by-level scaling
     assert(dof==(int)scal_exp->Dim());
     Vector<Real_t> scal(scal_exp->Dim());
@@ -270,7 +270,7 @@ Permutation<Real_t> cheb_perm(size_t q, size_t p_indx, const Permutation<Real_t>
       }
     }
   }
-  Permutation<Real_t> P=Permutation<Real_t>(coeff_cnt*dof);
+  sctl::Permutation<Real_t> P=sctl::Permutation<Real_t>(coeff_cnt*dof);
   {
     int indx=0;
     for(int j=0;j<dof;j++)
@@ -288,12 +288,12 @@ Permutation<Real_t> cheb_perm(size_t q, size_t p_indx, const Permutation<Real_t>
 }
 
 template <class FMMNode>
-Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_Type type, Perm_Type perm_indx){
+sctl::Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_Type type, Perm_Type perm_indx){
   //int dim=3; //Only supporting 3D
   Real_t eps=(Real_t)1e-10;
 
   //Check if the matrix already exists.
-  Permutation<Real_t>& P_ = FMM_Pts<FMMNode>::PrecompPerm(type, perm_indx);
+  sctl::Permutation<Real_t>& P_ = FMM_Pts<FMMNode>::PrecompPerm(type, perm_indx);
   if(P_.Dim()!=0) return P_;
 
   size_t q=cheb_deg;
@@ -301,13 +301,13 @@ Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_Type t
   size_t p_indx=perm_indx % C_Perm;
 
   //Compute the matrix.
-  Permutation<Real_t> P;
+  sctl::Permutation<Real_t> P;
   switch (type){
 
     case S2U_Type:
     {
       Vector<Real_t> scal_exp;
-      Permutation<Real_t> ker_perm;
+      sctl::Permutation<Real_t> ker_perm;
       if(perm_indx<C_Perm){
         ker_perm=this->kernel->k_s2m->perm_vec[0     +p_indx];
         scal_exp=this->kernel->k_s2m->src_scal;
@@ -319,8 +319,8 @@ Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_Type t
         for(size_t i=0;i<scal_exp.Dim();i++) scal_exp[i]=-scal_exp[i];
 
         // Check that target perm for the two kernels agree.
-        Permutation<Real_t> ker_perm0=this->kernel->k_s2m->perm_vec[C_Perm+p_indx];
-        Permutation<Real_t> ker_perm1=this->kernel->k_m2m->perm_vec[C_Perm+p_indx];
+        sctl::Permutation<Real_t> ker_perm0=this->kernel->k_s2m->perm_vec[C_Perm+p_indx];
+        sctl::Permutation<Real_t> ker_perm1=this->kernel->k_m2m->perm_vec[C_Perm+p_indx];
         assert(ker_perm0.Dim()==ker_perm1.Dim());
         if(ker_perm0.Dim()>0 && sctl::fabs<Real_t>(ker_perm0.scal[0]-ker_perm1.scal[0])>eps){
           for(size_t i=0;i<ker_perm0.Dim();i++){
@@ -358,15 +358,15 @@ Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_Type t
     case D2T_Type:
     {
       Vector<Real_t> scal_exp;
-      Permutation<Real_t> ker_perm;
+      sctl::Permutation<Real_t> ker_perm;
       if(perm_indx<C_Perm){ // Source permutation
         ker_perm=this->kernel->k_l2l->perm_vec[C_Perm+p_indx];
         scal_exp=this->kernel->k_l2l->trg_scal;
         for(size_t i=0;i<scal_exp.Dim();i++) scal_exp[i]=-scal_exp[i];
 
         // Check that source perm for the two kernels agree.
-        Permutation<Real_t> ker_perm0=this->kernel->k_l2t->perm_vec[0     +p_indx];
-        Permutation<Real_t> ker_perm1=this->kernel->k_l2l->perm_vec[0     +p_indx];
+        sctl::Permutation<Real_t> ker_perm0=this->kernel->k_l2t->perm_vec[0     +p_indx];
+        sctl::Permutation<Real_t> ker_perm1=this->kernel->k_l2l->perm_vec[0     +p_indx];
         assert(ker_perm0.Dim()==ker_perm1.Dim());
         if(ker_perm0.Dim()>0 && sctl::fabs<Real_t>(ker_perm0.scal[0]-ker_perm1.scal[0])>eps){
           for(size_t i=0;i<ker_perm0.Dim();i++){
@@ -408,7 +408,7 @@ Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_Type t
     case U0_Type:
     {
       Vector<Real_t> scal_exp;
-      Permutation<Real_t> ker_perm;
+      sctl::Permutation<Real_t> ker_perm;
       if(perm_indx<C_Perm){
         ker_perm=this->kernel->k_s2t->perm_vec[0     +p_indx];
         scal_exp=this->kernel->k_s2t->src_scal;
@@ -433,7 +433,7 @@ Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_Type t
     case W_Type:
     {
       Vector<Real_t> scal_exp;
-      Permutation<Real_t> ker_perm;
+      sctl::Permutation<Real_t> ker_perm;
       if(perm_indx<C_Perm){ // Source permutation
         ker_perm=this->kernel->k_m2t->perm_vec[0     +p_indx];
         scal_exp=this->kernel->k_m2t->src_scal;
@@ -448,7 +448,7 @@ Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_Type t
     case X_Type:
     {
       Vector<Real_t> scal_exp;
-      Permutation<Real_t> ker_perm;
+      sctl::Permutation<Real_t> ker_perm;
       if(perm_indx<C_Perm){
         ker_perm=this->kernel->k_s2l->perm_vec[0     +p_indx];
         scal_exp=this->kernel->k_s2l->src_scal;
@@ -486,8 +486,8 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
     size_t class_indx = this->interac_list.InteracClass(type, mat_indx);
     if(class_indx!=mat_indx){
       Matrix<Real_t>& M0 = this->Precomp(level, type, class_indx);
-      Permutation<Real_t>& Pr = this->interac_list.Perm_R(level, type, mat_indx);
-      Permutation<Real_t>& Pc = this->interac_list.Perm_C(level, type, mat_indx);
+      sctl::Permutation<Real_t>& Pr = this->interac_list.Perm_R(level, type, mat_indx);
+      sctl::Permutation<Real_t>& Pc = this->interac_list.Perm_C(level, type, mat_indx);
       if(Pr.Dim()>0 && Pc.Dim()>0 && M0.Dim(0)>0 && M0.Dim(1)>0) return M_;
     }
   }
@@ -563,7 +563,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
       int n_trg=M_s2t.Dim(1)/this->kernel->k_l2t->ker_dim[1];
 
       // Compute Chebyshev approx from target potential.
-      Resize(M, M_s2t.Dim(0), n_src*this->kernel->k_l2t->ker_dim [1]);
+      M.ReInit(M_s2t.Dim(0), n_src*this->kernel->k_l2t->ker_dim [1]);
       #pragma omp parallel for schedule(dynamic)
       for(size_t j=0; j<(size_t)M_s2t.Dim(0); j++){
         MatrixTranspose<Real_t>(n_trg,this->kernel->k_l2t->ker_dim[1],M_s2t[j],M_s2t[j]); // transpose M_s2t[j] in place
@@ -571,7 +571,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
       }
       #pragma omp critical(PVFMM_PRECOMP_MATRIX_PTS)
       {
-        Resize(M_s2t, 0,0);
+        M_s2t.ReInit(0,0);
       }
       break;
     }
@@ -617,7 +617,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
       }
 
       // Compute Chebyshev approx from target potential.
-      Resize(M, M_s2t.Dim(0), n_src*this->kernel->k_s2t->ker_dim [1]);
+      M.ReInit(M_s2t.Dim(0), n_src*this->kernel->k_s2t->ker_dim [1]);
       #pragma omp parallel for schedule(dynamic)
       for(size_t j=0; j<(size_t)M_s2t.Dim(0); j++){
         MatrixTranspose<Real_t>(n_trg,this->kernel->k_s2t->ker_dim[1],M_s2t[j],M_s2t[j]); // transpose M_s2t[j] in place
@@ -667,7 +667,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
       }
 
       // Compute Chebyshev approx from target potential.
-      Resize(M, M_s2t.Dim(0), n_src*this->kernel->k_s2t->ker_dim [1]);
+      M.ReInit(M_s2t.Dim(0), n_src*this->kernel->k_s2t->ker_dim [1]);
       #pragma omp parallel for schedule(dynamic)
       for(size_t j=0; j<(size_t)M_s2t.Dim(0); j++){
         MatrixTranspose<Real_t>(n_trg,this->kernel->k_s2t->ker_dim[1],M_s2t[j],M_s2t[j]); // transpose M_s2t[j] in place
@@ -717,7 +717,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
       }
 
       // Compute Chebyshev approx from target potential.
-      Resize(M, M_s2t.Dim(0), n_src*this->kernel->k_s2t->ker_dim [1]);
+      M.ReInit(M_s2t.Dim(0), n_src*this->kernel->k_s2t->ker_dim [1]);
       #pragma omp parallel for schedule(dynamic)
       for(size_t j=0; j<(size_t)M_s2t.Dim(0); j++){
         MatrixTranspose<Real_t>(n_trg,this->kernel->k_s2t->ker_dim[1],M_s2t[j],M_s2t[j]); // transpose M_s2t[j] in place
@@ -732,7 +732,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
       int n_trg=M_s2t.Dim(1)/this->kernel->k_m2t->ker_dim[1];
 
       // Compute Chebyshev approx from target potential.
-      Resize(M, M_s2t.Dim(0), n_src*this->kernel->k_m2t->ker_dim [1]);
+      M.ReInit(M_s2t.Dim(0), n_src*this->kernel->k_m2t->ker_dim [1]);
       #pragma omp parallel for schedule(dynamic)
       for(size_t j=0; j<(size_t)M_s2t.Dim(0); j++){
         MatrixTranspose<Real_t>(n_trg,this->kernel->k_m2t->ker_dim[1],M_s2t[j],M_s2t[j]); // transpose M_s2t[j] in place
@@ -740,7 +740,7 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
       }
       #pragma omp critical(PVFMM_PRECOMP_MATRIX_PTS)
       {
-        Resize(M_s2t, 0,0);
+        M_s2t.ReInit(0,0);
       }
       break;
     }
