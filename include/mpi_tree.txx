@@ -767,17 +767,15 @@ inline int balanceOctree (sctl::Vector<MortonId > &in, sctl::Vector<MortonId > &
     }
 
     //Add new nodes level-by-level.
-    std::vector<MortonId> nbrs;
     for(unsigned int l=maxDepth;l>=1;l--){
       //Build set of parents of balancing nodes.
       std::set<MortonId> nbrs_parent;
       std::set<MortonId>::iterator start=nodes[l+(maxDepth+1)*p].begin();
       std::set<MortonId>::iterator end  =nodes[l+(maxDepth+1)*p].end();
       for(std::set<MortonId>::iterator node=start; node != end;){
-        NbrList(*node, nbrs, l, periodic);
-        int nbr_cnt=nbrs.size();
-        for(int i=0;i<nbr_cnt;i++)
-          nbrs_parent.insert(nbrs[i].Ancestor(l-1));
+        for(const auto& nbr : node->NbrList(l, periodic ? sctl::Periodicity::XYZ : sctl::Periodicity::NONE))
+          if(periodic || nbr.Depth()!=MortonId::INVALID_DEPTH)
+            nbrs_parent.insert(nbr.Ancestor(l-1));
         node++;
       }
       //Get the balancing nodes.
@@ -1281,7 +1279,6 @@ void IsShared(std::vector<TreeNode*>& nodes, sctl::ConstIterator<MortonId> m1, s
   for(int j=0;j<omp_p;j++){
     size_t a=((j  )*nodes.size())/omp_p;
     size_t b=((j+1)*nodes.size())/omp_p;
-    std::vector<MortonId> nbr_lst;
     for(size_t i=a;i<b;i++){
       shared_flag[i]=false;
       TreeNode* node=nodes[i];
@@ -1290,10 +1287,10 @@ void IsShared(std::vector<TreeNode*>& nodes, sctl::ConstIterator<MortonId> m1, s
         shared_flag[i]=true;
         continue;
       }
-      NbrList(node->GetMortonId(), nbr_lst, node->Depth()-1, bndry!=FreeSpace);
-      for(size_t k=0;k<nbr_lst.size();k++){
-        MortonId n1=nbr_lst[k]         .DFD();
-        MortonId n2=nbr_lst[k].Next().DFD();
+      for(const auto& nbr : node->GetMortonId().NbrList(node->Depth()-1, (bndry!=FreeSpace) ? sctl::Periodicity::XYZ : sctl::Periodicity::NONE)){
+        if(bndry==FreeSpace && nbr.Depth()==MortonId::INVALID_DEPTH) continue;
+        MortonId n1=nbr         .DFD();
+        MortonId n2=nbr.Next().DFD();
         if(m1==sctl::NullIterator<MortonId>() || n2>mm1)
           if(m2==sctl::NullIterator<MortonId>() || n1<mm2){
             shared_flag[i]=true;
@@ -1315,7 +1312,6 @@ inline void IsShared(std::vector<PackedData>& nodes, sctl::ConstIterator<MortonI
   for(int j=0;j<omp_p;j++){
     size_t a=((j  )*nodes.size())/omp_p;
     size_t b=((j+1)*nodes.size())/omp_p;
-    std::vector<MortonId> nbr_lst;
     for(size_t i=a;i<b;i++){
       shared_flag[i]=false;
       MortonId* node=(MortonId*)nodes[i].data;
@@ -1324,10 +1320,10 @@ inline void IsShared(std::vector<PackedData>& nodes, sctl::ConstIterator<MortonI
         shared_flag[i]=true;
         continue;
       }
-      NbrList(*node, nbr_lst, node->Depth()-1, bndry!=FreeSpace);
-      for(size_t k=0;k<nbr_lst.size();k++){
-        MortonId n1=nbr_lst[k]         .DFD();
-        MortonId n2=nbr_lst[k].Next().DFD();
+      for(const auto& nbr : node->NbrList(node->Depth()-1, (bndry!=FreeSpace) ? sctl::Periodicity::XYZ : sctl::Periodicity::NONE)){
+        if(bndry==FreeSpace && nbr.Depth()==MortonId::INVALID_DEPTH) continue;
+        MortonId n1=nbr         .DFD();
+        MortonId n2=nbr.Next().DFD();
         if(m1==sctl::NullIterator<MortonId>() || n2>mm1)
           if(m2==sctl::NullIterator<MortonId>() || n1<mm2){
             shared_flag[i]=true;
@@ -1612,7 +1608,6 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
     node_comm_data=(CommData*)&node_comm_data_iter[0];
     #pragma omp parallel for
     for(int tid=0;tid<omp_p;tid++){
-      std::vector<MortonId> nbr_lst;
       size_t a=(nodes.size()* tid   )/omp_p;
       size_t b=(nodes.size()*(tid+1))/omp_p;
       for(size_t i=a;i<b;i++){
@@ -1629,23 +1624,21 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
         //MortonId mid0=comm_data.mid.         getDFD();
         //MortonId mid1=comm_data.mid.Next().DFD();
 
-        NbrList(comm_data.mid, nbr_lst,comm_data.node->Depth()-1, bndry!=FreeSpace);
-        comm_data.usr_cnt=nbr_lst.size();
-        for(size_t j=0;j<nbr_lst.size();j++){
-          MortonId usr_mid=nbr_lst[j];
+        size_t usr_cnt=0;
+        for(const auto& nbr : comm_data.mid.NbrList(comm_data.node->Depth()-1, (bndry!=FreeSpace) ? sctl::Periodicity::XYZ : sctl::Periodicity::NONE)){
+          if(bndry==FreeSpace && nbr.Depth()==MortonId::INVALID_DEPTH) continue;
+          const size_t j=usr_cnt++;
+          MortonId usr_mid=nbr;
           MortonId usr_mid_dfd=usr_mid.DFD();
           comm_data.usr_mid[j]=usr_mid;
           comm_data.usr_pid[j]=std::upper_bound(mins.begin(),mins.begin()+num_p,usr_mid_dfd)-mins.begin()-1;
-//          if(usr_mid_dfd<mins_r0 || (rank+1<num_p && usr_mid_dfd>=mins_r1)){ // Find the user pid.
-//            size_t usr_pid=std::upper_bound(&mins[0],&mins[num_p],usr_mid_dfd)-&mins[0]-1;
-//            comm_data.usr_pid[j]=usr_pid;
-//          }else comm_data.usr_pid[j]=rank;
           if(!shared){ // Check if this node needs to be transferred during broadcast.
             if(comm_data.usr_pid[j]!=(size_t)rank || (rank+1<num_p && usr_mid.Next()>mins_r1) ){
               shared=true;
             }
           }
         }
+        comm_data.usr_cnt=usr_cnt;
         if(shared){
           #pragma omp critical(PVFMM_ADD_SHARED)
           {
