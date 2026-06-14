@@ -2,7 +2,12 @@
  * \file matrix.hpp
  * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 2-11-2011
- * \brief This file contains definition of the class Matrix.
+ * \brief pvfmm::Matrix is an alias for sctl::Matrix<T>.
+ *
+ * Call sites use sctl::Matrix directly (M[i] yields an iterator; use
+ * &M[i][0] or MatBegin(M) where a raw pointer is needed). The pvfmm-specific
+ * helpers kept as free functions are Resize(), MatBegin(), MatrixTranspose()
+ * and the CUDA CUBLASGEMM wrapper.
  */
 
 #include <stdint.h>
@@ -19,56 +24,11 @@
 #endif
 namespace pvfmm{
 
-// Thin adapter over sctl::Matrix<T> preserving pvfmm's historical API:
-// size_t dimensions, raw-pointer operator[], Resize(), CUBLASGEMM, and
-// raw-T* overloads under SCTL_MEMDEBUG. Copy/move/assignment semantics
-// are sctl's (see Vector<T>).
-template <class T>
-class Matrix : public sctl::Matrix<T> {
+template <class T> using Matrix = sctl::Matrix<T>;
 
-  typedef sctl::Matrix<T> Base;
-
-  public:
-
-  Matrix() : Base() {}
-
-  Matrix(size_t dim1, size_t dim2, sctl::Iterator<T> data_=sctl::NullIterator<T>(), bool own_data_=true) : Base((sctl::Long)dim1, (sctl::Long)dim2, data_, own_data_) {}
-
-#if defined(SCTL_MEMDEBUG)
-  Matrix(size_t dim1, size_t dim2, T* data_, bool own_data_=true)
-    : Matrix(dim1, dim2, (data_? sctl::Ptr2Itr<T>(data_, (sctl::Long)dim1*(sctl::Long)dim2) : sctl::NullIterator<T>()), own_data_) {}
-#endif
-
-  // Adopt/copy a base-class value (results of Transpose(), pinv(),
-  // operator* etc., which return sctl::Matrix).
-  Matrix(Base&& M) noexcept : Base(std::move(M)) {}
-  Matrix(const Base& M) : Base(M) {}
-
-  void Swap(Matrix<T>& M){ Base::Swap(M); }
-
-  void ReInit(size_t dim1, size_t dim2, sctl::Iterator<T> data_=sctl::NullIterator<T>(), bool own_data_=true){ Base::ReInit((sctl::Long)dim1, (sctl::Long)dim2, data_, own_data_); }
-
-#if defined(SCTL_MEMDEBUG)
-  void ReInit(size_t dim1, size_t dim2, T* data_, bool own_data_=true) {
-    ReInit(dim1, dim2, (data_? sctl::Ptr2Itr<T>(data_, (sctl::Long)dim1*(sctl::Long)dim2) : sctl::NullIterator<T>()), own_data_);
-  }
-#endif
-
-  size_t Dim(size_t i) const { return (size_t)Base::Dim((sctl::Long)i); }
-
-  // See Vector<T>::Resize for content-preservation semantics.
-  void Resize(size_t i, size_t j){ if(Dim(0)!=i || Dim(1)!=j) Base::ReInit((sctl::Long)i, (sctl::Long)j); }
-
-
-  T* operator[](size_t i){ return &Base::operator[]((sctl::Long)i)[0]; }
-
-  const T* operator[](size_t i) const{ return &Base::operator[]((sctl::Long)i)[0]; }
-
-  // cublasgemm wrapper
-  static void CUBLASGEMM(Matrix<T>& M_r, const Matrix<T>& A, const Matrix<T>& B, T beta=0.0);
-
-};
-
+// Resize-if-needed: matches the historical pvfmm::Matrix::Resize (a no-op when
+// the dimensions are unchanged; otherwise reallocates, NOT preserving data).
+template <class T> inline void Resize(sctl::Matrix<T>& M, size_t i, size_t j){ if((size_t)M.Dim(0)!=i || (size_t)M.Dim(1)!=j) M.ReInit((sctl::Long)i, (sctl::Long)j); }
 
 // Null-safe raw-pointer view of a matrix (see VecBegin).
 template <class T>
@@ -101,6 +61,12 @@ void MatrixTranspose(size_t in_dim1, size_t in_dim2, const T* in, T* out){
       (in ? sctl::Ptr2ConstItr<T>(in, n) : sctl::ConstIterator<T>(sctl::NullIterator<T>())),
       (out? sctl::Ptr2Itr<T>(out, n) : sctl::NullIterator<T>()));
 }
+#endif
+
+#if defined(PVFMM_HAVE_CUDA)
+// cublasgemm wrapper (device GEMM).
+template <class T>
+void CUBLASGEMM(Matrix<T>& M_r, const Matrix<T>& A, const Matrix<T>& B, T beta=0.0);
 #endif
 
 }//end namespace

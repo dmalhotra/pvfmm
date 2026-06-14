@@ -317,7 +317,7 @@ namespace DeviceWrapper{
   }
 
   template <class T>
-  inline DeviceMatrix<T> DeviceMirror::AllocDevice(Matrix<T>& host, bool copy){
+  inline DeviceMatrix<T> DeviceMirror::AllocDevice(sctl::Matrix<T>& host, bool copy){
     char* p=(char*)MatBegin(host);
     size_t bytes=host.Dim(0)*host.Dim(1)*sizeof(T);
     if(dev_ptr){ // Already bound: host buffer must not have changed.

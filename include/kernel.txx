@@ -307,8 +307,8 @@ void Kernel<T>::Initialize(bool verbose) const{
         }
 
         long long flag=1;
-        M11.Resize(ker_dim[0],ker_dim[1]); M11.SetZero();
-        M22.Resize(ker_dim[0],ker_dim[1]); M22.SetZero();
+        Resize(M11, ker_dim[0],ker_dim[1]); M11.SetZero();
+        Resize(M22, ker_dim[0],ker_dim[1]); M22.SetZero();
         for(int i=0;i<ker_dim[0]*ker_dim[1];i++){
           if(norm1[i]>eps_ && M11[0][i]==0){
             for(int j=0;j<ker_dim[0]*ker_dim[1];j++){
@@ -334,10 +334,10 @@ void Kernel<T>::Initialize(bool verbose) const{
             if(M1[i][j]<0) M1[i][j]=-M1[i][j];
             if(M2[i][j]<0) M2[i][j]=-M2[i][j];
           }
-          std::sort(&M1[i][0],&M1[i][M1.Dim(1)]);
-          std::sort(&M2[i][0],&M2[i][M2.Dim(1)]);
+          std::sort(&M1[i][0],&M1[i][0]+M1.Dim(1));
+          std::sort(&M2[i][0],&M2[i][0]+M2.Dim(1));
         }
-        P.Resize(M1.Dim(0),M1.Dim(0));
+        Resize(P, M1.Dim(0),M1.Dim(0));
         for(size_t i=0;i<M1.Dim(0);i++)
         for(size_t j=0;j<M1.Dim(0);j++){
           P[i][j]=1;
@@ -357,10 +357,10 @@ void Kernel<T>::Initialize(bool verbose) const{
             if(M1[i][j]<0) M1[i][j]=-M1[i][j];
             if(M2[i][j]<0) M2[i][j]=-M2[i][j];
           }
-          std::sort(&M1[i][0],&M1[i][M1.Dim(1)]);
-          std::sort(&M2[i][0],&M2[i][M2.Dim(1)]);
+          std::sort(&M1[i][0],&M1[i][0]+M1.Dim(1));
+          std::sort(&M2[i][0],&M2[i][0]+M2.Dim(1));
         }
-        P.Resize(M1.Dim(0),M1.Dim(0));
+        Resize(P, M1.Dim(0),M1.Dim(0));
         for(size_t i=0;i<M1.Dim(0);i++)
         for(size_t j=0;j<M1.Dim(0);j++){
           P[i][j]=1;
@@ -975,10 +975,10 @@ void generic_kernel(Real_t* r_src, int src_cnt, Real_t* v_src, int dof, Real_t* 
   sctl::ScratchBuf<Real_t> buff_scratch(buff_size);
   { // Rearrange data in src_coord, src_coord, trg_coord, trg_value
     Real_t* buff_ptr=&buff_scratch.begin()[0];
-    src_coord.ReInit(PVFMM_COORD_DIM, src_cnt_,buff_ptr,false);  buff_ptr+=PVFMM_COORD_DIM*src_cnt_;
-    src_value.ReInit(  SRC_DIM, src_cnt_,buff_ptr,false);  buff_ptr+=  SRC_DIM*src_cnt_;
-    trg_coord.ReInit(PVFMM_COORD_DIM, trg_cnt_,buff_ptr,false);  buff_ptr+=PVFMM_COORD_DIM*trg_cnt_;
-    trg_value.ReInit(  TRG_DIM, trg_cnt_,buff_ptr,false);//buff_ptr+=  TRG_DIM*trg_cnt_;
+    src_coord.ReInit(PVFMM_COORD_DIM, src_cnt_, sctl::Ptr2Itr<Real_t>(buff_ptr, (PVFMM_COORD_DIM)*(src_cnt_)),false);  buff_ptr+=PVFMM_COORD_DIM*src_cnt_;
+    src_value.ReInit(SRC_DIM, src_cnt_, sctl::Ptr2Itr<Real_t>(buff_ptr, (SRC_DIM)*(src_cnt_)),false);  buff_ptr+=  SRC_DIM*src_cnt_;
+    trg_coord.ReInit(PVFMM_COORD_DIM, trg_cnt_, sctl::Ptr2Itr<Real_t>(buff_ptr, (PVFMM_COORD_DIM)*(trg_cnt_)),false);  buff_ptr+=PVFMM_COORD_DIM*trg_cnt_;
+    trg_value.ReInit(TRG_DIM, trg_cnt_, sctl::Ptr2Itr<Real_t>(buff_ptr, (TRG_DIM)*(trg_cnt_)),false);//buff_ptr+=  TRG_DIM*trg_cnt_;
     { // Set src_coord
       size_t i=0;
       for(   ;i<src_cnt ;i++){
@@ -1134,10 +1134,10 @@ template <class uKernel> template <class Real, int digits> void GenericKernel<uK
   sctl::ScratchBuf<Real> buff_scratch(buff_size);
   { // Rearrange data in src_coord, src_coord, trg_coord, trg_value
     Real* buff_ptr = &buff_scratch.begin()[0];
-    src_coord.ReInit(  DIM, src_cnt_,buff_ptr,false);  buff_ptr+=DIM  *src_cnt_;
-    src_value.ReInit(KDIM0, src_cnt_,buff_ptr,false);  buff_ptr+=KDIM0*src_cnt_;
-    trg_coord.ReInit(  DIM, trg_cnt_,buff_ptr,false);  buff_ptr+=DIM  *trg_cnt_;
-    trg_value.ReInit(KDIM1, trg_cnt_,buff_ptr,false);//buff_ptr+=KDIM1*trg_cnt_;
+    src_coord.ReInit(DIM, src_cnt_, sctl::Ptr2Itr<Real>(buff_ptr, (DIM)*(src_cnt_)),false);  buff_ptr+=DIM  *src_cnt_;
+    src_value.ReInit(KDIM0, src_cnt_, sctl::Ptr2Itr<Real>(buff_ptr, (KDIM0)*(src_cnt_)),false);  buff_ptr+=KDIM0*src_cnt_;
+    trg_coord.ReInit(DIM, trg_cnt_, sctl::Ptr2Itr<Real>(buff_ptr, (DIM)*(trg_cnt_)),false);  buff_ptr+=DIM  *trg_cnt_;
+    trg_value.ReInit(KDIM1, trg_cnt_, sctl::Ptr2Itr<Real>(buff_ptr, (KDIM1)*(trg_cnt_)),false);//buff_ptr+=KDIM1*trg_cnt_;
     { // Set src_coord
       int i=0;
       for(   ;i<src_cnt ;i++){

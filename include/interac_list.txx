@@ -68,7 +68,7 @@ size_t InteracList<Node_t>::ListCount(Mat_Type t){
  */
 template <class Node_t>
 int* InteracList<Node_t>::RelativeCoord(Mat_Type t, size_t i){
-  return rel_coord[t][i];
+  return &rel_coord[t][i][0];
 }
 
 /**
@@ -367,7 +367,7 @@ void InteracList<Node_t>::InitList(int max_r, int min_r, int step, Mat_Type t){
   size_t count=           sctl::pow<unsigned int>((max_r*2)/step+1,dim)
                 -(min_r>0?sctl::pow<unsigned int>((min_r*2)/step-1,dim):0);
   Matrix<int>& M=rel_coord[t];
-  M.Resize(count,dim);
+  Resize(M, count,dim);
   hash_lut[t].assign(PVFMM_MAX_COORD_HASH, -1);
 
   std::vector<int> class_size_hash(PVFMM_MAX_COORD_HASH, 0);

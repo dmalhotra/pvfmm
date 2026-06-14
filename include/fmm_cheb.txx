@@ -33,37 +33,37 @@ FMM_Cheb<FMMNode>::~FMM_Cheb() {
           for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
           for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
             Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
-            M.Resize(0,0);
+            Resize(M, 0,0);
           }
           type=V_Type;
           for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
           for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
             Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
-            M.Resize(0,0);
+            Resize(M, 0,0);
           }
           type=V1_Type;
           for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
           for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
             Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
-            M.Resize(0,0);
+            Resize(M, 0,0);
           }
           type=U2U_Type;
           for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
           for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
             Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
-            M.Resize(0,0);
+            Resize(M, 0,0);
           }
           type=D2D_Type;
           for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
           for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
             Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
-            M.Resize(0,0);
+            Resize(M, 0,0);
           }
           type=D2T_Type;
           for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
           for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
             Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
-            M.Resize(0,0);
+            Resize(M, 0,0);
           }
         }
         this->mat->Save2File(this->mat_fname.c_str());
@@ -157,37 +157,37 @@ void FMM_Cheb<FMMNode>::Initialize(int mult_order, int cheb_deg_, const sctl::Co
         for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
         for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
           Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
-          M.Resize(0,0);
+          Resize(M, 0,0);
         }
         type=V_Type;
         for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
         for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
           Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
-          M.Resize(0,0);
+          Resize(M, 0,0);
         }
         type=V1_Type;
         for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
         for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
           Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
-          M.Resize(0,0);
+          Resize(M, 0,0);
         }
         type=U2U_Type;
         for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
         for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
           Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
-          M.Resize(0,0);
+          Resize(M, 0,0);
         }
         type=D2D_Type;
         for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
         for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
           Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
-          M.Resize(0,0);
+          Resize(M, 0,0);
         }
         type=D2T_Type;
         for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
         for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
           Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
-          M.Resize(0,0);
+          Resize(M, 0,0);
         }
       }
       this->mat->Save2File(this->mat_fname.c_str());
@@ -563,15 +563,15 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
       int n_trg=M_s2t.Dim(1)/this->kernel->k_l2t->ker_dim[1];
 
       // Compute Chebyshev approx from target potential.
-      M.Resize(M_s2t.Dim(0), n_src*this->kernel->k_l2t->ker_dim [1]);
+      Resize(M, M_s2t.Dim(0), n_src*this->kernel->k_l2t->ker_dim [1]);
       #pragma omp parallel for schedule(dynamic)
       for(size_t j=0; j<(size_t)M_s2t.Dim(0); j++){
         MatrixTranspose<Real_t>(n_trg,this->kernel->k_l2t->ker_dim[1],M_s2t[j],M_s2t[j]); // transpose M_s2t[j] in place
-        cheb_approx<Real_t,Real_t>(M_s2t[j],cheb_deg,this->kernel->k_l2t->ker_dim[1],M[j]);
+        cheb_approx<Real_t,Real_t>(&M_s2t[j][0],cheb_deg,this->kernel->k_l2t->ker_dim[1],&M[j][0]);
       }
       #pragma omp critical(PVFMM_PRECOMP_MATRIX_PTS)
       {
-        M_s2t.Resize(0,0);
+        Resize(M_s2t, 0,0);
       }
       break;
     }
@@ -617,11 +617,11 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
       }
 
       // Compute Chebyshev approx from target potential.
-      M.Resize(M_s2t.Dim(0), n_src*this->kernel->k_s2t->ker_dim [1]);
+      Resize(M, M_s2t.Dim(0), n_src*this->kernel->k_s2t->ker_dim [1]);
       #pragma omp parallel for schedule(dynamic)
       for(size_t j=0; j<(size_t)M_s2t.Dim(0); j++){
         MatrixTranspose<Real_t>(n_trg,this->kernel->k_s2t->ker_dim[1],M_s2t[j],M_s2t[j]); // transpose M_s2t[j] in place
-        cheb_approx<Real_t,Real_t>(M_s2t[j],cheb_deg,this->kernel->k_s2t->ker_dim[1],M[j]);
+        cheb_approx<Real_t,Real_t>(&M_s2t[j][0],cheb_deg,this->kernel->k_s2t->ker_dim[1],&M[j][0]);
       }
       break;
     }
@@ -667,11 +667,11 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
       }
 
       // Compute Chebyshev approx from target potential.
-      M.Resize(M_s2t.Dim(0), n_src*this->kernel->k_s2t->ker_dim [1]);
+      Resize(M, M_s2t.Dim(0), n_src*this->kernel->k_s2t->ker_dim [1]);
       #pragma omp parallel for schedule(dynamic)
       for(size_t j=0; j<(size_t)M_s2t.Dim(0); j++){
         MatrixTranspose<Real_t>(n_trg,this->kernel->k_s2t->ker_dim[1],M_s2t[j],M_s2t[j]); // transpose M_s2t[j] in place
-        cheb_approx<Real_t,Real_t>(M_s2t[j],cheb_deg,this->kernel->k_s2t->ker_dim[1],M[j]);
+        cheb_approx<Real_t,Real_t>(&M_s2t[j][0],cheb_deg,this->kernel->k_s2t->ker_dim[1],&M[j][0]);
       }
       break;
     }
@@ -717,11 +717,11 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
       }
 
       // Compute Chebyshev approx from target potential.
-      M.Resize(M_s2t.Dim(0), n_src*this->kernel->k_s2t->ker_dim [1]);
+      Resize(M, M_s2t.Dim(0), n_src*this->kernel->k_s2t->ker_dim [1]);
       #pragma omp parallel for schedule(dynamic)
       for(size_t j=0; j<(size_t)M_s2t.Dim(0); j++){
         MatrixTranspose<Real_t>(n_trg,this->kernel->k_s2t->ker_dim[1],M_s2t[j],M_s2t[j]); // transpose M_s2t[j] in place
-        cheb_approx<Real_t,Real_t>(M_s2t[j],cheb_deg,this->kernel->k_s2t->ker_dim[1],M[j]);
+        cheb_approx<Real_t,Real_t>(&M_s2t[j][0],cheb_deg,this->kernel->k_s2t->ker_dim[1],&M[j][0]);
       }
       break;
     }
@@ -732,15 +732,15 @@ Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Mat_Type
       int n_trg=M_s2t.Dim(1)/this->kernel->k_m2t->ker_dim[1];
 
       // Compute Chebyshev approx from target potential.
-      M.Resize(M_s2t.Dim(0), n_src*this->kernel->k_m2t->ker_dim [1]);
+      Resize(M, M_s2t.Dim(0), n_src*this->kernel->k_m2t->ker_dim [1]);
       #pragma omp parallel for schedule(dynamic)
       for(size_t j=0; j<(size_t)M_s2t.Dim(0); j++){
         MatrixTranspose<Real_t>(n_trg,this->kernel->k_m2t->ker_dim[1],M_s2t[j],M_s2t[j]); // transpose M_s2t[j] in place
-        cheb_approx<Real_t,Real_t>(M_s2t[j],cheb_deg,this->kernel->k_m2t->ker_dim[1],M[j]);
+        cheb_approx<Real_t,Real_t>(&M_s2t[j][0],cheb_deg,this->kernel->k_m2t->ker_dim[1],&M[j][0]);
       }
       #pragma omp critical(PVFMM_PRECOMP_MATRIX_PTS)
       {
-        M_s2t.Resize(0,0);
+        Resize(M_s2t, 0,0);
       }
       break;
     }

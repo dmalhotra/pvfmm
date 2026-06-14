@@ -45,7 +45,6 @@ namespace DeviceWrapper{
 
 }//end namespace
 
-template <class T> class Matrix;
 
 /**
  * \brief Lightweight handle describing a vector buffer (device or host) to
@@ -86,7 +85,7 @@ struct DeviceMatrix{
   }
 
   // Bind a host-side view (CPU/MIC fallback path).
-  DeviceMatrix& operator=(Matrix<T>& M){
+  DeviceMatrix& operator=(sctl::Matrix<T>& M){
     dim[0]=M.Dim(0);
     dim[1]=M.Dim(1);
     dev_ptr=(uintptr_t)MatBegin(M);
@@ -144,7 +143,7 @@ class DeviceMirror{
    * asynchronous host-to-device copy of the full range.
    */
   template <class T> DeviceVector<T> AllocDevice(Vector<T>& host, bool copy);
-  template <class T> DeviceMatrix<T> AllocDevice(Matrix<T>& host, bool copy);
+  template <class T> DeviceMatrix<T> AllocDevice(sctl::Matrix<T>& host, bool copy);
 
   /**
    * Asynchronous device-to-host copy of the bound range, into `dst` if

@@ -195,9 +195,9 @@ void CheckChebOutput(FMMTree_t* mytree, typename TestFn<typename FMMTree_t::Real
     int fn_dof=r_node->DataDOF()/dof;
 
     Real_t* fn_out=new Real_t[dof*fn_dof];
-    pvfmm::Matrix<Real_t> M_out    (nn_z*fn_dof*dof,nn_y*nn_x,NULL,true); M_out    .SetZero();
-    pvfmm::Matrix<Real_t> M_out_err(nn_z*fn_dof*dof,nn_y*nn_x,NULL,true); M_out_err.SetZero();
-    r_node->ReadVal(x,y,z,M_out[0],false);
+    pvfmm::Matrix<Real_t> M_out    (nn_z*fn_dof*dof,nn_y*nn_x, sctl::Ptr2Itr<Real_t>(NULL, (nn_z*fn_dof*dof)*(nn_y*nn_x)),true); M_out    .SetZero();
+    pvfmm::Matrix<Real_t> M_out_err(nn_z*fn_dof*dof,nn_y*nn_x, sctl::Ptr2Itr<Real_t>(NULL, (nn_z*fn_dof*dof)*(nn_y*nn_x)),true); M_out_err.SetZero();
+    r_node->ReadVal(x,y,z,&M_out[0][0],false);
     for(int l0=0;l0<dof;l0++)
     for(int l1=0;l1<fn_dof;l1++)
     for(int i=0;i<nn_x;i++)
@@ -213,8 +213,8 @@ void CheckChebOutput(FMMTree_t* mytree, typename TestFn<typename FMMTree_t::Real
       }
     }
     delete[] fn_out;
-    pvfmm::Matrix<Real_t> M_global    (nn_z*fn_dof*dof,nn_y*nn_x,NULL,true);
-    pvfmm::Matrix<Real_t> M_global_err(nn_z*fn_dof*dof,nn_y*nn_x,NULL,true);
+    pvfmm::Matrix<Real_t> M_global    (nn_z*fn_dof*dof,nn_y*nn_x, sctl::Ptr2Itr<Real_t>(NULL, (nn_z*fn_dof*dof)*(nn_y*nn_x)),true);
+    pvfmm::Matrix<Real_t> M_global_err(nn_z*fn_dof*dof,nn_y*nn_x, sctl::Ptr2Itr<Real_t>(NULL, (nn_z*fn_dof*dof)*(nn_y*nn_x)),true);
     const sctl::Long n_elem = (sctl::Long)nn_x*nn_y*nn_z*fn_dof*dof;
     c1.Allreduce(sctl::Ptr2ConstItr<Real_t>(&M_out    [0][0], n_elem), sctl::Ptr2Itr<Real_t>(&M_global    [0][0], n_elem), n_elem, sctl::CommOp::SUM);
     c1.Allreduce(sctl::Ptr2ConstItr<Real_t>(&M_out_err[0][0], n_elem), sctl::Ptr2Itr<Real_t>(&M_global_err[0][0], n_elem), n_elem, sctl::CommOp::SUM);
