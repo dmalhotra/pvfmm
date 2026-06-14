@@ -128,7 +128,7 @@ T cheb_approx(const T* fn_v, int cheb_deg, int dof, T* out){
     fn_v_in.ReInit(d*d*d*dof,sctl::Ptr2Itr<Y>((Y*)fn_v,d*d*d*dof),false);
   }else{
     fn_v_in.ReInit(d*d*d*dof,sctl::Ptr2Itr<Y>(buff1,d*d*d*dof),false);
-    for(size_t i=0;i<fn_v_in.Dim();i++) fn_v_in[i]=fn_v[i];
+    for(sctl::Long i=0;i<fn_v_in.Dim();i++) fn_v_in[i]=fn_v[i];
   }
 
   { // Apply Mp along x-dimension
@@ -393,7 +393,7 @@ void cheb_eval(const sctl::Vector<T>& coeff_, int cheb_deg, const std::vector<T>
   size_t d=(size_t)cheb_deg+1;
   size_t n_coeff=(d*(d+1)*(d+2))/6;
   size_t dof=coeff_.Dim()/n_coeff;
-  assert(coeff_.Dim()==dof*n_coeff);
+  assert((size_t)coeff_.Dim()==dof*n_coeff);
 
   // Resize out
   size_t n1=in_x.size();
@@ -478,7 +478,7 @@ inline void cheb_eval(sctl::Vector<T>& coeff_, int cheb_deg, std::vector<T>& coo
   int d=cheb_deg+1;
   int n=coord.size()/dim;
   int dof=coeff_.Dim()/((d*(d+1)*(d+2))/6);
-  assert(coeff_.Dim()==(size_t)(d*(d+1)*(d+2)*dof)/6);
+  assert((size_t)coeff_.Dim()==(size_t)(d*(d+1)*(d+2)*dof)/6);
 
   std::vector<T> coeff(d*d*d*dof);
   {// Rearrange data
@@ -1078,7 +1078,7 @@ void cheb_diff(const sctl::Vector<T>& A, int deg, int diff_dim, sctl::Vector<T>&
   // Precompute
   static sctl::Matrix<T> M;
   #pragma omp critical(PVFMM_CHEB_DIFF1)
-  if(M.Dim(0)!=(size_t)d){
+  if((size_t)M.Dim(0)!=(size_t)d){
     M.ReInit(d,d);
     for(size_t i=0;i<d;i++){
       for(size_t j=0;j<d;j++) M[j][i]=0;

@@ -88,7 +88,7 @@ struct DeviceMatrix{
   DeviceMatrix& operator=(sctl::Matrix<T>& M){
     dim[0]=M.Dim(0);
     dim[1]=M.Dim(1);
-    dev_ptr=(uintptr_t)(M.Dim(0)*M.Dim(1)?&M[0][0]:nullptr);
+    dev_ptr=(uintptr_t)(M.Dim(0)*M.Dim(1)>0?&M[0][0]:nullptr);
     return *this;
   }
 

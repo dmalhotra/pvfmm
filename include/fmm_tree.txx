@@ -380,7 +380,6 @@ void FMM_Tree<FMM_Mat_t>::MultipoleReduceBcast() {
   if(num_p==1) return;
 
   sctl::Profile::Tic("Reduce",&this->Comm(),true,3);
-  const sctl::Vector<MortonId>& mins=this->GetMins();
 
   size_t bit_mask=1;
   size_t max_child=(1UL<<this->Dim());

@@ -57,7 +57,7 @@ void Cheb_Node<Real_t>::Initialize(sctl::Iterator<TreeNode> parent_, int path2no
       cheb_approx<Real_t,Real_t>(&input_val[0], cheb_deg, data_dof, &cheb_coeff[0]);
     }else if(this->cheb_value.Dim()>0){
       size_t n_ptr=this->cheb_coord.Dim()/this->Dim();
-      assert(n_ptr*data_dof==this->cheb_value.Dim());
+      assert(n_ptr*data_dof==(size_t)this->cheb_value.Dim());
       PVFMM_UNUSED(n_ptr);
       points2cheb<Real_t>(cheb_deg,&(this->cheb_coord[0]),&(this->cheb_value[0]),
           this->cheb_coord.Dim()/this->Dim(),data_dof,this->Coord(),
@@ -280,7 +280,7 @@ void Cheb_Node<Real_t>::Gradient(){
   int dim=3;//this->Dim();
   if(this->IsLeaf() && ChebData().Dim()>0){
     Real_t scale=sctl::pow<Real_t>(2,this->depth);
-    for(size_t i=0;i<ChebData().Dim();i++)
+    for(sctl::Long i=0;i<ChebData().Dim();i++)
       ChebData()[i]*=scale;
 
     sctl::Vector<Real_t> coeff(ChebData().Dim()*dim);
@@ -331,7 +331,7 @@ void Cheb_Node<Real_t>::read_val(std::vector<Real_t> x,std::vector<Real_t> y, st
   Real_t s=(Real_t)0.5*sctl::pow<Real_t>(0.5,this->Depth());
   Real_t s_inv=1/s;
   if(this->IsLeaf()){
-    if(cheb_coeff.Dim()!=(size_t)((cheb_deg+1)*(cheb_deg+2)*(cheb_deg+3))/6*data_dof
+    if((size_t)cheb_coeff.Dim()!=(size_t)((cheb_deg+1)*(cheb_deg+2)*(cheb_deg+3))/6*data_dof
         || (this->IsGhost() && !show_ghost)) return;
     sctl::Vector<Real_t> out;
     std::vector<Real_t> x_=x;

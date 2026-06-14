@@ -329,8 +329,8 @@ void Kernel<T>::Initialize(bool verbose) const{
         sctl::Matrix<long long>& P=P1;
         sctl::Matrix<long long>  M1=M11;
         sctl::Matrix<long long>  M2=M22;
-        for(size_t i=0;i<M1.Dim(0);i++){
-          for(size_t j=0;j<M1.Dim(1);j++){
+        for(sctl::Long i=0;i<M1.Dim(0);i++){
+          for(sctl::Long j=0;j<M1.Dim(1);j++){
             if(M1[i][j]<0) M1[i][j]=-M1[i][j];
             if(M2[i][j]<0) M2[i][j]=-M2[i][j];
           }
@@ -338,10 +338,10 @@ void Kernel<T>::Initialize(bool verbose) const{
           std::sort(&M2[i][0],&M2[i][0]+M2.Dim(1));
         }
         P.ReInit(M1.Dim(0),M1.Dim(0));
-        for(size_t i=0;i<M1.Dim(0);i++)
-        for(size_t j=0;j<M1.Dim(0);j++){
+        for(sctl::Long i=0;i<M1.Dim(0);i++)
+        for(sctl::Long j=0;j<M1.Dim(0);j++){
           P[i][j]=1;
-          for(size_t k=0;k<M1.Dim(1);k++)
+          for(sctl::Long k=0;k<M1.Dim(1);k++)
           if(M1[i][k]!=M2[j][k]){
             P[i][j]=0;
             break;
@@ -352,8 +352,8 @@ void Kernel<T>::Initialize(bool verbose) const{
         sctl::Matrix<long long>& P=P2;
         sctl::Matrix<long long>  M1=M11.Transpose();
         sctl::Matrix<long long>  M2=M22.Transpose();
-        for(size_t i=0;i<M1.Dim(0);i++){
-          for(size_t j=0;j<M1.Dim(1);j++){
+        for(sctl::Long i=0;i<M1.Dim(0);i++){
+          for(sctl::Long j=0;j<M1.Dim(1);j++){
             if(M1[i][j]<0) M1[i][j]=-M1[i][j];
             if(M2[i][j]<0) M2[i][j]=-M2[i][j];
           }
@@ -361,10 +361,10 @@ void Kernel<T>::Initialize(bool verbose) const{
           std::sort(&M2[i][0],&M2[i][0]+M2.Dim(1));
         }
         P.ReInit(M1.Dim(0),M1.Dim(0));
-        for(size_t i=0;i<M1.Dim(0);i++)
-        for(size_t j=0;j<M1.Dim(0);j++){
+        for(sctl::Long i=0;i<M1.Dim(0);i++)
+        for(sctl::Long j=0;j<M1.Dim(0);j++){
           P[i][j]=1;
-          for(size_t k=0;k<M1.Dim(1);k++)
+          for(sctl::Long k=0;k<M1.Dim(1);k++)
           if(M1[i][k]!=M2[j][k]){
             P[i][j]=0;
             break;
@@ -382,8 +382,8 @@ void Kernel<T>::Initialize(bool verbose) const{
         perm.SetZero();
 
         // First permutation
-        for(size_t i=0;i<P.Dim();i++)
-        for(size_t j=0;j<P.Dim();j++){
+        for(sctl::Long i=0;i<P.Dim();i++)
+        for(sctl::Long j=0;j<P.Dim();j++){
           if(Pmat[i][j]){
             perm[i]=j;
             break;
@@ -394,7 +394,7 @@ void Kernel<T>::Initialize(bool verbose) const{
         while(true){ // Next permutation
           perm_tmp=perm;
           std::sort(&perm_tmp[0],&perm_tmp[0]+perm_tmp.Dim());
-          for(size_t i=0;i<perm_tmp.Dim();i++){
+          for(sctl::Long i=0;i<perm_tmp.Dim();i++){
             if(perm_tmp[i]!=i) break;
             if(i==perm_tmp.Dim()-1){
               Pvec.push_back(P);
@@ -402,16 +402,16 @@ void Kernel<T>::Initialize(bool verbose) const{
           }
 
           bool last=false;
-          for(size_t i=0;i<P.Dim();i++){
+          for(sctl::Long i=0;i<P.Dim();i++){
             PVFMM_PERM_INT_T tmp=perm[i];
-            for(size_t j=perm[i]+1;j<P.Dim();j++){
+            for(sctl::Long j=perm[i]+1;j<P.Dim();j++){
               if(Pmat[i][j]){
                 perm[i]=j;
                 break;
               }
             }
             if(perm[i]>tmp) break;
-            for(size_t j=0;j<P.Dim();j++){
+            for(sctl::Long j=0;j<P.Dim();j++){
               if(Pmat[i][j]){
                 perm[i]=j;
                 break;
@@ -431,8 +431,8 @@ void Kernel<T>::Initialize(bool verbose) const{
         perm.SetZero();
 
         // First permutation
-        for(size_t i=0;i<P.Dim();i++)
-        for(size_t j=0;j<P.Dim();j++){
+        for(sctl::Long i=0;i<P.Dim();i++)
+        for(sctl::Long j=0;j<P.Dim();j++){
           if(Pmat[i][j]){
             perm[i]=j;
             break;
@@ -443,7 +443,7 @@ void Kernel<T>::Initialize(bool verbose) const{
         while(true){ // Next permutation
           perm_tmp=perm;
           std::sort(&perm_tmp[0],&perm_tmp[0]+perm_tmp.Dim());
-          for(size_t i=0;i<perm_tmp.Dim();i++){
+          for(sctl::Long i=0;i<perm_tmp.Dim();i++){
             if(perm_tmp[i]!=i) break;
             if(i==perm_tmp.Dim()-1){
               Pvec.push_back(P);
@@ -451,16 +451,16 @@ void Kernel<T>::Initialize(bool verbose) const{
           }
 
           bool last=false;
-          for(size_t i=0;i<P.Dim();i++){
+          for(sctl::Long i=0;i<P.Dim();i++){
             PVFMM_PERM_INT_T tmp=perm[i];
-            for(size_t j=perm[i]+1;j<P.Dim();j++){
+            for(sctl::Long j=perm[i]+1;j<P.Dim();j++){
               if(Pmat[i][j]){
                 perm[i]=j;
                 break;
               }
             }
             if(perm[i]>tmp) break;
-            for(size_t j=0;j<P.Dim();j++){
+            for(sctl::Long j=0;j<P.Dim();j++){
               if(Pmat[i][j]){
                 perm[i]=j;
                 break;
@@ -476,8 +476,8 @@ void Kernel<T>::Initialize(bool verbose) const{
         std::vector<sctl::Permutation<long long> > P1vec_, P2vec_;
         sctl::Matrix<long long>  M1=M11;
         sctl::Matrix<long long>  M2=M22;
-        for(size_t i=0;i<M1.Dim(0);i++){
-          for(size_t j=0;j<M1.Dim(1);j++){
+        for(sctl::Long i=0;i<M1.Dim(0);i++){
+          for(sctl::Long j=0;j<M1.Dim(1);j++){
             if(M1[i][j]<0) M1[i][j]=-M1[i][j];
             if(M2[i][j]<0) M2[i][j]=-M2[i][j];
           }
@@ -487,7 +487,7 @@ void Kernel<T>::Initialize(bool verbose) const{
         for(size_t i=0;i<P1vec.size();i++)
         for(size_t j=0;j<P2vec.size();j++){
           M=P1vec[i]*M2*P2vec[j];
-          for(size_t k=0;k<M.Dim(0)*M.Dim(1);k++){
+          for(sctl::Long k=0;k<M.Dim(0)*M.Dim(1);k++){
             if(M[0][k]!=M1[0][k]) break;
             if(k==M.Dim(0)*M.Dim(1)-1){
               P1vec_.push_back(P1vec[i]);
@@ -510,8 +510,8 @@ void Kernel<T>::Initialize(bool verbose) const{
 
           sctl::Matrix<T> M(M1.Dim(0)*M1.Dim(1)+1,M1.Dim(0)+M1.Dim(1));
           M.SetZero(); M[M1.Dim(0)*M1.Dim(1)][0]=1.0;
-          for(size_t i=0;i<M1.Dim(0);i++)
-          for(size_t j=0;j<M1.Dim(1);j++){
+          for(sctl::Long i=0;i<M1.Dim(0);i++)
+          for(sctl::Long j=0;j<M1.Dim(1);j++){
             size_t k=i*M1.Dim(1)+j;
             M[k][          i]= M1[i][j];
             M[k][M1.Dim(0)+j]=-M2[i][j];
@@ -520,10 +520,10 @@ void Kernel<T>::Initialize(bool verbose) const{
           { // Construct new permutation
             sctl::Permutation<long long> P1_(M1.Dim(0));
             sctl::Permutation<long long> P2_(M1.Dim(1));
-            for(size_t i=0;i<M1.Dim(0);i++){
+            for(sctl::Long i=0;i<M1.Dim(0);i++){
               P1_.scal[i]=(M[i][M1.Dim(0)*M1.Dim(1)]>0?1:-1);
             }
-            for(size_t i=0;i<M1.Dim(1);i++){
+            for(sctl::Long i=0;i<M1.Dim(1);i++){
               P2_.scal[i]=(M[M1.Dim(0)+i][M1.Dim(0)*M1.Dim(1)]>0?1:-1);
             }
             P1=P1_*P1 ;
@@ -532,7 +532,7 @@ void Kernel<T>::Initialize(bool verbose) const{
 
           bool done=true;
           sctl::Matrix<long long> Merr=P1*M22*P2-M11;
-          for(size_t i=0;i<Merr.Dim(0)*Merr.Dim(1);i++){
+          for(sctl::Long i=0;i<Merr.Dim(0)*Merr.Dim(1);i++){
             if(Merr[0][i]){
               done=false;
               break;
@@ -541,13 +541,13 @@ void Kernel<T>::Initialize(bool verbose) const{
           { // Check if permutation is symmetric
             sctl::Permutation<long long> P1_=P1.Transpose();
             sctl::Permutation<long long> P2_=P2.Transpose();
-            for(size_t i=0;i<P1.Dim();i++){
+            for(sctl::Long i=0;i<P1.Dim();i++){
               if(P1_.perm[i]!=P1.perm[i] || P1_.scal[i]!=P1.scal[i]){
                 done=false;
                 break;
               }
             }
-            for(size_t i=0;i<P2.Dim();i++){
+            for(sctl::Long i=0;i<P2.Dim();i++){
               if(P2_.perm[i]!=P2.perm[i] || P2_.scal[i]!=P2.scal[i]){
                 done=false;
                 break;
@@ -557,11 +557,11 @@ void Kernel<T>::Initialize(bool verbose) const{
           if(done){
             P1_=sctl::Permutation<T>(P1.Dim());
             P2_=sctl::Permutation<T>(P2.Dim());
-            for(size_t i=0;i<P1.Dim();i++){
+            for(sctl::Long i=0;i<P1.Dim();i++){
               P1_.perm[i]=P1.perm[i];
               P1_.scal[i]=P1.scal[i];
             }
-            for(size_t i=0;i<P2.Dim();i++){
+            for(sctl::Long i=0;i<P2.Dim();i++){
               P2_.perm[i]=P2.perm[i];
               P2_.scal[i]=P2.scal[i];
             }
@@ -665,10 +665,10 @@ void Kernel<T>::Initialize(bool verbose) const{
           M_e2c.SVD(U,S,V);
           T eps=1, max_S=0;
           while(eps*(T)0.5+(T)1>1) eps*=(T)0.5;
-          for(size_t i=0;i<std::min(S.Dim(0),S.Dim(1));i++){
+          for(sctl::Long i=0;i<std::min(S.Dim(0),S.Dim(1));i++){
             if(sctl::fabs<T>(S[i][i])>max_S) max_S=sctl::fabs<T>(S[i][i]);
           }
-          for(size_t i=0;i<S.Dim(0);i++) S[i][i]=(S[i][i]>eps*max_S*4?1/S[i][i]:0);
+          for(sctl::Long i=0;i<S.Dim(0);i++) S[i][i]=(S[i][i]>eps*max_S*4?1/S[i][i]:0);
           M_c2e0=V.Transpose()*S;
           M_c2e1=U.Transpose();
         }
@@ -683,8 +683,8 @@ void Kernel<T>::Initialize(bool verbose) const{
 
         sctl::Matrix<T> M=(M_s2c*M_c2e0)*(M_c2e1*M_e2t)-M_s2t;
         T max_error=0, max_value=0;
-        for(size_t i=0;i<M.Dim(0);i++)
-        for(size_t j=0;j<M.Dim(1);j++){
+        for(sctl::Long i=0;i<M.Dim(0);i++)
+        for(sctl::Long j=0;j<M.Dim(1);j++){
           max_error=std::max<T>(max_error,sctl::fabs<T>(M    [i][j]));
           max_value=std::max<T>(max_value,sctl::fabs<T>(M_s2t[i][j]));
         }
@@ -759,10 +759,10 @@ void Kernel<T>::Initialize(bool verbose) const{
           M_e2c.SVD(U,S,V);
           T eps=1, max_S=0;
           while(eps*(T)0.5+(T)1>1) eps*=(T)0.5;
-          for(size_t i=0;i<std::min(S.Dim(0),S.Dim(1));i++){
+          for(sctl::Long i=0;i<std::min(S.Dim(0),S.Dim(1));i++){
             if(sctl::fabs<T>(S[i][i])>max_S) max_S=sctl::fabs<T>(S[i][i]);
           }
-          for(size_t i=0;i<S.Dim(0);i++) S[i][i]=(S[i][i]>eps*max_S*4?1/S[i][i]:0);
+          for(sctl::Long i=0;i<S.Dim(0);i++) S[i][i]=(S[i][i]>eps*max_S*4?1/S[i][i]:0);
           M_c2e0=V.Transpose()*S;
           M_c2e1=U.Transpose();
         }
@@ -777,8 +777,8 @@ void Kernel<T>::Initialize(bool verbose) const{
 
         sctl::Matrix<T> M=(M_s2c*M_c2e0)*(M_c2e1*M_e2t)-M_s2t;
         T max_error=0, max_value=0;
-        for(size_t i=0;i<M.Dim(0);i++)
-        for(size_t j=0;j<M.Dim(1);j++){
+        for(sctl::Long i=0;i<M.Dim(0);i++)
+        for(sctl::Long j=0;j<M.Dim(1);j++){
           max_error=std::max<T>(max_error,sctl::fabs<T>(M    [i][j]));
           max_value=std::max<T>(max_value,sctl::fabs<T>(M_s2t[i][j]));
         }
@@ -870,10 +870,10 @@ void Kernel<T>::Initialize(bool verbose) const{
           M_e2c.SVD(U,S,V);
           T eps=1, max_S=0;
           while(eps*(T)0.5+(T)1>1) eps*=(T)0.5;
-          for(size_t i=0;i<std::min(S.Dim(0),S.Dim(1));i++){
+          for(sctl::Long i=0;i<std::min(S.Dim(0),S.Dim(1));i++){
             if(sctl::fabs<T>(S[i][i])>max_S) max_S=sctl::fabs<T>(S[i][i]);
           }
-          for(size_t i=0;i<S.Dim(0);i++) S[i][i]=(S[i][i]>eps*max_S*4?1/S[i][i]:0);
+          for(sctl::Long i=0;i<S.Dim(0);i++) S[i][i]=(S[i][i]>eps*max_S*4?1/S[i][i]:0);
           M_c2e0=V.Transpose()*S;
           M_c2e1=U.Transpose();
         }
@@ -882,8 +882,8 @@ void Kernel<T>::Initialize(bool verbose) const{
       }
       { // Print relative error
         T err_sum=0, analytic_sum=0;
-        for(size_t i=0;i<T_err     .Dim(0)*T_err     .Dim(1);i++)      err_sum+=sctl::fabs<T>(T_err     [0][i]);
-        for(size_t i=0;i<T_analytic.Dim(0)*T_analytic.Dim(1);i++) analytic_sum+=sctl::fabs<T>(T_analytic[0][i]);
+        for(sctl::Long i=0;i<T_err     .Dim(0)*T_err     .Dim(1);i++)      err_sum+=sctl::fabs<T>(T_err     [0][i]);
+        for(sctl::Long i=0;i<T_analytic.Dim(0)*T_analytic.Dim(1);i++) analytic_sum+=sctl::fabs<T>(T_analytic[0][i]);
         std::cout<<"Volume Error   : "<<err_sum/analytic_sum<<"\n";
       }
     }

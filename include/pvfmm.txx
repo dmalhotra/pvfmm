@@ -111,8 +111,8 @@ inline void ChebFMM_Evaluate(std::vector<Real>& trg_val, ChebFMM_Tree<Real>* tre
       if(nodes[i]->IsLeaf() && !nodes[i]->IsGhost()){
         const auto& trg_value=nodes[i]->trg_value;
         const auto& trg_scatter=nodes[i]->trg_scatter;
-        for(size_t j=0;j<trg_value.Dim();j++) trg_value_.push_back(trg_value[j]);
-        for(size_t j=0;j<trg_scatter.Dim();j++) trg_scatter_.push_back(trg_scatter[j]);
+        for(sctl::Long j=0;j<trg_value.Dim();j++) trg_value_.push_back(trg_value[j]);
+        for(sctl::Long j=0;j<trg_scatter.Dim();j++) trg_scatter_.push_back(trg_scatter[j]);
       }
     }
     trg_value=trg_value_;
@@ -129,7 +129,7 @@ inline void ChebFMM_GetPotentialCoeff(std::vector<Real>& coeff, ChebFMM_Tree<Rea
   for(size_t i=0;i<nodes.size();i++){
     if(nodes[i]->IsLeaf() && !nodes[i]->IsGhost()){
       sctl::Vector<Real>& cheb_out =((typename ChebFMM<Real>::FMMData*)nodes[i]->FMMData())->cheb_out;
-      for (size_t k = 0; k < cheb_out.Dim(); k++) {
+      for (sctl::Long k = 0; k < cheb_out.Dim(); k++) {
         coeff.push_back(cheb_out[k]);
       }
     }
@@ -252,7 +252,7 @@ inline void PtFMM_Evaluate(const PtFMM_Tree<Real>* tree, std::vector<Real>& trg_
     for(size_t i=0;i<nodes.size();i++){
       if(nodes[i]->IsLeaf() && !nodes[i]->IsGhost()){
         const auto& src_scatter=nodes[i]->src_scatter;
-        for(size_t j=0;j<src_scatter.Dim();j++) src_scatter_.push_back(src_scatter[j]);
+        for(sctl::Long j=0;j<src_scatter.Dim();j++) src_scatter_.push_back(src_scatter[j]);
       }
     }
 
@@ -264,7 +264,7 @@ inline void PtFMM_Evaluate(const PtFMM_Tree<Real>* tree, std::vector<Real>& trg_
     for(size_t i=0;i<nodes.size();i++){
       if(nodes[i]->IsLeaf() && !nodes[i]->IsGhost()){
         sctl::Vector<Real>& src_value_=nodes[i]->src_value;
-        for(size_t j=0;j<src_value_.Dim();j++){
+        for(sctl::Long j=0;j<src_value_.Dim();j++){
           src_value_[j]=src_value[indx];
           indx++;
         }
@@ -277,7 +277,7 @@ inline void PtFMM_Evaluate(const PtFMM_Tree<Real>* tree, std::vector<Real>& trg_
     for(size_t i=0;i<nodes.size();i++){
       if(nodes[i]->IsLeaf() && !nodes[i]->IsGhost()){
         const auto& surf_scatter=nodes[i]->surf_scatter;
-        for(size_t j=0;j<surf_scatter.Dim();j++) surf_scatter_.push_back(surf_scatter[j]);
+        for(sctl::Long j=0;j<surf_scatter.Dim();j++) surf_scatter_.push_back(surf_scatter[j]);
       }
     }
 
@@ -289,7 +289,7 @@ inline void PtFMM_Evaluate(const PtFMM_Tree<Real>* tree, std::vector<Real>& trg_
     for(size_t i=0;i<nodes.size();i++){
       if(nodes[i]->IsLeaf() && !nodes[i]->IsGhost()){
         sctl::Vector<Real>& surf_value_=nodes[i]->surf_value;
-        for(size_t j=0;j<surf_value_.Dim();j++){
+        for(sctl::Long j=0;j<surf_value_.Dim();j++){
           surf_value_[j]=surf_value[indx];
           indx++;
         }
@@ -307,8 +307,8 @@ inline void PtFMM_Evaluate(const PtFMM_Tree<Real>* tree, std::vector<Real>& trg_
       if(nodes[i]->IsLeaf() && !nodes[i]->IsGhost()){
         const auto& trg_value=nodes[i]->trg_value;
         const auto& trg_scatter=nodes[i]->trg_scatter;
-        for(size_t j=0;j<trg_value.Dim();j++) trg_value_.push_back(trg_value[j]);
-        for(size_t j=0;j<trg_scatter.Dim();j++) trg_scatter_.push_back(trg_scatter[j]);
+        for(sctl::Long j=0;j<trg_value.Dim();j++) trg_value_.push_back(trg_value[j]);
+        for(sctl::Long j=0;j<trg_scatter.Dim();j++) trg_scatter_.push_back(trg_scatter[j]);
       }
     }
     trg_value=trg_value_;

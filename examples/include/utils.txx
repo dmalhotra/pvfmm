@@ -28,8 +28,8 @@ void CheckFMMOutput(pvfmm::FMM_Tree<FMM_Mat_t>* mytree, const pvfmm::Kernel<type
     if(n->IsLeaf() && !n->IsGhost()){
       sctl::Vector<Real_t>& coord_vec=n->src_coord;
       sctl::Vector<Real_t>& value_vec=n->src_value;
-      for(size_t i=0;i<coord_vec.Dim();i++) src_coord.push_back(coord_vec[i]);
-      for(size_t i=0;i<value_vec.Dim();i++) src_value.push_back(value_vec[i]);
+      for(sctl::Long i=0;i<coord_vec.Dim();i++) src_coord.push_back(coord_vec[i]);
+      for(sctl::Long i=0;i<value_vec.Dim();i++) src_value.push_back(value_vec[i]);
     }
     n=mytree->PreorderNxt(n);
   }
@@ -52,7 +52,7 @@ void CheckFMMOutput(pvfmm::FMM_Tree<FMM_Mat_t>* mytree, const pvfmm::Kernel<type
     if(n->IsLeaf() && !n->IsGhost()){
       sctl::Vector<Real_t>& coord_vec=n->trg_coord;
       sctl::Vector<Real_t>& poten_vec=n->trg_value;
-      for(size_t i=0;i<coord_vec.Dim()/3          ;i++){
+      for(sctl::Long i=0;i<coord_vec.Dim()/3          ;i++){
         if(trg_iter%step_size==0){
           for(int j=0;j<3        ;j++) trg_coord    .push_back(coord_vec[i*3        +j]);
           for(int j=0;j<trg_dof  ;j++) trg_poten_fmm.push_back(poten_vec[i*trg_dof  +j]);

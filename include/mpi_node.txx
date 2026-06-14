@@ -109,7 +109,7 @@ bool MPI_Node<T>::SubdivCond(){
     }
     return pt_vec_size/Dim()>max_pts;
   }else{
-    return pt_coord.Dim()/Dim()>max_pts;
+    return (size_t)(pt_coord.Dim()/Dim())>max_pts;
   }
 }
 

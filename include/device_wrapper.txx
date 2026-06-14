@@ -318,7 +318,7 @@ namespace DeviceWrapper{
 
   template <class T>
   inline DeviceMatrix<T> DeviceMirror::AllocDevice(sctl::Matrix<T>& host, bool copy){
-    char* p=(char*)(host.Dim(0)*host.Dim(1)?&host[0][0]:nullptr);
+    char* p=(char*)(host.Dim(0)*host.Dim(1)>0?&host[0][0]:nullptr);
     size_t bytes=host.Dim(0)*host.Dim(1)*sizeof(T);
     if(dev_ptr){ // Already bound: host buffer must not have changed.
       assert(host_ptr==p && len==bytes);

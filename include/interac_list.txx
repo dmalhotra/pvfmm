@@ -96,8 +96,8 @@ std::vector<Perm_Type>& InteracList<Node_t>::PermutList(Mat_Type t, size_t i){
 template <class Node_t>
 void InteracList<Node_t>::BuildList(sctl::Iterator<Node_t> n, Mat_Type t){
   sctl::Vector<sctl::Iterator<Node_t>>& interac_list=n->interac_list[t];
-  if(interac_list.Dim()!=ListCount(t)) interac_list.ReInit(ListCount(t));
-  for(size_t k=0;k<interac_list.Dim();k++) interac_list[k]=sctl::NullIterator<Node_t>();
+  if((size_t)interac_list.Dim()!=ListCount(t)) interac_list.ReInit(ListCount(t));
+  for(sctl::Long k=0;k<interac_list.Dim();k++) interac_list[k]=sctl::NullIterator<Node_t>();
 
   static const int n_collg=sctl::pow<unsigned int>(3,dim);
   static const int n_child=sctl::pow<unsigned int>(2,dim);

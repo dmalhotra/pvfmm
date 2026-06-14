@@ -222,7 +222,7 @@ sctl::Permutation<Real_t> cheb_perm(size_t q, size_t p_indx, const sctl::Permuta
   if(scal_exp && p_indx==Scaling){ // Set level-by-level scaling
     assert(dof==(int)scal_exp->Dim());
     sctl::Vector<Real_t> scal(scal_exp->Dim());
-    for(size_t i=0;i<scal.Dim();i++){
+    for(sctl::Long i=0;i<scal.Dim();i++){
       scal[i]=sctl::pow<Real_t>(2.0,(*scal_exp)[i]);
     }
     for(int j=0;j<dof;j++){
@@ -311,26 +311,26 @@ sctl::Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_
       if(perm_indx<C_Perm){
         ker_perm=this->kernel->k_s2m->perm_vec[0     +p_indx];
         scal_exp=this->kernel->k_s2m->src_scal;
-        for(size_t i=0;i<scal_exp.Dim();i++) scal_exp[i]-=PVFMM_COORD_DIM;
+        for(sctl::Long i=0;i<scal_exp.Dim();i++) scal_exp[i]-=PVFMM_COORD_DIM;
         P=cheb_perm(q, p_indx, ker_perm, (this->ScaleInvar()?&scal_exp:NULL));
       }else{
         ker_perm=this->kernel->k_m2m->perm_vec[0     +p_indx];
         scal_exp=this->kernel->k_m2m->src_scal;
-        for(size_t i=0;i<scal_exp.Dim();i++) scal_exp[i]=-scal_exp[i];
+        for(sctl::Long i=0;i<scal_exp.Dim();i++) scal_exp[i]=-scal_exp[i];
 
         // Check that target perm for the two kernels agree.
         sctl::Permutation<Real_t> ker_perm0=this->kernel->k_s2m->perm_vec[C_Perm+p_indx];
         sctl::Permutation<Real_t> ker_perm1=this->kernel->k_m2m->perm_vec[C_Perm+p_indx];
         assert(ker_perm0.Dim()==ker_perm1.Dim());
         if(ker_perm0.Dim()>0 && sctl::fabs<Real_t>(ker_perm0.scal[0]-ker_perm1.scal[0])>eps){
-          for(size_t i=0;i<ker_perm0.Dim();i++){
+          for(sctl::Long i=0;i<ker_perm0.Dim();i++){
             ker_perm0.scal[i]*=-1;
           }
-          for(size_t i=0;i<ker_perm.Dim();i++){
+          for(sctl::Long i=0;i<ker_perm.Dim();i++){
             ker_perm.scal[i]*=-1;
           }
         }
-        for(size_t i=0;i<ker_perm0.Dim();i++){
+        for(sctl::Long i=0;i<ker_perm0.Dim();i++){
           assert(                   (ker_perm0.perm[i]-ker_perm1.perm[i])== 0);
           assert(sctl::fabs<Real_t>(ker_perm0.scal[i]-ker_perm1.scal[i])<eps);
         }
@@ -342,7 +342,7 @@ sctl::Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_
         assert(scal_exp0.Dim()>0 && scal_exp0.Dim()==scal_exp1.Dim());
         if(scal_exp0.Dim()>0){
           s=(scal_exp0[0]-scal_exp1[0]);
-          for(size_t i=1;i<scal_exp0.Dim();i++){
+          for(sctl::Long i=1;i<scal_exp0.Dim();i++){
             assert(sctl::fabs<Real_t>(s-(scal_exp0[i]-scal_exp1[i]))<eps);
             // In general this is not necessary, but to allow this, we must
             // also change src_scal accordingly.
@@ -350,7 +350,7 @@ sctl::Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_
         }
 
         // Apply the difference in scaling of the two kernels.
-        for(size_t i=0;i<scal_exp.Dim();i++) scal_exp[i]+=s;
+        for(sctl::Long i=0;i<scal_exp.Dim();i++) scal_exp[i]+=s;
         P=equiv_surf_perm(m, p_indx, ker_perm, (this->ScaleInvar()?&scal_exp:NULL));
       }
       break;
@@ -362,21 +362,21 @@ sctl::Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_
       if(perm_indx<C_Perm){ // Source permutation
         ker_perm=this->kernel->k_l2l->perm_vec[C_Perm+p_indx];
         scal_exp=this->kernel->k_l2l->trg_scal;
-        for(size_t i=0;i<scal_exp.Dim();i++) scal_exp[i]=-scal_exp[i];
+        for(sctl::Long i=0;i<scal_exp.Dim();i++) scal_exp[i]=-scal_exp[i];
 
         // Check that source perm for the two kernels agree.
         sctl::Permutation<Real_t> ker_perm0=this->kernel->k_l2t->perm_vec[0     +p_indx];
         sctl::Permutation<Real_t> ker_perm1=this->kernel->k_l2l->perm_vec[0     +p_indx];
         assert(ker_perm0.Dim()==ker_perm1.Dim());
         if(ker_perm0.Dim()>0 && sctl::fabs<Real_t>(ker_perm0.scal[0]-ker_perm1.scal[0])>eps){
-          for(size_t i=0;i<ker_perm0.Dim();i++){
+          for(sctl::Long i=0;i<ker_perm0.Dim();i++){
             ker_perm0.scal[i]*=-1;
           }
-          for(size_t i=0;i<ker_perm.Dim();i++){
+          for(sctl::Long i=0;i<ker_perm.Dim();i++){
             ker_perm.scal[i]*=-1;
           }
         }
-        for(size_t i=0;i<ker_perm0.Dim();i++){
+        for(sctl::Long i=0;i<ker_perm0.Dim();i++){
           assert(                   (ker_perm0.perm[i]-ker_perm1.perm[i])== 0);
           assert(sctl::fabs<Real_t>(ker_perm0.scal[i]-ker_perm1.scal[i])<eps);
         }
@@ -388,7 +388,7 @@ sctl::Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_
         assert(scal_exp0.Dim()>0 && scal_exp0.Dim()==scal_exp1.Dim());
         if(scal_exp0.Dim()>0){
           s=(scal_exp0[0]-scal_exp1[0]);
-          for(size_t i=1;i<scal_exp0.Dim();i++){
+          for(sctl::Long i=1;i<scal_exp0.Dim();i++){
             assert(sctl::fabs<Real_t>(s-(scal_exp0[i]-scal_exp1[i]))<eps);
             // In general this is not necessary, but to allow this, we must
             // also change trg_scal accordingly.
@@ -396,7 +396,7 @@ sctl::Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_
         }
 
         // Apply the difference in scaling of the two kernels.
-        for(size_t i=0;i<scal_exp.Dim();i++) scal_exp[i]+=s;
+        for(sctl::Long i=0;i<scal_exp.Dim();i++) scal_exp[i]+=s;
         P=equiv_surf_perm(m, p_indx, ker_perm, (this->ScaleInvar()?&scal_exp:NULL));
       }else{ // Target permutation
         ker_perm=this->kernel->k_l2t->perm_vec[C_Perm+p_indx];
@@ -412,7 +412,7 @@ sctl::Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_
       if(perm_indx<C_Perm){
         ker_perm=this->kernel->k_s2t->perm_vec[0     +p_indx];
         scal_exp=this->kernel->k_s2t->src_scal;
-        for(size_t i=0;i<scal_exp.Dim();i++) scal_exp[i]-=PVFMM_COORD_DIM;
+        for(sctl::Long i=0;i<scal_exp.Dim();i++) scal_exp[i]-=PVFMM_COORD_DIM;
       }else{
         ker_perm=this->kernel->k_s2t->perm_vec[C_Perm+p_indx];
         scal_exp=this->kernel->k_s2t->trg_scal;
@@ -452,7 +452,7 @@ sctl::Permutation<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::PrecompPerm(Mat_
       if(perm_indx<C_Perm){
         ker_perm=this->kernel->k_s2l->perm_vec[0     +p_indx];
         scal_exp=this->kernel->k_s2l->src_scal;
-        for(size_t i=0;i<scal_exp.Dim();i++) scal_exp[i]-=PVFMM_COORD_DIM;
+        for(sctl::Long i=0;i<scal_exp.Dim();i++) scal_exp[i]-=PVFMM_COORD_DIM;
         P=cheb_perm(q, p_indx, ker_perm, (this->ScaleInvar()?&scal_exp:NULL));
       }else{
         ker_perm=this->kernel->k_s2l->perm_vec[C_Perm+p_indx];
@@ -808,7 +808,7 @@ void FMM_Cheb<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<sctl::Itera
     for(size_t i=0;i<node.size();i++){
       if(node[i]->IsLeaf()){
         sctl::Vector<Real_t>& data_vec=node[i]->ChebData();
-        if(data_vec.Dim()!=vec_sz) data_vec.ReInit(vec_sz);
+        if((size_t)data_vec.Dim()!=vec_sz) data_vec.ReInit(vec_sz);
         vec_list[indx].push_back(&data_vec);
       }else{
         node[i]->ChebData().ReInit(0);
@@ -821,7 +821,7 @@ void FMM_Cheb<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<sctl::Itera
     for(size_t i=0;i<node.size();i++){
       if(node[i]->IsLeaf() && !node[i]->IsGhost()){
         sctl::Vector<Real_t>& data_vec=((FMMData*)node[i]->FMMData())->cheb_out;
-        if(data_vec.Dim()!=vec_sz) data_vec.ReInit(vec_sz);
+        if((size_t)data_vec.Dim()!=vec_sz) data_vec.ReInit(vec_sz);
         vec_list[indx].push_back(&data_vec);
       }else{
         ((FMMData*)node[i]->FMMData())->cheb_out.ReInit(0);
@@ -861,8 +861,8 @@ void FMM_Cheb<FMMNode>::Source2UpSetup(SetupData<FMMNode_t>& setup_data, FMMTree
 
     setup_data.nodes_in .clear();
     setup_data.nodes_out.clear();
-    for(size_t i=0;i<nodes_in .Dim();i++) if(nodes_in [i]->Depth()==level   || level==-1) setup_data.nodes_in .push_back(nodes_in [i]);
-    for(size_t i=0;i<nodes_out.Dim();i++) if(nodes_out[i]->Depth()==level   || level==-1) setup_data.nodes_out.push_back(nodes_out[i]);
+    for(sctl::Long i=0;i<nodes_in .Dim();i++) if(nodes_in [i]->Depth()==level   || level==-1) setup_data.nodes_in .push_back(nodes_in [i]);
+    for(sctl::Long i=0;i<nodes_out.Dim();i++) if(nodes_out[i]->Depth()==level   || level==-1) setup_data.nodes_out.push_back(nodes_out[i]);
   }
 
   std::vector<sctl::Iterator<FMMNode_t>>& nodes_in =setup_data.nodes_in ;
@@ -905,8 +905,8 @@ void FMM_Cheb<FMMNode>::X_ListSetup(SetupData<FMMNode_t>& setup_data, FMMTree_t*
 
     setup_data.nodes_in .clear();
     setup_data.nodes_out.clear();
-    for(size_t i=0;i<nodes_in .Dim();i++) if(nodes_in [i]->Depth()==level-1 || level==-1) setup_data.nodes_in .push_back(nodes_in [i]);
-    for(size_t i=0;i<nodes_out.Dim();i++) if(nodes_out[i]->Depth()==level   || level==-1) setup_data.nodes_out.push_back(nodes_out[i]);
+    for(sctl::Long i=0;i<nodes_in .Dim();i++) if(nodes_in [i]->Depth()==level-1 || level==-1) setup_data.nodes_in .push_back(nodes_in [i]);
+    for(sctl::Long i=0;i<nodes_out.Dim();i++) if(nodes_out[i]->Depth()==level   || level==-1) setup_data.nodes_out.push_back(nodes_out[i]);
   }
 
   std::vector<sctl::Iterator<FMMNode_t>>& nodes_in =setup_data.nodes_in ;
@@ -919,7 +919,7 @@ void FMM_Cheb<FMMNode>::X_ListSetup(SetupData<FMMNode_t>& setup_data, FMMTree_t*
   this->SetupInterac(setup_data,device);
   { // Resize device buffer
     size_t n=setup_data.output_data->Dim(0)*setup_data.output_data->Dim(1)*sizeof(Real_t);
-    if(this->dev_buffer.Dim()<n) this->dev_buffer.ReInit(n);
+    if((size_t)this->dev_buffer.Dim()<n) this->dev_buffer.ReInit(n);
   }
 }
 
@@ -951,8 +951,8 @@ void FMM_Cheb<FMMNode>::W_ListSetup(SetupData<FMMNode_t>& setup_data, FMMTree_t*
 
     setup_data.nodes_in .clear();
     setup_data.nodes_out.clear();
-    for(size_t i=0;i<nodes_in .Dim();i++) if(nodes_in [i]->Depth()==level+1 || level==-1) setup_data.nodes_in .push_back(nodes_in [i]);
-    for(size_t i=0;i<nodes_out.Dim();i++) if(nodes_out[i]->Depth()==level   || level==-1) setup_data.nodes_out.push_back(nodes_out[i]);
+    for(sctl::Long i=0;i<nodes_in .Dim();i++) if(nodes_in [i]->Depth()==level+1 || level==-1) setup_data.nodes_in .push_back(nodes_in [i]);
+    for(sctl::Long i=0;i<nodes_out.Dim();i++) if(nodes_out[i]->Depth()==level   || level==-1) setup_data.nodes_out.push_back(nodes_out[i]);
   }
 
   std::vector<sctl::Iterator<FMMNode_t>>& nodes_in =setup_data.nodes_in ;
@@ -965,7 +965,7 @@ void FMM_Cheb<FMMNode>::W_ListSetup(SetupData<FMMNode_t>& setup_data, FMMTree_t*
   this->SetupInterac(setup_data,device);
   { // Resize device buffer
     size_t n=setup_data.output_data->Dim(0)*setup_data.output_data->Dim(1)*sizeof(Real_t);
-    if(this->dev_buffer.Dim()<n) this->dev_buffer.ReInit(n);
+    if((size_t)this->dev_buffer.Dim()<n) this->dev_buffer.ReInit(n);
   }
 }
 
@@ -999,8 +999,8 @@ void FMM_Cheb<FMMNode>::U_ListSetup(SetupData<FMMNode_t>& setup_data, FMMTree_t*
 
     setup_data.nodes_in .clear();
     setup_data.nodes_out.clear();
-    for(size_t i=0;i<nodes_in .Dim();i++) if((level-1<=nodes_in [i]->Depth() && nodes_in [i]->Depth()<=level+1) || level==-1) setup_data.nodes_in .push_back(nodes_in [i]);
-    for(size_t i=0;i<nodes_out.Dim();i++) if((                                  nodes_out[i]->Depth()==level  ) || level==-1) setup_data.nodes_out.push_back(nodes_out[i]);
+    for(sctl::Long i=0;i<nodes_in .Dim();i++) if((level-1<=nodes_in [i]->Depth() && nodes_in [i]->Depth()<=level+1) || level==-1) setup_data.nodes_in .push_back(nodes_in [i]);
+    for(sctl::Long i=0;i<nodes_out.Dim();i++) if((                                  nodes_out[i]->Depth()==level  ) || level==-1) setup_data.nodes_out.push_back(nodes_out[i]);
   }
 
   std::vector<sctl::Iterator<FMMNode_t>>& nodes_in =setup_data.nodes_in ;
@@ -1013,7 +1013,7 @@ void FMM_Cheb<FMMNode>::U_ListSetup(SetupData<FMMNode_t>& setup_data, FMMTree_t*
   this->SetupInterac(setup_data,device);
   { // Resize device buffer
     size_t n=setup_data.output_data->Dim(0)*setup_data.output_data->Dim(1)*sizeof(Real_t);
-    if(this->dev_buffer.Dim()<n) this->dev_buffer.ReInit(n);
+    if((size_t)this->dev_buffer.Dim()<n) this->dev_buffer.ReInit(n);
   }
 }
 
@@ -1044,8 +1044,8 @@ void FMM_Cheb<FMMNode>::Down2TargetSetup(SetupData<FMMNode_t>& setup_data, FMMTr
 
     setup_data.nodes_in .clear();
     setup_data.nodes_out.clear();
-    for(size_t i=0;i<nodes_in .Dim();i++) if(nodes_in [i]->Depth()==level   || level==-1) setup_data.nodes_in .push_back(nodes_in [i]);
-    for(size_t i=0;i<nodes_out.Dim();i++) if(nodes_out[i]->Depth()==level   || level==-1) setup_data.nodes_out.push_back(nodes_out[i]);
+    for(sctl::Long i=0;i<nodes_in .Dim();i++) if(nodes_in [i]->Depth()==level   || level==-1) setup_data.nodes_in .push_back(nodes_in [i]);
+    for(sctl::Long i=0;i<nodes_out.Dim();i++) if(nodes_out[i]->Depth()==level   || level==-1) setup_data.nodes_out.push_back(nodes_out[i]);
   }
 
   std::vector<sctl::Iterator<FMMNode_t>>& nodes_in =setup_data.nodes_in ;
@@ -1074,7 +1074,7 @@ void FMM_Cheb<FMMNode>::PostProcessing(FMMTree_t* tree, std::vector<FMMNode_t*>&
 
     sctl::Vector<Real_t>& up_equiv=((FMMData*)tree->RootNode()->FMMData())->upward_equiv;
     sctl::Matrix<Real_t> avg_density(1,ker_dim[0]); avg_density.SetZero();
-    for(size_t i0=0;i0<up_equiv.Dim();i0+=ker_dim[0]){
+    for(sctl::Long i0=0;i0<up_equiv.Dim();i0+=ker_dim[0]){
       for(int i1=0;i1<ker_dim[0];i1++){
         avg_density[0][i1]+=up_equiv[i0+i1];
       }
@@ -1118,7 +1118,7 @@ void FMM_Cheb<FMMNode>::PostProcessing(FMMTree_t* tree, std::vector<FMMNode_t*>&
 
           assert(cheb_out.Dim() == vol_poten_coeff.Dim());
           cheb_approx<Real_t, Real_t>(&vol_poten[0], cheb_deg, ker_dim[1], &vol_poten_coeff[0]);
-          for(size_t j=0;j<vol_poten_coeff.Dim();j++) cheb_out[j]-=vol_poten_coeff[j];
+          for(sctl::Long j=0;j<vol_poten_coeff.Dim();j++) cheb_out[j]-=vol_poten_coeff[j];
         }
       }
     }

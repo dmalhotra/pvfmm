@@ -531,14 +531,14 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
     src_scal .ReInit(ctx->ker->src_scal.Dim());
     trg_scal .ReInit(ctx->ker->trg_scal.Dim());
     surf_scal.ReInit(PVFMM_COORD_DIM+src_scal.Dim());
-    for(size_t i=0;i<src_scal.Dim();i++){
+    for(sctl::Long i=0;i<src_scal.Dim();i++){
       src_scal [i]=sctl::pow(scale_x, src_scal_exp[i]);
       surf_scal[i]=scale_x*src_scal[i];
     }
-    for(size_t i=0;i<trg_scal.Dim();i++){
+    for(sctl::Long i=0;i<trg_scal.Dim();i++){
       trg_scal[i]=sctl::pow(scale_x, trg_scal_exp[i]);
     }
-    for(size_t i=src_scal.Dim();i<surf_scal.Dim();i++){
+    for(sctl::Long i=src_scal.Dim();i<surf_scal.Dim();i++){
       surf_scal[i]=1;
     }
   }
@@ -642,14 +642,14 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
           for(size_t j=0;j<nodes.size();j++){
             size_t n_pts=part_indx[j+1]-part_indx[j];
             if(src_value.Dim()){
-              assert(nodes[j]->src_coord.Dim()==n_pts*( PVFMM_COORD_DIM));
-              assert(nodes[j]->src_value.Dim()==n_pts*(ker_dim[0]));
+              assert((size_t)nodes[j]->src_coord.Dim()==n_pts*( PVFMM_COORD_DIM));
+              assert((size_t)nodes[j]->src_value.Dim()==n_pts*(ker_dim[0]));
               //memcpy(&nodes[j]->src_coord[0],&src_coord[0]+part_indx[j]*( PVFMM_COORD_DIM),n_pts*( PVFMM_COORD_DIM)*sizeof(Real));
               memcpy(&nodes[j]->src_value[0],&src_value[0]+part_indx[j]*(ker_dim[0]),n_pts*(ker_dim[0])*sizeof(Real));
             }
             if(surf_value.Dim()){
-              assert(nodes[j]->surf_coord.Dim()==n_pts*(           PVFMM_COORD_DIM));
-              assert(nodes[j]->surf_value.Dim()==n_pts*(ker_dim[0]+PVFMM_COORD_DIM));
+              assert((size_t)nodes[j]->surf_coord.Dim()==n_pts*(           PVFMM_COORD_DIM));
+              assert((size_t)nodes[j]->surf_value.Dim()==n_pts*(ker_dim[0]+PVFMM_COORD_DIM));
               //memcpy(&nodes[j]->surf_coord[0],& src_coord[0]+part_indx[j]*(           PVFMM_COORD_DIM),n_pts*(           PVFMM_COORD_DIM)*sizeof(Real));
               memcpy(&nodes[j]->surf_value[0],&surf_value[0]+part_indx[j]*(ker_dim[0]+PVFMM_COORD_DIM),n_pts*(ker_dim[0]+PVFMM_COORD_DIM)*sizeof(Real));
             }
@@ -704,7 +704,7 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
           for(size_t j=0;j<nodes.size();j++){
             size_t n_pts=part_indx[j+1]-part_indx[j];
             {
-              assert(nodes[j]->trg_coord.Dim()==n_pts*(PVFMM_COORD_DIM));
+              assert((size_t)nodes[j]->trg_coord.Dim()==n_pts*(PVFMM_COORD_DIM));
               //memcpy(&nodes[j]->trg_coord[0],&trg_coord[0]+part_indx[j]*(PVFMM_COORD_DIM),n_pts*(PVFMM_COORD_DIM)*sizeof(Real));
             }
           }
@@ -721,8 +721,7 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
 
       PVFMMContext<Real>* ctx=(PVFMMContext<Real>*)ctx_;
 
-      int np, myrank;
-      np = ctx->sctl_comm.Size();
+      int myrank;
       myrank = ctx->sctl_comm.Rank();
 
       long nleaf=0, maxdepth=0;

@@ -86,7 +86,7 @@ size_t PrecompMat<T>::CompactData(int level, Mat_Type type, sctl::Matrix<char>& 
     size_t   mat_cnt ;
     size_t  max_depth;
   };
-  if(comp_data.Dim(0)*comp_data.Dim(1)>offset){
+  if((size_t)(comp_data.Dim(0)*comp_data.Dim(1))>offset){
     char* indx_ptr=&comp_data[0][0]+offset;
     HeaderData& header=*(HeaderData*)indx_ptr; indx_ptr+=sizeof(HeaderData);
     if(level==(int)header.level){ // Data already exists.
@@ -129,7 +129,7 @@ size_t PrecompMat<T>::CompactData(int level, Mat_Type type, sctl::Matrix<char>& 
       }
     }
   }
-  if(comp_data.Dim(0)*comp_data.Dim(1)<offset+indx_size+mem_size){ // Resize if needed.
+  if((size_t)(comp_data.Dim(0)*comp_data.Dim(1))<offset+indx_size+mem_size){ // Resize if needed.
     sctl::Matrix<char> old_data;
     if(offset>0) old_data=comp_data;
     comp_data.ReInit(1,offset+indx_size+mem_size);

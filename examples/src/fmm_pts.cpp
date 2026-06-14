@@ -127,8 +127,8 @@ void fmm_test(int ker, size_t N, size_t M, Real_t b, int dist, int mult_order, i
           if(nodes[i]->IsLeaf() && !nodes[i]->IsGhost()){
             sctl::Vector<Real_t>& trg_value=nodes[i]->trg_value;
             sctl::Vector<sctl::Long>& trg_scatter=nodes[i]->trg_scatter;
-            for(size_t j=0;j<trg_value.Dim();j++) trg_value_.push_back(trg_value[j]);
-            for(size_t j=0;j<trg_scatter.Dim();j++) trg_scatter_.push_back(trg_scatter[j]);
+            for(sctl::Long j=0;j<trg_value.Dim();j++) trg_value_.push_back(trg_value[j]);
+            for(sctl::Long j=0;j<trg_scatter.Dim();j++) trg_scatter_.push_back(trg_scatter[j]);
           }
         }
         trg_value=trg_value_;
