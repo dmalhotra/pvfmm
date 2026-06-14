@@ -4,7 +4,7 @@
 #include <omp.h>
 #include <stdio.h>
 
-#include <profile.hpp>
+#include <pvfmm_common.hpp>
 #include <fmm_pts.hpp>
 #include <fmm_node.hpp>
 #include <fmm_tree.hpp>

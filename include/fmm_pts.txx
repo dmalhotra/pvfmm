@@ -38,7 +38,7 @@
 #include <immintrin.h>
 #endif
 
-#include <profile.hpp>
+#include <pvfmm_common.hpp>
 #include <cheb_utils.hpp>
 
 namespace pvfmm{

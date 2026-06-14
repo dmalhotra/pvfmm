@@ -12,7 +12,7 @@
 #include <sctl.hpp>
 
 
-#include <profile.hpp>
+#include <pvfmm_common.hpp>
 #include <vector.hpp>
 #include <matrix.hpp>
 #include <precomp_mat.hpp>

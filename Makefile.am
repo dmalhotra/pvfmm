@@ -62,7 +62,6 @@ pvfmm_cpp_header_files = \
 									include/mpi_node.hpp \
 									include/mpi_tree.hpp \
 									include/precomp_mat.hpp \
-									include/profile.hpp \
 									include/tree.hpp \
 									include/tree_node.hpp \
 									include/vector.hpp \
@@ -160,7 +159,6 @@ lib_libpvfmm_la_SOURCES = \
 									$(pvfmm_cpp_header_files) \
 									src/cheb_utils.cpp \
 									src/device_wrapper.cpp \
-									src/profile.cpp \
 									src/pvfmm-wrapper.cpp \
 									src/tree_node.cpp
 

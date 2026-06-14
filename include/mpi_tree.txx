@@ -20,7 +20,7 @@
 
 
 #include <mpi_node.hpp>
-#include <profile.hpp>
+#include <pvfmm_common.hpp>
 
 // TODO: optimize 2:1 balance refinement (Balance21) and halo-exchange
 // (ConstructLET) for 1D and 2D periodicity.

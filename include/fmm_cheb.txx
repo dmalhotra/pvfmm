@@ -16,7 +16,7 @@
 
 #include <cheb_utils.hpp>
 
-#include <profile.hpp>
+#include <pvfmm_common.hpp>
 
 namespace pvfmm{
 

@@ -15,7 +15,7 @@
 #include <mat_utils.hpp>
 
 #include <matrix.hpp>
-#include <profile.hpp>
+#include <pvfmm_common.hpp>
 #include <kernel.hpp>
 
 namespace pvfmm{
