@@ -37,39 +37,6 @@ struct SortPair{
   B data;
 };
 
-// std::vector adapters for the sctl::Comm collectives (which take
-// sctl::Vector). Data is copied in and out because these collectives
-// redistribute elements across ranks, changing the local size.
-template <class T>
-inline void HyperQuickSort(const std::vector<T>& in, std::vector<T>& out, const sctl::Comm& comm){
-  Vector<T> in_(in), out_;
-  comm.HyperQuickSort(in_, out_);
-  out.resize(out_.Dim());
-  if(out_.Dim()) std::memcpy(&out[0], &out_[0], out_.Dim()*sizeof(T));
-}
-template <class T>
-inline void PartitionW(std::vector<T>& v, const sctl::Comm& comm){
-  Vector<T> v_(v);
-  comm.PartitionW(v_);
-  v.resize(v_.Dim());
-  if(v_.Dim()) std::memcpy(&v[0], &v_[0], v_.Dim()*sizeof(T));
-}
-// Alltoallv on raw buffers with int/size_t counts and displacements, as
-// stored at the call sites; converted to the Long arrays sctl expects.
-template <class T, class CntT>
-inline void Alltoallv(const T* sbuf, const CntT* scnt, const CntT* sdsp, T* rbuf, const CntT* rcnt, const CntT* rdsp, const sctl::Comm& comm){
-  const sctl::Long np=comm.Size();
-  Vector<sctl::Long> scnt_(np), sdsp_(np), rcnt_(np), rdsp_(np);
-  sctl::Long stot=0, rtot=0;
-  for(sctl::Long i=0;i<np;i++){
-    scnt_[i]=(sctl::Long)scnt[i]; sdsp_[i]=(sctl::Long)sdsp[i];
-    rcnt_[i]=(sctl::Long)rcnt[i]; rdsp_[i]=(sctl::Long)rdsp[i];
-    stot=std::max(stot,sdsp_[i]+scnt_[i]); rtot=std::max(rtot,rdsp_[i]+rcnt_[i]);
-  }
-  comm.Alltoallv(sctl::Ptr2ConstItr<T>(sbuf,stot?stot:1), scnt_.begin(), sdsp_.begin(),
-                 sctl::Ptr2Itr<T>(rbuf,rtot?rtot:1), rcnt_.begin(), rdsp_.begin());
-}
-
 /**
  * @author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * @date 08 Feb 2011
@@ -368,7 +335,7 @@ void MPI_Tree<TreeNode>::CoarsenTree(){
       n=n_;
     }
     MortonId loc_min=n->GetMortonId();
-    RedistNodes(&loc_min);
+    RedistNodes(sctl::Ptr2ConstItr<MortonId>(&loc_min,1));
   }
 
   //Truncate ghost nodes and build node list
@@ -523,7 +490,7 @@ void MPI_Tree<TreeNode>::RefineTree(){
 
 
 template <class TreeNode>
-void MPI_Tree<TreeNode>::RedistNodes(MortonId* loc_min) {
+void MPI_Tree<TreeNode>::RedistNodes(sctl::ConstIterator<MortonId> loc_min) {
   int np = Comm().Size();
   if(np==1)return;
 
@@ -542,7 +509,7 @@ void MPI_Tree<TreeNode>::RedistNodes(MortonId* loc_min) {
 
   //Get new mins.
   std::vector<MortonId> new_mins(np);
-  if(loc_min==NULL){
+  if(loc_min==sctl::NullIterator<MortonId>()){
     //Partition vector of MortonIds using par::partitionW
     Vector<MortonId> in_(in);
     Vector<sctl::Long> wts(in_.Dim());
@@ -553,13 +520,13 @@ void MPI_Tree<TreeNode>::RedistNodes(MortonId* loc_min) {
     Comm().PartitionW(in_, &wts);
     Comm().Allgather((sctl::ConstIterator<MortonId>)in_.begin(), 1, sctl::Ptr2Itr<MortonId>(&new_mins[0],np), 1);
   }else{
-    Comm().Allgather(sctl::Ptr2ConstItr<MortonId>(loc_min,1), 1, sctl::Ptr2Itr<MortonId>(&new_mins[0],np), 1);
+    Comm().Allgather(loc_min, 1, sctl::Ptr2Itr<MortonId>(&new_mins[0],np), 1);
   }
 
   //Now exchange nodes according to new mins
   std::vector<PackedData> data(leaf_cnt);
-  std::vector<int> send_cnts; send_cnts.assign(np,0);
-  std::vector<int> send_size; send_size.assign(np,0);
+  sctl::ScratchBuf<sctl::Long> send_cnts(np); std::fill(send_cnts.begin(),send_cnts.end(),(sctl::Long)0);
+  sctl::ScratchBuf<sctl::Long> send_size(np); std::fill(send_size.begin(),send_size.end(),(sctl::Long)0);
 
   size_t sbuff_size=0;
   int omp_p=omp_get_max_threads();
@@ -581,20 +548,20 @@ void MPI_Tree<TreeNode>::RedistNodes(MortonId* loc_min) {
     }
   }
 
-  std::vector<int> recv_cnts(np);
-  std::vector<int> recv_size(np);
-  Comm().Alltoall(sctl::Ptr2ConstItr<int>(&send_cnts[0],np), 1, sctl::Ptr2Itr<int>(&recv_cnts[0],np), 1);
-  Comm().Alltoall(sctl::Ptr2ConstItr<int>(&send_size[0],np), 1, sctl::Ptr2Itr<int>(&recv_size[0],np), 1);
+  sctl::ScratchBuf<sctl::Long> recv_cnts(np);
+  sctl::ScratchBuf<sctl::Long> recv_size(np);
+  Comm().Alltoall(send_cnts.begin(), 1, recv_cnts.begin(), 1);
+  Comm().Alltoall(send_size.begin(), 1, recv_size.begin(), 1);
 
   size_t recv_cnt=0;
   #pragma omp parallel for reduction(+:recv_cnt)
   for(int i=0;i<np;i++) recv_cnt+=recv_cnts[i];
   std::vector<MortonId> out(recv_cnt);
 
-  std::vector<int> sdisp; sdisp.assign(np,0);
-  std::vector<int> rdisp; rdisp.assign(np,0);
-  sctl::omp_par::scan(&send_size[0],&sdisp[0],np); //TODO Don't need to do a full scan
-  sctl::omp_par::scan(&recv_size[0],&rdisp[0],np); //     as most entries will be 0.
+  sctl::ScratchBuf<sctl::Long> sdisp(np); std::fill(sdisp.begin(),sdisp.end(),(sctl::Long)0);
+  sctl::ScratchBuf<sctl::Long> rdisp(np); std::fill(rdisp.begin(),rdisp.end(),(sctl::Long)0);
+  sctl::omp_par::scan(send_size.begin(),sdisp.begin(),np); //TODO Don't need to do a full scan
+  sctl::omp_par::scan(recv_size.begin(),rdisp.begin(),np); //     as most entries will be 0.
   size_t rbuff_size=rdisp[np-1]+recv_size[np-1];
 
   sctl::ScratchBuf<char> send_buff_scratch(sbuff_size ? sbuff_size : 1);
@@ -618,8 +585,8 @@ void MPI_Tree<TreeNode>::RedistNodes(MortonId* loc_min) {
       std::memcpy(data_ptr[i], (char*)data[i].data, data[i].length);
   }
 
-  Alltoallv<char>(&send_buff[0], &send_size[0], &sdisp[0],
-    &recv_buff[0], &recv_size[0], &rdisp[0], Comm());
+  Comm().template Alltoallv<char>(send_buff_scratch.begin(), send_size.begin(), sdisp.begin(),
+    recv_buff_scratch.begin(), recv_size.begin(), rdisp.begin());
 
   char* r_ptr=recv_buff;
   std::vector<PackedData> r_data(recv_cnt);
@@ -704,14 +671,14 @@ sctl::Iterator<TreeNode> MPI_Tree<TreeNode>::FindNode(MortonId& key, bool subdiv
 
 
 //list must be sorted.
-inline int lineariseList(std::vector<MortonId> & list, const sctl::Comm& comm) {
+inline int lineariseList(sctl::Vector<MortonId> & list, const sctl::Comm& comm) {
   //Remove empty processors...
-  const sctl::Comm new_comm = comm.Split(list.empty() ? 0 : 1);
+  const sctl::Comm new_comm = comm.Split(list.Dim()==0 ? 0 : 1);
   const int new_rank = new_comm.Rank();
   const int new_size = new_comm.Size();
-  if(!list.empty()) {
+  if(list.Dim()) {
     //Send the last octant to the next processor.
-    MortonId lastOctant = list[list.size()-1];
+    MortonId lastOctant = list[list.Dim()-1];
     MortonId lastOnPrev;
 
     sctl::Comm::Request recvRequest, sendRequest;
@@ -724,30 +691,30 @@ inline int lineariseList(std::vector<MortonId> & list, const sctl::Comm& comm) {
     }
 
     if(new_rank > 0) {
-      std::vector<MortonId> tmp(list.size()+1);
-      for(size_t i = 0; i < list.size(); i++) {
+      sctl::Vector<MortonId> tmp(list.Dim()+1);
+      for(size_t i = 0; i < (size_t)list.Dim(); i++) {
         tmp[i+1] = list[i];
       }
 
       new_comm.Wait(std::move(recvRequest));
       tmp[0] = lastOnPrev;
 
-      list.swap(tmp);
+      list.Swap(tmp);
     }
 
     {// Remove duplicates and ancestors.
-      std::vector<MortonId> tmp;
-      if(!(list.empty())) {
-        for(unsigned int i = 0; i < (list.size()-1); i++) {
+      sctl::Vector<MortonId> tmp;
+      if(list.Dim()) {
+        for(unsigned int i = 0; i < (list.Dim()-1); i++) {
           if( (!(list[i].isAncestor(list[i+1]))) && (list[i] != list[i+1]) ) {
-            tmp.push_back(list[i]);
+            tmp.PushBack(list[i]);
           }
         }
         if(new_rank == (new_size-1)) {
-          tmp.push_back(list[list.size()-1]);
+          tmp.PushBack(list[list.Dim()-1]);
         }
       }
-      list.swap(tmp);
+      list.Swap(tmp);
     }
 
     if(new_rank < (new_size-1)) {
@@ -759,18 +726,18 @@ inline int lineariseList(std::vector<MortonId> & list, const sctl::Comm& comm) {
   return 1;
 }//end fn.
 
-inline int balanceOctree (std::vector<MortonId > &in, std::vector<MortonId > &out,
+inline int balanceOctree (sctl::Vector<MortonId > &in, sctl::Vector<MortonId > &out,
     unsigned int dim, unsigned int maxDepth, bool periodic, const sctl::Comm& comm) {
 
   int omp_p=omp_get_max_threads();
   const int size = comm.Size();
-  if(size==1 && in.size()==1){
+  if(size==1 && in.Dim()==1){
     out=in;
     return 0;
   }
 
 #ifdef PVFMM_VERBOSE
-  long long locInSize = in.size();
+  long long locInSize = in.Dim();
 #endif
 
   //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -782,15 +749,15 @@ inline int balanceOctree (std::vector<MortonId > &in, std::vector<MortonId > &ou
     //  balance_wt[i]=in[i].GetDepth();
     //}
     //par::partitionW<MortonId>(in, &balance_wt[0], comm.GetMPI_Comm());
-    PartitionW(in, comm);
+    comm.PartitionW(in);
   }
 
   //Build level-by-level set of nodes.
   std::vector<std::set<MortonId> > nodes((maxDepth+1)*omp_p);
   #pragma omp parallel for
   for(int p=0;p<omp_p;p++){
-    size_t a=( p   *in.size())/omp_p;
-    size_t b=((p+1)*in.size())/omp_p;
+    size_t a=( p   *in.Dim())/omp_p;
+    size_t b=((p+1)*in.Dim())/omp_p;
     for(size_t i=a;i<b;){
       size_t d=in[i].GetDepth();
       if(d==0){i++; continue;}
@@ -841,7 +808,7 @@ inline int balanceOctree (std::vector<MortonId > &in, std::vector<MortonId > &ou
       node_cnt[i]+=nodes[j+i*(maxDepth+1)].size();
   }
   sctl::omp_par::scan(&node_cnt[0],&node_dsp[0], omp_p);
-  in.resize(node_cnt[omp_p-1]+node_dsp[omp_p-1]);
+  in.ReInit(node_cnt[omp_p-1]+node_dsp[omp_p-1]);
 
   //Copy leaf nodes to in.
   #pragma omp parallel for
@@ -857,29 +824,29 @@ inline int balanceOctree (std::vector<MortonId > &in, std::vector<MortonId > &ou
 
 #ifdef PVFMM_VERBOSE
   //Local size before removing duplicates and ancestors (linearise).
-  long long locTmpSize = in.size();
+  long long locTmpSize = in.Dim();
 #endif
 
   //Sort, Linearise, Redistribute.
   //TODO The following might work better as it reduces the comm bandwidth:
   //Split comm into sqrt(np) processes and sort, linearise for each comm group.
   //Then do the global sort, linearise with the original comm.
-  HyperQuickSort(in, out, comm);
+  comm.HyperQuickSort(in, out);
   lineariseList(out, comm);
-  PartitionW(out, comm);
+  comm.PartitionW(out);
   { // Add children
 
     //Remove empty processors...
-    const sctl::Comm new_comm = comm.Split(out.empty() ? 0 : 1);
+    const sctl::Comm new_comm = comm.Split(out.Dim()==0 ? 0 : 1);
     const int new_rank = new_comm.Rank();
     const int new_size = new_comm.Size();
-    if(!out.empty()) {
+    if(out.Dim()) {
       MortonId nxt_mid(0,0,0,0);
       { // Get last octant from previous process.
-        assert(out.size());
+        assert(out.Dim());
 
         //Send the last octant to the next processor.
-        MortonId lastOctant = out.back();
+        MortonId lastOctant = out[out.Dim()-1];
         MortonId lastOnPrev;
 
         sctl::Comm::Request recvRequest, sendRequest;
@@ -901,33 +868,33 @@ inline int balanceOctree (std::vector<MortonId > &in, std::vector<MortonId > &ou
         }
       }
 
-      std::vector<MortonId> out1;
+      sctl::Vector<MortonId> out1;
       std::vector<MortonId> children;
-      for(size_t i=0;i<out.size();i++){
+      for(size_t i=0;i<(size_t)out.Dim();i++){
         while(nxt_mid.getDFD()<out[i]){
           while(nxt_mid.isAncestor(out[i])){
             nxt_mid=nxt_mid.getAncestor(nxt_mid.GetDepth()+1);
           }
-          out1.push_back(nxt_mid);
+          out1.PushBack(nxt_mid);
           nxt_mid=nxt_mid.NextId();
         }
 
         children=out[i].Children();
         for(size_t j=0;j<8;j++){
-          out1.push_back(children[j]);
+          out1.PushBack(children[j]);
         }
         nxt_mid=out[i].NextId();
       }
       if(new_rank==new_size-1){
         while(nxt_mid.GetDepth()>0){
-          out1.push_back(nxt_mid);
+          out1.PushBack(nxt_mid);
           nxt_mid=nxt_mid.NextId();
         }
       }
-      out.swap(out1);
+      out.Swap(out1);
     }
     if(new_size<size){
-      PartitionW(out, comm);
+      comm.PartitionW(out);
     }
 
     // new_comm freed automatically when sctl::Comm destructor fires.
@@ -936,14 +903,11 @@ inline int balanceOctree (std::vector<MortonId > &in, std::vector<MortonId > &ou
   //////////////////////////////////////////////////////////////////////////////////////////////////
 
 #ifdef PVFMM_VERBOSE
-  long long locOutSize = out.size();
-  long long globInSize, globTmpSize, globOutSize;
-  comm.Allreduce(sctl::Ptr2ConstItr<long long>(&locInSize,1), sctl::Ptr2Itr<long long>(&globInSize,1), 1, sctl::CommOp::SUM);
-  comm.Allreduce(sctl::Ptr2ConstItr<long long>(&locTmpSize,1), sctl::Ptr2Itr<long long>(&globTmpSize,1), 1, sctl::CommOp::SUM);
-  comm.Allreduce(sctl::Ptr2ConstItr<long long>(&locOutSize,1), sctl::Ptr2Itr<long long>(&globOutSize,1), 1, sctl::CommOp::SUM);
-  if(!comm.Rank()) std::cout<<"Balance Octree. inpSize: "<<globInSize
-                                    <<" tmpSize: "<<globTmpSize
-                                    <<" outSize: "<<globOutSize
+  sctl::StaticArray<long long,3> loc_sizes{locInSize, locTmpSize, (long long)out.Dim()}, glb_sizes;
+  comm.Allreduce<long long>(loc_sizes, glb_sizes, 3, sctl::CommOp::SUM);
+  if(!comm.Rank()) std::cout<<"Balance Octree. inpSize: "<<glb_sizes[0]
+                                    <<" tmpSize: "<<glb_sizes[1]
+                                    <<" outSize: "<<glb_sizes[2]
                                  <<" activeNpes: "<<size<<std::endl;
 #endif
   return 0;
@@ -960,52 +924,52 @@ void MPI_Tree<TreeNode>::Balance21(BoundaryType bndry) {
   //Using Dendro for balancing
   //Create a linear tree in dendro format.
   sctl::Iterator<Node_t> curr_node=this->PreorderFirst();
-  std::vector<MortonId> in;
+  sctl::Vector<MortonId> in;
   while(curr_node!=sctl::NullIterator<Node_t>()){
     if(curr_node->IsLeaf() && !curr_node->IsGhost()){
-      in.push_back(curr_node->GetMortonId());
+      in.PushBack(curr_node->GetMortonId());
     }
     curr_node=this->PreorderNxt(curr_node);
   }
 
   //2:1 balance
   sctl::Profile::Tic("ot::balanceOctree",&this->sctl_comm,true,10);
-  std::vector<MortonId> out;
+  sctl::Vector<MortonId> out;
   balanceOctree(in, out, this->Dim(), this->max_depth, (bndry!=FreeSpace), Comm());
-  if(!redist){ // Use original partitioning
-    std::vector<int> cnt(num_proc,0);
-    std::vector<int> dsp(num_proc+1,out.size());
-    std::vector<MortonId> mins=GetMins();
+  if(!redist){ // Use original partitioning, in the future we may decide to redist=false
+    sctl::Vector<sctl::Long> cnt(num_proc); cnt.SetZero();
+    sctl::Vector<sctl::Long> dsp(num_proc+1); dsp[num_proc]=out.Dim();
+    const sctl::Vector<MortonId>& mins=GetMins();
     for(int i=0;i<num_proc;i++){
-      size_t indx=std::lower_bound(&out[0],&out[0]+out.size(),mins[i],std::less<MortonId>())-&out[0];
+      size_t indx=std::lower_bound(out.begin(),out.end(),mins[i],std::less<MortonId>())-out.begin();
       dsp[i]=indx;
     }
     for(int i=0;i<num_proc;i++){
       cnt[i]=dsp[i+1]-dsp[i];
     }
 
-    std::vector<int> recv_cnt(num_proc);
-    std::vector<int> recv_dsp(num_proc);
-    Comm().Alltoall(sctl::Ptr2ConstItr<int>(&cnt[0],num_proc), 1, sctl::Ptr2Itr<int>(&recv_cnt[0],num_proc), 1);
-    sctl::omp_par::scan(&recv_cnt[0],&recv_dsp[0],num_proc);
+    sctl::Vector<sctl::Long> recv_cnt(num_proc);
+    sctl::Vector<sctl::Long> recv_dsp(num_proc); recv_dsp.SetZero();
+    Comm().Alltoall(cnt.begin(), 1, recv_cnt.begin(), 1);
+    sctl::omp_par::scan(recv_cnt.begin(),recv_dsp.begin(),num_proc);
 
-    in.resize(recv_cnt[num_proc-1]+recv_dsp[num_proc-1]);
-    Alltoallv(&out[0], &     cnt[0], &     dsp[0],
-              & in[0], &recv_cnt[0], &recv_dsp[0], Comm());
-    in.swap(out);
+    in.ReInit(recv_cnt[num_proc-1]+recv_dsp[num_proc-1]);
+    Comm().template Alltoallv<MortonId>(out.begin(), cnt.begin(), dsp.begin(),
+              in.begin(), recv_cnt.begin(), recv_dsp.begin());
+    in.Swap(out);
   }
   sctl::Profile::Toc();
 
   //Get new_mins.
-  std::vector<MortonId> new_mins(num_proc);
-  Comm().Allgather(sctl::Ptr2ConstItr<MortonId>(&out[0],1), 1, sctl::Ptr2Itr<MortonId>(&new_mins[0],num_proc), 1);
+  sctl::Vector<MortonId> new_mins(num_proc);
+  Comm().Allgather((sctl::ConstIterator<MortonId>)out.begin(), 1, new_mins.begin(), 1);
 
 
   // Refine to new_mins in my range of octants
   // or else RedistNodes(...) will not work correctly.
   if(redist){
     int i=0;
-    std::vector<MortonId> mins=GetMins();
+    const sctl::Vector<MortonId>& mins=GetMins();
     while(i<num_proc && new_mins[i]<mins[myrank]) i++; //TODO: Use binary search.
     for(;i<num_proc;i++){
       sctl::Iterator<Node_t> n=FindNode(new_mins[i], true);
@@ -1016,9 +980,9 @@ void MPI_Tree<TreeNode>::Balance21(BoundaryType bndry) {
 
   //Redist nodes using new_mins.
   sctl::Profile::Tic("RedistNodes",&this->sctl_comm,true,10);
-  if(redist) RedistNodes(&out[0]);
+  if(redist) RedistNodes(out.begin());
   #ifndef PVFMM_NDEBUG
-  std::vector<MortonId> mins=GetMins();
+  const sctl::Vector<MortonId>& mins=GetMins();
   assert(mins[myrank].getDFD()==out[0].getDFD());
   #endif
   sctl::Profile::Toc();
@@ -1027,15 +991,15 @@ void MPI_Tree<TreeNode>::Balance21(BoundaryType bndry) {
   sctl::Profile::Tic("LocalSubdivide",&this->sctl_comm,false,10);
   int omp_p=omp_get_max_threads();
   for(int i=0;i<omp_p;i++){
-    size_t a=(out.size()*i)/omp_p;
+    size_t a=(out.Dim()*i)/omp_p;
     sctl::Iterator<Node_t> n=FindNode(out[a], true);
     assert(n->GetMortonId()==out[a]);
     PVFMM_UNUSED(n);
   }
   #pragma omp parallel for
   for(int i=0;i<omp_p;i++){
-    size_t a=(out.size()* i   )/omp_p;
-    size_t b=(out.size()*(i+1))/omp_p;
+    size_t a=(out.Dim()* i   )/omp_p;
+    size_t b=(out.Dim()*(i+1))/omp_p;
 
     MortonId dn;
     size_t node_iter=a;
@@ -1268,7 +1232,7 @@ bool MPI_Tree<TreeNode>::CheckTree(){
   int myrank,np;
   myrank = Comm().Rank();
   np = Comm().Size();
-  std::vector<MortonId> mins=GetMins();
+  const sctl::Vector<MortonId>& mins=GetMins();
 
   std::stringstream st;
   st<<"PID_"<<myrank<<" : ";
@@ -1307,10 +1271,10 @@ bool MPI_Tree<TreeNode>::CheckTree(){
  * ( m1 <= m2 ).
  */
 template <class TreeNode>
-void IsShared(std::vector<TreeNode*>& nodes, MortonId* m1, MortonId* m2, BoundaryType bndry, std::vector<char>& shared_flag){
+void IsShared(std::vector<TreeNode*>& nodes, sctl::ConstIterator<MortonId> m1, sctl::ConstIterator<MortonId> m2, BoundaryType bndry, std::vector<char>& shared_flag){
   MortonId mm1, mm2;
-  if(m1!=NULL) mm1=m1->getDFD();
-  if(m2!=NULL) mm2=m2->getDFD();
+  if(m1!=sctl::NullIterator<MortonId>()) mm1=m1->getDFD();
+  if(m2!=sctl::NullIterator<MortonId>()) mm2=m2->getDFD();
   shared_flag.resize(nodes.size());
   int omp_p=omp_get_max_threads();
 
@@ -1331,8 +1295,8 @@ void IsShared(std::vector<TreeNode*>& nodes, MortonId* m1, MortonId* m2, Boundar
       for(size_t k=0;k<nbr_lst.size();k++){
         MortonId n1=nbr_lst[k]         .getDFD();
         MortonId n2=nbr_lst[k].NextId().getDFD();
-        if(m1==NULL || n2>mm1)
-          if(m2==NULL || n1<mm2){
+        if(m1==sctl::NullIterator<MortonId>() || n2>mm1)
+          if(m2==sctl::NullIterator<MortonId>() || n1<mm2){
             shared_flag[i]=true;
             break;
           }
@@ -1341,10 +1305,10 @@ void IsShared(std::vector<TreeNode*>& nodes, MortonId* m1, MortonId* m2, Boundar
   }
 }
 
-inline void IsShared(std::vector<PackedData>& nodes, MortonId* m1, MortonId* m2, BoundaryType bndry, std::vector<char>& shared_flag){
+inline void IsShared(std::vector<PackedData>& nodes, sctl::ConstIterator<MortonId> m1, sctl::ConstIterator<MortonId> m2, BoundaryType bndry, std::vector<char>& shared_flag){
   MortonId mm1, mm2;
-  if(m1!=NULL) mm1=m1->getDFD();
-  if(m2!=NULL) mm2=m2->getDFD();
+  if(m1!=sctl::NullIterator<MortonId>()) mm1=m1->getDFD();
+  if(m2!=sctl::NullIterator<MortonId>()) mm2=m2->getDFD();
   shared_flag.resize(nodes.size());
   int omp_p=omp_get_max_threads();
 
@@ -1365,8 +1329,8 @@ inline void IsShared(std::vector<PackedData>& nodes, MortonId* m1, MortonId* m2,
       for(size_t k=0;k<nbr_lst.size();k++){
         MortonId n1=nbr_lst[k]         .getDFD();
         MortonId n2=nbr_lst[k].NextId().getDFD();
-        if(m1==NULL || n2>mm1)
-          if(m2==NULL || n1<mm2){
+        if(m1==sctl::NullIterator<MortonId>() || n2>mm1)
+          if(m2==sctl::NullIterator<MortonId>() || n1<mm2){
             shared_flag[i]=true;
             break;
           }
@@ -1405,7 +1369,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Hypercube(BoundaryType bndry){
   rank = Comm().Rank();
   if(num_p==1) return;
   int omp_p=omp_get_max_threads();
-  std::vector<MortonId> mins=GetMins();
+  const sctl::Vector<MortonId>& mins=GetMins();
 
   // Build list of shared nodes.
   std::vector<Node_t*> shared_nodes; shared_nodes.clear();
@@ -1422,8 +1386,8 @@ void MPI_Tree<TreeNode>::ConstructLET_Hypercube(BoundaryType bndry){
   }
   std::vector<char> node_flag0; node_flag0.clear();
   std::vector<char> node_flag1; node_flag1.clear();
-  IsShared(node_lst,&mins[0],&mins[rank],bndry,node_flag0);
-  if(rank<num_p-1) IsShared(node_lst,&mins[rank+1],NULL,bndry,node_flag1);
+  IsShared(node_lst,mins.begin(),mins.begin()+rank,bndry,node_flag0);
+  if(rank<num_p-1) IsShared(node_lst,mins.begin()+(rank+1),sctl::NullIterator<MortonId>(),bndry,node_flag1);
   for(size_t i=0;i<node_lst.size();i++){
     if(node_flag0[i] || (rank<num_p-1 && node_flag1[i]))
       shared_nodes.push_back(node_lst[i]);
@@ -1433,8 +1397,8 @@ void MPI_Tree<TreeNode>::ConstructLET_Hypercube(BoundaryType bndry){
   // Pack shared nodes.
   static std::vector<char> shrd_buff_vec0(omp_p*64l*1024l*1024l);
   static std::vector<char> shrd_buff_vec1(omp_p*128l*1024l*1024l);
-  static std::vector<char> send_buff_vec(omp_p*64l*1024l*1024l); char* send_buff;
-  static std::vector<char> recv_buff_vec(omp_p*64l*1024l*1024l); char* recv_buff;
+  static sctl::Vector<char> send_buff_vec(omp_p*64l*1024l*1024l);
+  static sctl::Vector<char> recv_buff_vec(omp_p*64l*1024l*1024l);
 
   std::vector<PackedData> shrd_data;
   size_t max_data_size=0;
@@ -1470,8 +1434,8 @@ void MPI_Tree<TreeNode>::ConstructLET_Hypercube(BoundaryType bndry){
 
     int send_length=0;
     std::vector<PackedData> shrd_data_new;
-    IsShared(shrd_data, &mins[com_range[0]], (com_range[1]==(size_t)num_p-1?NULL:&mins[com_range[1]+1]),bndry, node_flag0);
-    IsShared(shrd_data, &mins[new_range[0]], (new_range[1]==(size_t)num_p-1?NULL:&mins[new_range[1]+1]),bndry, node_flag1);
+    IsShared(shrd_data, mins.begin()+com_range[0], (com_range[1]==(size_t)num_p-1?sctl::NullIterator<MortonId>():mins.begin()+(com_range[1]+1)),bndry, node_flag0);
+    IsShared(shrd_data, mins.begin()+new_range[0], (new_range[1]==(size_t)num_p-1?sctl::NullIterator<MortonId>():mins.begin()+(new_range[1]+1)),bndry, node_flag1);
     {
       std::vector<void*> srctrg_ptr;
       std::vector<size_t> mem_size;
@@ -1485,7 +1449,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Hypercube(BoundaryType bndry){
           srctrg_ptr.push_back(p.data);
           srctrg_ptr.push_back(data_ptr);
           send_length+=p.length+sizeof(size_t);
-          assert((size_t)send_length<=send_buff_vec.size()); //TODO: resize if needed.
+          assert((size_t)send_length<=(size_t)send_buff_vec.Dim()); //TODO: resize if needed.
         }
         if(!node_flag1[i]){ // Free memory slot.
           //assert(node_flag0[0]);
@@ -1516,13 +1480,13 @@ void MPI_Tree<TreeNode>::ConstructLET_Hypercube(BoundaryType bndry){
       Comm().Wait(std::move(sr)); Comm().Wait(std::move(rr)); }
 
     //SendRecv data.
-    assert((size_t)send_length                  <=send_buff_vec.size()); send_buff=&send_buff_vec[0];
-    assert((size_t)recv_length+extra_recv_length<=recv_buff_vec.size()); recv_buff=&recv_buff_vec[0];
-    { auto rr=Comm().Irecv(sctl::Ptr2Itr<char>(recv_buff,recv_length),recv_length,(int)partner,0);
-      auto sr=Comm().Issend(sctl::Ptr2ConstItr<char>(send_buff,send_length),send_length,(int)partner,0);
+    assert((size_t)send_length                  <=(size_t)send_buff_vec.Dim());
+    assert((size_t)recv_length+extra_recv_length<=(size_t)recv_buff_vec.Dim());
+    { auto rr=Comm().Irecv(recv_buff_vec.begin(),recv_length,(int)partner,0);
+      auto sr=Comm().Issend(send_buff_vec.begin(),send_length,(int)partner,0);
       Comm().Wait(std::move(sr)); Comm().Wait(std::move(rr)); }
-    if(extra_partner){ auto rr=Comm().Irecv(sctl::Ptr2Itr<char>(&recv_buff[recv_length],extra_recv_length),extra_recv_length,(int)split_p,0);
-      auto sr=Comm().Issend(sctl::Ptr2ConstItr<char>(send_buff,0),0,(int)split_p,0);
+    if(extra_partner){ auto rr=Comm().Irecv(recv_buff_vec.begin()+recv_length,extra_recv_length,(int)split_p,0);
+      auto sr=Comm().Issend(send_buff_vec.begin(),0,(int)split_p,0);
       Comm().Wait(std::move(sr)); Comm().Wait(std::move(rr)); }
 
     //Get nodes from received data.
@@ -1623,11 +1587,11 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
   if(num_p==1) return;
 
   int omp_p=omp_get_max_threads();
-  std::vector<MortonId> mins=GetMins();
+  const sctl::Vector<MortonId>& mins=GetMins();
 
   // Allocate Memory.
-  static std::vector<char> send_buff;
-  static std::vector<char> recv_buff;
+  static sctl::Vector<char> send_buff;
+  static sctl::Vector<char> recv_buff;
 
   //sctl::Profile::Tic("SharedNodes",&this->Comm(), false, 5);
   sctl::Iterator<char> node_comm_data_iter = sctl::NullIterator<char>();  // owns the char allocation
@@ -1672,7 +1636,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
           MortonId usr_mid=nbr_lst[j];
           MortonId usr_mid_dfd=usr_mid.getDFD();
           comm_data.usr_mid[j]=usr_mid;
-          comm_data.usr_pid[j]=std::upper_bound(&mins[0],&mins[num_p],usr_mid_dfd)-&mins[0]-1;
+          comm_data.usr_pid[j]=std::upper_bound(mins.begin(),mins.begin()+num_p,usr_mid_dfd)-mins.begin()-1;
 //          if(usr_mid_dfd<mins_r0 || (rank+1<num_p && usr_mid_dfd>=mins_r1)){ // Find the user pid.
 //            size_t usr_pid=std::upper_bound(&mins[0],&mins[num_p],usr_mid_dfd)-&mins[0]-1;
 //            comm_data.usr_pid[j]=usr_pid;
@@ -1746,8 +1710,8 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
   //sctl::Profile::Toc();
 
   //sctl::Profile::Tic("SendBuff",&this->Comm(), false, 5);
-  std::vector<MPI_size_t> send_size(num_p,0);
-  std::vector<MPI_size_t> send_disp(num_p,0);
+  sctl::ScratchBuf<sctl::Long> send_size(num_p); std::fill(send_size.begin(),send_size.end(),(sctl::Long)0);
+  sctl::ScratchBuf<sctl::Long> send_disp(num_p); std::fill(send_disp.begin(),send_disp.end(),(sctl::Long)0);
   if(pid_node_pair.size()){ // Build send_buff.
     std::vector<size_t> size(pid_node_pair.size(),0);
     std::vector<size_t> disp(pid_node_pair.size(),0);
@@ -1758,8 +1722,8 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
     sctl::omp_par::scan(&size[0],&disp[0],pid_node_pair.size());
 
     // Resize send_buff.
-    if(send_buff.size()<size[pid_node_pair.size()-1]+disp[pid_node_pair.size()-1]){
-      send_buff.resize(size[pid_node_pair.size()-1]+disp[pid_node_pair.size()-1]);
+    if((size_t)send_buff.Dim()<size[pid_node_pair.size()-1]+disp[pid_node_pair.size()-1]){
+      send_buff.ReInit(size[pid_node_pair.size()-1]+disp[pid_node_pair.size()-1]);
     }
 
     // Copy data to send_buff.
@@ -1790,7 +1754,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
       }
 
       // Compute send_disp.
-      sctl::omp_par::scan(&send_size[0],&send_disp[0],num_p);
+      sctl::omp_par::scan(send_size.begin(),send_disp.begin(),num_p);
     }
   }
   //sctl::Profile::Toc();
@@ -1798,16 +1762,16 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
   //sctl::Profile::Tic("A2A_Sparse",&this->Comm(), true, 5);
   size_t recv_length=0;
   { // Allocate recv_buff.
-    std::vector<MPI_size_t> recv_size(num_p,0);
-    std::vector<MPI_size_t> recv_disp(num_p,0);
-    Comm().Alltoall(sctl::Ptr2ConstItr<MPI_size_t>(&send_size[0],num_p), 1, sctl::Ptr2Itr<MPI_size_t>(&recv_size[0],num_p), 1);
-    sctl::omp_par::scan(&recv_size[0],&recv_disp[0],num_p);
+    sctl::ScratchBuf<sctl::Long> recv_size(num_p);
+    sctl::ScratchBuf<sctl::Long> recv_disp(num_p); std::fill(recv_disp.begin(),recv_disp.end(),(sctl::Long)0);
+    Comm().Alltoall(send_size.begin(), 1, recv_size.begin(), 1);
+    sctl::omp_par::scan(recv_size.begin(),recv_disp.begin(),num_p);
     recv_length=recv_size[num_p-1]+recv_disp[num_p-1];
-    if(recv_buff.size()<recv_length){
-      recv_buff.resize(recv_length);
+    if((size_t)recv_buff.Dim()<recv_length){
+      recv_buff.ReInit(recv_length);
     }
-    Alltoallv(&send_buff[0], &send_size[0], &send_disp[0],
-              &recv_buff[0], &recv_size[0], &recv_disp[0], Comm());
+    Comm().template Alltoallv<char>(send_buff.begin(), send_size.begin(), send_disp.begin(),
+              recv_buff.begin(), recv_size.begin(), recv_disp.begin());
   }
   //sctl::Profile::Toc();
 
@@ -1987,8 +1951,8 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
         if(send_data.size()>0) send_length=send_size.back()+send_disp.back();
 
         // Resize send_buff.
-        if(send_buff.size()<(size_t)send_length){
-          send_buff.resize(send_length);
+        if((size_t)send_buff.Dim()<(size_t)send_length){
+          send_buff.ReInit(send_length);
         }
 
         // Copy data to send_buff.
@@ -2007,12 +1971,12 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
         if(recv_pid!=rank) Comm().Wait(std::move(request));
 
         // Resize recv_buff
-        if(recv_buff.size()<(size_t)recv_length){
-          recv_buff.resize(recv_length);
+        if((size_t)recv_buff.Dim()<(size_t)recv_length){
+          recv_buff.ReInit(recv_length);
         }
 
-        if(recv_length>0) request = Comm().Irecv(sctl::Ptr2Itr<char>(&recv_buff[0],recv_length), recv_length, (int)recv_pid, 1);
-        if(send_length>0){ auto sr=Comm().Issend(sctl::Ptr2ConstItr<char>(&send_buff[0],send_length), send_length, (int)send_pid, 1); Comm().Wait(std::move(sr)); }
+        if(recv_length>0) request = Comm().Irecv(recv_buff.begin(), recv_length, (int)recv_pid, 1);
+        if(send_length>0){ auto sr=Comm().Issend(send_buff.begin(), send_length, (int)send_pid, 1); Comm().Wait(std::move(sr)); }
         if(recv_length>0) Comm().Wait(std::move(request));
       }
 
@@ -2319,7 +2283,7 @@ void MPI_Tree<TreeNode>::Write2File(const char* fname, int lod){
 
 
 template <class TreeNode>
-const std::vector<MortonId>& MPI_Tree<TreeNode>::GetMins(){
+const sctl::Vector<MortonId>& MPI_Tree<TreeNode>::GetMins(){
   sctl::Iterator<Node_t> n=this->PreorderFirst();
   while(n!=sctl::NullIterator<Node_t>()){
     if(!n->IsGhost() && n->IsLeaf()) break;
@@ -2332,9 +2296,9 @@ const std::vector<MortonId>& MPI_Tree<TreeNode>::GetMins(){
 
   int np;
   np = Comm().Size();
-  mins.resize(np);
+  mins.ReInit(np);
 
-  Comm().Allgather(sctl::Ptr2ConstItr<MortonId>(&my_min,1), 1, sctl::Ptr2Itr<MortonId>(&mins[0],np), 1);
+  Comm().Allgather(sctl::Ptr2ConstItr<MortonId>(&my_min,1), 1, mins.begin(), 1);
 
   return mins;
 }

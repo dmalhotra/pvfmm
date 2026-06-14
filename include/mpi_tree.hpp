@@ -79,7 +79,7 @@ class MPI_Tree: public Tree<TreeNode>{
   /**
    * \brief Redistribute the tree among the processes.
    */
-  void RedistNodes(MortonId* loc_min=NULL);
+  void RedistNodes(sctl::ConstIterator<MortonId> loc_min=sctl::NullIterator<MortonId>());
 
   /**
    * \brief Performs global 2:1 balancing of the tree.
@@ -140,7 +140,7 @@ class MPI_Tree: public Tree<TreeNode>{
    * \brief Returns a vector with the minimum Morton Id of the regions
    * controlled by each processor.
    */
-  const std::vector<MortonId>& GetMins();
+  const sctl::Vector<MortonId>& GetMins();
 
  private:
 
@@ -148,7 +148,7 @@ class MPI_Tree: public Tree<TreeNode>{
   void ConstructLET_Sparse(BoundaryType bndry=FreeSpace);
 
   sctl::Comm sctl_comm;
-  std::vector<MortonId> mins;
+  sctl::Vector<MortonId> mins;
 
 };
 
