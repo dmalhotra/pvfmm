@@ -708,14 +708,7 @@ sctl::Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat
         sctl::Vector<Real_t> out_(2*n3_*ker_dim[0]*ker_dim[1], fftw_out_scratch.begin(), false);
         vprecomp_fft.Execute(in_, out_);
       }
-      // sctl::FFT is unitary (1/sqrt(N) each way); FFTW was unnormalized. The
-      // V-list round trip (this precomp r2c, the up-equiv r2c, the dn-check c2r)
-      // accrues 1/N^1.5 vs the old convention, so scale the stored frequency-
-      // domain V-matrix by N^1.5 (N=n3) once here to keep RunFMM output identical.
-      {
-        Real_t fft_scale = sctl::pow<Real_t>((Real_t)n3, (Real_t)1.5);
-        for(int ii=0; ii<2*n3_*ker_dim[0]*ker_dim[1]; ii++) fftw_out[ii] *= fft_scale;
-      }
+      // sctl::FFT is unnormalized (raw FFTW), so no normalization compensation is needed.
       sctl::Matrix<Real_t> M_(2*n3_*ker_dim[0]*ker_dim[1],1, sctl::Ptr2Itr<Real_t>((Real_t*)fftw_out, (2*n3_*ker_dim[0]*ker_dim[1])*(1)),false);
       M=M_;
       // fftw_in, fftw_out freed automatically at scope exit.

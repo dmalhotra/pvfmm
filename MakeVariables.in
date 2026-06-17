@@ -16,7 +16,7 @@ PVFMM_LIBS = -L$(TOP_SRCDIR_PVFMM)/lib$(PKG_SUBDIR_PVFMM) -lpvfmm
 
 # Add FFTW include and lib paths.
 FFTW_INCLUDES_PVFMM = @FFTW_INCLUDE@
-FFTW_LIBS_PVFMM = @FFTW_LIB@ @FFTWF_LIB@
+FFTW_LIBS_PVFMM = @FFTW_LIB@ @FFTWF_LIB@ @FFTWL_LIB@ @FFTW_THREADS_LIB@
 
 # BLAS, LAPACK libs.
 BLAS_LAPACK_LIB_PVFMM = @LAPACK_LIBS@ @BLAS_LIBS@ @FLIBS@
@@ -39,6 +39,11 @@ LDLIBS_PVFMM = @LDFLAGS@ $(PVFMM_LIBS) $(FFTW_LIBS_PVFMM) $(BLAS_LAPACK_LIB_PVFM
 
 LDFLAGS_PVFMM = $(LDLIBS_PVFMM) # Deprecated, use LDLIBS_PVFMM instead
 
-# Add SCTL
-CXXFLAGS_PVFMM += -DSCTL_HAVE_PVFMM -DSCTL_HAVE_BLAS -DSCTL_HAVE_LAPACK -DSCTL_HAVE_FFTW -DSCTL_PROFILE=5 -DSCTL_VERBOSE
+# Add SCTL. The -DSCTL_HAVE_* flags below are filled in by configure (the
+# SCTL_DEFS substitution; see configure.ac) based on the libraries it actually
+# detected, so the SCTL layer only enables backends that are present.
+# SCTL_PROFILE can be overridden on the make command line, e.g.
+# `make SCTL_PROFILE=0` to disable profiling overhead.
+SCTL_PROFILE ?= @SCTL_PROFILE_DEFAULT@
+CXXFLAGS_PVFMM += -DSCTL_HAVE_PVFMM @SCTL_DEFS@ -DSCTL_PROFILE=$(SCTL_PROFILE) -DSCTL_VERBOSE
 CXXFLAGS_PVFMM += -I$(TOP_SRCDIR_PVFMM)/SCTL/include

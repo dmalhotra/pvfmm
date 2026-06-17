@@ -156,6 +156,7 @@ DISABLE_INTEL_OFFLOAD(-qno-offload)
 # Check for FFTW
 AC_CHECK_FFTW
 AC_CHECK_FFTWF
+AC_CHECK_FFTWL
 
 
 #Check for BLAS LAPACK
@@ -215,6 +216,69 @@ AC_FUNC_STRTOD
 AC_CHECK_FUNCS([floor memset pow sqrt strtol strtoul])
 AX_CHECK_SVML
 
+#######################################################################
+# Assemble the SCTL feature macros from what configure actually found.
+# These are substituted into MakeVariables (@SCTL_DEFS@) so the SCTL
+# layer is told exactly which optional dependencies are available,
+# instead of hard-coding the list.
+#######################################################################
+
+# Optional: threaded FFTW plans (off by default; pvfmm drives one FFT
+# per OpenMP thread, so threaded FFTW would only oversubscribe). Enable
+# with --enable-fftw-threads, which also links the threads library.
+FFTW_THREADS_LIB=""
+acx_fftw_threads_ok=no
+AC_ARG_ENABLE([fftw-threads],
+              [AS_HELP_STRING([--enable-fftw-threads],
+                              [use threaded FFTW plans in SCTL (default: no)])],
+              [enable_fftw_threads=$enableval],
+              [enable_fftw_threads=no])
+if test "x$enable_fftw_threads" = xyes -a "x$acx_fftw_ok" = xyes; then
+  save_LIBS="$LIBS"
+  LIBS="$FFTW_LIB $LIBS"
+  AC_MSG_CHECKING([for fftw_init_threads])
+  AC_TRY_LINK_FUNC(fftw_init_threads,
+                   [acx_fftw_threads_ok=yes],
+                   [acx_fftw_threads_ok=no])
+  AC_MSG_RESULT($acx_fftw_threads_ok)
+  if test "x$acx_fftw_threads_ok" = xno; then
+    AC_CHECK_LIB([fftw3_threads],fftw_init_threads,
+                 [acx_fftw_threads_ok=yes; FFTW_THREADS_LIB="-lfftw3_threads"],
+                 [AC_CHECK_LIB([fftw3_omp],fftw_init_threads,
+                               [acx_fftw_threads_ok=yes; FFTW_THREADS_LIB="-lfftw3_omp"],
+                               [acx_fftw_threads_ok=no],
+                               [$FFTW_LIB])],
+                 [$FFTW_LIB])
+  fi
+  LIBS="$save_LIBS"
+  if test "x$acx_fftw_threads_ok" = xno; then
+    AC_MSG_WARN([--enable-fftw-threads requested but no threaded FFTW found; disabling.])
+  fi
+fi
+AC_SUBST(FFTW_THREADS_LIB)
+
+# Profiling verbosity level for sctl::Profile (overridable at make time via
+# `make SCTL_PROFILE=<n>`; 0 disables profiling overhead).
+AC_ARG_WITH([sctl-profile],
+            [AS_HELP_STRING([--with-sctl-profile=N],
+                            [default SCTL_PROFILE level (default: 5000)])],
+            [SCTL_PROFILE_DEFAULT="$withval"],
+            [SCTL_PROFILE_DEFAULT=5000])
+AC_SUBST(SCTL_PROFILE_DEFAULT)
+
+# Assemble the -D flags. MPI is mandatory for pvfmm (AX_MPI errors out
+# above if mpicxx is missing), so SCTL_HAVE_MPI is always on; the rest
+# track detection results.
+SCTL_DEFS="-DSCTL_HAVE_MPI"
+if test "x$acx_blas_ok"         = xyes; then SCTL_DEFS="$SCTL_DEFS -DSCTL_HAVE_BLAS";    fi
+if test "x$acx_lapack_ok"       = xyes; then SCTL_DEFS="$SCTL_DEFS -DSCTL_HAVE_LAPACK";  fi
+if test "x$acx_fftw_ok"         = xyes; then SCTL_DEFS="$SCTL_DEFS -DSCTL_HAVE_FFTW";    fi
+if test "x$acx_fftwf_ok"        = xyes; then SCTL_DEFS="$SCTL_DEFS -DSCTL_HAVE_FFTWF";   fi
+if test "x$acx_fftwl_ok"        = xyes; then SCTL_DEFS="$SCTL_DEFS -DSCTL_HAVE_FFTWL";   fi
+if test "x$acx_fftw_threads_ok" = xyes; then SCTL_DEFS="$SCTL_DEFS -DSCTL_FFTW_THREADS"; fi
+if test "x$cv_have_svml"        = xyes; then SCTL_DEFS="$SCTL_DEFS -DSCTL_HAVE_SVML";    fi
+AC_SUBST(SCTL_DEFS)
+
 # Path for precomputed data files.
 AC_ARG_WITH(precomp-dir,
             [AS_HELP_STRING([--with-precomp-dir=DIR], [set directory for precomputed data files to DIR])],
@@ -234,8 +298,16 @@ $PACKAGE-$VERSION library configuration:
 External libs:
   - BLAS ........... : ${acx_blas_ok}
   - LAPACK ......... : ${acx_lapack_ok}
-  - FFTW ........... : ${acx_fftw_ok}
+  - FFTW (double) .. : ${acx_fftw_ok}
+  - FFTW (float) ... : ${acx_fftwf_ok}
+  - FFTW (ldouble) . : ${acx_fftwl_ok}
+  - FFTW threads ... : ${acx_fftw_threads_ok}
+  - SVML ........... : ${cv_have_svml}
   - CUDA ........... : ${ac_compile_nvcc}
+
+SCTL flags:
+  - SCTL_DEFS ...... : ${SCTL_DEFS}
+  - SCTL_PROFILE ... : ${SCTL_PROFILE_DEFAULT}
 
 Compiler/linker flags/libs/defs:
   - MPICXX ......... : ${MPICXX}

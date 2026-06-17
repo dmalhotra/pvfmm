@@ -4,13 +4,6 @@
 
 #include <pvfmm.hpp>
 #include <utils.hpp>
-#include <sctl/trace.hpp>
-#include <sctl/trace.txx>
-
-// Wrap every MPI_* call with SCTL Trace MpiBegin/End events. The IMPL
-// macro must appear in exactly one TU; example1 is that TU.
-#define SCTL_TRACE_MPI_SHIM_IMPL
-#include <sctl/trace_mpi_shim.hpp>
 
 typedef std::vector<double> vec;
 
@@ -152,13 +145,6 @@ int main(int argc, char **argv){
   sctl::Comm::MPI_Init(&argc, &argv);
   const sctl::Comm comm = sctl::Comm::World();
 
-  // Tag this rank's trace with its identity, then barrier+broadcast so
-  // every rank's trace timeline shares a wall-clock origin.
-  {
-    sctl::Trace::SetMpiInfo(comm.Rank(), comm.Size());
-    sctl::trace_mpi_shim::SyncAnchor(comm.GetMPI_Comm());
-  }
-
   // Read command line options.
   commandline_option_start(argc, argv, "\
   This example demonstrates solving a particle N-body problem,\n\
@@ -174,14 +160,6 @@ with Laplace Gradient kernel, using the PvFMM library.\n");
 
   //Output Profiling results.
   sctl::Profile::print(&comm);
-
-  // Write a per-rank SCTL trace before MPI shutdown.
-  {
-    char fname[64];
-    std::snprintf(fname, sizeof(fname), "pvfmm-trace-r%d.bin", (int)comm.Rank());
-    sctl::Trace::Flush(fname);
-    sctl::Trace::DisableAtexit();
-  }
 
   // Shut down MPI
   sctl::Comm::MPI_Finalize();
