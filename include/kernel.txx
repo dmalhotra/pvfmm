@@ -13,8 +13,7 @@
 
 
 #include <pvfmm_common.hpp>
-#include <vector.hpp>
-#include <matrix.hpp>
+#include <mat_utils.hpp>
 #include <precomp_mat.hpp>
 #include <cheb_utils.hpp>
 

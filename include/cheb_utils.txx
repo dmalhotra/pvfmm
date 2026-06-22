@@ -14,7 +14,6 @@
 
 #include <mat_utils.hpp>
 
-#include <matrix.hpp>
 #include <pvfmm_common.hpp>
 #include <kernel.hpp>
 

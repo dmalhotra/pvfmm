@@ -18,8 +18,7 @@
 #include <mpi_tree.hpp>
 #include <mpi_node.hpp>
 
-#include <vector.hpp>
-#include <matrix.hpp>
+#include <mat_utils.hpp>
 #include <kernel.hpp>
 
 #ifndef _PVFMM_FMM_PTS_HPP_

@@ -12,13 +12,14 @@
 #include <cstdint>
 
 #include <pvfmm_common.hpp>
-#include <mortonid.hpp>
 #include <tree.hpp>
 
 #ifndef _PVFMM_MPI_TREE_HPP_
 #define _PVFMM_MPI_TREE_HPP_
 
 namespace pvfmm{
+
+using MortonId = sctl::Morton<PVFMM_COORD_DIM>;
 
 enum BoundaryType : uint8_t {
   FreeSpace = 0,

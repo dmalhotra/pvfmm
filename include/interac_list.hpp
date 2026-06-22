@@ -12,7 +12,7 @@
 
 #include <pvfmm_common.hpp>
 #include <precomp_mat.hpp>
-#include <matrix.hpp>
+#include <mat_utils.hpp>
 
 #ifndef _PVFMM_INTERAC_LIST_HPP_
 #define _PVFMM_INTERAC_LIST_HPP_

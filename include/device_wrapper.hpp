@@ -15,7 +15,6 @@
 #endif
 
 #include <pvfmm_common.hpp>
-#include <vector.hpp>
 
 #ifndef _PVFMM_DEVICE_WRAPPER_HPP_
 #define _PVFMM_DEVICE_WRAPPER_HPP_

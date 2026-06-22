@@ -14,8 +14,7 @@
 #include <precomp_mat.hpp>
 
 #include <fmm_pts.hpp>
-#include <vector.hpp>
-#include <matrix.hpp>
+#include <mat_utils.hpp>
 #include <kernel.hpp>
 
 #ifndef _PVFMM_FMM_CHEB_HPP_

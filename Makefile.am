@@ -56,15 +56,12 @@ pvfmm_cpp_header_files = \
 									include/fmm_tree.hpp \
 									include/interac_list.hpp \
 									include/kernel.hpp \
-									include/matrix.hpp \
 									include/mat_utils.hpp \
-									include/mortonid.hpp \
 									include/mpi_node.hpp \
 									include/mpi_tree.hpp \
 									include/precomp_mat.hpp \
 									include/tree.hpp \
 									include/tree_node.hpp \
-									include/vector.hpp \
 									include/cheb_node.txx \
 									include/cheb_utils.txx \
 									include/device_wrapper.txx \
@@ -74,12 +71,10 @@ pvfmm_cpp_header_files = \
 									include/fmm_tree.txx \
 									include/interac_list.txx \
 									include/kernel.txx \
-									include/matrix.txx \
 									include/mpi_node.txx \
 									include/mpi_tree.txx \
 									include/precomp_mat.txx \
 									include/tree.txx \
-									include/vector.txx \
 									SCTL/include/sctl.hpp
 
 lib_libpvfmm_la_HEADERS = \

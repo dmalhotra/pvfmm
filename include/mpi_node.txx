@@ -7,7 +7,7 @@
 
 #include <cmath>
 
-#include <matrix.hpp>
+#include <mat_utils.hpp>
 
 
 namespace pvfmm{

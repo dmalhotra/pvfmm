@@ -8,7 +8,7 @@
 #include <mpi.h>
 
 #include <device_wrapper.hpp>
-#include <vector.hpp>
+#include <pvfmm_common.hpp>
 
 namespace pvfmm{
 

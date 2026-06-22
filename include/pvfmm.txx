@@ -8,7 +8,7 @@
 #include <mpi_node.hpp>
 #include <fmm_tree.hpp>
 #include <fmm_pts.hpp>
-#include <vector.hpp>
+#include <pvfmm_common.hpp>
 
 namespace pvfmm{
 

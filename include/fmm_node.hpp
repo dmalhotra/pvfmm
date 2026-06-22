@@ -12,7 +12,6 @@
 #include <tree_node.hpp>
 #include <mpi_node.hpp>
 #include <fmm_pts.hpp>
-#include <vector.hpp>
 
 #ifndef _PVFMM_FMM_NODE_HPP_
 #define _PVFMM_FMM_NODE_HPP_

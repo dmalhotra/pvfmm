@@ -12,7 +12,7 @@
 #include <interac_list.hpp>
 #include <fmm_node.hpp>
 #include <mpi_tree.hpp>
-#include <matrix.hpp>
+#include <mat_utils.hpp>
 
 #ifndef _PVFMM_FMM_TREE_HPP_
 #define _PVFMM_FMM_TREE_HPP_

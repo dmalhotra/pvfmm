@@ -16,7 +16,6 @@
 
 
 #include <pvfmm_common.hpp>
-#include <vector.hpp>
 
 namespace pvfmm{
 

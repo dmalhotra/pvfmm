@@ -14,11 +14,11 @@
 #include <mpi_node.hpp>
 #include <fmm_node.hpp>
 
-#include <mortonid.hpp>
 #include <pvfmm_common.hpp>
-#include <vector.hpp>
 
 namespace pvfmm{
+
+using MortonId = sctl::Morton<PVFMM_COORD_DIM>;
 
 /**
  * \brief Wire header for the hypercube exchange in MultipoleReduceBcast:

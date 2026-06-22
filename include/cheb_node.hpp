@@ -13,7 +13,6 @@
 #include <pvfmm_common.hpp>
 #include <tree_node.hpp>
 #include <mpi_node.hpp>
-#include <vector.hpp>
 
 #ifndef _PVFMM_CHEB_NODE_HPP_
 #define _PVFMM_CHEB_NODE_HPP_

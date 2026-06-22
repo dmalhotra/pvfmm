@@ -10,7 +10,7 @@
 #include <algorithm>
 
 #include <cheb_utils.hpp>
-#include <matrix.hpp>
+#include <mat_utils.hpp>
 
 namespace pvfmm{
 

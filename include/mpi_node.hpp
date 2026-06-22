@@ -13,13 +13,13 @@
 
 #include <pvfmm_common.hpp>
 #include <tree_node.hpp>
-#include <mortonid.hpp>
-#include <vector.hpp>
 
 #ifndef _PVFMM_MPI_NODE_HPP_
 #define _PVFMM_MPI_NODE_HPP_
 
 namespace pvfmm{
+
+using MortonId = sctl::Morton<PVFMM_COORD_DIM>;
 
 /**
  * \brief A structure for storing packed data for transmitting a node to
