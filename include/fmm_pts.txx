@@ -681,12 +681,12 @@ sctl::Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat
 
       //Evaluate potential.
       std::vector<Real_t> r_trg(PVFMM_COORD_DIM,0.0);
-      std::vector<Real_t> conv_poten(n3*ker_dim[0]*ker_dim[1]);
+      sctl::Vector<Real_t> conv_poten(n3*ker_dim[0]*ker_dim[1]);
       std::vector<Real_t> conv_coord=conv_grid(MultipoleOrder(),coord_diff,level);
       kernel->k_m2l->BuildMatrix(&conv_coord[0],n3,&r_trg[0],1,&conv_poten[0]);
 
       //Rearrange data: transpose conv_poten in place.
-      MatrixTranspose<Real_t>(n3,ker_dim[0]*ker_dim[1],&conv_poten[0],&conv_poten[0]);
+      MatrixTranspose<Real_t>(n3,ker_dim[0]*ker_dim[1],conv_poten.begin(),conv_poten.begin());
 
       //Compute FFT.
       sctl::ScratchBuf<Real_t> fftw_in_scratch (  n3 *ker_dim[0]*ker_dim[1]);

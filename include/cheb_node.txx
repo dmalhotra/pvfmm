@@ -49,9 +49,9 @@ void Cheb_Node<Real_t>::Initialize(sctl::Iterator<TreeNode> parent_, int path2no
         coord[i*3+2]=coord[i*3+2]*s+this->Coord()[2];
       }
 
-      std::vector<Real_t> input_val(n1*data_dof);
+      sctl::Vector<Real_t> input_val(n1*data_dof);
       input_fn(&coord[0],n1,&input_val[0]);
-      MatrixTranspose<Real_t>(n1,data_dof,&input_val[0],&input_val[0]); // transpose input_val in place
+      MatrixTranspose<Real_t>(n1,data_dof,input_val.begin(),input_val.begin()); // transpose input_val in place
 
       cheb_coeff.ReInit(((cheb_deg+1)*(cheb_deg+2)*(cheb_deg+3))/6*data_dof); cheb_coeff.SetZero();
       cheb_approx<Real_t,Real_t>(&input_val[0], cheb_deg, data_dof, &cheb_coeff[0]);
@@ -268,7 +268,8 @@ void Cheb_Node<Real_t>::VTU_Data(VTUData_t& vtu_data, std::vector<Node_t*>& node
         //(x1,x2,x3,...,y1,y2,...z1,...) => (x1,y1,z1,x2,y2,z2,...)
         VTKReal_t* value_=&value[point_cnt*n->data_dof];
         for(size_t i=0;i<gridval.Dim();i++) value_[i]=(VTKReal_t)gridval[i];
-        MatrixTranspose<VTKReal_t>(n->data_dof,gridpt_cnt*gridpt_cnt*gridpt_cnt,value_,value_); // transpose in place
+        const sctl::Long value_len=(sctl::Long)n->data_dof*gridpt_cnt*gridpt_cnt*gridpt_cnt;
+        MatrixTranspose<VTKReal_t>(n->data_dof,gridpt_cnt*gridpt_cnt*gridpt_cnt,sctl::Ptr2ConstItr<VTKReal_t>(value_,value_len),sctl::Ptr2Itr<VTKReal_t>(value_,value_len)); // transpose in place
       }
     }
   }

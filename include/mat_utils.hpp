@@ -109,17 +109,6 @@ void MatrixTranspose(size_t in_dim1, size_t in_dim2, sctl::ConstIterator<T> in, 
   }
 }
 
-#if defined(SCTL_MEMDEBUG)
-// Legacy compatibility: accept raw pointers and wrap into iterators.
-template <class T>
-void MatrixTranspose(size_t in_dim1, size_t in_dim2, const T* in, T* out){
-  const sctl::Long n=(sctl::Long)in_dim1*(sctl::Long)in_dim2;
-  MatrixTranspose<T>(in_dim1, in_dim2,
-      (in ? sctl::Ptr2ConstItr<T>(in, n) : sctl::ConstIterator<T>(sctl::NullIterator<T>())),
-      (out? sctl::Ptr2Itr<T>(out, n) : sctl::NullIterator<T>()));
-}
-#endif
-
 #if defined(PVFMM_HAVE_CUDA)
 // cublasgemm wrapper (device GEMM).
 template <class T>

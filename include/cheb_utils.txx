@@ -118,35 +118,34 @@ T cheb_approx(const T* fn_v, int cheb_deg, int dof, T* out){
   // Create work buffers (per-thread scratch via sctl::ScratchBuf).
   size_t buff_size=dof*d*d*d;
   sctl::ScratchBuf<Y> buff_scratch(2*buff_size);
-  Y* buff=&buff_scratch.begin()[0];
-  Y* buff1=buff+buff_size*0;
-  Y* buff2=buff+buff_size*1;
+  sctl::Iterator<Y> buff1=buff_scratch.begin()+buff_size*0;
+  sctl::Iterator<Y> buff2=buff_scratch.begin()+buff_size*1;
 
   sctl::Vector<Y> fn_v_in;
   if(SameType<T,Y>()()){ // Initialize fn_v_in
     fn_v_in.ReInit(d*d*d*dof,sctl::Ptr2Itr<Y>((Y*)fn_v,d*d*d*dof),false);
   }else{
-    fn_v_in.ReInit(d*d*d*dof,sctl::Ptr2Itr<Y>(buff1,d*d*d*dof),false);
+    fn_v_in.ReInit(d*d*d*dof,buff1,false);
     for(sctl::Long i=0;i<fn_v_in.Dim();i++) fn_v_in[i]=fn_v[i];
   }
 
   { // Apply Mp along x-dimension
     sctl::Matrix<Y> Mi(dof*d*d,d, sctl::Ptr2Itr<Y>(&fn_v_in[0], (dof*d*d)*(d)),false);
-    sctl::Matrix<Y> Mo(dof*d*d,d, sctl::Ptr2Itr<Y>(buff2, (dof*d*d)*(d)),false);
+    sctl::Matrix<Y> Mo(dof*d*d,d, buff2,false);
     Mo=Mi*(*Mp);
 
     MatrixTranspose<Y>(Mo.Dim(0),Mo.Dim(1),buff2,buff1);
   }
   { // Apply Mp along y-dimension
-    sctl::Matrix<Y> Mi(d*dof*d,d, sctl::Ptr2Itr<Y>(buff1, (d*dof*d)*(d)),false);
-    sctl::Matrix<Y> Mo(d*dof*d,d, sctl::Ptr2Itr<Y>(buff2, (d*dof*d)*(d)),false);
+    sctl::Matrix<Y> Mi(d*dof*d,d, buff1,false);
+    sctl::Matrix<Y> Mo(d*dof*d,d, buff2,false);
     Mo=Mi*(*Mp);
 
     MatrixTranspose<Y>(Mo.Dim(0),Mo.Dim(1),buff2,buff1);
   }
   { // Apply Mp along z-dimension
-    sctl::Matrix<Y> Mi(d*d*dof,d, sctl::Ptr2Itr<Y>(buff1, (d*d*dof)*(d)),false);
-    sctl::Matrix<Y> Mo(d*d*dof,d, sctl::Ptr2Itr<Y>(buff2, (d*d*dof)*(d)),false);
+    sctl::Matrix<Y> Mi(d*d*dof,d, buff1,false);
+    sctl::Matrix<Y> Mo(d*d*dof,d, buff2,false);
     Mo=Mi*(*Mp);
 
     MatrixTranspose<Y>(Mo.Dim(0),Mo.Dim(1),buff2,buff1);
@@ -413,20 +412,19 @@ void cheb_eval(const sctl::Vector<T>& coeff_, int cheb_deg, const std::vector<T>
   sctl::Matrix<T> Mp3(d,n3, sctl::Ptr2Itr<T>(&p3[0], (d)*(n3)),false);
 
   // Create work buffers (per-thread scratch). v1 and v2 are half-and-half
-  // views into the single ScratchBuf; we use raw pointers for the Matrix
-  // wrappers below since no Vector-specific API is needed.
+  // views into the single ScratchBuf.
   size_t buff_size=std::max(d,n1)*std::max(d,n2)*std::max(d,n3)*dof;
   sctl::ScratchBuf<T> buff_scratch(2*buff_size);
-  T* v1 = &buff_scratch[0] + buff_size*0;
-  T* v2 = &buff_scratch[0] + buff_size*1;
+  sctl::Iterator<T> v1 = buff_scratch.begin() + buff_size*0;
+  sctl::Iterator<T> v2 = buff_scratch.begin() + buff_size*1;
 
   { // Rearrange coefficients into a tensor.
-    std::memset(v1, 0, d*d*d*dof*sizeof(T));
+    std::memset(&v1[0], 0, d*d*d*dof*sizeof(T));
     size_t indx=0;
     for(size_t l=0;l<dof;l++){
       for(size_t i=0;i<d;i++){
         for(size_t j=0;i+j<d;j++){
-          T* coeff_ptr=v1 + (j+(i+l*d)*d)*d;
+          T* coeff_ptr=&v1[(j+(i+l*d)*d)*d];
           for(size_t k=0;i+j+k<d;k++){
             coeff_ptr[k]=coeff_[indx];
             indx++;
@@ -437,30 +435,30 @@ void cheb_eval(const sctl::Vector<T>& coeff_, int cheb_deg, const std::vector<T>
   }
 
   { // Apply Mp1
-    sctl::Matrix<T> Mi  ( d* d*dof, d, sctl::Ptr2Itr<T>(v1, (d* d*dof)*(d)),false);
-    sctl::Matrix<T> Mo  ( d* d*dof,n1, sctl::Ptr2Itr<T>(v2, (d* d*dof)*(n1)),false);
+    sctl::Matrix<T> Mi  ( d* d*dof, d, v1,false);
+    sctl::Matrix<T> Mo  ( d* d*dof,n1, v2,false);
     sctl::Matrix<T>::GEMM(Mo, Mi, Mp1);
 
     MatrixTranspose<T>(Mo.Dim(0),Mo.Dim(1),v2,v1);
   }
   { // Apply Mp2
-    sctl::Matrix<T> Mi  (n1* d*dof, d, sctl::Ptr2Itr<T>(v1, (n1* d*dof)*(d)),false);
-    sctl::Matrix<T> Mo  (n1* d*dof,n2, sctl::Ptr2Itr<T>(v2, (n1* d*dof)*(n2)),false);
+    sctl::Matrix<T> Mi  (n1* d*dof, d, v1,false);
+    sctl::Matrix<T> Mo  (n1* d*dof,n2, v2,false);
     sctl::Matrix<T>::GEMM(Mo, Mi, Mp2);
 
     MatrixTranspose<T>(Mo.Dim(0),Mo.Dim(1),v2,v1);
   }
   { // Apply Mp3
-    sctl::Matrix<T> Mi  (n2*n1*dof, d, sctl::Ptr2Itr<T>(v1, (n2*n1*dof)*(d)),false);
-    sctl::Matrix<T> Mo  (n2*n1*dof,n3, sctl::Ptr2Itr<T>(v2, (n2*n1*dof)*(n3)),false);
+    sctl::Matrix<T> Mi  (n2*n1*dof, d, v1,false);
+    sctl::Matrix<T> Mo  (n2*n1*dof,n3, v2,false);
     sctl::Matrix<T>::GEMM(Mo, Mi, Mp3);
 
     MatrixTranspose<T>(Mo.Dim(0),Mo.Dim(1),v2,v1);
   }
 
   { // Copy to out
-    sctl::Matrix<T> Mo  ( n3*n2*n1,dof, sctl::Ptr2Itr<T>(v1, (n3*n2*n1)*(dof)),false);
-    MatrixTranspose<T>(Mo.Dim(0),Mo.Dim(1),v1,&out[0]);
+    sctl::Matrix<T> Mo  ( n3*n2*n1,dof, v1,false);
+    MatrixTranspose<T>(Mo.Dim(0),Mo.Dim(1),v1,out.begin());
   }
 
   // buff_scratch freed automatically at scope exit.
