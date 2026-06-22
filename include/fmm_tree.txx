@@ -683,7 +683,7 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
       Real_t* dev_ptr=(Real_t*)&fmm_mat->staging_buffer[0];
       sctl::Matrix<Real_t>& output_data=*setup_data[0+PVFMM_MAX_DEPTH*2].output_data;
       size_t n=output_data.Dim(0)*output_data.Dim(1);
-      Real_t* host_ptr=output_data[0];
+      Real_t* host_ptr=&output_data[0][0];
       setup_data[0+PVFMM_MAX_DEPTH*2].output_data_mirror->Device2HostWait();
 
       #pragma omp parallel for
@@ -726,7 +726,7 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
       Real_t* dev_ptr=(Real_t*)&fmm_mat->staging_buffer[0];
       sctl::Matrix<Real_t>& output_data=*setup_data[0+PVFMM_MAX_DEPTH*0].output_data;
       size_t n=output_data.Dim(0)*output_data.Dim(1);
-      Real_t* host_ptr=output_data[0];
+      Real_t* host_ptr=&output_data[0][0];
       setup_data[0+PVFMM_MAX_DEPTH*0].output_data_mirror->Device2HostWait();
 
       #pragma omp parallel for
