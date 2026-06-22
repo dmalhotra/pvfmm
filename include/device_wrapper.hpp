@@ -19,9 +19,6 @@
 #ifndef _PVFMM_DEVICE_WRAPPER_HPP_
 #define _PVFMM_DEVICE_WRAPPER_HPP_
 
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(push,target(mic))
-#endif
 namespace pvfmm{
 
 namespace DeviceWrapper{
@@ -54,7 +51,7 @@ struct DeviceVector{
 
   DeviceVector(): dim(0), dev_ptr(0) {}
 
-  // Bind a host-side view (CPU/MIC fallback path).
+  // Bind a host-side view (CPU/device fallback path).
   DeviceVector& operator=(sctl::Vector<T>& V){
     dim=V.Dim();
     dev_ptr=(uintptr_t)(V.Dim()?&V[0]:nullptr);
@@ -83,7 +80,7 @@ struct DeviceMatrix{
     lock_idx=-1;
   }
 
-  // Bind a host-side view (CPU/MIC fallback path).
+  // Bind a host-side view (CPU/device fallback path).
   DeviceMatrix& operator=(sctl::Matrix<T>& M){
     dim[0]=M.Dim(0);
     dim[1]=M.Dim(1);
@@ -168,61 +165,6 @@ class DeviceMirror{
 
 
 
-/*
-   Usage of 'MIC_Lock' in Asynchronous Offloads
-   --------------------------------------------
-
-Note: Any MIC offload section should look like this:
-
-    int wait_lock_idx=MIC_Lock::curr_lock();
-    int lock_idx=MIC_Lock::get_lock();
-    #pragma offload target(mic:0) signal(&MIC_Lock::lock_vec[lock_idx])
-    {
-      MIC_Lock::wait_lock(wait_lock_idx);
-
-      // Offload code here...
-
-      MIC_Lock::release_lock(lock_idx);
-    }
-
-    #ifdef PVFMM_DEVICE_SYNC
-    MIC_Lock::wait_lock(lock_idx);
-    #endif
-
-   This ensures the execution of offloaded code does not overlap with other
-asynchronous offloaded code and that data transfers from host to mic have
-completed before the data is accessed.  You will however, need to be careful
-not to overwrite data on mic which may be transferring to the host, or data on
-the host which may be transferring to the mic.
-
-On the host, to wait for the last asynchronous offload section or data
-transfer, use:
-
-    int wait_lock_idx=MIC_Lock::curr_lock();
-    MIC_Lock::wait_lock(wait_lock_idx);
-*/
-
-  class MIC_Lock{
-    public:
-
-      static void init();
-
-      static int get_lock();
-
-      static void release_lock(int idx);
-
-      static void wait_lock(int idx);
-
-      static int curr_lock();
-
-      static sctl::Vector<char> lock_vec;
-      static DeviceVector<char> lock_vec_;
-
-    private:
-      MIC_Lock(){}; // private constructor for static class.
-      static int lock_idx;
-  };
-
 #if defined(PVFMM_HAVE_CUDA)
   class CUDA_Lock {
     public:
@@ -240,9 +182,6 @@ transfer, use:
 #endif
 
 }//end namespace
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(pop)
-#endif
 
 #include <device_wrapper.txx>
 

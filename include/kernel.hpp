@@ -116,9 +116,6 @@ Kernel<T> BuildKernel(const char* name, int dim, std::pair<int,int> k_dim,
 
   size_t dev_ker_poten;
   size_t dev_dbl_layer_poten;
-  #ifdef __INTEL_OFFLOAD
-  #pragma offload target(mic:0)
-  #endif
   {
     dev_ker_poten      =(size_t)A;
     dev_dbl_layer_poten=(size_t)B;
@@ -152,9 +149,6 @@ template <class uKernel> class GenericKernel {
 
 }//end namespace
 
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(push,target(mic))
-#endif
 namespace pvfmm{ // Predefined Kernel-functions
 
 template<class T>
@@ -184,9 +178,6 @@ struct HelmholtzKernel{
 
 
 }//end namespace
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(pop)
-#endif
 
 #include <kernel.txx>
 

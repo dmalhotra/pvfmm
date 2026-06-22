@@ -85,12 +85,6 @@ void FMM_Tree<FMM_Mat_t>::SetupFMM(FMM_Mat_t* fmm_mat_) {
   typedef typename FMM_Mat_t::FMMTree_t MatTree_t;
   bool device=true;
 
-  #ifdef __INTEL_OFFLOAD
-  sctl::Profile::Tic("InitLocks",&this->Comm(),false,3);
-  MIC_Lock::init();
-  sctl::Profile::Toc();
-  #endif
-
   //int omp_p=omp_get_max_threads();
   if(fmm_mat!=fmm_mat_){ // Clear previous setup
     setup_data.clear();
@@ -190,13 +184,6 @@ void FMM_Tree<FMM_Mat_t>::SetupFMM(FMM_Mat_t* fmm_mat_) {
   }
   sctl::Profile::Toc();
 
-  #ifdef __INTEL_OFFLOAD
-  int wait_lock_idx=-1;
-  wait_lock_idx=MIC_Lock::curr_lock();
-  #pragma offload target(mic:0)
-  {MIC_Lock::wait_lock(wait_lock_idx);}
-  #endif
-
   ClearFMMData();
 
   }sctl::Profile::Toc();
@@ -238,16 +225,6 @@ void FMM_Tree<FMM_Mat_t>::ClearFMMData() {
     if(setup_data[0+PVFMM_MAX_DEPTH*1]. input_data!=NULL) setup_data[0+PVFMM_MAX_DEPTH*1]. input_data_mirror->AllocDevice(*setup_data[0+PVFMM_MAX_DEPTH*1]. input_data,true);
     if(setup_data[0+PVFMM_MAX_DEPTH*2].output_data!=NULL) setup_data[0+PVFMM_MAX_DEPTH*2].output_data_mirror->AllocDevice(*setup_data[0+PVFMM_MAX_DEPTH*2].output_data,true);
     if(setup_data[0+PVFMM_MAX_DEPTH*0].output_data!=NULL) setup_data[0+PVFMM_MAX_DEPTH*0].output_data_mirror->AllocDevice(*setup_data[0+PVFMM_MAX_DEPTH*0].output_data,true);
-
-    #ifdef __INTEL_OFFLOAD
-    if(!fmm_mat->ScaleInvar()){ // Wait
-      int wait_lock_idx=-1;
-      wait_lock_idx=MIC_Lock::curr_lock();
-      #pragma offload target(mic:0)
-      {MIC_Lock::wait_lock(wait_lock_idx);}
-    }
-    MIC_Lock::init();
-    #endif
   }
 
   }sctl::Profile::Toc();
@@ -606,7 +583,7 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
   }
   sctl::Profile::Toc();
 
-  #if defined(__INTEL_OFFLOAD) || defined(PVFMM_HAVE_CUDA)
+  #if defined(PVFMM_HAVE_CUDA)
   if(device){ // Host2Device:Src
     sctl::Profile::Tic("Host2Device:Src",&this->Comm(),false,5);
     if(setup_data[0+PVFMM_MAX_DEPTH*2]. coord_data!=NULL) setup_data[0+PVFMM_MAX_DEPTH*2]. coord_data_mirror->AllocDevice(*setup_data[0+PVFMM_MAX_DEPTH*2]. coord_data,true);
@@ -656,7 +633,7 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
       sctl::Profile::Toc();
     }
 
-    #if defined(__INTEL_OFFLOAD) || defined(PVFMM_HAVE_CUDA)
+    #if defined(PVFMM_HAVE_CUDA)
     if(i==0 && device){ // Host2Device:Mult
       sctl::Profile::Tic("Host2Device:Mult",&this->Comm(),false,5);
       if(setup_data[0+PVFMM_MAX_DEPTH*1]. input_data!=NULL) setup_data[0+PVFMM_MAX_DEPTH*1]. input_data_mirror->AllocDevice(*setup_data[0+PVFMM_MAX_DEPTH*1]. input_data,true);
@@ -695,17 +672,11 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
     }
 
     if(!fmm_mat->ScaleInvar()){ // Wait
-      #ifdef __INTEL_OFFLOAD
-      int wait_lock_idx=-1;
-      if(device) wait_lock_idx=MIC_Lock::curr_lock();
-      #pragma offload if(device) target(mic:0)
-      {if(device) MIC_Lock::wait_lock(wait_lock_idx);}
-      #endif
       sctl::Profile::Toc();
     }
   }
 
-  #if defined(__INTEL_OFFLOAD) || defined(PVFMM_HAVE_CUDA)
+  #if defined(PVFMM_HAVE_CUDA)
   sctl::Profile::Tic("D2H_Wait:LocExp",&this->Comm(),false,5);
   if(device) if(setup_data[0+PVFMM_MAX_DEPTH*2].output_data!=NULL){
     if(fmm_mat->staging_buffer.Dim()){
@@ -748,7 +719,7 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
   }
   sctl::Profile::Toc();
 
-  #if defined(__INTEL_OFFLOAD) || defined(PVFMM_HAVE_CUDA)
+  #if defined(PVFMM_HAVE_CUDA)
   sctl::Profile::Tic("D2H_Wait:Trg",&this->Comm(),false,5);
   if(device) if(setup_data[0+PVFMM_MAX_DEPTH*0].output_data!=NULL){
     if(fmm_mat->staging_buffer.Dim()){

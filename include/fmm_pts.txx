@@ -34,9 +34,6 @@
 #    include <x86intrin.h>
 #  endif
 #endif
-#if defined(__MIC__)
-#include <immintrin.h>
-#endif
 
 #include <pvfmm_common.hpp>
 #include <cheb_utils.hpp>
@@ -208,9 +205,6 @@ FMM_Pts<FMMNode>::~FMM_Pts() {
     delete mat;
     mat=NULL;
   }
-  #ifdef __INTEL_OFFLOAD0
-  #pragma offload target(mic:0)
-  #endif
   {
     vlist_fft_flag =false;
     vlist_ifft_flag=false;
@@ -2065,14 +2059,7 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<FMMNode_t>& setup_data, bool device){
   sctl::Profile::Toc();
 
   sctl::Profile::Tic("DeviceComp",&this->sctl_comm,false,20);
-  int lock_idx=-1;
-  int wait_lock_idx=-1;
-  if(device) wait_lock_idx=MIC_Lock::curr_lock();
-  if(device) lock_idx=MIC_Lock::get_lock();
-  #ifdef __INTEL_OFFLOAD
-  #pragma offload if(device) target(mic:0) signal(&MIC_Lock::lock_vec[device?lock_idx:0])
-  #endif
-  { // Offloaded computation.
+  { // Computation (host; the CUDA device path returns above).
 
     // Set interac_data.
     size_t data_size, M_dim0, M_dim1, dof;
@@ -2111,7 +2098,6 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<FMMNode_t>& setup_data, bool device){
       data_ptr+=sizeof(size_t)+output_perm.Dim()*sizeof(size_t);
     }
 
-    if(device) MIC_Lock::wait_lock(wait_lock_idx);
 
     //Compute interaction from Chebyshev source density.
     { // interactions
@@ -2143,41 +2129,9 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<FMMNode_t>& setup_data, bool device){
             Real_t*           v_out=(    Real_t*)(     buff_in   +input_perm[(interac_indx+i)*4+2]);
 
             // TODO: Fix for dof>1
-            #ifdef __MIC__
-            {
-              __m512d v8;
-              size_t j_start=(((uintptr_t)(v_out       ) + (uintptr_t)(PVFMM_MEM_ALIGN-1)) & ~ (uintptr_t)(PVFMM_MEM_ALIGN-1))-((uintptr_t)v_out);
-              size_t j_end  =(((uintptr_t)(v_out+M_dim0)                           ) & ~ (uintptr_t)(PVFMM_MEM_ALIGN-1))-((uintptr_t)v_out);
-              j_start/=sizeof(Real_t);
-              j_end  /=sizeof(Real_t);
-              assert(((uintptr_t)(v_out))%sizeof(Real_t)==0);
-              assert(((uintptr_t)(v_out+j_start))%64==0);
-              assert(((uintptr_t)(v_out+j_end  ))%64==0);
-              size_t j=0;
-              for(;j<j_start;j++ ){
-                v_out[j]=v_in[perm[j]]*scal[j];
-              }
-              for(;j<j_end  ;j+=8){
-                v8=_mm512_setr_pd(
-                    v_in[perm[j+0]]*scal[j+0],
-                    v_in[perm[j+1]]*scal[j+1],
-                    v_in[perm[j+2]]*scal[j+2],
-                    v_in[perm[j+3]]*scal[j+3],
-                    v_in[perm[j+4]]*scal[j+4],
-                    v_in[perm[j+5]]*scal[j+5],
-                    v_in[perm[j+6]]*scal[j+6],
-                    v_in[perm[j+7]]*scal[j+7]);
-                _mm512_storenrngo_pd(v_out+j,v8);
-              }
-              for(;j<M_dim0 ;j++ ){
-                v_out[j]=v_in[perm[j]]*scal[j];
-              }
-            }
-            #else
             for(size_t j=0;j<M_dim0;j++ ){
               v_out[j]=v_in[perm[j]]*scal[j];
             }
-            #endif
           }
         }
 
@@ -2187,13 +2141,6 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<FMMNode_t>& setup_data, bool device){
           size_t interac_mat0=interac_mat[j];
           for(;j<interac_blk_dsp+interac_blk[k] && interac_mat[j]==interac_mat0;j++) vec_cnt1+=interac_cnt[j];
           sctl::Matrix<Real_t> M(M_dim0, M_dim1, sctl::Ptr2Itr<Real_t>((Real_t*)(precomp_data[0]+interac_mat0), (M_dim0)*(M_dim1)), false);
-          #ifdef __MIC__
-          {
-            sctl::Matrix<Real_t> Ms(dof*vec_cnt1, M_dim0, sctl::Ptr2Itr<Real_t>((Real_t*)(buff_in +M_dim0*vec_cnt0*dof*sizeof(Real_t)), (dof*vec_cnt1)*(M_dim0)), false);
-            sctl::Matrix<Real_t> Mt(dof*vec_cnt1, M_dim1, sctl::Ptr2Itr<Real_t>((Real_t*)(buff_out+M_dim1*vec_cnt0*dof*sizeof(Real_t)), (dof*vec_cnt1)*(M_dim1)), false);
-            sctl::Matrix<Real_t>::GEMM(Mt,Ms,M);
-          }
-          #else
           #pragma omp parallel for
           for(int tid=0;tid<omp_p;tid++){
             size_t a=(dof*vec_cnt1*(tid  ))/omp_p;
@@ -2202,7 +2149,6 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<FMMNode_t>& setup_data, bool device){
             sctl::Matrix<Real_t> Mt(b-a, M_dim1, sctl::Ptr2Itr<Real_t>((Real_t*)(buff_out+M_dim1*vec_cnt0*dof*sizeof(Real_t))+M_dim1*a, (b-a)*(M_dim1)), false);
             sctl::Matrix<Real_t>::GEMM(Mt,Ms,M);
           }
-          #endif
           vec_cnt0+=vec_cnt1;
         }
 
@@ -2227,44 +2173,9 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<FMMNode_t>& setup_data, bool device){
             Real_t*           v_out=(    Real_t*)( output_data[0]+output_perm[(interac_indx+i)*4+3]);
 
             // TODO: Fix for dof>1
-            #ifdef __MIC__
-            {
-              __m512d v8;
-              __m512d v_old;
-              size_t j_start=(((uintptr_t)(v_out       ) + (uintptr_t)(PVFMM_MEM_ALIGN-1)) & ~ (uintptr_t)(PVFMM_MEM_ALIGN-1))-((uintptr_t)v_out);
-              size_t j_end  =(((uintptr_t)(v_out+M_dim1)                           ) & ~ (uintptr_t)(PVFMM_MEM_ALIGN-1))-((uintptr_t)v_out);
-              j_start/=sizeof(Real_t);
-              j_end  /=sizeof(Real_t);
-              assert(((uintptr_t)(v_out))%sizeof(Real_t)==0);
-              assert(((uintptr_t)(v_out+j_start))%64==0);
-              assert(((uintptr_t)(v_out+j_end  ))%64==0);
-              size_t j=0;
-              for(;j<j_start;j++ ){
-                v_out[j]+=v_in[perm[j]]*scal[j];
-              }
-              for(;j<j_end  ;j+=8){
-                v_old=_mm512_load_pd(v_out+j);
-                v8=_mm512_setr_pd(
-                    v_in[perm[j+0]]*scal[j+0],
-                    v_in[perm[j+1]]*scal[j+1],
-                    v_in[perm[j+2]]*scal[j+2],
-                    v_in[perm[j+3]]*scal[j+3],
-                    v_in[perm[j+4]]*scal[j+4],
-                    v_in[perm[j+5]]*scal[j+5],
-                    v_in[perm[j+6]]*scal[j+6],
-                    v_in[perm[j+7]]*scal[j+7]);
-                v_old=_mm512_add_pd(v_old, v8);
-                _mm512_storenrngo_pd(v_out+j,v_old);
-              }
-              for(;j<M_dim1 ;j++ ){
-                v_out[j]+=v_in[perm[j]]*scal[j];
-              }
-            }
-            #else
             for(size_t j=0;j<M_dim1;j++ ){
               v_out[j]+=v_in[perm[j]]*scal[j];
             }
-            #endif
           }
         }
 
@@ -2273,15 +2184,8 @@ void FMM_Pts<FMMNode>::EvalList(SetupData<FMMNode_t>& setup_data, bool device){
       }
     }
 
-    if(device) MIC_Lock::release_lock(lock_idx);
   }
 
-  #ifdef __INTEL_OFFLOAD
-  if(SYNC){
-    #pragma offload if(device) target(mic:0)
-    {if(device) MIC_Lock::wait_lock(lock_idx);}
-  }
-  #endif
 
   sctl::Profile::Toc();
 }
@@ -4298,14 +4202,7 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<FMMNode_t>& setup_data, bool device
   sctl::Profile::Toc();
 
   sctl::Profile::Tic("DeviceComp",&this->sctl_comm,false,20);
-  int lock_idx=-1;
-  int wait_lock_idx=-1;
-  if(device) wait_lock_idx=MIC_Lock::curr_lock();
-  if(device) lock_idx=MIC_Lock::get_lock();
-  #ifdef __INTEL_OFFLOAD
-  #pragma offload if(device) target(mic:0) signal(&MIC_Lock::lock_vec[device?lock_idx:0])
-  #endif
-  { // Offloaded computation.
+  { // Computation (host; the CUDA device path returns above).
     struct PackedData{
       size_t len;
       sctl::Matrix<Real_t>* ptr;
@@ -4421,7 +4318,6 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<FMMNode_t>& setup_data, bool device
       }
     }
 
-    if(device) MIC_Lock::wait_lock(wait_lock_idx);
     { // Compute interactions
       InteracData& intdata=data.interac_data;
       typename Kernel<Real_t>::Ker_t single_layer_kernel=(typename Kernel<Real_t>::Ker_t)ptr_single_layer_kernel;
@@ -4696,14 +4592,7 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<FMMNode_t>& setup_data, bool device
         }
       }
     }
-    if(device) MIC_Lock::release_lock(lock_idx);
   }
-  #ifdef __INTEL_OFFLOAD
-  if(SYNC){
-    #pragma offload if(device) target(mic:0)
-    {if(device) MIC_Lock::wait_lock(lock_idx);}
-  }
-  #endif
   sctl::Profile::Toc();
 }
 
