@@ -2,7 +2,7 @@ name: Build
 
 on:
   push:
-    branches: [ develop, ci-debug ]
+    branches: [ develop ]
   pull_request:
     branches: [ develop ]
 
