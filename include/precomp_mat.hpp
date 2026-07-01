@@ -6,7 +6,6 @@
  * Handles storage of precomputed translation matrices.
  */
 
-#include <mpi.h>
 #include <vector>
 #include <cstdlib>
 

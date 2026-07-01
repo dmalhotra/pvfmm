@@ -5,7 +5,6 @@
  * \brief This file contains the declaration of wrapper functions for PVFMM.
  */
 
-#include <mpi.h>
 #include <vector>
 #include <cstdlib>
 #include <cmath>

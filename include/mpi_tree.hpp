@@ -6,7 +6,6 @@
  * MPI tree.
  */
 
-#include <mpi.h>
 #include <vector>
 #include <string>
 #include <cstdint>

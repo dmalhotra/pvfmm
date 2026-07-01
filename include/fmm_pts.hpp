@@ -6,7 +6,6 @@
  * This handles all the translations for point sources and targets.
  */
 
-#include <mpi.h>
 #include <string>
 #include <vector>
 #include <cstdlib>

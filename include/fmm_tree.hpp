@@ -5,7 +5,6 @@
  * \brief This file contains the definition of the FMM_Tree class.
  */
 
-#include <mpi.h>
 #include <vector>
 
 #include <pvfmm_common.hpp>

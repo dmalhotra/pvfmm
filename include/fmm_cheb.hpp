@@ -6,7 +6,6 @@
  * This handles all the translations through matrix multiplications.
  */
 
-#include <mpi.h>
 #include <vector>
 #include <cstdlib>
 
