@@ -152,7 +152,6 @@ subdirheaders_HEADERS = \
 # the sources to add to the library and to add to the source distribution
 lib_libpvfmm_la_SOURCES = \
 									$(pvfmm_cpp_header_files) \
-									src/device_wrapper.cpp \
 									src/pvfmm-wrapper.cpp \
 									src/tree_node.cpp
 

@@ -176,8 +176,8 @@ class DeviceMirror{
       static void wait(int idx=0);
     private:
       CUDA_Lock();
-      static std::vector<cudaStream_t> stream;
-      static cublasHandle_t handle;
+      inline static std::vector<cudaStream_t> stream;
+      inline static cublasHandle_t handle;
   };
 #endif
 
