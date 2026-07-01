@@ -33,7 +33,9 @@ jobs:
 
     - name: Setup macOS
       if: runner.os == 'macOS'
-      run: brew install open-mpi openblas fftw autoconf automake libtool
+      run: |
+          brew install open-mpi openblas fftw autoconf automake libtool
+          echo "MACOSX_DEPLOYMENT_TARGET=$(xcrun --show-sdk-version)" >> "$GITHUB_ENV"
 
     - name: Setup Linux
       if: runner.os == 'Linux'
