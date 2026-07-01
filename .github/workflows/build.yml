@@ -20,7 +20,7 @@ jobs:
         - os: ubuntu-latest
           compiler: clang++
         - os: macOS-latest
-          compiler: g++-15
+          compiler: g++   # resolved to the newest installed gcc in "Setup macOS"
     runs-on: ${{ matrix.os }}
     env:
       OMPI_CXX: ${{ matrix.compiler }}
@@ -34,8 +34,13 @@ jobs:
     - name: Setup macOS
       if: runner.os == 'macOS'
       run: |
-          brew install gcc@15 open-mpi openblas fftw autoconf automake libtool
+          brew install gcc open-mpi openblas fftw autoconf automake libtool
+          # Use the newest Homebrew gcc (older g++ can't parse the current macOS SDK headers).
+          GCC_MAJOR=$(brew list --versions gcc | tail -1 | awk '{print $NF}' | cut -d. -f1)
+          echo "OMPI_CXX=g++-${GCC_MAJOR}" >> "$GITHUB_ENV"
+          echo "PVFMM_F77=gfortran-${GCC_MAJOR}" >> "$GITHUB_ENV"
           echo "MACOSX_DEPLOYMENT_TARGET=$(xcrun --show-sdk-version)" >> "$GITHUB_ENV"
+          echo "macOS toolchain: g++-${GCC_MAJOR} / gfortran-${GCC_MAJOR}"
 
     - name: Setup Linux
       if: runner.os == 'Linux'
@@ -48,7 +53,7 @@ jobs:
 
     - name: Configure macOS
       if: runner.os == 'macOS'
-      run: ./configure F77="gfortran-15" --with-openmp-flag="fopenmp" --with-fftw=$(brew --prefix fftw) --with-blas="-L$(brew --prefix openblas)/lib -lopenblas" --with-lapack="-L$(brew --prefix openblas)/lib -lopenblas"
+      run: ./configure F77="${PVFMM_F77}" --with-openmp-flag="fopenmp" --with-fftw=$(brew --prefix fftw) --with-blas="-L$(brew --prefix openblas)/lib -lopenblas" --with-lapack="-L$(brew --prefix openblas)/lib -lopenblas"
 
     - name: Configure Linux
       if: runner.os == 'Linux'
