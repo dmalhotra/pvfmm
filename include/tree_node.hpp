@@ -153,4 +153,6 @@ class TreeNode{
 
 }//end namespace
 
+#include <tree_node.txx>
+
 #endif //_PVFMM_TREE_NODE_HPP_

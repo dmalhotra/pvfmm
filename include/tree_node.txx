@@ -1,19 +1,15 @@
 /**
- * \file tree_node.cpp
+ * \file tree_node.txx
  * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
  * \date 12-10-2010
  * \brief This file contains the implementation of the class TreeNode.
  */
 
-#include <mpi.h>
-#include <tree_node.hpp>
-#include <assert.h>
-#include <iostream>
-
+#include <cassert>
 
 namespace pvfmm{
 
-TreeNode::~TreeNode(){
+inline TreeNode::~TreeNode(){
   if(child==sctl::NullIterator<sctl::Iterator<TreeNode>>()) return;
   int n=(1UL<<dim);
   //Delete the children.
@@ -25,7 +21,7 @@ TreeNode::~TreeNode(){
   child=sctl::NullIterator<sctl::Iterator<TreeNode>>();
 }
 
-void TreeNode::Initialize(sctl::Iterator<TreeNode> parent_, int path2node_, NodeData* data_){
+inline void TreeNode::Initialize(sctl::Iterator<TreeNode> parent_, int path2node_, NodeData* data_){
   parent=parent_;
   depth=(parent==sctl::NullIterator<TreeNode>()?0:parent->Depth()+1);
   if(data_!=NULL){
@@ -43,28 +39,28 @@ void TreeNode::Initialize(sctl::Iterator<TreeNode> parent_, int path2node_, Node
   //assert(parent_==NULL?true:parent_->Child(path2node_)==this);
 }
 
-sctl::Iterator<TreeNode> TreeNode::Child(int id){
+inline sctl::Iterator<TreeNode> TreeNode::Child(int id){
   assert(id<(1<<dim));
   if(child==sctl::NullIterator<sctl::Iterator<TreeNode>>()) return sctl::NullIterator<TreeNode>();
   return child[id];
 }
 
-sctl::Iterator<TreeNode> TreeNode::Parent(){
+inline sctl::Iterator<TreeNode> TreeNode::Parent(){
   return parent;
 }
 
-int TreeNode::Path2Node(){
+inline int TreeNode::Path2Node(){
   return path2node;
 }
 
-sctl::Iterator<TreeNode> TreeNode::NewNode(sctl::Iterator<TreeNode> n_){
+inline sctl::Iterator<TreeNode> TreeNode::NewNode(sctl::Iterator<TreeNode> n_){
   sctl::Iterator<TreeNode> n=(n_==sctl::NullIterator<TreeNode>()?sctl::aligned_new<TreeNode>():n_);
   n->dim=dim;
   n->max_depth=max_depth;
   return n;
 }
 
-bool TreeNode::SubdivCond(){
+inline bool TreeNode::SubdivCond(){
   if(!IsLeaf()){
     int n=(1UL<<dim);
     for(int i=0;i<n;i++){
@@ -80,7 +76,7 @@ bool TreeNode::SubdivCond(){
   }
 }
 
-void TreeNode::Subdivide(sctl::Iterator<TreeNode> self_) {
+inline void TreeNode::Subdivide(sctl::Iterator<TreeNode> self_) {
   if(child!=sctl::NullIterator<sctl::Iterator<TreeNode>>()) return;
   assert(&self_[0]==this); // self_ must be this node's own allocation iterator
   SetStatus(1);
@@ -92,7 +88,7 @@ void TreeNode::Subdivide(sctl::Iterator<TreeNode> self_) {
   }
 }
 
-void TreeNode::Truncate() {
+inline void TreeNode::Truncate() {
   if(child==sctl::NullIterator<sctl::Iterator<TreeNode>>()) return;
   SetStatus(1);
   int n=(1UL<<dim);
@@ -104,7 +100,7 @@ void TreeNode::Truncate() {
   child=sctl::NullIterator<sctl::Iterator<TreeNode>>();
 }
 
-void TreeNode::SetParent(sctl::Iterator<TreeNode> p, int path2node_) {
+inline void TreeNode::SetParent(sctl::Iterator<TreeNode> p, int path2node_) {
   assert(path2node_>=0 && path2node_<(1<<dim));
   assert(p==sctl::NullIterator<TreeNode>()?true:&p->Child(path2node_)[0]==this);
 
@@ -114,7 +110,7 @@ void TreeNode::SetParent(sctl::Iterator<TreeNode> p, int path2node_) {
   if(parent!=sctl::NullIterator<TreeNode>()) max_depth=parent->max_depth;
 }
 
-void TreeNode::SetChild(sctl::Iterator<TreeNode> c, int id) {
+inline void TreeNode::SetChild(sctl::Iterator<TreeNode> c, int id) {
   assert(id<(1<<dim));
   //assert(child!=sctl::NullIterator<sctl::Iterator<TreeNode>>());
   //if(child[id]!=sctl::NullIterator<TreeNode>())
@@ -124,11 +120,11 @@ void TreeNode::SetChild(sctl::Iterator<TreeNode> c, int id) {
   if(c!=sctl::NullIterator<TreeNode>()) child[id]->SetParent(parent->child[path2node],id);
 }
 
-int& TreeNode::GetStatus(){
+inline int& TreeNode::GetStatus(){
   return status;
 }
 
-void TreeNode::SetStatus(int flag){
+inline void TreeNode::SetStatus(int flag){
   status=(status|flag);
   if(parent!=sctl::NullIterator<TreeNode>() && !(parent->GetStatus() & flag))
     parent->SetStatus(flag);
