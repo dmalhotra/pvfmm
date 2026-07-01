@@ -19,12 +19,12 @@
 
 #if defined(__ARM_NEON)
 #  include "sctl/sse2neon.h"
-#  define __SSE__
-#  define __SSE2__
-#  define __SSE3__
-#  define __SSE4__
-#  define __SSE4_1__
-#  define __SSE4_2__
+#  define __SSE__ 1
+#  define __SSE2__ 1
+#  define __SSE3__ 1
+#  define __SSE4__ 1
+#  define __SSE4_1__ 1
+#  define __SSE4_2__ 1
 #  define _MM_SHUFFLE2(fp1, fp0) (((fp1) << 1) | (fp0))
 #elif defined(__MMX__) || defined(__SSE__) || defined(__SSE2__) || defined(__SSE4_2__) || defined(__AVX__) || defined(__AVX512F__)
 #  ifdef _MSC_VER
