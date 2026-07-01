@@ -20,7 +20,7 @@ jobs:
         - os: ubuntu-latest
           compiler: clang++
         - os: macOS-latest
-          compiler: g++-14
+          compiler: g++-15
     runs-on: ${{ matrix.os }}
     env:
       OMPI_CXX: ${{ matrix.compiler }}
@@ -34,7 +34,7 @@ jobs:
     - name: Setup macOS
       if: runner.os == 'macOS'
       run: |
-          brew install open-mpi openblas fftw autoconf automake libtool
+          brew install gcc@15 open-mpi openblas fftw autoconf automake libtool
           echo "MACOSX_DEPLOYMENT_TARGET=$(xcrun --show-sdk-version)" >> "$GITHUB_ENV"
 
     - name: Setup Linux
@@ -48,7 +48,7 @@ jobs:
 
     - name: Configure macOS
       if: runner.os == 'macOS'
-      run: ./configure F77="gfortran-14" --with-openmp-flag="fopenmp" --with-fftw=$(brew --prefix fftw) --with-blas="-L$(brew --prefix openblas)/lib -lopenblas" --with-lapack="-L$(brew --prefix openblas)/lib -lopenblas"
+      run: ./configure F77="gfortran-15" --with-openmp-flag="fopenmp" --with-fftw=$(brew --prefix fftw) --with-blas="-L$(brew --prefix openblas)/lib -lopenblas" --with-lapack="-L$(brew --prefix openblas)/lib -lopenblas"
 
     - name: Configure Linux
       if: runner.os == 'Linux'
