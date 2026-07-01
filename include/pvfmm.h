@@ -8,7 +8,14 @@
 #ifndef _PVFMM_H_
 #define _PVFMM_H_
 
+#if defined(SCTL_HAVE_MPI)
 #include <mpi.h>
+#else
+/* MPI unavailable: keep the C API signatures stable. Communicator arguments
+ * are ignored (single-process / self-communicator). */
+typedef int MPI_Comm;
+typedef int MPI_Fint;
+#endif
 #include <stdbool.h>
 
 #ifdef __cplusplus
