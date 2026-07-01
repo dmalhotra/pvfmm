@@ -6,6 +6,7 @@
  */
 
 #include <vector>
+#include <utility>
 
 #include <pvfmm_common.hpp>
 
@@ -95,12 +96,12 @@ template <class T>
 void points2cheb(int deg, T* coord, T* val, int n, int dim, T* node_coord, T node_size, sctl::Vector<T>& cheb_coeff);
 
 /**
- * \brief Returns an n-point quadrature rule with points 'x' and weights 'w'.
- * Gauss-Legendre quadrature rule for double precision and Chebyshev quadrature
- * rule for other data types.
+ * \brief Returns const references to the cached n-point Gauss-Legendre
+ * quadrature nodes (on [0,1]) and weights. Rules are precomputed once per
+ * order and reused across calls.
  */
 template <class T>
-void quad_rule(int n, T* x, T* w);
+std::pair<const sctl::Vector<T>&, const sctl::Vector<T>&> quad_rule(int n);
 
 /**
  * \brief

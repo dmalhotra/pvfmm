@@ -11,6 +11,9 @@
 #include <cstdlib>
 #include <iostream>
 #include <algorithm>
+#include <atomic>
+#include <mutex>
+#include <utility>
 
 #include <mat_utils.hpp>
 
@@ -615,105 +618,25 @@ void points2cheb(int deg, T* coord, T* val, int n, int dim, T* node_coord, T nod
 }
 
 template <class T>
-void quad_rule(int n, T* x, T* w){
-  static std::vector<sctl::Vector<T> > x_lst(10000);
-  static std::vector<sctl::Vector<T> > w_lst(10000);
-  assert(n<10000);
+std::pair<const sctl::Vector<T>&, const sctl::Vector<T>&> quad_rule(int n){
+  static constexpr int QUAD_RULE_MAX_ORDER = 10000;
+  assert(n < QUAD_RULE_MAX_ORDER);
 
-  bool done=false;
-  #pragma omp critical(PVFMM_QUAD_RULE)
-  if(x_lst[n].Dim()>0){
-    sctl::Vector<T>& x_=x_lst[n];
-    sctl::Vector<T>& w_=w_lst[n];
-    for(int i=0;i<n;i++){
-      x[i]=x_[i];
-      w[i]=w_[i];
-    }
-    done=true;
-  }
-  if(done) return;
+  static std::vector<sctl::Vector<T> > x_lst(QUAD_RULE_MAX_ORDER);
+  static std::vector<sctl::Vector<T> > w_lst(QUAD_RULE_MAX_ORDER);
+  static std::atomic<bool> ready[QUAD_RULE_MAX_ORDER]; // static storage => zero-initialized
+  static std::mutex mtx;
 
-  sctl::Vector<T> x_(n);
-  sctl::Vector<T> w_(n);
-
-  { //Chebyshev quadrature nodes and weights
-    for(int i=0;i<n;i++){
-      x_[i]=-sctl::cos<T>((2*i+1)*sctl::const_pi<T>()/(2*n));
-      w_[i]=0;//sctl::sqrt<T>(1.0-x_[i]*x_[i])*sctl::const_pi<T>()/n;
-    }
-    sctl::Matrix<T> M(n,n);
-    cheb_poly(n-1, &x_[0], n, &M[0][0]);
-    for(int i=0;i<n;i++) M[0][i]/=2;
-
-    std::vector<T> w_sample(n,0);
-    for(long i=0;i<n;i+=2) w_sample[i]=-((T)2.0/(i+1)/(i-1));
-    //if(n>0) w_sample[0]=2.0;
-    //if(n>1) w_sample[1]=0.0;
-    //if(n>2) w_sample[2]=-((T)2.0)/3;
-    //if(n>3) w_sample[3]=0.0;
-    //if(n>4) w_sample[4]=-((T)2.0)/15;
-    //if(n>5) w_sample[5]=0.0;
-    //if(n>6) w_sample[6]=((T)64)/7-((T)96)/5+((T)36)/3-2;
-    //if(n>7) w_sample[7]=0;
-    //if(n>8){
-    //  T eps=sctl::machine_eps<T>()*64;
-    //  std::vector<T> qx(n-1);
-    //  std::vector<T> qw(n-1);
-    //  quad_rule(n-1, &qx[0], &qw[0]);
-
-    //  T err=1.0;
-    //  std::vector<T> w_prev;
-    //  for(size_t iter=1;err>eps*iter;iter*=2){
-    //    w_prev=w_sample;
-    //    w_sample.assign(n,0);
-
-    //    size_t N=(n-1)*iter;
-    //    std::vector<T> x_sample(N,0);
-
-    //    sctl::Matrix<T> M_sample(n,N);
-    //    for(size_t i=0;i<iter;i++){
-    //      for(size_t j=0;j<n-1;j++){
-    //        x_sample[j+i*(n-1)]=(2*i+qx[j]+1)/iter-1;
-    //      }
-    //    }
-    //    cheb_poly(n-1, &x_sample[0], N, &M_sample[0][0]);
-
-    //    for(size_t i=0;i<n;i++)
-    //    for(size_t j=0;j<iter;j++)
-    //    for(size_t k=0;k<n-1;k++){
-    //      w_sample[i]+=M_sample[i][k+j*(n-1)]*qw[k];
-    //    }
-    //    for(size_t i=0;i<n;i++) w_sample[i]/=iter;
-    //    for(size_t i=1;i<n;i+=2) w_sample[i]=0.0;
-
-    //    err=0;
-    //    for(size_t i=0;i<n;i++) err+=sctl::fabs<T>(w_sample[i]-w_prev[i]);
-    //  }
-    //}
-
-    for(int i=0;i<n;i++)
-    for(int j=0;j<n;j++){
-      M[i][j]*=w_sample[i];
-    }
-
-    for(int i=0;i<n;i++)
-    for(int j=0;j<n;j++){
-      w_[j]+=M[i][j]*2/n;
+  if(!ready[n].load(std::memory_order_acquire)){ // atomic double-checked locking
+    std::lock_guard<std::mutex> lock(mtx);
+    if(!ready[n].load(std::memory_order_relaxed)){
+      sctl::Vector<T>& x_=x_lst[n];
+      sctl::Vector<T>& w_=w_lst[n];
+      sctl::LegQuadRule<T>::ComputeNdsWts(&x_, &w_, n); // Gauss-Legendre nodes/weights on [0,1]
+      ready[n].store(true, std::memory_order_release);
     }
   }
-  { //Trapezoidal quadrature nodes and weights
-    //for(int i=0;i<n;i++){
-    //  x_[i]=(2.0*i+1.0)/(1.0*n)-1.0;
-    //  w_[i]=2.0/n;
-    //}
-  }
-
-  #pragma omp critical(PVFMM_QUAD_RULE)
-  { // Set x_lst, w_lst
-    x_lst[n]=x_;
-    w_lst[n]=w_;
-  }
-  quad_rule(n, x, w);
+  return {x_lst[n], w_lst[n]};
 }
 
 template <class T>
@@ -724,9 +647,14 @@ std::vector<T> integ_pyramid(int m, T* s, T r, int nx, const Kernel<T>& kernel, 
   T eps=sctl::machine_eps<T>()*64;
   int k_dim=kernel.ker_dim[0]*kernel.ker_dim[1];
 
-  std::vector<T> qp_x(nx), qw_x(nx);
-  std::vector<T> qp_y(ny), qw_y(ny);
-  std::vector<T> qp_z(nz), qw_z(nz);
+  std::vector<T> qp_x(nx);
+  std::vector<T> qp_y(ny);
+  std::vector<T> qp_z(nz);
+
+  // Nodes/weights depend only on nx/ny/nz; fetch the cached rules once.
+  const auto [nds_x, wts_x] = quad_rule<T>(nx);
+  const auto [nds_y, wts_y] = quad_rule<T>(ny);
+  const auto [nds_z, wts_z] = quad_rule<T>(nz);
   std::vector<T> p_x(nx*m);
   std::vector<T> p_y(ny*m);
   std::vector<T> p_z(nz*m);
@@ -800,12 +728,8 @@ std::vector<T> integ_pyramid(int m, T* s, T r, int nx, const Kernel<T>& kernel, 
     T x1=x_[k+1];
 
     { // Set qp_x
-      std::vector<T> qp(nx);
-      std::vector<T> qw(nx);
-      quad_rule(nx,&qp[0],&qw[0]);
       for(int i=0; i<nx; i++)
-        qp_x[i]=(x1-x0)*qp[i]/2+(x1+x0)/2;
-      qw_x=qw;
+        qp_x[i]=x0+(x1-x0)*nds_x[i];
     }
     cheb_poly(m-1,&qp_x[0],nx,&p_x[0]);
 
@@ -816,20 +740,12 @@ std::vector<T> integ_pyramid(int m, T* s, T r, int nx, const Kernel<T>& kernel, 
       T z1=s[2]+(qp_x[i]-s[0]); if(z1<-1.0) z1=-1.0; if(z1> 1.0) z1= 1.0;
 
       { // Set qp_y
-        std::vector<T> qp(ny);
-        std::vector<T> qw(ny);
-        quad_rule(ny,&qp[0],&qw[0]);
         for(int j=0; j<ny; j++)
-          qp_y[j]=(y1-y0)*qp[j]/2+(y1+y0)/2;
-        qw_y=qw;
+          qp_y[j]=y0+(y1-y0)*nds_y[j];
       }
       { // Set qp_z
-        std::vector<T> qp(nz);
-        std::vector<T> qw(nz);
-        quad_rule(nz,&qp[0],&qw[0]);
         for(int j=0; j<nz; j++)
-          qp_z[j]=(z1-z0)*qp[j]/2+(z1+z0)/2;
-        qw_z=qw;
+          qp_z[j]=z0+(z1-z0)*nds_z[j];
       }
       cheb_poly(m-1,&qp_y[0],ny,&p_y[0]);
       cheb_poly(m-1,&qp_z[0],nz,&p_z[0]);
@@ -854,7 +770,7 @@ std::vector<T> integ_pyramid(int m, T* s, T r, int nx, const Kernel<T>& kernel, 
           for(int i0=0; i0<ny; i0++){
             size_t indx=(kk*ny+i0)*nz;
             for(int i1=0; i1<nz; i1++){
-              k_out[indx+i1] *= qw_y[i0]*qw_z[i1];
+              k_out[indx+i1] *= wts_y[i0]*wts_z[i1];
             }
           }
         }
@@ -890,7 +806,7 @@ std::vector<T> integ_pyramid(int m, T* s, T r, int nx, const Kernel<T>& kernel, 
       T v=(x1-x0)*(y1-y0)*(z1-z0);
       for(int kk=0; kk<k_dim; kk++){
         for(int i0=0; i0<m; i0++){
-          T px=p_x[i+i0*nx]*qw_x[i]*v;
+          T px=p_x[i+i0*nx]*wts_x[i]*v;
           for(int i1=0; i0+i1<m; i1++){
             size_t indx0= (kk*m+i1)*m;
             size_t indx1=((kk*m+i0)*m+i1)*m;
@@ -903,7 +819,7 @@ std::vector<T> integ_pyramid(int m, T* s, T r, int nx, const Kernel<T>& kernel, 
     }
   }
   for(int i=0;i<m*m*m*k_dim;i++)
-    I2[i]=I2[i]*r*r*r/64;
+    I2[i]=I2[i]*r*r*r/8;
 
   if(x_.size()>1)
   sctl::Profile::IncrementCounter(sctl::ProfileCounter::FLOP, ( 2*ny*nz*m*k_dim
