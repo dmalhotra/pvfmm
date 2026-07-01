@@ -2,7 +2,7 @@ name: Build
 
 on:
   push:
-    branches: [ develop ]
+    branches: [ develop, ci-debug ]
   pull_request:
     branches: [ develop ]
 
@@ -54,4 +54,12 @@ jobs:
 
     - name: Build
       run: make all-examples -j
+
+    # CI-DEBUG ONLY: on failure, open an SSH (tmate) session into the runner so the
+    # failing macOS build can be inspected live. Restricted to the workflow actor.
+    - name: Debug via SSH (tmate) on failure
+      if: ${{ failure() && runner.os == 'macOS' }}
+      uses: mxschmitt/action-tmate@v3
+      with:
+        limit-access-to-actor: true
 
