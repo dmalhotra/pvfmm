@@ -39,8 +39,8 @@ else()
   find_package(LAPACK REQUIRED)
   find_package(FFTW REQUIRED)
   set(DEP_INC ${FFTW_INCLUDE_DIRS})
-  set(DEP_LIB ${FFTW_FLOAT_OPENMP_LIB} ${FFTW_FLOAT_LIB}
-              ${FFTW_DOUBLE_OPENMP_LIB} ${FFTW_DOUBLE_LIB}
+  set(DEP_LIB ${FFTW_FLOAT_LIB}
+              ${FFTW_DOUBLE_LIB}
               ${BLAS_LIBRARIES}
               ${LAPACK_LIBRARIES})
 endif()
@@ -57,10 +57,6 @@ if(MKL_FOUND OR FFTW_DOUBLE_LIB_FOUND)
 endif()
 if(MKL_FOUND OR FFTW_FLOAT_LIB_FOUND)
   list(APPEND PVFMM_DEFINES "SCTL_HAVE_FFTWF")
-endif()
-# Threaded FFTW plans -> SCTL_FFTW_THREADS (MKL is threaded; else needs fftw3_omp)
-if(MKL_FOUND OR FFTW_DOUBLE_OPENMP_LIB)
-  list(APPEND PVFMM_DEFINES "SCTL_FFTW_THREADS")
 endif()
 
 # Vectorized libm: Intel SVML, otherwise GNU libmvec (mutually exclusive in SCTL)

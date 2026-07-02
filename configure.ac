@@ -132,37 +132,6 @@ AX_CHECK_LIBMVEC
 # instead of hard-coding the list.
 #######################################################################
 
-# Optional: threaded FFTW plans (off by default; pvfmm drives one FFT
-# per OpenMP thread, so threaded FFTW would only oversubscribe). Enable
-# with --enable-fftw-threads, which also links the threads library.
-FFTW_THREADS_LIB=""
-acx_fftw_threads_ok=no
-AC_ARG_ENABLE([fftw-threads],
-              [AS_HELP_STRING([--disable-fftw-threads],
-                              [do not use threaded FFTW plans in SCTL (default: auto-detect)])],
-              [enable_fftw_threads=$enableval],
-              [enable_fftw_threads=yes])
-if test "x$enable_fftw_threads" = xyes -a "x$acx_fftw_ok" = xyes; then
-  save_LIBS="$LIBS"
-  LIBS="$FFTW_LIB $LIBS"
-  AC_MSG_CHECKING([for fftw_init_threads])
-  AC_TRY_LINK_FUNC(fftw_init_threads,
-                   [acx_fftw_threads_ok=yes],
-                   [acx_fftw_threads_ok=no])
-  AC_MSG_RESULT($acx_fftw_threads_ok)
-  if test "x$acx_fftw_threads_ok" = xno; then
-    AC_CHECK_LIB([fftw3_threads],fftw_init_threads,
-                 [acx_fftw_threads_ok=yes; FFTW_THREADS_LIB="-lfftw3_threads"],
-                 [AC_CHECK_LIB([fftw3_omp],fftw_init_threads,
-                               [acx_fftw_threads_ok=yes; FFTW_THREADS_LIB="-lfftw3_omp"],
-                               [acx_fftw_threads_ok=no],
-                               [$FFTW_LIB])],
-                 [$FFTW_LIB])
-  fi
-  LIBS="$save_LIBS"
-fi
-AC_SUBST(FFTW_THREADS_LIB)
-
 # Optimization / ISA / language-standard flags (the -O3 overrides autoconf's -O2).
 # -mno-avx512fp16 works around pre-2.38 binutils that can't assemble the
 # AVX-512-FP16 ops -march=native emits on new Intel CPUs; skipped on macOS where
@@ -185,7 +154,6 @@ if test "x$acx_lapack_ok"       = xyes; then SCTL_DEFS="$SCTL_DEFS -DSCTL_HAVE_L
 if test "x$acx_fftw_ok"         = xyes; then SCTL_DEFS="$SCTL_DEFS -DSCTL_HAVE_FFTW";    fi
 if test "x$acx_fftwf_ok"        = xyes; then SCTL_DEFS="$SCTL_DEFS -DSCTL_HAVE_FFTWF";   fi
 if test "x$acx_fftwl_ok"        = xyes; then SCTL_DEFS="$SCTL_DEFS -DSCTL_HAVE_FFTWL";   fi
-if test "x$acx_fftw_threads_ok" = xyes; then SCTL_DEFS="$SCTL_DEFS -DSCTL_FFTW_THREADS"; fi
 LIBMVEC_LIB=""
 # SVML and libmvec are mutually exclusive in SCTL; prefer SVML when present.
 if test "x$cv_have_svml"        = xyes; then SCTL_DEFS="$SCTL_DEFS -DSCTL_HAVE_SVML";
@@ -218,7 +186,6 @@ External libs:
   - FFTW (double) .. : ${acx_fftw_ok}
   - FFTW (float) ... : ${acx_fftwf_ok}
   - FFTW (ldouble) . : ${acx_fftwl_ok}
-  - FFTW threads ... : ${acx_fftw_threads_ok}
   - SVML ........... : ${cv_have_svml}
   - CUDA ........... : ${ac_compile_nvcc}
 

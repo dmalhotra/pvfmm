@@ -32,7 +32,7 @@
 
    The file examples/Makefile can be used as a template makefile for any
    project using the library. In general the MakeVariables file should
-   be included in any makefile and CXXFLAGS_PVFMM and LDFLAGS_PVFMM should
+   be included in any makefile and CXXFLAGS_PVFMM and LDLIBS_PVFMM should
    be used to compile the code.
 
    Two very simple examples illustrating usage of the library are available:

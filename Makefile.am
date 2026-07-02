@@ -155,7 +155,7 @@ endif
 # Bake the numerical deps into libpvfmm.so so it is self-contained for dlopen
 # consumers (python/ ctypes, julia/ Libdl); executables also get these via
 # LDLIBS_PVFMM, but a dlopen'd .so must resolve its own symbols.
-lib_libpvfmm_la_LIBADD = @FFTW_LIB@ @FFTWF_LIB@ @FFTWL_LIB@ @FFTW_THREADS_LIB@ @LAPACK_LIBS@ @BLAS_LIBS@ @FLIBS@ @CUDA_LDLIBS@ @LIBMVEC_LIB@
+lib_libpvfmm_la_LIBADD = @FFTW_LIB@ @FFTWF_LIB@ @FFTWL_LIB@ @LAPACK_LIBS@ @BLAS_LIBS@ @FLIBS@ @CUDA_LDLIBS@ @LIBMVEC_LIB@
 
 dist_noinst_SCRIPTS = autogen.sh
 
