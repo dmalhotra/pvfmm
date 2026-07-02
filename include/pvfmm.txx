@@ -119,7 +119,7 @@ inline void ChebFMM_Evaluate(std::vector<Real>& trg_val, ChebFMM_Tree<Real>* tre
     trg_scatter=trg_scatter_;
   }
   tree->Comm().ScatterReverse(trg_value,trg_scatter,loc_size);
-  trg_val.assign(&trg_value[0],&trg_value[0]+trg_value.Dim());;
+  trg_val.assign(trg_value.begin(), trg_value.end());
 }
 
 template <class Real>
@@ -315,7 +315,7 @@ inline void PtFMM_Evaluate(const PtFMM_Tree<Real>* tree, std::vector<Real>& trg_
     trg_scatter=trg_scatter_;
   }
   tree->Comm().ScatterReverse(trg_value,trg_scatter,loc_size);
-  trg_val.assign(&trg_value[0],&trg_value[0]+trg_value.Dim());;
+  trg_val.assign(trg_value.begin(), trg_value.end());
 }
 
 }//end namespace
