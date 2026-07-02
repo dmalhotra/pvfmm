@@ -1,0 +1,42 @@
+# XML-only Doxygen config consumed by Sphinx/breathe (invoked by docs/conf.py,
+# with docs/ as the working directory). Independent of the root ./Doxyfile,
+# which generates docs/html and docs/latex for the gh-pages pipeline; do not
+# merge the two.
+
+PROJECT_NAME           = PVFMM
+OUTPUT_DIRECTORY       = _doxygen
+STRIP_FROM_PATH        = ..
+
+# Only the public / user-facing headers. pvfmm.h and pvfmm.hpp are the primary
+# API; fmm_pts/fmm_cheb/fmm_tree provide the Initialize/SetupFMM/RunFMM members
+# referenced from the docs; mpi_tree provides BoundaryType; kernel.hpp provides
+# the kernel descriptor and kernel-family structs.
+INPUT                  = ../include/pvfmm.h \
+                         ../include/pvfmm.hpp \
+                         ../include/fmm_pts.hpp \
+                         ../include/fmm_cheb.hpp \
+                         ../include/fmm_tree.hpp \
+                         ../include/mpi_tree.hpp \
+                         ../include/kernel.hpp
+RECURSIVE              = NO
+
+# F-suffixed C functions and the kernel-family structs carry no doc comments
+# but must still appear in the XML.
+EXTRACT_ALL            = YES
+WARN_IF_UNDOCUMENTED   = NO
+QUIET                  = YES
+
+GENERATE_HTML          = NO
+GENERATE_LATEX         = NO
+GENERATE_XML           = YES
+XML_OUTPUT             = xml
+XML_PROGRAMLISTING     = NO
+
+# Take the real-MPI branch in pvfmm.h so signatures show MPI_Comm instead of
+# the no-MPI typedef shim. The #include'd headers are not resolvable here
+# (INCLUDE_PATH empty) and are silently skipped -- by design: the docs build
+# must not require the SCTL submodule.
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = NO
+PREDEFINED             = SCTL_HAVE_MPI
+CASE_SENSE_NAMES       = YES

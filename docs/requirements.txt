@@ -1,0 +1,7 @@
+# Pinned toolchain for building the documentation (see .readthedocs.yaml and
+# .github/workflows/docs.yml). Doxygen is also required (installed separately).
+sphinx==8.1.3
+myst-parser==4.0.1
+breathe==4.36.0
+sphinx-rtd-theme==3.0.2
+sphinx-copybutton==0.5.2

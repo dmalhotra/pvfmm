@@ -47,3 +47,9 @@ pvfmm.egg-info/
 Manifest.toml
 .DS_Store
 .vscode
+
+# Documentation build outputs (Sphinx sources in docs/ are tracked; output is not)
+/docs/_build/
+/docs/_doxygen/
+/docs/html/
+/docs/latex/

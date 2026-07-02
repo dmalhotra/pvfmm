@@ -204,7 +204,7 @@ void PVFMMGetPotentialCoeffF(float* coeff, const void* tree);
  * \brief Evaluate Chebyshev coefficients at tensor product Chebyshev nodes of
  * first kind.
  *
- * \param[out] node_val node_val the function values at tensor product Chebyshev nodes.
+ * \param[out] node_val the function values at tensor product Chebyshev nodes.
  *
  * \param[in] Nleaf the number of leaf nodes.
  *
@@ -264,7 +264,7 @@ void* PVFMMCreateContextDWorld(double box_size, int n, int m, enum PVFMMKernel k
 void* PVFMMCreateContextFWorld(float box_size, int n, int m, enum PVFMMKernel kernel);
 
 /**
- * \brief Evaluate potential in single-precision.
+ * \brief Evaluate the potential at the target points.
  *
  * \param[in] src_pos the array of source particle positions: [x1 y1 z1 ... xn
  * yn zn] where (x1 y1 z1) are the coordinates of the first source point.
