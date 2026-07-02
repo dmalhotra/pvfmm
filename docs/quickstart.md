@@ -37,8 +37,10 @@ mpirun -n 2 ./examples/bin/example1 -N 100000 -m 10 -omp 4
 
 Options: `-N` number of source/target points (required), `-m` multipole order
 (default 10), `-omp` OpenMP threads per rank. Look for the printed
-`Maximum Absolute Error` and `Maximum Relative Error` — they should be
-around the accuracy implied by the multipole order (~1e-6 for `-m 10`).
+`Maximum Absolute Error` and `Maximum Relative Error` — the error decreases
+exponentially with the multipole order, roughly two digits for every increase
+of `m` by 2 (measured for this example: ~1e-5 at `-m 6`, ~3e-7 at `-m 8`,
+~6e-9 at `-m 10`).
 
 ## 4. Run a volume FMM
 

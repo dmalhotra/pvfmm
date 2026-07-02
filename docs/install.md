@@ -104,7 +104,6 @@ examples. Options:
 | Option | Default | Purpose |
 |---|---|---|
 | `-DPVFMM_ENABLE_CUDA=ON` | `OFF` | build the CUDA/GPU path |
-| `-DPVFMM_EXTENDED_BC=OFF` | `ON` | per-axis periodic {doc}`boundary conditions <concepts/boundary-conditions>` |
 
 MKL is detected and used for BLAS/LAPACK/FFTW when present; otherwise
 standard BLAS, LAPACK, and FFTW are located. The install places a package

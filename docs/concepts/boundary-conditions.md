@@ -19,13 +19,6 @@ Periodic sums are evaluated by accumulating the multipole expansion of the
 periodic images into the root node's local expansion
 (`FMM_Pts::PeriodicBC`); no Ewald-style parameter tuning is needed.
 
-```{important}
-The partially periodic variants `PX` and `PXY` require the library to be
-compiled with `-DPVFMM_EXTENDED_BC`. The CMake build enables this by default
-(option `PVFMM_EXTENDED_BC`); the autotools build does not define it. Builds
-without the flag support `FreeSpace` and fully periodic `PXYZ` only.
-```
-
 ```{note}
 For kernels without scale-invariant decay the periodic sum is defined up to
 the usual gauge/mean constraints; for the Laplace kernel with periodic

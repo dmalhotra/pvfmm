@@ -18,9 +18,10 @@ Feature-parity notes:
 - The Helmholtz kernel and the Stokes *stress* kernel are available only from
   C++ (they are not in the C `PVFMMKernel` enum, and hence absent from
   Fortran/Python/Julia).
-- Per-axis periodic boundary conditions (`PX`, `PXY`) are a C++-only feature;
-  the C-level interfaces expose a single `periodic` flag (fully periodic) —
-  see {doc}`../concepts/boundary-conditions`.
+- Per-axis periodic boundary conditions (`PX`, `PXY`) are available only
+  through the C++ interface; the C-level interfaces expose a single
+  `periodic` flag (fully periodic) — see
+  {doc}`../concepts/boundary-conditions`.
 - The `PVFMMCreateContext*World` convenience constructors (implicit
   `MPI_COMM_WORLD`) exist in C and are used by the Julia binding when no
   communicator is given; Fortran and Python always take an explicit
