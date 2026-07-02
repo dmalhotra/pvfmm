@@ -1,8 +1,10 @@
 # Python bindings to PVFMM
 
 This package provides Python bindings to the [C API](../include/pvfmm.h) using
-[`ctypes`](https://docs.python.org/3/library/ctypes.html) and
-[`mpi4py`](https://mpi4py.readthedocs.io/en/stable/index.html).
+[`ctypes`](https://docs.python.org/3/library/ctypes.html).
+[`mpi4py`](https://mpi4py.readthedocs.io/en/stable/index.html) is optional and
+imported only when you pass an explicit MPI communicator; the package imports
+and the comm-less `FMMParticleContext` (default `comm=None`) work without it.
 
 ## Installation
 

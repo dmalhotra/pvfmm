@@ -4,18 +4,34 @@ import os
 
 import numpy as np
 from numpy.ctypeslib import ndpointer
-from mpi4py import MPI
 
-# boilerplate from https://github.com/mpi4py/mpi4py/blob/master/demo/wrap-ctypes/helloworld.py
-if MPI._sizeof(MPI.Comm) == ctypes.sizeof(ctypes.c_int):
-    MPI_Comm = ctypes.c_int
-else:
-    MPI_Comm = ctypes.c_void_p
+# mpi4py is imported lazily (only when an explicit communicator is passed), so
+# `import pvfmm` and the comm-less code paths work without an MPI installation.
+MPI_Comm = ctypes.c_void_p  # provisional; refined by _ensure_mpi() on first use
+_MPI = None
 
 
-def get_MPI_COMM(comm) -> MPI_Comm:
-    comm_ptr = MPI._addressof(comm)
-    return MPI_Comm.from_address(comm_ptr)
+def _ensure_mpi():
+    """Import mpi4py on first use and refine MPI_Comm (and the argtypes of the
+    comm-taking entry points) to the platform's actual MPI_Comm width."""
+    global _MPI, MPI_Comm
+    if _MPI is None:
+        # boilerplate from mpi4py/demo/wrap-ctypes/helloworld.py
+        from mpi4py import MPI
+        _MPI = MPI
+        MPI_Comm = (
+            ctypes.c_int
+            if MPI._sizeof(MPI.Comm) == ctypes.sizeof(ctypes.c_int)
+            else ctypes.c_void_p
+        )
+        for fn in _COMM_FUNCS:
+            fn.argtypes = fn.argtypes[:-1] + [MPI_Comm]
+    return _MPI
+
+
+def get_MPI_COMM(comm):
+    MPI = _ensure_mpi()
+    return MPI_Comm.from_address(MPI._addressof(comm))
 
 
 def wrapped_ndptr(*args, **kwargs):
@@ -238,6 +254,24 @@ PVFMMCreateContextF.argtypes = [
     PVFMMBoundaryType,
     MPI_Comm,
 ]
+
+# World communicator as a Fortran integer handle (MPI_Fint, assumed int, as in
+# PVFMM's Fortran interface); used by the comm-less path below.
+PVFMMGetCommWorld = SHARED_LIB.PVFMMGetCommWorld
+PVFMMGetCommWorld.restype = ctypes.c_int
+PVFMMGetCommWorld.argtypes = []
+
+# Fortran entry points for the particle context (all arguments by reference);
+# these accept the Fortran integer comm handle and call MPI_Comm_f2c internally,
+# so no knowledge of the platform MPI_Comm representation is needed.
+_p_int = ctypes.POINTER(ctypes.c_int)
+pvfmmcreatecontextd_ = SHARED_LIB.pvfmmcreatecontextd_
+pvfmmcreatecontextd_.restype = None
+pvfmmcreatecontextd_.argtypes = [ctypes.POINTER(ctypes.c_void_p), ctypes.POINTER(ctypes.c_double), _p_int, _p_int, _p_int, _p_int, _p_int]
+pvfmmcreatecontextf_ = SHARED_LIB.pvfmmcreatecontextf_
+pvfmmcreatecontextf_.restype = None
+pvfmmcreatecontextf_.argtypes = [ctypes.POINTER(ctypes.c_void_p), ctypes.POINTER(ctypes.c_float), _p_int, _p_int, _p_int, _p_int, _p_int]
+
 PVFMMEvalD = SHARED_LIB.PVFMMEvalD
 PVFMMEvalD.restype = None
 PVFMMEvalD.argtypes = [
@@ -270,3 +304,12 @@ PVFMMDestroyContextD.argtypes = [ctypes.POINTER(ctypes.c_void_p)]
 PVFMMDestroyContextF = SHARED_LIB.PVFMMDestroyContextF
 PVFMMDestroyContextF.restype = None
 PVFMMDestroyContextF.argtypes = [ctypes.POINTER(ctypes.c_void_p)]
+
+# Entry points whose last argument is an MPI_Comm; _ensure_mpi() refines their
+# argtypes once the real MPI_Comm width is known.
+_COMM_FUNCS = (
+    PVFMMCreateVolumeFMMD, PVFMMCreateVolumeFMMF,
+    PVFMMCreateVolumeTreeD, PVFMMCreateVolumeTreeF,
+    PVFMMCreateVolumeTreeFromCoeffD, PVFMMCreateVolumeTreeFromCoeffF,
+    PVFMMCreateContextD, PVFMMCreateContextF,
+)

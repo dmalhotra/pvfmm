@@ -14,13 +14,21 @@ cd python && pip install .
 
 If `libpvfmm.so` is not on the system library search path, point the `PVFMM`
 environment variable at the directory containing it (e.g. the CMake `build/`
-directory or the install prefix's `lib/pvfmm`). Run MPI programs through
-mpi4py so that `MPI_Init`/`MPI_Finalize` are handled correctly:
+directory or the install prefix's `lib/pvfmm`).
+
+`mpi4py` is optional and imported only when you pass an explicit communicator.
+For a single process, or to let the library use `MPI_COMM_WORLD`, omit the
+communicator (`comm=None`) and no `mpi4py` install is required. To drive
+several ranks, pass an `mpi4py` communicator and launch through it so that
+`MPI_Init`/`MPI_Finalize` are handled correctly:
 
 ```bash
 export PVFMM=/path/to/dir-containing-libpvfmm
 mpirun -n 2 python -m mpi4py your_program.py
 ```
+
+The comm-less default is available for `FMMParticleContext`; the volume
+constructors require an explicit `mpi4py` communicator.
 
 Precision is selected per object with the `dtype` argument (`numpy.float64`,
 the default, or `numpy.float32`); all array arguments must be 1-D contiguous
@@ -66,15 +74,18 @@ periodic).
 ## Particle FMM
 
 ```python
-class FMMParticleContext(box_size, max_points, multipole_order, kernel, comm,
-                         dtype=np.float64, boundary=None)
+class FMMParticleContext(box_size, max_points, multipole_order, kernel,
+                         comm=None, dtype=np.float64, boundary=None)
 ```
 
 Creates a particle-FMM context (`PVFMMCreateContext*`). `box_size` is the
 domain length and the period along the periodic directions (`<= 0` allowed
 only for free space); `max_points` is the maximum number of points per leaf
-node; `multipole_order` must be positive and even; `comm` is an `mpi4py`
-communicator. Passing `boundary=FMMBoundaryType.PX` (etc.) selects the
+node; `multipole_order` must be positive and even. `comm` may be an `mpi4py`
+communicator; if omitted (`None`) the context uses the world communicator
+obtained from the library itself (`PVFMMGetCommWorld`), so **mpi4py is not
+required** for single- or multi-rank runs launched with `mpirun`. Passing
+`boundary=FMMBoundaryType.PX` (etc.) selects the
 boundary conditions explicitly; with `boundary=None` the sign of `box_size`
 decides (`> 0` fully periodic, otherwise free space). The underlying context
 is freed when the object is garbage-collected.

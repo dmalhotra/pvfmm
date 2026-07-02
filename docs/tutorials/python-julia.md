@@ -7,12 +7,12 @@ variable at the directory containing it (see {doc}`../api/python` and
 
 ## Python: particle FMM
 
-Based on `python/examples/example1.py` (run with
-`mpirun -n 2 python -m mpi4py example1.py`):
+Based on `python/examples/example1.py`. For a single process just run
+`python example1.py`; to use several ranks, launch with
+`mpirun -n 2 python -m mpi4py example1.py` and pass an `mpi4py` communicator.
 
 ```python
 import numpy as np
-from mpi4py import MPI
 import pvfmm
 
 N = 20000
@@ -25,7 +25,8 @@ fmm = pvfmm.FMMParticleContext(
     max_points=1000,        # max points per leaf
     multipole_order=10,     # accuracy (even)
     kernel=pvfmm.FMMKernel.BiotSavartPotential,
-    comm=MPI.COMM_WORLD,
+    # comm omitted: uses the world communicator from the library, so mpi4py is
+    # not needed. Pass comm=MPI.COMM_WORLD (from mpi4py) to run across ranks.
 )
 
 trg_val = fmm.evaluate(src_pos, src_den, None, trg_pos)             # with setup

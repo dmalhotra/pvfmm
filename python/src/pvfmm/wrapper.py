@@ -1,11 +1,9 @@
+from __future__ import annotations
+
 import ctypes
 import numpy as np
 from enum import Enum
 from typing import Optional, Callable, Union
-
-# calls MPI_Init_thread() and sets up MPI_Finalize() for you.
-# see https://mpi4py.readthedocs.io/en/stable/mpi4py.run.html
-from mpi4py import MPI
 
 from . import ffi
 
@@ -113,7 +111,7 @@ class FMMParticleContext:
         max_points: int,
         multipole_order: int,
         kernel: FMMKernel,
-        comm: MPI.Comm,
+        comm=None,
         dtype=np.float64,
         boundary: Optional[FMMBoundaryType] = None,
     ):
@@ -127,14 +125,37 @@ class FMMParticleContext:
             boundary = (
                 FMMBoundaryType.Periodic if box_size > 0 else FMMBoundaryType.FreeSpace
             )
-        self._ptr = get_function_dtype("PVFMMCreateContext", dtype)(
-            float(box_size),
-            max_points,
-            multipole_order,
-            int(self.kernel.value),
-            _boundary_value(boundary),
-            ffi.get_MPI_COMM(comm),
-        )
+        if comm is None:
+            # No communicator (and possibly no mpi4py): obtain the world
+            # communicator from the library as an MPI_Fint and create the
+            # context through the Fortran entry point, which does MPI_Comm_f2c.
+            box_t = ctypes.c_double if self.dtype == np.float64 else ctypes.c_float
+            shim = (
+                ffi.pvfmmcreatecontextd_
+                if self.dtype == np.float64
+                else ffi.pvfmmcreatecontextf_
+            )
+            ctx = ctypes.c_void_p()
+            fint = ctypes.c_int(ffi.PVFMMGetCommWorld())
+            shim(
+                ctypes.byref(ctx),
+                ctypes.byref(box_t(box_size)),
+                ctypes.byref(ctypes.c_int(max_points)),
+                ctypes.byref(ctypes.c_int(multipole_order)),
+                ctypes.byref(ctypes.c_int(int(self.kernel.value))),
+                ctypes.byref(ctypes.c_int(int(_boundary_value(boundary)))),
+                ctypes.byref(fint),
+            )
+            self._ptr = ctx.value
+        else:
+            self._ptr = get_function_dtype("PVFMMCreateContext", dtype)(
+                float(box_size),
+                max_points,
+                multipole_order,
+                int(self.kernel.value),
+                _boundary_value(boundary),
+                ffi.get_MPI_COMM(comm),
+            )
         if self._ptr is None:
             raise ValueError(
                 "PVFMMCreateContext failed (periodic boundaries need box_size > 0)"
