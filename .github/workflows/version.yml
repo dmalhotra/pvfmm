@@ -1,0 +1,25 @@
+name: Version check
+
+on:
+  push:
+    branches: [ develop ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ develop ]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@main
+
+    - name: Check version consistency
+      shell: bash
+      run: |
+        VER=$(cat version.txt)
+        grep -qxF "__version__ = \"$VER\"" python/src/pvfmm/__init__.py || { echo "python __version__ does not match version.txt ($VER)"; exit 1; }
+        grep -qxF "version = \"$VER\"" julia/Project.toml || { echo "julia Project.toml version does not match version.txt ($VER)"; exit 1; }
+        if [[ "$GITHUB_REF" == refs/tags/* && "$GITHUB_REF_NAME" != "v$VER" ]]; then
+          echo "tag $GITHUB_REF_NAME does not match version.txt ($VER)"; exit 1
+        fi
+        echo "version $VER is consistent"

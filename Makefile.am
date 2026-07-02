@@ -16,6 +16,7 @@ EX_DIR = ./examples
 RESULT_DIR = ./result
 
 EXTRA_DIST = \
+									version.txt \
 									$(EX_DIR)/src \
 									$(EX_DIR)/include \
 									$(EX_DIR)/Makefile \

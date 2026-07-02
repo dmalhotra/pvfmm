@@ -15,4 +15,4 @@ __all__ = [
     "nodes_to_coeff",
 ]
 
-__version__ = "0.1.0"
+__version__ = "1.3.0"
