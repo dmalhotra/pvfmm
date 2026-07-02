@@ -14,7 +14,7 @@
 #include <iostream>
 #include <stdint.h>
 #include <set>
-#ifdef PVFMM_HAVE_SYS_STAT_H
+#if __has_include(<sys/stat.h>)
 #include <sys/stat.h>
 #endif
 
@@ -221,7 +221,7 @@ void FMM_Pts<FMMNode>::Initialize(int mult_order, const sctl::Comm& comm_, const
   int rank = this->sctl_comm.Rank();
   bool verbose=false;
   #ifndef PVFMM_NDEBUG
-  #ifdef PVFMM_VERBOSE
+  #ifdef SCTL_VERBOSE
   if(!rank) verbose=true;
   #endif
   #endif
@@ -1974,7 +1974,7 @@ void EvalListGPU(SetupData<FMMNode_t>& setup_data, sctl::Vector<char>& dev_buffe
     { // interactions
       size_t interac_indx = 0;
       size_t interac_blk_dsp = 0;
-      for (size_t k = 0; k < interac_blk.Dim(); k++) {
+      for (size_t k = 0; k < (size_t)interac_blk.Dim(); k++) {
         size_t vec_cnt=0;
         for(size_t j=interac_blk_dsp;j<interac_blk_dsp+interac_blk[k];j++) vec_cnt+=interac_cnt[j];
         if(vec_cnt==0){
@@ -3898,7 +3898,7 @@ void FMM_Pts<FMMNode>::V_List     (SetupData<FMMNode_t>&  setup_data, bool devic
       }
       { // Hadamard
 #ifdef PVFMM_HAVE_PAPI
-#ifdef PVFMM_VERBOSE
+#ifdef SCTL_VERBOSE
         std::cout << "Starting counters new\n";
         if (PAPI_start(EventSet) != PAPI_OK) std::cout << "handle_error3" << std::endl;
 #endif
@@ -3907,7 +3907,7 @@ void FMM_Pts<FMMNode>::V_List     (SetupData<FMMNode_t>&  setup_data, bool devic
         VListHadamard<Real_t>(dof, M_dim, ker_dim0, ker_dim1, interac_dsp[blk0], interac_vec[blk0], precomp_mat, fft_in, fft_out);
         if(np==1) sctl::Profile::Toc();
 #ifdef PVFMM_HAVE_PAPI
-#ifdef PVFMM_VERBOSE
+#ifdef SCTL_VERBOSE
         if (PAPI_stop(EventSet, values) != PAPI_OK) std::cout << "handle_error4" << std::endl;
         std::cout << "Stopping counters\n";
 #endif

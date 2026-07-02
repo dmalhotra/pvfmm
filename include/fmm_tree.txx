@@ -645,7 +645,7 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
       if(setup_data[0+PVFMM_MAX_DEPTH*2].output_data!=NULL){
         sctl::Matrix<Real_t>& output_data=*setup_data[0+PVFMM_MAX_DEPTH*2].output_data;
         if(fmm_mat->staging_buffer.Dim()){
-          assert(fmm_mat->staging_buffer.Dim()*sizeof(Real_t)>=output_data.Dim(0)*output_data.Dim(1));
+          assert(fmm_mat->staging_buffer.Dim()*(sctl::Long)sizeof(Real_t)>=output_data.Dim(0)*output_data.Dim(1));
           setup_data[0+PVFMM_MAX_DEPTH*2].output_data_mirror->Device2Host((char*)&fmm_mat->staging_buffer[0]);
         }
       }
@@ -698,7 +698,7 @@ void FMM_Tree<FMM_Mat_t>::DownwardPass() {
   if(device) if(setup_data[0+PVFMM_MAX_DEPTH*0].output_data!=NULL){ // Device2Host: Target
     sctl::Matrix<Real_t>& output_data=*setup_data[0+PVFMM_MAX_DEPTH*0].output_data;
     if(fmm_mat->staging_buffer.Dim()){
-      assert(fmm_mat->staging_buffer.Dim()>=sizeof(Real_t)*output_data.Dim(0)*output_data.Dim(1));
+      assert(fmm_mat->staging_buffer.Dim()>=(sctl::Long)sizeof(Real_t)*output_data.Dim(0)*output_data.Dim(1));
       setup_data[0+PVFMM_MAX_DEPTH*0].output_data_mirror->Device2Host((char*)&fmm_mat->staging_buffer[0]);
     }
   }

@@ -10,7 +10,7 @@
 #include <iostream>
 #include <cstdlib>
 #include <cmath>
-#ifdef PVFMM_HAVE_SYS_STAT_H
+#if __has_include(<sys/stat.h>)
 #include <sys/stat.h>
 #endif
 
@@ -496,7 +496,7 @@ sctl::Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Ma
   myrank = this->sctl_comm.Rank();
   np = this->sctl_comm.Size();
 
-  #ifdef PVFMM_VERBOSE
+  #ifdef SCTL_VERBOSE
   size_t progress=0, class_count=0;
   { // Determine precomputation progress.
     size_t mat_cnt=this->interac_list.ListCount((Mat_Type)type);
@@ -536,7 +536,7 @@ sctl::Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Ma
         #pragma omp parallel for schedule(dynamic)
         for(size_t i=myrank;i<n_uc;i+=np){
           std::vector<Real_t> M_=cheb_integ(cheb_deg, &uc_coord[i*3], r, *this->kernel->k_s2m);
-          #ifdef PVFMM_VERBOSE
+          #ifdef SCTL_VERBOSE
           #pragma omp critical(PVFMM_PRECOMP)
           if(!myrank){
             cnt_done++;
@@ -601,7 +601,7 @@ sctl::Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Ma
         #pragma omp parallel for schedule(dynamic)
         for(size_t i=myrank;i<n_trg;i+=np){
           std::vector<Real_t> s2t=cheb_integ(cheb_deg, &trg_coord[i*3], (Real_t)(s*2.0), *this->kernel->k_s2t);
-          #ifdef PVFMM_VERBOSE
+          #ifdef SCTL_VERBOSE
           #pragma omp critical(PVFMM_PRECOMP)
           if(!myrank){
             cnt_done++;
@@ -651,7 +651,7 @@ sctl::Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Ma
         #pragma omp parallel for schedule(dynamic)
         for(size_t i=myrank;i<n_trg;i+=np){
           std::vector<Real_t> s2t=cheb_integ(cheb_deg, &trg_coord[i*3], s, *this->kernel->k_s2t);
-          #ifdef PVFMM_VERBOSE
+          #ifdef SCTL_VERBOSE
           #pragma omp critical(PVFMM_PRECOMP)
           if(!myrank){
             cnt_done++;
@@ -701,7 +701,7 @@ sctl::Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Ma
         #pragma omp parallel for schedule(dynamic)
         for(size_t i=myrank;i<n_trg;i+=np){
           std::vector<Real_t> s2t=cheb_integ(cheb_deg, &trg_coord[i*3], (Real_t)(s*0.5), *this->kernel->k_s2t);
-          #ifdef PVFMM_VERBOSE
+          #ifdef SCTL_VERBOSE
           #pragma omp critical(PVFMM_PRECOMP)
           if(!myrank){
             cnt_done++;
@@ -765,7 +765,7 @@ sctl::Matrix<typename FMMNode::Real_t>& FMM_Cheb<FMMNode>::Precomp(int level, Ma
         #pragma omp parallel for schedule(dynamic)
         for(size_t i=myrank;i<n_trg;i+=np){
           std::vector<Real_t> M_=cheb_integ(cheb_deg, &trg_coord[i*3], s, *this->kernel->k_s2l);
-          #ifdef PVFMM_VERBOSE
+          #ifdef SCTL_VERBOSE
           #pragma omp critical(PVFMM_PRECOMP)
           if(!myrank){
             cnt_done++;

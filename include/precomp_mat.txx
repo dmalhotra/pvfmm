@@ -10,7 +10,7 @@
 #include <cassert>
 #include <cstring>
 #include <stdint.h>
-#ifdef PVFMM_HAVE_SYS_STAT_H
+#if __has_include(<sys/stat.h>)
 #include <sys/stat.h>
 #endif
 

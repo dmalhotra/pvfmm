@@ -6,8 +6,6 @@ AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([-Wall no-define])
 
 AC_CONFIG_SRCDIR([src/pvfmm-wrapper.cpp])
-AM_CONFIG_HEADER([config.h])               # prep config.h from config.h.in
-AX_PREFIX_CONFIG_H([include/pvfmm_config.h]) # prep include/pvfmm_config.h from it..
 
 
 # Set language to C++
@@ -25,8 +23,6 @@ AC_PROG_INSTALL
 AC_PROG_MKDIR_P
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
-#AC_PROG_RANLIB
-##AM_PROG_AR
 
 # Check for CUDA
 AX_CHECK_CUDA
@@ -41,40 +37,14 @@ if test "x${ac_compile_nvcc}" = xyes; then
 fi
 
 LT_INIT
-AC_PROG_LIBTOOL
 
 if test "x${ac_compile_nvcc}" = xyes; then
   CC=$CC_save
 fi
 
-# Checks for documentation build tools
-AC_CHECK_PROG([doxygen_ok], [doxygen], [yes], [no])
-AC_CHECK_PROG([pdflatex_ok], [pdflatex], [yes], [no])
-AC_CHECK_PROG([latex_ok], [latex], [yes], [no])
-AC_CHECK_PROG([dvips_ok], [dvips], [yes], [no])
-AC_CHECK_PROG([gs_ok], [gs], [yes], [no])
-if test "x$enable_html_doc" != xno; then
-  test "x$doxygen_ok" != xyes && enable_html_doc=no
-  test "x$latex_ok" != xyes && enable_html_doc=no
-  test "x$dvips_ok" != xyes && enable_html_doc=no
-  test "x$gs_ok" != xyes && enable_html_doc=no
-  AC_PATH_PROG([PERL], [perl], [])
-fi
-AM_CONDITIONAL([LATEX_OK], [test "x$latex_ok" = xyes])
-AM_CONDITIONAL([PDFLATEX_OK], [test "x$pdflatex_ok" = xyes])
-AM_CONDITIONAL([HTML_DOC], [test "x$enable_html_doc" = xyes])
-AM_CONDITIONAL([DOXYGEN_OK], [test "x$doxygen_ok" = xyes])
-
-DX_HTML_FEATURE(ON)
-DX_CHM_FEATURE(OFF)
-DX_CHI_FEATURE(OFF)
-DX_MAN_FEATURE(OFF)
-DX_RTF_FEATURE(OFF)
-DX_XML_FEATURE(OFF)
-DX_PDF_FEATURE(OFF)
-DX_PS_FEATURE(OFF)
-DX_INIT_DOXYGEN($PACKAGE_NAME, Doxyfile, doc/doxygen)
-
+# Doxygen (optional; enables `make doxygen-doc`, which drives ./Doxyfile)
+AC_CHECK_PROG([DOXYGEN], [doxygen], [doxygen], [no])
+AM_CONDITIONAL([HAVE_DOXYGEN], [test "x$DOXYGEN" != xno])
 
 AX_CXX_DEF_TEMPLATE_ARG
 CHECK_QUAD_PRECISION
@@ -82,23 +52,6 @@ CHECK_QUAD_PRECISION
 # Check for math libs
 AC_CHECK_LIB([m],[cos])
 AC_CHECK_LIB([imf],[cos])
-
-# Check for X11
-AC_PATH_X
-if test "$no_x" = yes; then
-  AC_MSG_WARN([Cannot find X Window System include files and libraries.
-               Please specify their location using --x-includes=dir and --x-libraries=dir])
-else
-  if test "$x_includes" != ""; then
-    X_INCLUDES="-I$x_includes"
-  fi
-  if test "$x_libraries" != ""; then
-    X_LIBS="-L$x_libraries"
-  fi
-  X_LIBS="$X_LIBS -lX11"
-  AC_SUBST(X_INCLUDES)
-  AC_SUBST(X_LIBS)
-fi
 
 # Check for libstdc++, libdl
 AC_CHECK_LIB(stdc++,main)
@@ -148,38 +101,12 @@ if $USE_OPENMP; then
 fi
 AC_LANG_WERROR([off])
 
-# Check for Intel Xeon Phi
-#CHECK_INTEL_OFFLOAD
-DISABLE_INTEL_OFFLOAD(-no-offload)
-DISABLE_INTEL_OFFLOAD(-qno-offload)
-
 # Check for FFTW
 AC_CHECK_FFTW
 AC_CHECK_FFTWF
 AC_CHECK_FFTWL
 
 
-#Check for BLAS LAPACK
-#AM_CONDITIONAL(BLAS_EQ_MKL, test "$BLAS" = "MKL")
-#AM_CONDITIONAL(BLAS_EQ_GSL, test "$BLAS" = "GSL")
-#if (test -r $PETSC_DIR/$PETSC_ARCH/conf/petscvariables) ; then
-#  PETSC_BLASLAPACK_LIB=`grep "BLASLAPACK_LIB" $PETSC_DIR/$PETSC_ARCH/conf/petscvariables | sed -e 's/.*BLASLAPACK_LIB = //'`
-#  if test "x$PETSC_BLASLAPACK_LIB" != x ; then
-#    if test "x$with_blas" != "x" -a "$with_blas" != "$PETSC_BLASLAPACK_LIB" ; then
-#      AC_MSG_WARN([BLAS flags specified by --with-blas appear to disagree with PETSc BLAS/LAPACK flags; using PETSc settings])
-#    fi
-#    if test "x$with_lapack" != "x" -a "$with_lapack" != "$PETSC_BLASLAPACK_LIB" ; then
-#      AC_MSG_WARN([LAPACK flags specified by --with-lapack appear to disagree with PETSc BLAS/LAPACK flags; using PETSc settings])
-#    fi
-#    echo "using PETSc BLAS/LAPACK library flags: $PETSC_BLASLAPACK_LIB"
-#    with_blas="$PETSC_BLASLAPACK_LIB"
-#    with_lapack=""
-#  fi
-#  PETSC_BLASLAPACK_INCLUDE=`grep "BLASLAPACK_INCLUDE" $PETSC_DIR/$PETSC_ARCH/conf/petscvariables | sed -e 's/.*BLASLAPACK_INCLUDE = //'`
-#  if test "x$PETSC_BLASLAPACK_INCLUDE" != x ; then
-#    CPPFLAGS="${PETSC_BLASLAPACK_INCLUDE} $CPPFLAGS"
-#  fi
-#fi
 CFLAGS_save=$CFLAGS
 CXXFLAGS_save=$CXXFLAGS
 CFLAGS=""
@@ -195,26 +122,8 @@ AC_SUBST(BLAS_LIBS)
 AC_SUBST(FLIBS)
 
 
-# Checks for header files.
-AC_CHECK_HEADERS([stdint.h cstdlib cstddef])
-
-
-# Checks for typedefs, structures, and compiler characteristics.
-AC_HEADER_STDBOOL
-AC_HEADER_STAT
-AC_C_INLINE
-AC_TYPE_INT32_T
-AC_TYPE_UINT16_T
-AC_TYPE_UINT8_T
-AC_TYPE_SIZE_T
-
-
-# Checks for library functions.
-AC_FUNC_ERROR_AT_LINE
-AC_FUNC_MALLOC
-AC_FUNC_STRTOD
-AC_CHECK_FUNCS([floor memset pow sqrt strtol strtoul])
 AX_CHECK_SVML
+AX_CHECK_LIBMVEC
 
 #######################################################################
 # Assemble the SCTL feature macros from what configure actually found.
@@ -229,10 +138,10 @@ AX_CHECK_SVML
 FFTW_THREADS_LIB=""
 acx_fftw_threads_ok=no
 AC_ARG_ENABLE([fftw-threads],
-              [AS_HELP_STRING([--enable-fftw-threads],
-                              [use threaded FFTW plans in SCTL (default: no)])],
+              [AS_HELP_STRING([--disable-fftw-threads],
+                              [do not use threaded FFTW plans in SCTL (default: auto-detect)])],
               [enable_fftw_threads=$enableval],
-              [enable_fftw_threads=no])
+              [enable_fftw_threads=yes])
 if test "x$enable_fftw_threads" = xyes -a "x$acx_fftw_ok" = xyes; then
   save_LIBS="$LIBS"
   LIBS="$FFTW_LIB $LIBS"
@@ -251,20 +160,20 @@ if test "x$enable_fftw_threads" = xyes -a "x$acx_fftw_ok" = xyes; then
                  [$FFTW_LIB])
   fi
   LIBS="$save_LIBS"
-  if test "x$acx_fftw_threads_ok" = xno; then
-    AC_MSG_WARN([--enable-fftw-threads requested but no threaded FFTW found; disabling.])
-  fi
 fi
 AC_SUBST(FFTW_THREADS_LIB)
 
-# Profiling verbosity level for sctl::Profile (overridable at make time via
-# `make SCTL_PROFILE=<n>`; 0 disables profiling overhead).
-AC_ARG_WITH([sctl-profile],
-            [AS_HELP_STRING([--with-sctl-profile=N],
-                            [default SCTL_PROFILE level (default: 5000)])],
-            [SCTL_PROFILE_DEFAULT="$withval"],
-            [SCTL_PROFILE_DEFAULT=5000])
-AC_SUBST(SCTL_PROFILE_DEFAULT)
+# Optimization / ISA / language-standard flags (the -O3 overrides autoconf's -O2).
+# -mno-avx512fp16 works around pre-2.38 binutils that can't assemble the
+# AVX-512-FP16 ops -march=native emits on new Intel CPUs; skipped on macOS where
+# clang neither emits them nor recognizes the flag. Set as a shell conditional
+# here (not in MakeVariables.in) because automake parses that included fragment.
+PVFMM_OPT_FLAGS="-std=c++17 -O3 -march=native"
+case "`uname -s`" in
+  Darwin) ;;
+  *) PVFMM_OPT_FLAGS="$PVFMM_OPT_FLAGS -mno-avx512fp16" ;;
+esac
+AC_SUBST(PVFMM_OPT_FLAGS)
 
 # Assemble the -D flags. MPI is mandatory for pvfmm (AX_MPI errors out
 # above if mpicxx is missing), so SCTL_HAVE_MPI is always on; the rest
@@ -277,16 +186,23 @@ if test "x$acx_fftw_ok"         = xyes; then SCTL_DEFS="$SCTL_DEFS -DSCTL_HAVE_F
 if test "x$acx_fftwf_ok"        = xyes; then SCTL_DEFS="$SCTL_DEFS -DSCTL_HAVE_FFTWF";   fi
 if test "x$acx_fftwl_ok"        = xyes; then SCTL_DEFS="$SCTL_DEFS -DSCTL_HAVE_FFTWL";   fi
 if test "x$acx_fftw_threads_ok" = xyes; then SCTL_DEFS="$SCTL_DEFS -DSCTL_FFTW_THREADS"; fi
-if test "x$cv_have_svml"        = xyes; then SCTL_DEFS="$SCTL_DEFS -DSCTL_HAVE_SVML";    fi
+LIBMVEC_LIB=""
+# SVML and libmvec are mutually exclusive in SCTL; prefer SVML when present.
+if test "x$cv_have_svml"        = xyes; then SCTL_DEFS="$SCTL_DEFS -DSCTL_HAVE_SVML";
+elif test "x$cv_have_libmvec"   = xyes; then SCTL_DEFS="$SCTL_DEFS -DSCTL_HAVE_LIBMVEC"; LIBMVEC_LIB="-lmvec -lm"; fi
+AC_SUBST(LIBMVEC_LIB)
 AC_SUBST(SCTL_DEFS)
 
 # Path for precomputed data files.
 AC_ARG_WITH(precomp-dir,
             [AS_HELP_STRING([--with-precomp-dir=DIR], [set directory for precomputed data files to DIR])],
             [PRECOMP_DIR="$withval"; AX_NORMALIZE_PATH([PRECOMP_DIR], ["/"]) ])
-AC_DEFINE_UNQUOTED(PRECOMP_DATA_PATH,"$PRECOMP_DIR",[Path for precomputed data files.])
+# pvfmm-specific -D flags (no longer via the generated pvfmm_config.h)
+PVFMM_DEFS=""
+if test "x$PRECOMP_DIR" != x;         then PVFMM_DEFS="$PVFMM_DEFS -DPVFMM_PRECOMP_DATA_PATH='\"$PRECOMP_DIR\"'"; fi
+if test "x${ac_compile_nvcc}" = xyes; then PVFMM_DEFS="$PVFMM_DEFS -DPVFMM_HAVE_CUDA"; fi
+AC_SUBST(PVFMM_DEFS)
 
-#AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([Makefile
                  MakeVariables])
 AC_OUTPUT
@@ -308,7 +224,6 @@ External libs:
 
 SCTL flags:
   - SCTL_DEFS ...... : ${SCTL_DEFS}
-  - SCTL_PROFILE ... : ${SCTL_PROFILE_DEFAULT}
 
 Compiler/linker flags/libs/defs:
   - MPICXX ......... : ${MPICXX}
@@ -318,13 +233,6 @@ Compiler/linker flags/libs/defs:
     - BLAS ......... : ${BLAS_LIBS}
     - LAPACK ....... : ${LAPACK_LIBS}
     - FFTW ......... : ${FFTW_LIB} ${FFTWF_LIB}
-    - X11 .......... : ${X_LIBS}
-
-Documentation tools:
-  - doxygen ........ : ${doxygen_ok}
-  - latex .......... : ${latex_ok}
-  - dvips .......... : ${dvips_ok}
-  - ghostscript .... : ${gs_ok}
 
 "
 

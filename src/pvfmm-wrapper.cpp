@@ -634,7 +634,7 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
         part_indx[nodes.size()]=pt_mid.Dim();
         #pragma omp parallel for
         for(size_t j=0;j<nodes.size();j++){
-          part_indx[j]=std::lower_bound(&pt_mid[0], &pt_mid[0]+pt_mid.Dim(), nodes[j]->GetMortonId())-&pt_mid[0];
+          part_indx[j]=std::lower_bound(pt_mid.begin(), pt_mid.begin()+pt_mid.Dim(), nodes[j]->GetMortonId())-pt_mid.begin();
         }
 
         if(setup){
@@ -664,13 +664,13 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
               assert((size_t)nodes[j]->src_coord.Dim()==n_pts*( PVFMM_COORD_DIM));
               assert((size_t)nodes[j]->src_value.Dim()==n_pts*(ker_dim[0]));
               //memcpy(&nodes[j]->src_coord[0],&src_coord[0]+part_indx[j]*( PVFMM_COORD_DIM),n_pts*( PVFMM_COORD_DIM)*sizeof(Real));
-              memcpy(&nodes[j]->src_value[0],&src_value[0]+part_indx[j]*(ker_dim[0]),n_pts*(ker_dim[0])*sizeof(Real));
+              memcpy(nodes[j]->src_value.begin(),src_value.begin()+part_indx[j]*(ker_dim[0]),n_pts*(ker_dim[0])*sizeof(Real));
             }
             if(surf_value.Dim()){
               assert((size_t)nodes[j]->surf_coord.Dim()==n_pts*(           PVFMM_COORD_DIM));
               assert((size_t)nodes[j]->surf_value.Dim()==n_pts*(ker_dim[0]+PVFMM_COORD_DIM));
               //memcpy(&nodes[j]->surf_coord[0],& src_coord[0]+part_indx[j]*(           PVFMM_COORD_DIM),n_pts*(           PVFMM_COORD_DIM)*sizeof(Real));
-              memcpy(&nodes[j]->surf_value[0],&surf_value[0]+part_indx[j]*(ker_dim[0]+PVFMM_COORD_DIM),n_pts*(ker_dim[0]+PVFMM_COORD_DIM)*sizeof(Real));
+              memcpy(nodes[j]->surf_value.begin(),surf_value.begin()+part_indx[j]*(ker_dim[0]+PVFMM_COORD_DIM),n_pts*(ker_dim[0]+PVFMM_COORD_DIM)*sizeof(Real));
             }
           }
         }
@@ -707,7 +707,7 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
         part_indx[nodes.size()]=pt_mid.Dim();
         #pragma omp parallel for
         for(size_t j=0;j<nodes.size();j++){
-          part_indx[j]=std::lower_bound(&pt_mid[0], &pt_mid[0]+pt_mid.Dim(), nodes[j]->GetMortonId())-&pt_mid[0];
+          part_indx[j]=std::lower_bound(pt_mid.begin(), pt_mid.begin()+pt_mid.Dim(), nodes[j]->GetMortonId())-pt_mid.begin();
         }
 
         if(setup){

@@ -3,7 +3,8 @@ using LinearAlgebra
 using Random
 
 const _PVFMM_BUILD_DIR = normpath(joinpath(@__DIR__, "..", "..", "build"))
-const _PVFMM_DYLIB = joinpath(_PVFMM_BUILD_DIR, "libpvfmm.dylib")
+const _PVFMM_LIBNAME = Sys.iswindows() ? "libpvfmm.dll" : (Sys.isapple() ? "libpvfmm.dylib" : "libpvfmm.so")
+const _PVFMM_DYLIB = joinpath(_PVFMM_BUILD_DIR, _PVFMM_LIBNAME)
 ENV["PVFMM"] = _PVFMM_BUILD_DIR
 
 function _aos_flat(coords::AbstractMatrix{T}) where {T}

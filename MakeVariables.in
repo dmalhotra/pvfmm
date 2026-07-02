@@ -8,7 +8,6 @@ PKG_SUBDIR_PVFMM =
 
 # Compiler and flags.
 CXX_PVFMM = @MPICXX@
-INTEL_OFFLOAD_OK=@intel_offload_ok@
 
 # The PVFMM library and headers.
 PVFMM_INCLUDES = -I$(TOP_SRCDIR_PVFMM)/include$(PKG_SUBDIR_PVFMM)
@@ -21,10 +20,6 @@ FFTW_LIBS_PVFMM = @FFTW_LIB@ @FFTWF_LIB@ @FFTWL_LIB@ @FFTW_THREADS_LIB@
 # BLAS, LAPACK libs.
 BLAS_LAPACK_LIB_PVFMM = @LAPACK_LIBS@ @BLAS_LIBS@ @FLIBS@
 
-# X include and lib paths.
-X_INCLUDES_PVFMM = @X_INCLUDES@
-X_LIBS_PVFMM = @X_LIBS@
-
 # nvcc compiler and flags.
 NVCC_PVFMM = @NVCC@
 NVCCFLAGS_PVFMM = @NVCCFLAGS@ @CUDA_CFLAGS@ $(PVFMM_INCLUDES)
@@ -34,16 +29,19 @@ CUDA_CFLAGS_PVFMM = @CUDA_CFLAGS@
 CUDA_LDLIBS_PVFMM = @CUDA_LDLIBS@
 
 # Add all CXXFLAGS_PVFMM and LDLIBS_PVFMM
-CXXFLAGS_PVFMM = @CXXFLAGS@ $(PVFMM_INCLUDES) $(FFTW_INCLUDES_PVFMM) $(X_INCLUDES_PVFMM) $(CUDA_CFLAGS_PVFMM)
-LDLIBS_PVFMM = @LDFLAGS@ $(PVFMM_LIBS) $(FFTW_LIBS_PVFMM) $(BLAS_LAPACK_LIB_PVFMM) $(X_LIBS_PVFMM) $(CUDA_LDLIBS_PVFMM) @LIBS@
+CXXFLAGS_PVFMM = @CXXFLAGS@ $(PVFMM_INCLUDES) $(FFTW_INCLUDES_PVFMM) $(CUDA_CFLAGS_PVFMM)
+
+# Optimization / ISA / language standard (assembled by configure; the -O3 here
+# overrides the -O2 autoconf puts in @CXXFLAGS@).
+CXXFLAGS_PVFMM += @PVFMM_OPT_FLAGS@
+LDLIBS_PVFMM = @LDFLAGS@ $(PVFMM_LIBS) $(FFTW_LIBS_PVFMM) $(BLAS_LAPACK_LIB_PVFMM) $(CUDA_LDLIBS_PVFMM) @LIBMVEC_LIB@ @LIBS@
 
 LDFLAGS_PVFMM = $(LDLIBS_PVFMM) # Deprecated, use LDLIBS_PVFMM instead
 
 # Add SCTL. The -DSCTL_HAVE_* flags below are filled in by configure (the
 # SCTL_DEFS substitution; see configure.ac) based on the libraries it actually
 # detected, so the SCTL layer only enables backends that are present.
-# SCTL_PROFILE can be overridden on the make command line, e.g.
-# `make SCTL_PROFILE=0` to disable profiling overhead.
-SCTL_PROFILE ?= @SCTL_PROFILE_DEFAULT@
-CXXFLAGS_PVFMM += -DSCTL_HAVE_PVFMM @SCTL_DEFS@ -DSCTL_PROFILE=$(SCTL_PROFILE) -DSCTL_VERBOSE
+# SCTL_PROFILE / SCTL_VERBOSE default in pvfmm_common.hpp (guarded by #ifndef);
+# override e.g. with `make CXXFLAGS_PVFMM+=-DSCTL_PROFILE=0`.
+CXXFLAGS_PVFMM += -DSCTL_HAVE_PVFMM @SCTL_DEFS@ @PVFMM_DEFS@
 CXXFLAGS_PVFMM += -I$(TOP_SRCDIR_PVFMM)/SCTL/include

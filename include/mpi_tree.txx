@@ -736,7 +736,7 @@ inline int balanceOctree (sctl::Vector<MortonId > &in, sctl::Vector<MortonId > &
     return 0;
   }
 
-#ifdef PVFMM_VERBOSE
+#ifdef SCTL_VERBOSE
   long long locInSize = in.Dim();
 #endif
 
@@ -820,7 +820,7 @@ inline int balanceOctree (sctl::Vector<MortonId > &in, sctl::Vector<MortonId > &
     }
   }
 
-#ifdef PVFMM_VERBOSE
+#ifdef SCTL_VERBOSE
   //Local size before removing duplicates and ancestors (linearise).
   long long locTmpSize = in.Dim();
 #endif
@@ -899,7 +899,7 @@ inline int balanceOctree (sctl::Vector<MortonId > &in, sctl::Vector<MortonId > &
 
   //////////////////////////////////////////////////////////////////////////////////////////////////
 
-#ifdef PVFMM_VERBOSE
+#ifdef SCTL_VERBOSE
   sctl::StaticArray<long long,3> loc_sizes{locInSize, locTmpSize, (long long)out.Dim()}, glb_sizes;
   comm.Allreduce<long long>(loc_sizes, glb_sizes, 3, sctl::CommOp::SUM);
   if(!comm.Rank()) std::cout<<"Balance Octree. inpSize: "<<glb_sizes[0]
