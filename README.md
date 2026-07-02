@@ -1,4 +1,4 @@
-# PVFMM [![Build Status](https://github.com/dmalhotra/pvfmm/actions/workflows/build.yml/badge.svg)](https://github.com/dmalhotra/pvfmm/actions/workflows/build.yml) [![Stable Version](https://badgen.net/github/tag/dmalhotra/pvfmm)](https://github.com/dmalhotra/pvfmm/tags) [![Latest Release](https://img.shields.io/github/v/release/dmalhotra/pvfmm?color=%233D9970)](https://github.com/dmalhotra/pvfmm/releases)
+# PVFMM [![Build Status](https://github.com/dmalhotra/pvfmm/actions/workflows/build.yml/badge.svg)](https://github.com/dmalhotra/pvfmm/actions/workflows/build.yml) [![Documentation Status](https://readthedocs.org/projects/pvfmm/badge/?version=latest)](https://pvfmm.readthedocs.io/en/latest/) [![Stable Version](https://badgen.net/github/tag/dmalhotra/pvfmm)](https://github.com/dmalhotra/pvfmm/tags) [![Latest Release](https://img.shields.io/github/v/release/dmalhotra/pvfmm?color=%233D9970)](https://github.com/dmalhotra/pvfmm/releases)
 
 
 ### What is PVFMM?
@@ -12,6 +12,12 @@
      volume potential integral equation formulation accelerated by the
      Kernel Independent Fast Multipole Method. 
 
+
+### Documentation
+
+   Full documentation — installation, tutorials for the C++, C,
+   Fortran, Python, and Julia interfaces, and the API reference — is
+   hosted at [pvfmm.readthedocs.io](https://pvfmm.readthedocs.io).
 
 ### How to get PVFMM
 
