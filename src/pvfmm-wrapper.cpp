@@ -924,6 +924,15 @@ void PVFMMDestroyContextD(void** ctx) {
   PVFMMDestroyContext<double>(ctx);
 }
 
+MPI_Fint PVFMMGetCommWorld(void) {
+  PVFMMEnsureMPIInitialized();
+#if defined(SCTL_HAVE_MPI)
+  return MPI_Comm_c2f(MPI_COMM_WORLD);
+#else
+  return 0;  // ignored by the no-MPI build (single-process / self-comm)
+#endif
+}
+
 
 #ifdef __cplusplus
 }

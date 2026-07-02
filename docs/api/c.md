@@ -95,3 +95,11 @@ many times as needed (pass `setup=1` whenever particle positions changed,
 
 ```{doxygenfunction} PVFMMDestroyContextD
 ```
+
+C and C++ callers pass their own `MPI_Comm` (e.g. `MPI_COMM_WORLD`). Language
+bindings that do not link MPI can instead obtain the world communicator from
+the library as a Fortran integer handle and pass it to the Fortran entry
+points:
+
+```{doxygenfunction} PVFMMGetCommWorld
+```

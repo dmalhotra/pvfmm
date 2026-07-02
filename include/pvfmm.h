@@ -282,6 +282,21 @@ void* PVFMMCreateContextD(double box_size, int n, int m, enum PVFMMKernel kernel
 void* PVFMMCreateContextF(float box_size, int n, int m, enum PVFMMKernel kernel, enum PVFMMBoundaryType bndry, MPI_Comm comm);
 
 /**
+ * \brief Get the world communicator as a Fortran integer handle
+ * (MPI_Comm_c2f(MPI_COMM_WORLD)), initializing MPI on demand.
+ *
+ * This is a convenience for language bindings that do not link MPI directly:
+ * the returned handle can be passed to the Fortran entry points
+ * (pvfmmcreatecontextd_/pvfmmcreatecontextf_) without the binding needing to
+ * know the platform representation of MPI_Comm. C/C++ callers that already
+ * have MPI_COMM_WORLD do not need this. When the library is built without
+ * MPI the return value is a placeholder (0) that the library ignores.
+ *
+ * \return the world communicator as an MPI_Fint handle.
+ */
+MPI_Fint PVFMMGetCommWorld(void);
+
+/**
  * \brief Evaluate the potential at the target points.
  *
  * \param[in] src_pos the array of source particle positions: [x1 y1 z1 ... xn

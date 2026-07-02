@@ -76,13 +76,13 @@ Based on `julia/test/reference_comparison.jl`:
 ```julia
 ENV["PVFMM"] = "/path/to/dir-containing-libpvfmm"
 using PVFMM
-using MPI
-MPI.Init()
 
 N = 10000
 src_pos = rand(3N); src_den = rand(3N) .- 0.5; trg_pos = rand(3N)
 
-ctx = FMMParticleContext(-1.0, 1000, 10, PVFMM.StokesVelocity, MPI.COMM_WORLD)
+# comm omitted: the world communicator is obtained from the library, so no
+# MPI.jl dependency is needed. Pass MPI.COMM_WORLD explicitly if you use MPI.jl.
+ctx = FMMParticleContext(-1.0, 1000, 10, PVFMM.StokesVelocity)
 
 trg_val = evaluate(ctx, src_pos, src_den, nothing, trg_pos)
 trg_val = evaluate(ctx, src_pos, src_den, nothing, trg_pos; setup=false)

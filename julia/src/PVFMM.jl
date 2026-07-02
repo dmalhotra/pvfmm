@@ -159,7 +159,7 @@ function FMMParticleContext(
     max_points::Integer,
     multipole_order::Integer,
     kernel::FMMKernel,
-    comm;
+    comm=nothing;
     T::Type{<:AbstractFloat}=Float64,
     boundary::Union{Nothing,Bool,FMMBoundaryType}=nothing,
 )
@@ -169,20 +169,44 @@ function FMMParticleContext(
         boundary = box_size > 0 ? PXYZ : FreeSpace
     end
     bc = _boundary_value(boundary)
-    sym = Symbol("PVFMMCreateContext" * _suffix(T))
-    fp = Libdl.dlsym(_libpvfmm(), sym)
-    kind, comm_arg = _comm_kind(comm)
-    ptr = if T === Float64
-        if kind === :int
-            ccall(fp, Ptr{Cvoid}, (Cdouble, Cint, Cint, Cuint, Cuint, Cint), Cdouble(box_size), Cint(max_points), Cint(multipole_order), Cuint(kernel), bc, comm_arg)
+    ptr = if comm === nothing
+        # No communicator and no MPI.jl dependency: ask the library for
+        # MPI_COMM_WORLD as a Fortran integer handle (MPI_Fint, assumed Cint,
+        # as in PVFMM's Fortran interface) and create the context through the
+        # Fortran entry point, which converts it back with MPI_Comm_f2c.
+        fint = Ref{Cint}(ccall(Libdl.dlsym(_libpvfmm(), :PVFMMGetCommWorld), Cint, ()))
+        fp = Libdl.dlsym(_libpvfmm(), Symbol("pvfmmcreatecontext" * lowercase(_suffix(T)) * "_"))
+        ctx_ref = Ref{Ptr{Cvoid}}(C_NULL)
+        # ccall argument types must be concrete constants (T here is a keyword,
+        # not a static parameter), so branch on precision.
+        if T === Float64
+            ccall(fp, Cvoid,
+                  (Ref{Ptr{Cvoid}}, Ref{Cdouble}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{Cint}),
+                  ctx_ref, Ref(Cdouble(box_size)), Ref(Cint(max_points)), Ref(Cint(multipole_order)),
+                  Ref(Cint(kernel)), Ref(Cint(bc)), fint)
         else
-            ccall(fp, Ptr{Cvoid}, (Cdouble, Cint, Cint, Cuint, Cuint, Ptr{Cvoid}), Cdouble(box_size), Cint(max_points), Cint(multipole_order), Cuint(kernel), bc, comm_arg)
+            ccall(fp, Cvoid,
+                  (Ref{Ptr{Cvoid}}, Ref{Cfloat}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{Cint}),
+                  ctx_ref, Ref(Cfloat(box_size)), Ref(Cint(max_points)), Ref(Cint(multipole_order)),
+                  Ref(Cint(kernel)), Ref(Cint(bc)), fint)
         end
+        ctx_ref[]
     else
-        if kind === :int
-            ccall(fp, Ptr{Cvoid}, (Cfloat, Cint, Cint, Cuint, Cuint, Cint), Cfloat(box_size), Cint(max_points), Cint(multipole_order), Cuint(kernel), bc, comm_arg)
+        sym = Symbol("PVFMMCreateContext" * _suffix(T))
+        fp = Libdl.dlsym(_libpvfmm(), sym)
+        kind, comm_arg = _comm_kind(comm)
+        if T === Float64
+            if kind === :int
+                ccall(fp, Ptr{Cvoid}, (Cdouble, Cint, Cint, Cuint, Cuint, Cint), Cdouble(box_size), Cint(max_points), Cint(multipole_order), Cuint(kernel), bc, comm_arg)
+            else
+                ccall(fp, Ptr{Cvoid}, (Cdouble, Cint, Cint, Cuint, Cuint, Ptr{Cvoid}), Cdouble(box_size), Cint(max_points), Cint(multipole_order), Cuint(kernel), bc, comm_arg)
+            end
         else
-            ccall(fp, Ptr{Cvoid}, (Cfloat, Cint, Cint, Cuint, Cuint, Ptr{Cvoid}), Cfloat(box_size), Cint(max_points), Cint(multipole_order), Cuint(kernel), bc, comm_arg)
+            if kind === :int
+                ccall(fp, Ptr{Cvoid}, (Cfloat, Cint, Cint, Cuint, Cuint, Cint), Cfloat(box_size), Cint(max_points), Cint(multipole_order), Cuint(kernel), bc, comm_arg)
+            else
+                ccall(fp, Ptr{Cvoid}, (Cfloat, Cint, Cint, Cuint, Cuint, Ptr{Cvoid}), Cfloat(box_size), Cint(max_points), Cint(multipole_order), Cuint(kernel), bc, comm_arg)
+            end
         end
     end
     ptr == C_NULL && error("PVFMMCreateContext returned NULL (periodic boundaries need box_size > 0)")

@@ -64,17 +64,19 @@ accept a plain `Bool`.
 ## Particle FMM
 
 ```julia
-FMMParticleContext(box_size, max_points, multipole_order, kernel, comm;
+FMMParticleContext(box_size, max_points, multipole_order, kernel, comm=nothing;
                    T=Float64, boundary=nothing)
 ```
 
 Creates a particle-FMM context (`PVFMMCreateContext*`). `box_size` is the
 domain length and the period along the periodic directions (`<= 0` allowed
-only for free space); `multipole_order` must be positive and even; `comm` is
-required (e.g. `MPI.COMM_WORLD` from MPI.jl). Passing `boundary=PVFMM.PX`
-(etc.) selects the boundary conditions explicitly; with
-`boundary === nothing` the sign of `box_size` decides (`> 0` fully periodic,
-otherwise free space).
+only for free space); `multipole_order` must be positive and even. `comm`
+may be an MPI communicator (e.g. `MPI.COMM_WORLD` from MPI.jl); if omitted,
+the context runs on the world communicator obtained from the library itself
+(via `PVFMMGetCommWorld`), so **MPI.jl is not required** for single- or
+multi-rank runs launched with `mpirun`. Passing `boundary=PVFMM.PX` (etc.)
+selects the boundary conditions explicitly; with `boundary === nothing` the
+sign of `box_size` decides (`> 0` fully periodic, otherwise free space).
 
 ```julia
 evaluate(ctx::FMMParticleContext{T}, src_pos, sl_den, dl_den, trg_pos; setup=true)

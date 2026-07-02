@@ -23,9 +23,12 @@ Feature-parity notes:
   `PVFMMBoundaryType` (whose values 0/1 remain compatible with the older
   boolean `periodic` flag), and Python/Julia expose `FMMBoundaryType` — see
   {doc}`../concepts/boundary-conditions`.
-- Every interface takes an explicit communicator. The C particle-context
-  creator initializes MPI on demand, and all communicator arguments are
-  ignored when the library is built without MPI.
+- The C/Fortran/Python interfaces take an explicit communicator; the C
+  particle-context creator initializes MPI on demand, and all communicator
+  arguments are ignored when the library is built without MPI. The Julia
+  binding's communicator is optional — when omitted it uses the world
+  communicator returned by `PVFMMGetCommWorld`, so it needs no MPI.jl
+  dependency.
 - Every C/Fortran function comes in a double-precision variant (suffix `D`)
   and a single-precision variant (suffix `F`); C++/Python/Julia select
   precision through the template/dtype/type parameter instead.
