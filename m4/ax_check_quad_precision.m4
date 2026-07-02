@@ -27,8 +27,6 @@ AC_DEFUN([CHECK_QUAD_PRECISION],
 
     if test "$cv_quad_prec" = yes; then
         AC_MSG_RESULT($cv_quad_type)
-        AC_DEFINE(HAVE_QUAD_PRECISON,1,[Define if compiler supports quadruple precision])
-        AC_DEFINE_UNQUOTED(QUAD_T,$cv_quad_type,[Define if compiler supports quadruple precision])
     else
         AC_MSG_RESULT($cv_quad_prec)
         CFLAGS="$XCFLAGS"

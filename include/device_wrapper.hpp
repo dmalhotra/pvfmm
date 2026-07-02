@@ -15,14 +15,10 @@
 #endif
 
 #include <pvfmm_common.hpp>
-#include <vector.hpp>
 
 #ifndef _PVFMM_DEVICE_WRAPPER_HPP_
 #define _PVFMM_DEVICE_WRAPPER_HPP_
 
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(push,target(mic))
-#endif
 namespace pvfmm{
 
 namespace DeviceWrapper{
@@ -46,61 +42,128 @@ namespace DeviceWrapper{
 }//end namespace
 
 
+/**
+ * \brief Lightweight handle describing a vector buffer (device or host) to
+ * kernel/offload code. Formerly nested as sctl::Vector<T>::Device.
+ */
+template <class T>
+struct DeviceVector{
 
-/*
-   Usage of 'MIC_Lock' in Asynchronous Offloads
-   --------------------------------------------
+  DeviceVector(): dim(0), dev_ptr(0) {}
 
-Note: Any MIC offload section should look like this:
+  // Bind a host-side view (CPU/device fallback path).
+  DeviceVector& operator=(sctl::Vector<T>& V){
+    dim=V.Dim();
+    dev_ptr=(uintptr_t)(V.Dim()?&V[0]:nullptr);
+    return *this;
+  }
 
-    int wait_lock_idx=MIC_Lock::curr_lock();
-    int lock_idx=MIC_Lock::get_lock();
-    #pragma offload target(mic:0) signal(&MIC_Lock::lock_vec[lock_idx])
-    {
-      MIC_Lock::wait_lock(wait_lock_idx);
+  inline T& operator[](size_t j) const{
+    return ((T*)dev_ptr)[j];
+  }
 
-      // Offload code here...
+  size_t dim;
+  uintptr_t dev_ptr;
+};
 
-      MIC_Lock::release_lock(lock_idx);
+/**
+ * \brief Lightweight handle describing a matrix buffer (device or host) to
+ * kernel/offload code. Formerly nested as sctl::Matrix<T>::Device.
+ */
+template <class T>
+struct DeviceMatrix{
+
+  DeviceMatrix(){
+    dim[0]=0;
+    dim[1]=0;
+    dev_ptr=0;
+    lock_idx=-1;
+  }
+
+  // Bind a host-side view (CPU/device fallback path).
+  DeviceMatrix& operator=(sctl::Matrix<T>& M){
+    dim[0]=M.Dim(0);
+    dim[1]=M.Dim(1);
+    dev_ptr=(uintptr_t)(M.Dim(0)*M.Dim(1)>0?&M[0][0]:nullptr);
+    return *this;
+  }
+
+  inline T* operator[](size_t j) const{
+    assert(j<dim[0]);
+    return &((T*)dev_ptr)[j*dim[1]];
+  }
+
+  size_t dim[2];
+  uintptr_t dev_ptr;
+  int lock_idx;
+};
+
+/**
+ * \brief Owns the device-side mirror of one host buffer: the page-locked
+ * registration of the host range (cudaHostRegister) and the device
+ * allocation. This lifecycle state previously lived inside Vector/Matrix
+ * as the `dev` member and the AllocDevice/FreeDevice/Device2Host methods.
+ *
+ * Contract: while bound, the host buffer must not be freed, resized, or
+ * reallocated — call Free() first. Releasing the pinned registration
+ * requires the host pages to still be mapped, so a stale binding cannot be
+ * released after the host buffer is gone; AllocDevice asserts if called
+ * with a different host range while still bound.
+ */
+class DeviceMirror{
+  public:
+
+  DeviceMirror(): host_ptr(NULL), len(0), dev_ptr(0), lock_idx(-1) {}
+
+  ~DeviceMirror(){ Free(); }
+
+  DeviceMirror(const DeviceMirror&) = delete;
+  DeviceMirror& operator=(const DeviceMirror&) = delete;
+
+  DeviceMirror(DeviceMirror&& m) noexcept: host_ptr(m.host_ptr), len(m.len), dev_ptr(m.dev_ptr), lock_idx(m.lock_idx){
+    m.host_ptr=NULL; m.len=0; m.dev_ptr=0; m.lock_idx=-1;
+  }
+
+  DeviceMirror& operator=(DeviceMirror&& m) noexcept{
+    if(this!=&m){
+      Free();
+      host_ptr=m.host_ptr; len=m.len; dev_ptr=m.dev_ptr; lock_idx=m.lock_idx;
+      m.host_ptr=NULL; m.len=0; m.dev_ptr=0; m.lock_idx=-1;
     }
+    return *this;
+  }
 
-    #ifdef PVFMM_DEVICE_SYNC
-    MIC_Lock::wait_lock(lock_idx);
-    #endif
+  /**
+   * Bind to `host` and allocate the device block if not already bound
+   * (no-op when already bound to the same range). If copy, enqueue an
+   * asynchronous host-to-device copy of the full range.
+   */
+  template <class T> DeviceVector<T> AllocDevice(sctl::Vector<T>& host, bool copy);
+  template <class T> DeviceMatrix<T> AllocDevice(sctl::Matrix<T>& host, bool copy);
 
-   This ensures the execution of offloaded code does not overlap with other
-asynchronous offloaded code and that data transfers from host to mic have
-completed before the data is accessed.  You will however, need to be careful
-not to overwrite data on mic which may be transferring to the host, or data on
-the host which may be transferring to the mic.
+  /**
+   * Asynchronous device-to-host copy of the bound range, into `dst` if
+   * given (default: back into the bound host range itself).
+   */
+  void Device2Host(char* dst=NULL);
 
-On the host, to wait for the last asynchronous offload section or data
-transfer, use:
+  /** Wait for the last asynchronous copy to complete. */
+  void Device2HostWait();
 
-    int wait_lock_idx=MIC_Lock::curr_lock();
-    MIC_Lock::wait_lock(wait_lock_idx);
-*/
+  /** Release the device allocation and the host pinning. */
+  void Free();
 
-  class MIC_Lock{
-    public:
+  bool Allocated() const{ return dev_ptr!=0; }
 
-      static void init();
+  private:
 
-      static int get_lock();
+  char* host_ptr;
+  size_t len;
+  uintptr_t dev_ptr;
+  int lock_idx;
+};
 
-      static void release_lock(int idx);
 
-      static void wait_lock(int idx);
-
-      static int curr_lock();
-
-      static Vector<char> lock_vec;
-      static Vector<char>::Device lock_vec_;
-
-    private:
-      MIC_Lock(){}; // private constructor for static class.
-      static int lock_idx;
-  };
 
 #if defined(PVFMM_HAVE_CUDA)
   class CUDA_Lock {
@@ -113,15 +176,12 @@ transfer, use:
       static void wait(int idx=0);
     private:
       CUDA_Lock();
-      static std::vector<cudaStream_t> stream;
-      static cublasHandle_t handle;
+      inline static std::vector<cudaStream_t> stream;
+      inline static cublasHandle_t handle;
   };
 #endif
 
 }//end namespace
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(pop)
-#endif
 
 #include <device_wrapper.txx>
 

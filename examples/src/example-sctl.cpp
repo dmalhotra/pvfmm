@@ -12,10 +12,10 @@ template <class Real> void test_particle_fmm(const Comm& comm) {
 
   // Create target and source vectors.
   const Long N = 50000/comm.Size();
-  Vector<Real> trg_coord(N*DIM);
-  Vector<Real>  sl_coord(N*DIM);
-  Vector<Real>  dl_coord(N*DIM);
-  Vector<Real>  dl_norml(N*DIM);
+  sctl::Vector<Real> trg_coord(N*DIM);
+  sctl::Vector<Real>  sl_coord(N*DIM);
+  sctl::Vector<Real>  dl_coord(N*DIM);
+  sctl::Vector<Real>  dl_norml(N*DIM);
   for (auto& a : trg_coord) a = (Real)(drand48()-0.5);
   for (auto& a :  sl_coord) a = (Real)(drand48()-0.5);
   for (auto& a :  dl_coord) a = (Real)(drand48()-0.5);
@@ -24,8 +24,8 @@ template <class Real> void test_particle_fmm(const Comm& comm) {
   Long n_dl  =  dl_coord.Dim()/DIM;
 
   // Set source charges.
-  Vector<Real> sl_den(n_sl*kernel_sl.SrcDim());
-  Vector<Real> dl_den(n_dl*kernel_dl.SrcDim());
+  sctl::Vector<Real> sl_den(n_sl*kernel_sl.SrcDim());
+  sctl::Vector<Real> dl_den(n_dl*kernel_dl.SrcDim());
   for (auto& a : sl_den) a = (Real)(drand48() - 0.5);
   for (auto& a : dl_den) a = (Real)(drand48() - 0.5);
 
@@ -45,7 +45,7 @@ template <class Real> void test_particle_fmm(const Comm& comm) {
   fmm.SetSrcDensity("SingleLayer", sl_den);
   fmm.SetSrcDensity("DoubleLayer", dl_den);
 
-  Vector<Real> Ufmm, Uref;
+  sctl::Vector<Real> Ufmm, Uref;
   fmm.Eval(Ufmm, "Potential"); // Warm-up run
   Ufmm = 0;
 
@@ -58,7 +58,7 @@ template <class Real> void test_particle_fmm(const Comm& comm) {
   Profile::Toc();
   Profile::print(&comm);
 
-  Vector<Real> Uerr = Uref - Ufmm;
+  sctl::Vector<Real> Uerr = Uref - Ufmm;
   { // Print error
     StaticArray<Real,2> loc_err{0,0}, glb_err{0,0};
     for (const auto& a : Uerr) loc_err[0] = std::max<Real>(loc_err[0], fabs(a));

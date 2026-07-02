@@ -6,24 +6,20 @@ include MakeVariables.in
 CXXFLAGS = $(CXXFLAGS_PVFMM)
 LDLIBS = $(LDLIBS_PVFMM)
 
-# DOXYGEN SUPPORT
-include aminclude.am
+# Suppress autoconf's @DEFS@ (PACKAGE_*, HAVE_*_H, HAVE_LIB*, LT_OBJDIR, ...).
+# With config.h removed these would otherwise be dumped on every compile line,
+# and none of them are referenced by pvfmm or SCTL.
+DEFS =
 
 INSTALL_DIR = $(DESTDIR)$(datadir)/$(PACKAGE)
 EX_DIR = ./examples
 RESULT_DIR = ./result
 
-# the subdirectories of the project to go into
-#SUBDIRS = 
-
-#DIST_SUBDIRS = doc/doc
-
-
 EXTRA_DIST = \
 									$(EX_DIR)/src \
 									$(EX_DIR)/include \
 									$(EX_DIR)/Makefile \
-									$(DX_CONFIG) \
+									Doxyfile \
 									scripts
 
 # additional include paths necessary to compile the C++ library
@@ -42,40 +38,25 @@ lib_libpvfmm_ladir = $(pkgincludedir)
 
 # the list of header files that belong to the library (to be installed later)
 pvfmm_cpp_header_files = \
-									include/pvfmm_config.h \
 									include/pvfmm_common.hpp \
 									include/pvfmm.hpp \
 									include/pvfmm.txx \
-									include/blas.h \
 									include/cheb_node.hpp \
 									include/cheb_utils.hpp \
 									include/device_wrapper.hpp \
-									include/dtypes.h \
-									include/fft_wrapper.hpp \
 									include/fmm_cheb.hpp \
 									include/fmm_node.hpp \
 									include/fmm_pts.hpp \
 									include/fmm_pts_gpu.hpp \
 									include/fmm_tree.hpp \
 									include/interac_list.hpp \
-									include/intrin_wrapper.hpp \
 									include/kernel.hpp \
-									include/lapack.h \
-									include/legendre_rule.hpp \
-									include/matrix.hpp \
 									include/mat_utils.hpp \
-									include/mem_mgr.hpp \
-									include/mortonid.hpp \
 									include/mpi_node.hpp \
 									include/mpi_tree.hpp \
-									include/ompUtils.h \
-									include/parUtils.h \
 									include/precomp_mat.hpp \
-									include/profile.hpp \
-									include/stacktrace.h \
 									include/tree.hpp \
 									include/tree_node.hpp \
-									include/vector.hpp \
 									include/cheb_node.txx \
 									include/cheb_utils.txx \
 									include/device_wrapper.txx \
@@ -85,16 +66,10 @@ pvfmm_cpp_header_files = \
 									include/fmm_tree.txx \
 									include/interac_list.txx \
 									include/kernel.txx \
-									include/matrix.txx \
-									include/mem_mgr.txx \
-									include/mortonid.txx \
 									include/mpi_node.txx \
 									include/mpi_tree.txx \
-									include/ompUtils.txx \
-									include/parUtils.txx \
 									include/precomp_mat.txx \
 									include/tree.txx \
-									include/vector.txx \
 									SCTL/include/sctl.hpp
 
 lib_libpvfmm_la_HEADERS = \
@@ -166,25 +141,21 @@ subdirheaders_HEADERS = \
 												SCTL/include/sctl/vtudata.hpp \
 												SCTL/include/sctl/vtudata.txx
 
-#nodist_lib_libpvfmm_la_HEADERS = \
-#									include/pvfmm_config.h
 
 # the sources to add to the library and to add to the source distribution
 lib_libpvfmm_la_SOURCES = \
 									$(pvfmm_cpp_header_files) \
-									src/cheb_utils.cpp \
-									src/device_wrapper.cpp \
-									src/legendre_rule.cpp \
-									src/mem_mgr.cpp \
-									src/mortonid.cpp \
-									src/profile.cpp \
-									src/pvfmm-wrapper.cpp \
-									src/tree_node.cpp
+									src/pvfmm-wrapper.cpp
 
 if NVCC_OK
 lib_libpvfmm_la_SOURCES += \
 													src/fmm_pts_gpu.cu
 endif
+
+# Bake the numerical deps into libpvfmm.so so it is self-contained for dlopen
+# consumers (python/ ctypes, julia/ Libdl); executables also get these via
+# LDLIBS_PVFMM, but a dlopen'd .so must resolve its own symbols.
+lib_libpvfmm_la_LIBADD = @FFTW_LIB@ @FFTWF_LIB@ @FFTWL_LIB@ @LAPACK_LIBS@ @BLAS_LIBS@ @FLIBS@ @CUDA_LDLIBS@ @LIBMVEC_LIB@
 
 dist_noinst_SCRIPTS = autogen.sh
 
@@ -222,10 +193,21 @@ $(EX_DIR)/bin/%: core
 # BUILD DOCUMENTATION
 #------------------------------------------------------------------------------
 
-all-docs: doxygen-doc
+if HAVE_DOXYGEN
+doxygen-doc:
+	$(DOXYGEN) $(srcdir)/Doxyfile
+	@if test -d docs/latex; then \
+	  echo "Building PDF (docs/latex/refman.pdf)..."; \
+	  $(MAKE) -C docs/latex || echo "Warning: PDF build failed (need pdflatex/texlive); HTML docs are in docs/html." >&2; \
+	fi
+else
+doxygen-doc:
+	@echo "Error: doxygen not found; install doxygen to build the documentation." >&2; exit 1
+endif
+
 
 ###############################################################################
-# INSTALL/UNINSTALL MakeVariables, pvfmm_config.h
+# INSTALL/UNINSTALL MakeVariables
 #------------------------------------------------------------------------------
 
 install-make-variables:
@@ -251,32 +233,6 @@ uninstall-libtool:
 
 
 ###############################################################################
-# INSTALL/UNINSTALL DOCS
-#------------------------------------------------------------------------------
-
-if DOXYGEN_OK
-
-install-doxygen-doc: doxygen-doc
-	for doxygen_dir in $(srcdir)/doc/doxygen/*/ ; do \
-		doxygen_dir=$${doxygen_dir%*/}; \
-		dest_dir=$(INSTALL_DIR)/doc/$${doxygen_dir##*/}; \
-		$(MKDIR_P) $${dest_dir}; \
-		$(INSTALL_DATA) $${doxygen_dir}/* $${dest_dir}; done;
-
-uninstall-doxygen-doc:
-	$(RM) -r $(INSTALL_DIR)/doc/*
-	$(RM) -r $(INSTALL_DIR)/doc
-
-else
-
-install-doxygen-doc:
-
-uninstall-doxygen-doc:
-
-endif
-
-
-###############################################################################
 # LOCAL INSTALL/UNINSTALL
 #------------------------------------------------------------------------------
 
@@ -290,19 +246,16 @@ install: install-am
 	@echo 'use the variables CXXFLAGS_PVFMM and LDLIBS_PVFMM for compiling your code.'
 	@echo '======================================================================='
 
-install-data-local: install-make-variables install-libtool install-doxygen-doc
+install-data-local: install-make-variables install-libtool
 
-uninstall-local: uninstall-make-variables uninstall-libtool uninstall-doxygen-doc
+uninstall-local: uninstall-make-variables uninstall-libtool
 
 
 ###############################################################################
 # LOCAL CLEAN
 #------------------------------------------------------------------------------
 
-clean-doxygen:
-	$(RM) -r $(DX_CLEANFILES)
-
-clean-local: clean-doxygen
+clean-local:
 	cd $(EX_DIR) && $(MAKE) clean;
 	$(RM) -r $(RESULT_DIR)/*
 	$(RM) *~ */*~ */*/*~

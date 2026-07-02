@@ -10,7 +10,7 @@
 #include <algorithm>
 
 #include <cheb_utils.hpp>
-#include <matrix.hpp>
+#include <mat_utils.hpp>
 
 namespace pvfmm{
 
@@ -18,12 +18,13 @@ template <class Real_t>
 Cheb_Node<Real_t>::~Cheb_Node(){}
 
 template <class Real_t>
-void Cheb_Node<Real_t>::Initialize(TreeNode* parent_, int path2node_, TreeNode::NodeData* data_) {
+void Cheb_Node<Real_t>::Initialize(sctl::Iterator<TreeNode> parent_, int path2node_, TreeNode::NodeData* data_) {
   MPI_Node<Real_t>::Initialize(parent_,path2node_,data_);
 
   //Set Cheb_Node specific data.
   NodeData* cheb_data=dynamic_cast<NodeData*>(data_);
-  Cheb_Node<Real_t>* parent=dynamic_cast<Cheb_Node<Real_t>*>(this->Parent());
+  auto par_iter=this->Parent();
+  Cheb_Node<Real_t>* parent=(par_iter==sctl::NullIterator<TreeNode>()?nullptr:dynamic_cast<Cheb_Node<Real_t>*>(&par_iter[0]));
   if(cheb_data!=NULL){
     cheb_deg=cheb_data->cheb_deg;
     input_fn=cheb_data->input_fn;
@@ -48,16 +49,15 @@ void Cheb_Node<Real_t>::Initialize(TreeNode* parent_, int path2node_, TreeNode::
         coord[i*3+2]=coord[i*3+2]*s+this->Coord()[2];
       }
 
-      std::vector<Real_t> input_val(n1*data_dof);
+      sctl::Vector<Real_t> input_val(n1*data_dof);
       input_fn(&coord[0],n1,&input_val[0]);
-      Matrix<Real_t> M_val(n1,data_dof,&input_val[0],false);
-      M_val=M_val.Transpose();
+      MatrixTranspose<Real_t>(n1,data_dof,input_val.begin(),input_val.begin()); // transpose input_val in place
 
-      cheb_coeff.Resize(((cheb_deg+1)*(cheb_deg+2)*(cheb_deg+3))/6*data_dof); cheb_coeff.SetZero();
+      cheb_coeff.ReInit(((cheb_deg+1)*(cheb_deg+2)*(cheb_deg+3))/6*data_dof); cheb_coeff.SetZero();
       cheb_approx<Real_t,Real_t>(&input_val[0], cheb_deg, data_dof, &cheb_coeff[0]);
     }else if(this->cheb_value.Dim()>0){
       size_t n_ptr=this->cheb_coord.Dim()/this->Dim();
-      assert(n_ptr*data_dof==this->cheb_value.Dim());
+      assert(n_ptr*data_dof==(size_t)this->cheb_value.Dim());
       PVFMM_UNUSED(n_ptr);
       points2cheb<Real_t>(cheb_deg,&(this->cheb_coord[0]),&(this->cheb_value[0]),
           this->cheb_coord.Dim()/this->Dim(),data_dof,this->Coord(),
@@ -68,18 +68,24 @@ void Cheb_Node<Real_t>::Initialize(TreeNode* parent_, int path2node_, TreeNode::
 
 template <class Real_t>
 void Cheb_Node<Real_t>::ClearData(){
-  ChebData().Resize(0);
+  ChebData().ReInit(0);
   MPI_Node<Real_t>::ClearData();
 }
 
 template <class Real_t>
-TreeNode* Cheb_Node<Real_t>::NewNode(TreeNode* n_){
-  Cheb_Node<Real_t>* n=(n_==NULL?mem::aligned_new<Cheb_Node<Real_t> >():static_cast<Cheb_Node<Real_t>*>(n_));
+sctl::Iterator<TreeNode> Cheb_Node<Real_t>::NewNode(sctl::Iterator<TreeNode> n_){
+  sctl::Iterator<Cheb_Node<Real_t>> n;
+  if (n_==sctl::NullIterator<TreeNode>()) {
+    n=sctl::aligned_new<Cheb_Node<Real_t> >();
+  } else {
+    n=sctl::Iterator<Cheb_Node<Real_t>>(n_);
+  }
   n->cheb_deg=cheb_deg;
   n->input_fn=input_fn;
   n->data_dof=data_dof;
   n->tol=tol;
-  return MPI_Node<Real_t>::NewNode(n);
+  MPI_Node<Real_t>::NewNode(sctl::Iterator<TreeNode>(n));
+  return sctl::Iterator<TreeNode>(n);
 }
 
 template <class Real_t>
@@ -89,8 +95,8 @@ bool Cheb_Node<Real_t>::SubdivCond(){
   if(!this->IsLeaf()){ // If has non-leaf children, then return true.
     int n=(1UL<<this->Dim());
     for(int i=0;i<n;i++){
-      Cheb_Node<Real_t>* ch=static_cast<Cheb_Node<Real_t>*>(this->Child(i));
-      assert(ch!=NULL); //This should never happen
+      sctl::Iterator<Cheb_Node<Real_t>> ch=(sctl::Iterator<Cheb_Node<Real_t>>)this->Child(i);
+      assert(ch!=sctl::NullIterator<Cheb_Node<Real_t>>()); //This should never happen
       if(!ch->IsLeaf() || ch->IsGhost()) return true;
     }
   }
@@ -124,17 +130,17 @@ bool Cheb_Node<Real_t>::SubdivCond(){
 }
 
 template <class Real_t>
-void Cheb_Node<Real_t>::Subdivide() {
+void Cheb_Node<Real_t>::Subdivide(sctl::Iterator<TreeNode> self_) {
   if(!this->IsLeaf()) return;
-  MPI_Node<Real_t>::Subdivide();
+  MPI_Node<Real_t>::Subdivide(self_);
   if(cheb_deg<0 || cheb_coeff.Dim()==0 || !input_fn.IsEmpty()) return;
 
   std::vector<Real_t> x(cheb_deg+1);
   std::vector<Real_t> y(cheb_deg+1);
   std::vector<Real_t> z(cheb_deg+1);
-  Vector<Real_t> cheb_node=cheb_nodes<Real_t>(cheb_deg,1);
-  Vector<Real_t> val(sctl::pow<unsigned int>(cheb_deg+1,this->Dim())*data_dof);
-  Vector<Real_t> child_cheb_coeff[8];
+  sctl::Vector<Real_t> cheb_node(cheb_nodes<Real_t>(cheb_deg,1));
+  sctl::Vector<Real_t> val(sctl::pow<unsigned int>(cheb_deg+1,this->Dim())*data_dof);
+  sctl::Vector<Real_t> child_cheb_coeff[8];
   int n=(1UL<<this->Dim());
   for(int i=0;i<n;i++){
     Real_t coord[3]={(Real_t)((i  )%2?0:-1.0),
@@ -147,10 +153,10 @@ void Cheb_Node<Real_t>::Subdivide() {
     }
     cheb_eval(cheb_coeff, cheb_deg, x, y, z, val);
     assert(val.Dim()==sctl::pow<unsigned int>(cheb_deg+1,this->Dim())*data_dof);
-    child_cheb_coeff[i].Resize(data_dof*((cheb_deg+1)*(cheb_deg+2)*(cheb_deg+3))/6);
+    child_cheb_coeff[i].ReInit(data_dof*((cheb_deg+1)*(cheb_deg+2)*(cheb_deg+3))/6);
     cheb_approx<Real_t,Real_t>(&val[0],cheb_deg,data_dof,&(child_cheb_coeff[i][0]));
 
-    Cheb_Node<Real_t>* child=static_cast<Cheb_Node<Real_t>*>(this->Child(i));
+    sctl::Iterator<Cheb_Node<Real_t>> child=(sctl::Iterator<Cheb_Node<Real_t>>)this->Child(i);
     child->cheb_coeff=child_cheb_coeff[i];
     assert(child->cheb_deg==cheb_deg);
     assert(child->tol==tol);
@@ -175,7 +181,7 @@ void Cheb_Node<Real_t>::Truncate() {
     z[i]=z[i]*s+coord[2];
   }
   read_val(x,y,z, cheb_deg+1, cheb_deg+1, cheb_deg+1, &val[0]);
-  cheb_coeff.Resize(data_dof*((cheb_deg+1)*(cheb_deg+2)*(cheb_deg+3))/6);
+  cheb_coeff.ReInit(data_dof*((cheb_deg+1)*(cheb_deg+2)*(cheb_deg+3))/6);
   cheb_approx<Real_t,Real_t>(&val[0],cheb_deg,data_dof,&cheb_coeff[0]);
   MPI_Node<Real_t>::Truncate();
 }
@@ -219,7 +225,7 @@ void Cheb_Node<Real_t>::VTU_Data(VTUData_t& vtu_data, std::vector<Node_t*>& node
       grid_pts[0]=0.0; grid_pts[gridpt_cnt-1]=1.0;
     }
 
-    Vector<Real_t> gridval;
+    sctl::Vector<Real_t> gridval;
     for(size_t nid=0;nid<nodes.size();nid++){
       Node_t* n=nodes[nid];
       if(n->IsGhost() || !n->IsLeaf()) continue;
@@ -260,9 +266,10 @@ void Cheb_Node<Real_t>::VTU_Data(VTUData_t& vtu_data, std::vector<Node_t*>& node
         n->ReadVal(x, y, z, &gridval[0]);
         //Rearrrange data
         //(x1,x2,x3,...,y1,y2,...z1,...) => (x1,y1,z1,x2,y2,z2,...)
-        Matrix<VTKReal_t> M(n->data_dof,gridpt_cnt*gridpt_cnt*gridpt_cnt,&value[point_cnt*n->data_dof],false);
-        for(size_t i=0;i<gridval.Dim();i++) M[0][i]=gridval[i];
-        M=M.Transpose();
+        VTKReal_t* value_=&value[point_cnt*n->data_dof];
+        for(size_t i=0;i<gridval.Dim();i++) value_[i]=(VTKReal_t)gridval[i];
+        const sctl::Long value_len=(sctl::Long)n->data_dof*gridpt_cnt*gridpt_cnt*gridpt_cnt;
+        MatrixTranspose<VTKReal_t>(n->data_dof,gridpt_cnt*gridpt_cnt*gridpt_cnt,sctl::Ptr2ConstItr<VTKReal_t>(value_,value_len),sctl::Ptr2Itr<VTKReal_t>(value_,value_len)); // transpose in place
       }
     }
   }
@@ -274,10 +281,10 @@ void Cheb_Node<Real_t>::Gradient(){
   int dim=3;//this->Dim();
   if(this->IsLeaf() && ChebData().Dim()>0){
     Real_t scale=sctl::pow<Real_t>(2,this->depth);
-    for(size_t i=0;i<ChebData().Dim();i++)
+    for(sctl::Long i=0;i<ChebData().Dim();i++)
       ChebData()[i]*=scale;
 
-    Vector<Real_t> coeff(ChebData().Dim()*dim);
+    sctl::Vector<Real_t> coeff(ChebData().Dim()*dim);
     cheb_grad(ChebData(),cheb_deg,coeff);
     ChebData().Swap(coeff);
   }
@@ -290,7 +297,7 @@ void Cheb_Node<Real_t>::Divergence(){
   if(this->IsLeaf() && ChebData().Dim()>0){
     assert(data_dof%3==0);
     int n3=((cheb_deg+1)*(cheb_deg+2)*(cheb_deg+3))/6;
-    Vector<Real_t> coeff(ChebData().Dim()/dim);
+    sctl::Vector<Real_t> coeff(ChebData().Dim()/dim);
     for(int i=0;i<data_dof;i=i+dim)
       cheb_div(&(ChebData()[n3*i]),cheb_deg,&coeff[n3*(i/dim)]);
     ChebData().Swap(coeff);
@@ -308,7 +315,7 @@ void Cheb_Node<Real_t>::Curl(){
   if(this->IsLeaf() && ChebData().Dim()>0){
     assert(data_dof%dim==0);
     int n3=((cheb_deg+1)*(cheb_deg+2)*(cheb_deg+3))/6;
-    Vector<Real_t> coeff(ChebData().Dim());
+    sctl::Vector<Real_t> coeff(ChebData().Dim());
     for(int i=0;i<data_dof;i=i+dim)
       cheb_curl(&(ChebData()[n3*i]),cheb_deg,&coeff[n3*i]);
     ChebData().Swap(coeff);
@@ -325,9 +332,9 @@ void Cheb_Node<Real_t>::read_val(std::vector<Real_t> x,std::vector<Real_t> y, st
   Real_t s=(Real_t)0.5*sctl::pow<Real_t>(0.5,this->Depth());
   Real_t s_inv=1/s;
   if(this->IsLeaf()){
-    if(cheb_coeff.Dim()!=(size_t)((cheb_deg+1)*(cheb_deg+2)*(cheb_deg+3))/6*data_dof
+    if((size_t)cheb_coeff.Dim()!=(size_t)((cheb_deg+1)*(cheb_deg+2)*(cheb_deg+3))/6*data_dof
         || (this->IsGhost() && !show_ghost)) return;
-    Vector<Real_t> out;
+    sctl::Vector<Real_t> out;
     std::vector<Real_t> x_=x;
     std::vector<Real_t> y_=y;
     std::vector<Real_t> z_=z;
@@ -360,7 +367,7 @@ void Cheb_Node<Real_t>::read_val(std::vector<Real_t> x,std::vector<Real_t> y, st
     std::vector<Real_t>& y1_=y1[(i/2)%2];
     std::vector<Real_t>& z1_=z1[(i/4)%2];
     if(x1_.size()>0 && y1_.size()>0 && z1_.size()>0){
-      static_cast<Cheb_Node<Real_t>*>(this->Child(i))->read_val(x1_,y1_,z1_,nx,ny,nz,&val[(i%2?indx[0]-&x[0]:0)+((i/2)%2?indx[1]-&y[0]:0)*nx+((i/4)%2?indx[2]-&z[0]:0)*nx*ny],show_ghost);
+      ((sctl::Iterator<Cheb_Node<Real_t>>)this->Child(i))->read_val(x1_,y1_,z1_,nx,ny,nz,&val[(i%2?indx[0]-&x[0]:0)+((i/2)%2?indx[1]-&y[0]:0)*nx+((i/4)%2?indx[2]-&z[0]:0)*nx*ny],show_ghost);
     }
   }
 }

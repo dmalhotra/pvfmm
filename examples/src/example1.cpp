@@ -1,6 +1,6 @@
-#include <mpi.h>
 #include <omp.h>
 #include <iostream>
+#include <cstdio>
 
 #include <pvfmm.hpp>
 #include <utils.hpp>
@@ -10,27 +10,29 @@ typedef std::vector<double> vec;
 void nbody(vec& sl_coord, vec& sl_den,
            vec& dl_coord, vec& dl_den,
            vec&  trg_coord, vec&  trg_value,
-					 const pvfmm::Kernel<double>& kernel_fn, MPI_Comm& comm){
-  int np, rank;
-  MPI_Comm_size(comm, &np);
-  MPI_Comm_rank(comm, &rank);
+					 const pvfmm::Kernel<double>& kernel_fn, const sctl::Comm& comm){
+  const int np   = comm.Size();
+  const int rank = comm.Rank();
 
   long long  n_sl = sl_coord.size()/PVFMM_COORD_DIM;
   long long n_dl = dl_coord.size()/PVFMM_COORD_DIM;
   long long n_trg_glb=0, n_trg = trg_coord.size()/PVFMM_COORD_DIM;
-  MPI_Allreduce(&n_trg , & n_trg_glb, 1, MPI_LONG_LONG, MPI_SUM, comm);
+  comm.Allreduce(sctl::Ptr2ConstItr<long long>(&n_trg, 1),
+                 sctl::Ptr2Itr<long long>(&n_trg_glb, 1), 1, sctl::CommOp::SUM);
 
   vec glb_trg_coord(n_trg_glb*PVFMM_COORD_DIM);
   vec glb_trg_value(n_trg_glb*kernel_fn.ker_dim[1],0);
-  std::vector<int> recv_disp(np,0);
+  std::vector<sctl::Long> recv_disp(np,0);
   { // Gather all target coordinates.
     int send_cnt=n_trg*PVFMM_COORD_DIM;
-    std::vector<int> recv_cnts(np);
-    MPI_Allgather(&send_cnt    , 1, MPI_INT,
-                  &recv_cnts[0], 1, MPI_INT, comm);
-    pvfmm::omp_par::scan(&recv_cnts[0], &recv_disp[0], np);
-    MPI_Allgatherv(&trg_coord[0]    , send_cnt                    , pvfmm::par::Mpi_datatype<double>::value(),
-                   &glb_trg_coord[0], &recv_cnts[0], &recv_disp[0], pvfmm::par::Mpi_datatype<double>::value(), comm);
+    std::vector<sctl::Long> recv_cnts(np);
+    comm.Allgather(sctl::Ptr2ConstItr<int>(&send_cnt, 1), 1,
+                   sctl::Ptr2Itr<sctl::Long>(&recv_cnts[0], np), 1);
+    sctl::omp_par::scan(&recv_cnts[0], &recv_disp[0], np);
+    comm.Allgatherv(sctl::Ptr2ConstItr<double>(&trg_coord[0], send_cnt), send_cnt,
+                    sctl::Ptr2Itr<double>(&glb_trg_coord[0], glb_trg_coord.size()),
+                    sctl::Ptr2ConstItr<sctl::Long>(&recv_cnts[0], np),
+                    sctl::Ptr2ConstItr<sctl::Long>(&recv_disp[0], np));
   }
 
   { // Evaluate target potential.
@@ -43,21 +45,22 @@ void nbody(vec& sl_coord, vec& sl_den,
 
       if(kernel_fn.ker_poten!=NULL)
       kernel_fn.ker_poten(&sl_coord[0], n_sl, &sl_den[0], 1,
-                          &glb_trg_coord[0]+a*PVFMM_COORD_DIM, b-a, &glb_trg_value_[0]+a*kernel_fn.ker_dim[1],NULL);
+                          &glb_trg_coord[0]+a*PVFMM_COORD_DIM, b-a, &glb_trg_value_[0]+a*kernel_fn.ker_dim[1]);
 
       if(kernel_fn.dbl_layer_poten!=NULL)
       kernel_fn.dbl_layer_poten(&dl_coord[0], n_dl, &dl_den[0], 1,
-                                &glb_trg_coord[0]+a*PVFMM_COORD_DIM, b-a, &glb_trg_value_[0]+a*kernel_fn.ker_dim[1],NULL);
+                                &glb_trg_coord[0]+a*PVFMM_COORD_DIM, b-a, &glb_trg_value_[0]+a*kernel_fn.ker_dim[1]);
     }
-    MPI_Allreduce(&glb_trg_value_[0], &glb_trg_value[0], glb_trg_value.size(), pvfmm::par::Mpi_datatype<double>::value(), MPI_SUM, comm);
+    comm.Allreduce(sctl::Ptr2ConstItr<double>(&glb_trg_value_[0], glb_trg_value_.size()),
+                   sctl::Ptr2Itr<double>(&glb_trg_value[0], glb_trg_value.size()),
+                   (sctl::Long)glb_trg_value.size(), sctl::CommOp::SUM);
   }
 
   // Get local target values.
   trg_value.assign(&glb_trg_value[0]+recv_disp[rank]/PVFMM_COORD_DIM*kernel_fn.ker_dim[1], &glb_trg_value[0]+(recv_disp[rank]/PVFMM_COORD_DIM+n_trg)*kernel_fn.ker_dim[1]);
 }
 
-void fmm_test(size_t N, int mult_order, MPI_Comm comm){
-
+void fmm_test(size_t N, int mult_order, const sctl::Comm& comm){
   // Set kernel.
   const pvfmm::Kernel<double>& kernel_fn=pvfmm::LaplaceKernel<double>::gradient();
 
@@ -75,15 +78,12 @@ void fmm_test(size_t N, int mult_order, MPI_Comm comm){
   for(size_t i=0;i<sl_den.size();i++) sl_den[i]=drand48();
   for(size_t i=0;i<dl_den.size();i++) dl_den[i]=drand48();
 
-  // Create memory-manager (optional)
-  pvfmm::mem::MemoryManager mem_mgr(10000000);
-
   // Construct tree.
   size_t max_pts=600;
   auto* tree=PtFMM_CreateTree(sl_coord,sl_den, dl_coord, dl_den, trg_coord, comm, max_pts, pvfmm::FreeSpace);
 
   // Load matrices.
-  pvfmm::PtFMM<double> matrices(&mem_mgr);
+  pvfmm::PtFMM<double> matrices;
   matrices.Initialize(mult_order, comm, &kernel_fn);
 
   // FMM Setup
@@ -130,13 +130,11 @@ void fmm_test(size_t N, int mult_order, MPI_Comm comm){
       if(fabs(trg_sample_value_[i])>max_val)
         max_val=fabs(trg_sample_value_[i]);
     }
-    MPI_Reduce(&max_err, &max_err_glb, 1, pvfmm::par::Mpi_datatype<double>::value(), MPI_MAX, 0, comm);
-    MPI_Reduce(&max_val, &max_val_glb, 1, pvfmm::par::Mpi_datatype<double>::value(), MPI_MAX, 0, comm);
+    comm.Allreduce(sctl::Ptr2ConstItr<double>(&max_err, 1), sctl::Ptr2Itr<double>(&max_err_glb, 1), 1, sctl::CommOp::MAX);
+    comm.Allreduce(sctl::Ptr2ConstItr<double>(&max_val, 1), sctl::Ptr2Itr<double>(&max_val_glb, 1), 1, sctl::CommOp::MAX);
 
-    int rank;
-    MPI_Comm_rank(comm, &rank);
-    if(!rank) std::cout<<"Maximum Absolute Error:"<<max_err_glb<<'\n';
-    if(!rank) std::cout<<"Maximum Relative Error:"<<max_err_glb/max_val_glb<<'\n';
+    if(!comm.Rank()) std::cout<<"Maximum Absolute Error:"<<max_err_glb<<'\n';
+    if(!comm.Rank()) std::cout<<"Maximum Relative Error:"<<max_err_glb/max_val_glb<<'\n';
   }
 
   // Free memory
@@ -144,8 +142,8 @@ void fmm_test(size_t N, int mult_order, MPI_Comm comm){
 }
 
 int main(int argc, char **argv){
-  MPI_Init(&argc, &argv);
-  MPI_Comm comm=MPI_COMM_WORLD;
+  sctl::Comm::MPI_Init(&argc, &argv);
+  const sctl::Comm comm = sctl::Comm::World();
 
   // Read command line options.
   commandline_option_start(argc, argv, "\
@@ -155,16 +153,16 @@ with Laplace Gradient kernel, using the PvFMM library.\n");
   size_t   N=(size_t)strtod(commandline_option(argc, argv,    "-N",     "1",  true, "-N    <int>          : Number of source and target points."),NULL);
   int      m=       strtoul(commandline_option(argc, argv,    "-m",    "10", false, "-m    <int> = (10)   : Multipole order (+ve even integer)."),NULL,10);
   commandline_option_end(argc, argv);
-  pvfmm::Profile::Enable(true);
+  sctl::Profile::Enable(true);
 
   // Run FMM with above options.
   fmm_test(N, m, comm);
 
   //Output Profiling results.
-  pvfmm::Profile::print(&comm);
+  sctl::Profile::print(&comm);
 
   // Shut down MPI
-  MPI_Finalize();
+  sctl::Comm::MPI_Finalize();
   return 0;
 }
 

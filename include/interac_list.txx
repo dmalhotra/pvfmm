@@ -10,8 +10,6 @@
 #include <cmath>
 #include <cassert>
 
-#include <parUtils.h>
-#include <ompUtils.h>
 
 namespace pvfmm{
 
@@ -70,7 +68,7 @@ size_t InteracList<Node_t>::ListCount(Mat_Type t){
  */
 template <class Node_t>
 int* InteracList<Node_t>::RelativeCoord(Mat_Type t, size_t i){
-  return rel_coord[t][i];
+  return &rel_coord[t][i][0];
 }
 
 /**
@@ -96,10 +94,10 @@ std::vector<Perm_Type>& InteracList<Node_t>::PermutList(Mat_Type t, size_t i){
  * \brief Build interaction list for this node.
  */
 template <class Node_t>
-void InteracList<Node_t>::BuildList(Node_t* n, Mat_Type t){
-  Vector<Node_t*>& interac_list=n->interac_list[t];
-  if(interac_list.Dim()!=ListCount(t)) interac_list.ReInit(ListCount(t));
-  interac_list.SetZero();
+void InteracList<Node_t>::BuildList(sctl::Iterator<Node_t> n, Mat_Type t){
+  sctl::Vector<sctl::Iterator<Node_t>>& interac_list=n->interac_list[t];
+  if((size_t)interac_list.Dim()!=ListCount(t)) interac_list.ReInit(ListCount(t));
+  for(sctl::Long k=0;k<interac_list.Dim();k++) interac_list[k]=sctl::NullIterator<Node_t>();
 
   static const int n_collg=sctl::pow<unsigned int>(3,dim);
   static const int n_child=sctl::pow<unsigned int>(2,dim);
@@ -121,15 +119,15 @@ void InteracList<Node_t>::BuildList(Node_t* n, Mat_Type t){
         rel_coord[2]=-1+(j & 4?2:0);
         int c_hash = coord_hash(rel_coord);
         int idx=hash_lut[t][c_hash];
-        Node_t* chld=(Node_t*)n->Child(j);
+        sctl::Iterator<Node_t> chld=(sctl::Iterator<Node_t>)n->Child(j);
         if(idx>=0 && !chld->IsGhost()) interac_list[idx]=chld;
       }
       break;
     }
     case D2D_Type:
     {
-      if(n->IsGhost() || n->Parent()==NULL) return;
-      Node_t* p=(Node_t*)n->Parent();
+      if(n->IsGhost() || n->Parent()==sctl::NullIterator<TreeNode>()) return;
+      sctl::Iterator<Node_t> p=(sctl::Iterator<Node_t>)n->Parent();
       int p2n=n->Path2Node();
       {
         rel_coord[0]=-1+(p2n & 1?2:0);
@@ -148,12 +146,12 @@ void InteracList<Node_t>::BuildList(Node_t* n, Mat_Type t){
     }
     case U0_Type:
     {
-      if(n->IsGhost() || n->Parent()==NULL || !n->IsLeaf()) return;
-      Node_t* p=(Node_t*)n->Parent();
+      if(n->IsGhost() || n->Parent()==sctl::NullIterator<TreeNode>() || !n->IsLeaf()) return;
+      sctl::Iterator<Node_t> p=(sctl::Iterator<Node_t>)n->Parent();
       int p2n=n->Path2Node();
       for(int i=0;i<n_collg;i++){
-        Node_t* pc=(Node_t*)p->Colleague(i);
-        if(pc!=NULL && pc->IsLeaf()){
+        sctl::Iterator<Node_t> pc=(sctl::Iterator<Node_t>)p->Colleague(i);
+        if(pc!=sctl::NullIterator<Node_t>() && pc->IsLeaf()){
           rel_coord[0]=( i %3)*4-4-(p2n & 1?2:0)+1;
           rel_coord[1]=((i/3)%3)*4-4-(p2n & 2?2:0)+1;
           rel_coord[2]=((i/9)%3)*4-4-(p2n & 4?2:0)+1;
@@ -168,8 +166,8 @@ void InteracList<Node_t>::BuildList(Node_t* n, Mat_Type t){
     {
       if(n->IsGhost() || !n->IsLeaf()) return;
       for(int i=0;i<n_collg;i++){
-        Node_t* col=(Node_t*)n->Colleague(i);
-        if(col!=NULL && col->IsLeaf()){
+        sctl::Iterator<Node_t> col=(sctl::Iterator<Node_t>)n->Colleague(i);
+        if(col!=sctl::NullIterator<Node_t>() && col->IsLeaf()){
             rel_coord[0]=( i %3)-1;
             rel_coord[1]=((i/3)%3)-1;
             rel_coord[2]=((i/9)%3)-1;
@@ -184,8 +182,8 @@ void InteracList<Node_t>::BuildList(Node_t* n, Mat_Type t){
     {
       if(n->IsGhost() || !n->IsLeaf()) return;
       for(int i=0;i<n_collg;i++){
-        Node_t* col=(Node_t*)n->Colleague(i);
-        if(col!=NULL && !col->IsLeaf()){
+        sctl::Iterator<Node_t> col=(sctl::Iterator<Node_t>)n->Colleague(i);
+        if(col!=sctl::NullIterator<Node_t>() && !col->IsLeaf()){
           for(int j=0;j<n_child;j++){
             rel_coord[0]=( i %3)*4-4+(j & 1?2:0)-1;
             rel_coord[1]=((i/3)%3)*4-4+(j & 2?2:0)-1;
@@ -194,7 +192,7 @@ void InteracList<Node_t>::BuildList(Node_t* n, Mat_Type t){
             int idx=hash_lut[t][c_hash];
             if(idx>=0){
               assert(col->Child(j)->IsLeaf()); //2:1 balanced
-              interac_list[idx]=(Node_t*)col->Child(j);
+              interac_list[idx]=(sctl::Iterator<Node_t>)col->Child(j);
             }
           }
         }
@@ -203,19 +201,19 @@ void InteracList<Node_t>::BuildList(Node_t* n, Mat_Type t){
     }
     case V_Type:
     {
-      if(n->IsGhost() || n->Parent()==NULL) return;
-      Node_t* p=(Node_t*)n->Parent();
+      if(n->IsGhost() || n->Parent()==sctl::NullIterator<TreeNode>()) return;
+      sctl::Iterator<Node_t> p=(sctl::Iterator<Node_t>)n->Parent();
       int p2n=n->Path2Node();
       for(int i=0;i<n_collg;i++){
-        Node_t* pc=(Node_t*)p->Colleague(i);
-        if(pc!=NULL?!pc->IsLeaf():0){
+        sctl::Iterator<Node_t> pc=(sctl::Iterator<Node_t>)p->Colleague(i);
+        if(pc!=sctl::NullIterator<Node_t>()?!pc->IsLeaf():0){
           for(int j=0;j<n_child;j++){
             rel_coord[0]=( i   %3)*2-2+(j & 1?1:0)-(p2n & 1?1:0);
             rel_coord[1]=((i/3)%3)*2-2+(j & 2?1:0)-(p2n & 2?1:0);
             rel_coord[2]=((i/9)%3)*2-2+(j & 4?1:0)-(p2n & 4?1:0);
             int c_hash = coord_hash(rel_coord);
             int idx=hash_lut[t][c_hash];
-            if(idx>=0) interac_list[idx]=(Node_t*)pc->Child(j);
+            if(idx>=0) interac_list[idx]=(sctl::Iterator<Node_t>)pc->Child(j);
           }
         }
       }
@@ -225,8 +223,8 @@ void InteracList<Node_t>::BuildList(Node_t* n, Mat_Type t){
     {
       if(n->IsGhost() || n->IsLeaf()) return;
       for(int i=0;i<n_collg;i++){
-        Node_t* col=(Node_t*)n->Colleague(i);
-        if(col!=NULL && !col->IsLeaf()){
+        sctl::Iterator<Node_t> col=(sctl::Iterator<Node_t>)n->Colleague(i);
+        if(col!=sctl::NullIterator<Node_t>() && !col->IsLeaf()){
             rel_coord[0]=( i %3)-1;
             rel_coord[1]=((i/3)%3)-1;
             rel_coord[2]=((i/9)%3)-1;
@@ -241,15 +239,15 @@ void InteracList<Node_t>::BuildList(Node_t* n, Mat_Type t){
     {
       if(n->IsGhost() || !n->IsLeaf()) return;
       for(int i=0;i<n_collg;i++){
-        Node_t* col=(Node_t*)n->Colleague(i);
-        if(col!=NULL && !col->IsLeaf()){
+        sctl::Iterator<Node_t> col=(sctl::Iterator<Node_t>)n->Colleague(i);
+        if(col!=sctl::NullIterator<Node_t>() && !col->IsLeaf()){
           for(int j=0;j<n_child;j++){
             rel_coord[0]=( i %3)*4-4+(j & 1?2:0)-1;
             rel_coord[1]=((i/3)%3)*4-4+(j & 2?2:0)-1;
             rel_coord[2]=((i/9)%3)*4-4+(j & 4?2:0)-1;
             int c_hash = coord_hash(rel_coord);
             int idx=hash_lut[t][c_hash];
-            if(idx>=0) interac_list[idx]=(Node_t*)col->Child(j);
+            if(idx>=0) interac_list[idx]=(sctl::Iterator<Node_t>)col->Child(j);
           }
         }
       }
@@ -257,12 +255,12 @@ void InteracList<Node_t>::BuildList(Node_t* n, Mat_Type t){
     }
     case X_Type:
     {
-      if(n->IsGhost() || n->Parent()==NULL) return;
-      Node_t* p=(Node_t*)n->Parent();
+      if(n->IsGhost() || n->Parent()==sctl::NullIterator<TreeNode>()) return;
+      sctl::Iterator<Node_t> p=(sctl::Iterator<Node_t>)n->Parent();
       int p2n=n->Path2Node();
       for(int i=0;i<n_collg;i++){
-        Node_t* pc=(Node_t*)p->Colleague(i);
-        if(pc!=NULL && pc->IsLeaf()){
+        sctl::Iterator<Node_t> pc=(sctl::Iterator<Node_t>)p->Colleague(i);
+        if(pc!=sctl::NullIterator<Node_t>() && pc->IsLeaf()){
           rel_coord[0]=( i %3)*4-4-(p2n & 1?2:0)+1;
           rel_coord[1]=((i/3)%3)*4-4-(p2n & 2?2:0)+1;
           rel_coord[2]=((i/9)%3)*4-4-(p2n & 4?2:0)+1;
@@ -279,17 +277,17 @@ void InteracList<Node_t>::BuildList(Node_t* n, Mat_Type t){
 }
 
 template <class Node_t>
-Matrix<typename Node_t::Real_t>& InteracList<Node_t>::ClassMat(int l, Mat_Type type, size_t indx){
+sctl::Matrix<typename Node_t::Real_t>& InteracList<Node_t>::ClassMat(int l, Mat_Type type, size_t indx){
   size_t indx0=InteracClass(type, indx);
   return mat->Mat(l, type, indx0);
 }
 
 template <class Node_t>
-Permutation<typename Node_t::Real_t>& InteracList<Node_t>::Perm_R(int l, Mat_Type type, size_t indx){
+sctl::Permutation<typename Node_t::Real_t>& InteracList<Node_t>::Perm_R(int l, Mat_Type type, size_t indx){
   assert(l>=0);
   size_t indx0=InteracClass(type, indx);
-  Matrix     <Real_t>& M0      =mat->Mat   (l, type, indx0);
-  Permutation<Real_t>& row_perm=mat->Perm_R(l, type, indx );
+  sctl::Matrix     <Real_t>& M0      =mat->Mat   (l, type, indx0);
+  sctl::Permutation<Real_t>& row_perm=mat->Perm_R(l, type, indx );
   if(M0.Dim(0)==0 || M0.Dim(1)==0) return row_perm;
 
   //Get the necessary permutations.
@@ -300,10 +298,10 @@ Permutation<typename Node_t::Real_t>& InteracList<Node_t>::Perm_R(int l, Mat_Typ
     std::vector<Perm_Type> p_list=PermutList(type, indx);
     for(int i=0;i<l;i++) p_list.push_back(Scaling);
 
-    Permutation<Real_t> cumulative=Permutation<Real_t>(M0.Dim(0));
+    sctl::Permutation<Real_t> cumulative=sctl::Permutation<Real_t>(M0.Dim(0));
     for(int i=p_list.size()-1; i>=0; i--){
       assert(type!=V_Type);
-      cumulative *= mat->Perm(type, R_Perm + p_list[i]);
+      cumulative = cumulative * mat->Perm(type, R_Perm + p_list[i]);
     }
     row_perm = cumulative.Transpose();
   }
@@ -311,11 +309,11 @@ Permutation<typename Node_t::Real_t>& InteracList<Node_t>::Perm_R(int l, Mat_Typ
 }
 
 template <class Node_t>
-Permutation<typename Node_t::Real_t>& InteracList<Node_t>::Perm_C(int l, Mat_Type type, size_t indx){
+sctl::Permutation<typename Node_t::Real_t>& InteracList<Node_t>::Perm_C(int l, Mat_Type type, size_t indx){
   assert(l>=0);
   size_t indx0=InteracClass(type, indx);
-  Matrix     <Real_t>& M0      =mat->Mat   (l, type, indx0);
-  Permutation<Real_t>& col_perm=mat->Perm_C(l, type, indx );
+  sctl::Matrix     <Real_t>& M0      =mat->Mat   (l, type, indx0);
+  sctl::Permutation<Real_t>& col_perm=mat->Perm_C(l, type, indx );
   if(M0.Dim(0)==0 || M0.Dim(1)==0) return col_perm;
 
   //Get the necessary permutations.
@@ -326,10 +324,10 @@ Permutation<typename Node_t::Real_t>& InteracList<Node_t>::Perm_C(int l, Mat_Typ
     std::vector<Perm_Type> p_list=PermutList(type, indx);
     for(int i=0;i<l;i++) p_list.push_back(Scaling);
 
-    Permutation<Real_t> cumulative=Permutation<Real_t>(M0.Dim(1));
+    sctl::Permutation<Real_t> cumulative=sctl::Permutation<Real_t>(M0.Dim(1));
     for(int i=p_list.size()-1; i>=0; i--){
       assert(type!=V_Type);
-      cumulative *= mat->Perm(type, C_Perm + p_list[i]);
+      cumulative = cumulative * mat->Perm(type, C_Perm + p_list[i]);
     }
     col_perm = cumulative;
   }
@@ -368,8 +366,8 @@ template <class Node_t>
 void InteracList<Node_t>::InitList(int max_r, int min_r, int step, Mat_Type t){
   size_t count=           sctl::pow<unsigned int>((max_r*2)/step+1,dim)
                 -(min_r>0?sctl::pow<unsigned int>((min_r*2)/step-1,dim):0);
-  Matrix<int>& M=rel_coord[t];
-  M.Resize(count,dim);
+  sctl::Matrix<int>& M=rel_coord[t];
+  M.ReInit(count,dim);
   hash_lut[t].assign(PVFMM_MAX_COORD_HASH, -1);
 
   std::vector<int> class_size_hash(PVFMM_MAX_COORD_HASH, 0);
@@ -381,7 +379,7 @@ void InteracList<Node_t>::InitList(int max_r, int min_r, int step, Mat_Type t){
     int c[3]={i,j,k};
     class_size_hash[class_hash(c)]++;
   }
-  omp_par::scan(&class_size_hash[0], &class_disp_hash[0], PVFMM_MAX_COORD_HASH);
+  sctl::omp_par::scan(&class_size_hash[0], &class_disp_hash[0], PVFMM_MAX_COORD_HASH);
 
   size_t count_=0;
   for(int k=-max_r;k<=max_r;k+=step)

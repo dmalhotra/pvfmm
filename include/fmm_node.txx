@@ -7,19 +7,19 @@
 
 #include <cassert>
 
-#include <mem_mgr.hpp>
+
 #include <mpi_node.hpp>
 
 namespace pvfmm{
 
 template <class Node>
 FMM_Node<Node>::~FMM_Node(){
-  if(fmm_data!=NULL) mem::aligned_delete(fmm_data);
-  fmm_data=NULL;
+  if(fmm_data!=sctl::NullIterator<FMM_Data<Real_t>>()) sctl::aligned_delete(fmm_data);
+  fmm_data=sctl::NullIterator<FMM_Data<Real_t>>();
 }
 
 template <class Node>
-void FMM_Node<Node>::Initialize(TreeNode* parent_,int path2node_, TreeNode::NodeData* data_){
+void FMM_Node<Node>::Initialize(sctl::Iterator<TreeNode> parent_,int path2node_, TreeNode::NodeData* data_){
   Node::Initialize(parent_,path2node_,data_);
 
   //Set FMM_Node specific data.
@@ -46,16 +46,22 @@ void FMM_Node<Node>::ClearData(){
 
 template <class Node>
 void FMM_Node<Node>::ClearFMMData(){
-  if(fmm_data!=NULL)
+  if(fmm_data!=sctl::NullIterator<FMM_Data<Real_t>>())
     fmm_data->Clear();
 }
 
 
 template <class Node>
-TreeNode* FMM_Node<Node>::NewNode(TreeNode* n_){
-  FMM_Node<Node>* n=(n_==NULL?mem::aligned_new<FMM_Node<Node> >():static_cast<FMM_Node<Node>*>(n_));
-  if(fmm_data!=NULL) n->fmm_data=fmm_data->NewData();
-  return Node_t::NewNode(n);
+sctl::Iterator<TreeNode> FMM_Node<Node>::NewNode(sctl::Iterator<TreeNode> n_){
+  sctl::Iterator<FMM_Node<Node>> n;
+  if (n_==sctl::NullIterator<TreeNode>()) {
+    n=sctl::aligned_new<FMM_Node<Node> >();
+  } else {
+    n=sctl::Iterator<FMM_Node<Node>>(n_);
+  }
+  if(fmm_data!=sctl::NullIterator<FMM_Data<Real_t>>()) n->fmm_data=fmm_data->NewData();
+  Node_t::NewNode(sctl::Iterator<TreeNode>(n));
+  return sctl::Iterator<TreeNode>(n);
 }
 
 
@@ -66,8 +72,8 @@ bool FMM_Node<Node>::SubdivCond(){
   if(this->Depth()>=this->max_depth-1) return false;
   if(!this->IsLeaf()){ // If has non-leaf children, then return true.
     for(int i=0;i<n;i++){
-      MPI_Node<Real_t>* ch=static_cast<MPI_Node<Real_t>*>(this->Child(i));
-      assert(ch!=NULL); //This should never happen
+      sctl::Iterator<MPI_Node<Real_t>> ch=(sctl::Iterator<MPI_Node<Real_t>>)this->Child(i);
+      assert(ch!=sctl::NullIterator<MPI_Node<Real_t>>()); //This should never happen
       if(!ch->IsLeaf() || ch->IsGhost()) return true;
     }
   }
@@ -79,7 +85,7 @@ bool FMM_Node<Node>::SubdivCond(){
   if(!this->IsLeaf()){
     size_t pt_vec_size=0;
     for(int i=0;i<n;i++){
-      FMM_Node<Node>* ch=static_cast<FMM_Node<Node>*>(this->Child(i));
+      sctl::Iterator<FMM_Node<Node>> ch=(sctl::Iterator<FMM_Node<Node>>)this->Child(i);
       pt_vec_size+=ch->src_coord.Dim();
       pt_vec_size+=ch->surf_coord.Dim();
       pt_vec_size+=ch->trg_coord.Dim();
@@ -95,9 +101,9 @@ bool FMM_Node<Node>::SubdivCond(){
 }
 
 template <class Node>
-void FMM_Node<Node>::Subdivide(){
+void FMM_Node<Node>::Subdivide(sctl::Iterator<TreeNode> self_){
   if(!this->IsLeaf()) return;
-  Node::Subdivide();
+  Node::Subdivide(self_);
 }
 
 
@@ -114,11 +120,10 @@ PackedData FMM_Node<Node>::Pack(bool ghost, void* buff_ptr, size_t offset){
     p2=PackMultipole();
   }else{
     char* data_ptr=(char*)buff_ptr+offset;
-    p2=PackMultipole(data_ptr+2*sizeof(size_t));
+    p2=PackMultipole(data_ptr+sizeof(PackedFMMNodeHeader));
   }
 
-  p0.length =sizeof(size_t);
-  p0.length+=sizeof(size_t)+p2.length;
+  p0.length =sizeof(PackedFMMNodeHeader)+p2.length;
   p1=Node_t::Pack(ghost,buff_ptr,p0.length+offset);
   p0.length+=p1.length;
   p0.data=p1.data;
@@ -126,13 +131,16 @@ PackedData FMM_Node<Node>::Pack(bool ghost, void* buff_ptr, size_t offset){
   char* data_ptr=(char*)p0.data;
   data_ptr+=offset;
 
-  // Header
-  ((size_t*)data_ptr)[0]=p0.length;
-  data_ptr+=sizeof(size_t);
+  { // Header
+    PackedFMMNodeHeader hdr;
+    hdr.length=p0.length;
+    hdr.mult_length=p2.length;
+    std::memcpy(data_ptr, &hdr, sizeof(PackedFMMNodeHeader));
+    data_ptr+=sizeof(PackedFMMNodeHeader);
+  }
 
   // Copy multipole data.
-  ((size_t*)data_ptr)[0]=p2.length; data_ptr+=sizeof(size_t);
-  mem::copy<char>(data_ptr,(char*)p2.data,p2.length);
+  std::memcpy(data_ptr, (char*)p2.data, p2.length);
 
   return p0;
 }
@@ -141,14 +149,14 @@ template <class Node>
 void FMM_Node<Node>::Unpack(PackedData p0, bool own_data){
   char* data_ptr=(char*)p0.data;
 
-  // Check header
-  size_t data_ptr_len;
-  std::memcpy(&data_ptr_len, data_ptr, sizeof(size_t));
-  assert(data_ptr_len==p0.length);
-  data_ptr+=sizeof(size_t);
+  // Check and read header
+  PackedFMMNodeHeader hdr;
+  std::memcpy(&hdr, data_ptr, sizeof(PackedFMMNodeHeader));
+  assert(hdr.length==p0.length);
+  data_ptr+=sizeof(PackedFMMNodeHeader);
 
   PackedData p2;
-  std::memcpy(&p2.length, data_ptr, sizeof(size_t)); data_ptr+=sizeof(size_t);
+  p2.length=hdr.mult_length;
   p2.data=(void*)data_ptr; data_ptr+=p2.length;
   InitMultipole(p2,own_data);
 
@@ -161,7 +169,7 @@ void FMM_Node<Node>::Unpack(PackedData p0, bool own_data){
 
 template <class Node>
 PackedData FMM_Node<Node>::PackMultipole(void* buff_ptr){
-  if(fmm_data!=NULL)
+  if(fmm_data!=sctl::NullIterator<FMM_Data<Real_t>>())
     return fmm_data->PackMultipole(buff_ptr);
   else{
     PackedData pkd;
@@ -175,7 +183,7 @@ PackedData FMM_Node<Node>::PackMultipole(void* buff_ptr){
 template <class Node>
 void FMM_Node<Node>::AddMultipole(PackedData data){
   if(data.length>0){
-    assert(fmm_data!=NULL);
+    assert(fmm_data!=sctl::NullIterator<FMM_Data<Real_t>>());
     fmm_data->AddMultipole(data);
   }
 };
@@ -184,7 +192,7 @@ void FMM_Node<Node>::AddMultipole(PackedData data){
 template <class Node>
 void FMM_Node<Node>::InitMultipole(PackedData data, bool own_data){
   if(data.length>0){
-    assert(fmm_data!=NULL);
+    assert(fmm_data!=sctl::NullIterator<FMM_Data<Real_t>>());
     fmm_data->InitMultipole(data, own_data);
   }
 };

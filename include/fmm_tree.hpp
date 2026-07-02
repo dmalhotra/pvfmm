@@ -5,14 +5,13 @@
  * \brief This file contains the definition of the FMM_Tree class.
  */
 
-#include <mpi.h>
 #include <vector>
 
 #include <pvfmm_common.hpp>
 #include <interac_list.hpp>
 #include <fmm_node.hpp>
 #include <mpi_tree.hpp>
-#include <matrix.hpp>
+#include <mat_utils.hpp>
 
 #ifndef _PVFMM_FMM_TREE_HPP_
 #define _PVFMM_FMM_TREE_HPP_
@@ -34,7 +33,7 @@ class FMM_Tree: public MPI_Tree<typename FMM_Mat_t::FMMNode_t>{
   /**
    * \brief Constructor.
    */
-  FMM_Tree(MPI_Comm c): MPI_Tree<Node_t>(c), fmm_mat(NULL), bndry(FreeSpace) { };
+  FMM_Tree(const sctl::Comm& c): MPI_Tree<Node_t>(c), fmm_mat(NULL), bndry(FreeSpace) { };
 
   /**
    * \brief Virtual destructor.
@@ -94,19 +93,29 @@ class FMM_Tree: public MPI_Tree<typename FMM_Mat_t::FMMNode_t>{
 
  protected:
 
-  std::vector<Matrix<Real_t> > node_data_buff;
-  pvfmm::Matrix<Node_t*> node_interac_lst;
+  std::vector<sctl::Matrix<Real_t> > node_data_buff;
+  sctl::Matrix<sctl::Iterator<Node_t>> node_interac_lst;
   InteracList<Node_t> interac_list;
   FMM_Mat_t* fmm_mat; //Computes all FMM translations.
   BoundaryType bndry;
 
-  std::vector<Matrix<char> > precomp_lst; //Precomputed data for each interaction type.
-  std::vector<SetupData<Real_t> > setup_data;
+  std::vector<sctl::Matrix<char> > precomp_lst; //Precomputed data for each interaction type.
+  std::vector<SetupData<typename FMM_Mat_t::FMMNode_t> > setup_data;
 
-  std::vector<Vector<Real_t> > upwd_check_surf;
-  std::vector<Vector<Real_t> > upwd_equiv_surf;
-  std::vector<Vector<Real_t> > dnwd_check_surf;
-  std::vector<Vector<Real_t> > dnwd_equiv_surf;
+  std::vector<sctl::Vector<Real_t> > upwd_check_surf;
+  std::vector<sctl::Vector<Real_t> > upwd_equiv_surf;
+  std::vector<sctl::Vector<Real_t> > dnwd_check_surf;
+  std::vector<sctl::Vector<Real_t> > dnwd_equiv_surf;
+
+ public:
+
+  // Device-side mirrors paired 1:1 with node_data_buff / precomp_lst
+  // entries. Public so FMM_Pts/FMM_Cheb setup code can wire SetupData
+  // mirror pointers (FMM_Cheb is not a friend). Declared after the host
+  // containers so they are destroyed first — releasing the pinned
+  // registration while the host buffers are still mapped.
+  std::vector<DeviceMirror> node_data_buff_mirror;
+  std::vector<DeviceMirror> precomp_lst_mirror;
 };
 
 }//end namespace

@@ -107,104 +107,6 @@ namespace DeviceWrapper{
   }
 
 
-  // MIC functions
-
-  #define PVFMM_ALLOC alloc_if(1) free_if(0)
-  #define PVFMM_FREE alloc_if(0) free_if(1)
-  #define PVFMM_REUSE alloc_if(0) free_if(0)
-
-  inline uintptr_t alloc_device_mic(char* dev_handle, size_t len){
-    assert(dev_handle!=NULL);
-    uintptr_t dev_ptr=(uintptr_t)NULL;
-    #ifdef __INTEL_OFFLOAD
-    #pragma offload target(mic:0) nocopy( dev_handle: length(len) PVFMM_ALLOC) out(dev_ptr)
-    #else
-    PVFMM_UNUSED(len);
-    #endif
-    {dev_ptr=(uintptr_t)dev_handle;}
-    return dev_ptr;
-  }
-
-  inline void free_device_mic(char* dev_handle, uintptr_t dev_ptr){
-    #ifdef __INTEL_OFFLOAD
-    #pragma offload          target(mic:0) in( dev_handle: length(0) PVFMM_FREE)
-    {
-      assert(dev_ptr==(uintptr_t)dev_handle);
-    }
-    #else
-    PVFMM_UNUSED(dev_handle);
-    PVFMM_UNUSED(dev_ptr);
-    #endif
-  }
-
-  inline int host2device_mic(char* host_ptr, char* dev_handle, uintptr_t dev_ptr, size_t len){
-    #ifdef __INTEL_OFFLOAD
-    int wait_lock_idx=MIC_Lock::curr_lock();
-    int lock_idx=MIC_Lock::get_lock();
-    if(dev_handle==host_ptr){
-      #pragma offload target(mic:0)  in( dev_handle        :              length(len)  PVFMM_REUSE ) signal(&MIC_Lock::lock_vec[lock_idx])
-      {
-        assert(dev_ptr==(uintptr_t)dev_handle);
-        MIC_Lock::wait_lock(wait_lock_idx);
-        MIC_Lock::release_lock(lock_idx);
-      }
-    }else{
-      #pragma offload target(mic:0)  in(host_ptr   [0:len] : into ( dev_handle[0:len]) PVFMM_REUSE ) signal(&MIC_Lock::lock_vec[lock_idx])
-      {
-        assert(dev_ptr==(uintptr_t)dev_handle);
-        MIC_Lock::wait_lock(wait_lock_idx);
-        MIC_Lock::release_lock(lock_idx);
-      }
-    }
-    return lock_idx;
-    #else
-    PVFMM_UNUSED(host_ptr);
-    PVFMM_UNUSED(dev_handle);
-    PVFMM_UNUSED(dev_ptr);
-    PVFMM_UNUSED(len);
-    #endif
-    return -1;
-  }
-
-  inline int device2host_mic(char* dev_handle, uintptr_t dev_ptr, char* host_ptr, size_t len){
-    #ifdef __INTEL_OFFLOAD
-    int wait_lock_idx=MIC_Lock::curr_lock();
-    int lock_idx=MIC_Lock::get_lock();
-    if(dev_handle==host_ptr){
-      #pragma offload target(mic:0) out( dev_handle        :              length(len)  PVFMM_REUSE ) signal(&MIC_Lock::lock_vec[lock_idx])
-      {
-        assert(dev_ptr==(uintptr_t)dev_handle);
-        MIC_Lock::wait_lock(wait_lock_idx);
-        MIC_Lock::release_lock(lock_idx);
-      }
-    }else{
-      #pragma offload target(mic:0) out( dev_handle[0:len] : into (host_ptr   [0:len]) PVFMM_REUSE ) signal(&MIC_Lock::lock_vec[lock_idx])
-      {
-        assert(dev_ptr==(uintptr_t)dev_handle);
-        MIC_Lock::wait_lock(wait_lock_idx);
-        MIC_Lock::release_lock(lock_idx);
-      }
-    }
-    return lock_idx;
-    #else
-    PVFMM_UNUSED(host_ptr);
-    PVFMM_UNUSED(dev_handle);
-    PVFMM_UNUSED(dev_ptr);
-    PVFMM_UNUSED(len);
-    #endif
-    return -1;
-  }
-
-  inline void wait_mic(int lock_idx){
-    #ifdef __INTEL_OFFLOAD
-    MIC_Lock::wait_lock(lock_idx);
-    #else
-    PVFMM_UNUSED(lock_idx);
-    #endif
-  }
-
-
-
   // Wrapper functions
 
   inline void* host_malloc(size_t size){
@@ -225,22 +127,16 @@ namespace DeviceWrapper{
   }
 
   inline uintptr_t alloc_device(char* dev_handle, size_t len){
-    #ifdef __INTEL_OFFLOAD
-    return alloc_device_mic(dev_handle,len);
-    #elif defined(PVFMM_HAVE_CUDA)
+    #if defined(PVFMM_HAVE_CUDA)
     return alloc_device_cuda(dev_handle,len);
     #else
     PVFMM_UNUSED(len);
-    uintptr_t dev_ptr=(uintptr_t)NULL;
-    {dev_ptr=(uintptr_t)dev_handle;}
-    return dev_ptr;
+    return (uintptr_t)dev_handle;
     #endif
   }
 
   inline void free_device(char* dev_handle, uintptr_t dev_ptr){
-    #ifdef __INTEL_OFFLOAD
-    free_device_mic(dev_handle,dev_ptr);
-    #elif defined(PVFMM_HAVE_CUDA)
+    #if defined(PVFMM_HAVE_CUDA)
     free_device_cuda(dev_handle,dev_ptr);
     #else
     PVFMM_UNUSED(dev_handle);
@@ -251,16 +147,13 @@ namespace DeviceWrapper{
   template <int SYNC>
   inline int host2device(char* host_ptr, char* dev_handle, uintptr_t dev_ptr, size_t len){
     int lock_idx=-1;
-    #ifdef __INTEL_OFFLOAD
-    lock_idx=host2device_mic(host_ptr,dev_handle,dev_ptr,len);
-    if(SYNC){
-      #pragma offload target(mic:0)
-      {MIC_Lock::wait_lock(lock_idx);}
-    }
-    #elif defined(PVFMM_HAVE_CUDA)
+    PVFMM_UNUSED(dev_handle);
+    #if defined(PVFMM_HAVE_CUDA)
     lock_idx=host2device_cuda(host_ptr,(char*)dev_ptr,len);
     #else
-    ;
+    PVFMM_UNUSED(host_ptr);
+    PVFMM_UNUSED(dev_ptr);
+    PVFMM_UNUSED(len);
     #endif
     return lock_idx;
   }
@@ -268,13 +161,10 @@ namespace DeviceWrapper{
   template <int SYNC>
   inline int device2host(char* dev_handle, uintptr_t dev_ptr, char* host_ptr, size_t len){
     int lock_idx=-1;
-    #ifdef __INTEL_OFFLOAD
-    lock_idx=device2host_mic(dev_handle,dev_ptr, host_ptr, len);
-    if(SYNC) MIC_Lock::wait_lock(lock_idx);
-    #elif defined(PVFMM_HAVE_CUDA)
+    PVFMM_UNUSED(dev_handle);
+    #if defined(PVFMM_HAVE_CUDA)
     lock_idx=device2host_cuda((char*)dev_ptr, host_ptr, len);
     #else
-    PVFMM_UNUSED(dev_handle);
     PVFMM_UNUSED(host_ptr);
     PVFMM_UNUSED(dev_ptr);
     PVFMM_UNUSED(len);
@@ -283,105 +173,74 @@ namespace DeviceWrapper{
   }
 
   inline void wait(int lock_idx){
-    #ifdef __INTEL_OFFLOAD
-    wait_mic(lock_idx);
-    #elif defined(PVFMM_HAVE_CUDA)
-    CUDA_Lock::wait();
-    #else
     PVFMM_UNUSED(lock_idx);
+    #if defined(PVFMM_HAVE_CUDA)
+    CUDA_Lock::wait();
     #endif
   }
 
 }
 
 
-  // Implementation of MIC_Lock
+  // Implementation of DeviceMirror
 
-  #ifdef __MIC__
-  #define PVFMM_have_mic 1
-  #else
-  #define PVFMM_have_mic 0
-  #endif
-
-  #define PVFMM_NUM_LOCKS 1000000
-  inline void MIC_Lock::init(){
-    #ifdef __INTEL_OFFLOAD
-    if(PVFMM_have_mic) abort();// Cannot be called from MIC.
-
-    lock_idx=0;
-    lock_vec.Resize(PVFMM_NUM_LOCKS);
-    lock_vec.SetZero();
-    lock_vec_=lock_vec.AllocDevice(false);
-    {for(size_t i=0;i<PVFMM_NUM_LOCKS;i++) lock_vec [i]=1;}
-    #pragma offload target(mic:0)
-    {for(size_t i=0;i<PVFMM_NUM_LOCKS;i++) lock_vec_[i]=1;}
-    #endif
-  }
-
-  inline int MIC_Lock::get_lock(){
-    #ifdef __INTEL_OFFLOAD
-    if(PVFMM_have_mic) abort();// Cannot be called from MIC.
-
-    int idx;
-    #pragma omp critical(PVFMM_DEVICE_WRAPPER_CRIT)
-    {
-      if(lock_idx==PVFMM_NUM_LOCKS-1){
-        int wait_lock_idx=-1;
-        wait_lock_idx=MIC_Lock::curr_lock();
-        MIC_Lock::wait_lock(wait_lock_idx);
-        #pragma offload target(mic:0)
-        {MIC_Lock::wait_lock(wait_lock_idx);}
-        MIC_Lock::init();
-      }
-      idx=lock_idx;
-      lock_idx++;
-      assert(lock_idx<PVFMM_NUM_LOCKS);
+  template <class T>
+  inline DeviceVector<T> DeviceMirror::AllocDevice(sctl::Vector<T>& host, bool copy){
+    char* p=(char*)(host.Dim()?&host[0]:nullptr);
+    size_t bytes=host.Dim()*sizeof(T);
+    if(dev_ptr){ // Already bound: host buffer must not have changed.
+      assert(host_ptr==p && len==bytes);
+    }else if(bytes){
+      host_ptr=p;
+      len=bytes;
+      dev_ptr=DeviceWrapper::alloc_device(host_ptr,len);
     }
-    return idx;
-    #else
-    return -1;
-    #endif
-  }
-  #undef PVFMM_NUM_LOCKS
+    if(dev_ptr && copy) lock_idx=DeviceWrapper::host2device(host_ptr,host_ptr,dev_ptr,len);
 
-  inline int MIC_Lock::curr_lock(){
-    #ifdef __INTEL_OFFLOAD
-    if(PVFMM_have_mic) abort();// Cannot be called from MIC.
-    return lock_idx-1;
-    #else
-    return -1;
-    #endif
+    DeviceVector<T> h;
+    h.dim=host.Dim();
+    h.dev_ptr=dev_ptr;
+    return h;
   }
 
-  inline void MIC_Lock::release_lock(int idx){ // Only call from inside an offload section
-    #if defined(__INTEL_OFFLOAD) && defined(__MIC__)
-    if(idx>=0) lock_vec_[idx]=0;
-    #else
-    PVFMM_UNUSED(idx);
-    #endif
-  }
-
-  inline void MIC_Lock::wait_lock(int idx){
-    #ifdef __INTEL_OFFLOAD
-    #ifdef __MIC__
-    if(idx>=0) while(lock_vec_[idx]==1){
-      _mm_delay_32(8192);
+  template <class T>
+  inline DeviceMatrix<T> DeviceMirror::AllocDevice(sctl::Matrix<T>& host, bool copy){
+    char* p=(char*)(host.Dim(0)*host.Dim(1)>0?&host[0][0]:nullptr);
+    size_t bytes=host.Dim(0)*host.Dim(1)*sizeof(T);
+    if(dev_ptr){ // Already bound: host buffer must not have changed.
+      assert(host_ptr==p && len==bytes);
+    }else if(bytes){
+      host_ptr=p;
+      len=bytes;
+      dev_ptr=DeviceWrapper::alloc_device(host_ptr,len);
     }
-    #else
-    if(idx<0 || lock_vec[idx]==0) return;
-    if(lock_vec[idx]==2){
-      while(lock_vec[idx]==2);
-      return;
-    }
-    lock_vec[idx]=2;
-    #pragma offload_wait target(mic:0) wait(&lock_vec[idx])
-    lock_vec[idx]=0;
-    #endif
-    #else
-    PVFMM_UNUSED(idx);
-    #endif
+    if(dev_ptr && copy) lock_idx=DeviceWrapper::host2device(host_ptr,host_ptr,dev_ptr,len);
+
+    DeviceMatrix<T> h;
+    h.dim[0]=host.Dim(0);
+    h.dim[1]=host.Dim(1);
+    h.dev_ptr=dev_ptr;
+    h.lock_idx=lock_idx;
+    return h;
   }
 
+  inline void DeviceMirror::Device2Host(char* dst){
+    if(!dev_ptr) return;
+    lock_idx=DeviceWrapper::device2host(host_ptr,dev_ptr,(dst?dst:host_ptr),len);
+  }
+
+  inline void DeviceMirror::Device2HostWait(){
+    DeviceWrapper::wait(lock_idx);
+    lock_idx=-1;
+  }
+
+  inline void DeviceMirror::Free(){
+    if(dev_ptr) DeviceWrapper::free_device(host_ptr,dev_ptr);
+    host_ptr=NULL;
+    len=0;
+    dev_ptr=0;
+    lock_idx=-1;
+  }
 
 
 #if defined(PVFMM_HAVE_CUDA)
@@ -442,6 +301,40 @@ namespace DeviceWrapper{
     cudaError_t error = cudaStreamSynchronize(stream[idx]);
     PVFMM_UNUSED(error);
   }
+
+  // mat::cublasgemm specializations (declared in mat_utils.hpp); defined here
+  // because they need CUDA_Lock, which is only declared in device_wrapper.hpp.
+  namespace mat{
+  template <> inline void cublasgemm<float>(char TransA, char TransB, int M, int N, int K, float alpha, const float* A, int lda, const float* B, int ldb, float beta, float* C, int ldc) {
+    cublasOperation_t cublasTransA, cublasTransB;
+    cublasHandle_t *handle = CUDA_Lock::acquire_handle();
+    if (TransA == 'T' || TransA == 't')
+      cublasTransA = CUBLAS_OP_T;
+    else if (TransA == 'N' || TransA == 'n')
+      cublasTransA = CUBLAS_OP_N;
+    if (TransB == 'T' || TransB == 't')
+      cublasTransB = CUBLAS_OP_T;
+    else if (TransB == 'N' || TransB == 'n')
+      cublasTransB = CUBLAS_OP_N;
+    cublasStatus_t status = cublasSgemm(*handle, cublasTransA, cublasTransB, M, N, K, &alpha, A, lda, B, ldb, &beta, C, ldc);
+    PVFMM_UNUSED(status);
+  }
+
+  template <> inline void cublasgemm<double>(char TransA, char TransB, int M, int N, int K, double alpha, const double* A, int lda, const double* B, int ldb, double beta, double* C, int ldc) {
+    cublasOperation_t cublasTransA, cublasTransB;
+    cublasHandle_t *handle = CUDA_Lock::acquire_handle();
+    if (TransA == 'T' || TransA == 't')
+      cublasTransA = CUBLAS_OP_T;
+    else if (TransA == 'N' || TransA == 'n')
+      cublasTransA = CUBLAS_OP_N;
+    if (TransB == 'T' || TransB == 't')
+      cublasTransB = CUBLAS_OP_T;
+    else if (TransB == 'N' || TransB == 'n')
+      cublasTransB = CUBLAS_OP_N;
+    cublasStatus_t status = cublasDgemm(*handle, cublasTransA, cublasTransB, M, N, K, &alpha, A, lda, B, ldb, &beta, C, ldc);
+    PVFMM_UNUSED(status);
+  }
+  }//end namespace mat
 #endif
 
 }//end namespace

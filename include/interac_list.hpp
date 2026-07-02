@@ -11,8 +11,9 @@
 #include <cstdlib>
 
 #include <pvfmm_common.hpp>
+#include <tree_node.hpp>
 #include <precomp_mat.hpp>
-#include <matrix.hpp>
+#include <mat_utils.hpp>
 
 #ifndef _PVFMM_INTERAC_LIST_HPP_
 #define _PVFMM_INTERAC_LIST_HPP_
@@ -57,7 +58,7 @@ class InteracList{
     /**
      * \brief Build interaction list for this node.
      */
-    void BuildList(Node_t* n, Mat_Type t);
+    void BuildList(sctl::Iterator<Node_t> n, Mat_Type t);
 
     /**
      * \brief For an interaction of type t and index i, returns the symmetry
@@ -65,11 +66,11 @@ class InteracList{
      */
     size_t InteracClass(Mat_Type t, size_t i);
 
-    Matrix<Real_t>& ClassMat(int l, Mat_Type type, size_t indx);
+    sctl::Matrix<Real_t>& ClassMat(int l, Mat_Type type, size_t indx);
 
-    Permutation<Real_t>& Perm_R(int l, Mat_Type type, size_t indx);
+    sctl::Permutation<Real_t>& Perm_R(int l, Mat_Type type, size_t indx);
 
-    Permutation<Real_t>& Perm_C(int l, Mat_Type type, size_t indx);
+    sctl::Permutation<Real_t>& Perm_C(int l, Mat_Type type, size_t indx);
 
   private:
 
@@ -93,7 +94,7 @@ class InteracList{
     int class_hash(int* c);
 
     unsigned int dim;                                //Spatial dimension.
-    std::vector<Matrix<int> > rel_coord;             //Relative coordinates of interacting octant.
+    std::vector<sctl::Matrix<int> > rel_coord;             //Relative coordinates of interacting octant.
     std::vector<std::vector<int> > hash_lut;         //Lookup table for hash code of relative coordinates.
     std::vector<std::vector<size_t> > interac_class; //The symmetry class corresponding to each interaction.
     std::vector<std::vector<std::vector<Perm_Type> > > perm_list; //Permutation to convert it to it's interac_class.

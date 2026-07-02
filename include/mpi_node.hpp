@@ -13,13 +13,13 @@
 
 #include <pvfmm_common.hpp>
 #include <tree_node.hpp>
-#include <mortonid.hpp>
-#include <vector.hpp>
 
 #ifndef _PVFMM_MPI_NODE_HPP_
 #define _PVFMM_MPI_NODE_HPP_
 
 namespace pvfmm{
+
+using MortonId = sctl::Morton<PVFMM_COORD_DIM>;
 
 /**
  * \brief A structure for storing packed data for transmitting a node to
@@ -29,6 +29,33 @@ struct PackedData{
   size_t length;//Length of data
   void* data;   //Pointer to data
 };
+
+/**
+ * \brief Fixed-size header at the start of the data produced by
+ * MPI_Node::Pack. The field order and widths define the wire layout; depth
+ * is widened to long long so that the variable-length vector segments that
+ * follow the header stay 8-byte aligned.
+ */
+struct PackedNodeHeader{
+  size_t length;      // total packed length in bytes, including this header
+  long long depth;
+  long long node_cost;
+  MortonId mid;
+};
+static_assert(sizeof(PackedNodeHeader)==sizeof(size_t)+2*sizeof(long long)+sizeof(MortonId), "PackedNodeHeader must have no internal padding (defines the wire layout)");
+static_assert(sizeof(PackedNodeHeader)%sizeof(size_t)==0, "segments following PackedNodeHeader must stay 8-byte aligned");
+
+/**
+ * \brief Wire record header pairing a MortonId with the byte length of the
+ * payload that follows. Used to frame packed nodes / multipole data in tree
+ * exchange messages. Records may land at non-8-byte offsets in a stream
+ * (payload lengths are Real_t multiples), so read/write with memcpy.
+ */
+struct MidPayloadHeader{
+  MortonId mid;
+  size_t length; // payload bytes that follow this header
+};
+static_assert(sizeof(MidPayloadHeader)==sizeof(MortonId)+sizeof(size_t), "MidPayloadHeader must have no internal padding (defines the wire layout)");
 
 /**
  * \brief Virtual base class for a locally essential tree node.
@@ -48,8 +75,8 @@ class MPI_Node: public TreeNode{
    public:
 
      size_t max_pts;
-     Vector<Real_t> pt_coord;
-     Vector<Real_t> pt_value;
+     sctl::Vector<Real_t> pt_coord;
+     sctl::Vector<Real_t> pt_value;
   };
 
   /**
@@ -65,16 +92,16 @@ class MPI_Node: public TreeNode{
   /**
    * \brief Initialize the node with relevant data.
    */
-  virtual void Initialize(TreeNode* parent_, int path2node_, TreeNode::NodeData*) ;
+  virtual void Initialize(sctl::Iterator<TreeNode> parent_, int path2node_, TreeNode::NodeData*) ;
 
   /**
    * \brief Returns list of coordinate and value vectors which need to be
    * sorted and partitioned across MPI processes and the scatter index is
    * saved.
    */
-  virtual void NodeDataVec(std::vector<Vector<Real_t>*>& coord,
-                           std::vector<Vector<Real_t>*>& value,
-                           std::vector<Vector<size_t>*>& scatter){
+  virtual void NodeDataVec(std::vector<sctl::Vector<Real_t>*>& coord,
+                           std::vector<sctl::Vector<Real_t>*>& value,
+                           std::vector<sctl::Vector<sctl::Long>*>& scatter){
     coord  .push_back(&pt_coord  );
     value  .push_back(&pt_value  );
     scatter.push_back(&pt_scatter);
@@ -88,12 +115,12 @@ class MPI_Node: public TreeNode{
   /**
    * \brief Returns the colleague corresponding to the input index.
    */
-  MPI_Node<Real_t>* Colleague(int index){return colleague[index];}
+  sctl::Iterator<TreeNode> Colleague(int index){return colleague[index];}
 
   /**
    * \brief Set the colleague corresponding to the input index.
    */
-  void SetColleague(MPI_Node<Real_t>* node_, int index){colleague[index]=node_;}
+  void SetColleague(sctl::Iterator<TreeNode> node_, int index){colleague[index]=node_;}
 
   /**
    * \brief Returns the cost of this node. Used for load balancing.
@@ -130,7 +157,7 @@ class MPI_Node: public TreeNode{
    * \brief Allocate a new object of the same type (as the derived class) and
    * return a pointer to it type cast as (TreeNode*).
    */
-  virtual TreeNode* NewNode(TreeNode* n_=NULL);
+  virtual sctl::Iterator<TreeNode> NewNode(sctl::Iterator<TreeNode> n_=sctl::NullIterator<TreeNode>());
 
   /**
    * \brief Evaluates and returns the subdivision condition for this node.
@@ -141,7 +168,7 @@ class MPI_Node: public TreeNode{
   /**
    * \brief Create child nodes and Initialize them.
    */
-  virtual void Subdivide();
+  virtual void Subdivide(sctl::Iterator<TreeNode> self_);
 
   /**
    * \brief Truncates the tree i.e. makes this a leaf node.
@@ -171,9 +198,9 @@ class MPI_Node: public TreeNode{
   template <class VTUData_t, class Node_t>
   static void VTU_Data(VTUData_t& vtu_data, std::vector<Node_t*>& nodes, int lod);
 
-  Vector<Real_t> pt_coord;   //coordinates of points
-  Vector<Real_t> pt_value;   //value at points
-  Vector<size_t> pt_scatter; //scatter index mapping original data.
+  sctl::Vector<Real_t> pt_coord;   //coordinates of points
+  sctl::Vector<Real_t> pt_value;   //value at points
+  sctl::Vector<sctl::Long> pt_scatter; //scatter index mapping original data.
 
  protected:
 
@@ -182,8 +209,8 @@ class MPI_Node: public TreeNode{
   long long weight;
 
   Real_t coord[PVFMM_COORD_DIM];
-  MPI_Node<Real_t>* colleague[PVFMM_COLLEAGUE_COUNT];
-  Vector<char> packed_data;
+  sctl::Iterator<TreeNode> colleague[PVFMM_COLLEAGUE_COUNT]; // allocation iterators, like TreeNode::child/parent
+  sctl::Vector<char> packed_data;
 };
 
 }//end namespace

@@ -12,10 +12,9 @@ void CheckFMMOutput(pvfmm::FMM_Tree<FMM_Mat_t>* mytree, const pvfmm::Kernel<type
   int np=omp_get_max_threads();
 
   // Find out my identity in the default communicator
-  int myrank, p;
-  MPI_Comm c1=MPI_COMM_WORLD;
-  MPI_Comm_rank(c1, &myrank);
-  MPI_Comm_size(c1,&p);
+  const sctl::Comm c1 = sctl::Comm::World();
+  const int myrank = c1.Rank();
+  const int p = c1.Size();
 
   //typedef typename FMM_Mat_t::FMMData FMM_Data_t;
   typedef typename FMM_Mat_t::FMMNode_t FMMNode_t;
@@ -24,20 +23,20 @@ void CheckFMMOutput(pvfmm::FMM_Tree<FMM_Mat_t>* mytree, const pvfmm::Kernel<type
   // Read source data.
   std::vector<Real_t> src_coord;
   std::vector<Real_t> src_value;
-  FMMNode_t* n=static_cast<FMMNode_t*>(mytree->PreorderFirst());
-  while(n!=NULL){
+  sctl::Iterator<FMMNode_t> n=mytree->PreorderFirst();
+  while(n!=sctl::NullIterator<FMMNode_t>()){
     if(n->IsLeaf() && !n->IsGhost()){
-      pvfmm::Vector<Real_t>& coord_vec=n->src_coord;
-      pvfmm::Vector<Real_t>& value_vec=n->src_value;
-      for(size_t i=0;i<coord_vec.Dim();i++) src_coord.push_back(coord_vec[i]);
-      for(size_t i=0;i<value_vec.Dim();i++) src_value.push_back(value_vec[i]);
+      sctl::Vector<Real_t>& coord_vec=n->src_coord;
+      sctl::Vector<Real_t>& value_vec=n->src_value;
+      for(sctl::Long i=0;i<coord_vec.Dim();i++) src_coord.push_back(coord_vec[i]);
+      for(sctl::Long i=0;i<value_vec.Dim();i++) src_value.push_back(value_vec[i]);
     }
-    n=static_cast<FMMNode_t*>(mytree->PreorderNxt(n));
+    n=mytree->PreorderNxt(n);
   }
   long long glb_src_cnt=0, src_cnt=src_coord.size()/3;
-  MPI_Allreduce(&src_cnt, &glb_src_cnt, 1, MPI_LONG_LONG, MPI_SUM, c1);
+  c1.Allreduce(sctl::Ptr2ConstItr<long long>(&src_cnt, 1), sctl::Ptr2Itr<long long>(&glb_src_cnt, 1), 1, sctl::CommOp::SUM);
   long long glb_val_cnt=0, val_cnt=src_value.size();
-  MPI_Allreduce(&val_cnt, &glb_val_cnt, 1, MPI_LONG_LONG, MPI_SUM, c1);
+  c1.Allreduce(sctl::Ptr2ConstItr<long long>(&val_cnt, 1), sctl::Ptr2Itr<long long>(&glb_val_cnt, 1), 1, sctl::CommOp::SUM);
   if(glb_src_cnt==0) return;
 
   int dof=glb_val_cnt/glb_src_cnt/mykernel->ker_dim[0];
@@ -48,12 +47,12 @@ void CheckFMMOutput(pvfmm::FMM_Tree<FMM_Mat_t>* mytree, const pvfmm::Kernel<type
   std::vector<Real_t> trg_poten_fmm;
   long long trg_iter=0;
   size_t step_size=(size_t)(1+glb_src_cnt*glb_src_cnt*1e-9/p);
-  n=static_cast<FMMNode_t*>(mytree->PreorderFirst());
-  while(n!=NULL){
+  n=mytree->PreorderFirst();
+  while(n!=sctl::NullIterator<FMMNode_t>()){
     if(n->IsLeaf() && !n->IsGhost()){
-      pvfmm::Vector<Real_t>& coord_vec=n->trg_coord;
-      pvfmm::Vector<Real_t>& poten_vec=n->trg_value;
-      for(size_t i=0;i<coord_vec.Dim()/3          ;i++){
+      sctl::Vector<Real_t>& coord_vec=n->trg_coord;
+      sctl::Vector<Real_t>& poten_vec=n->trg_value;
+      for(sctl::Long i=0;i<coord_vec.Dim()/3          ;i++){
         if(trg_iter%step_size==0){
           for(int j=0;j<3        ;j++) trg_coord    .push_back(coord_vec[i*3        +j]);
           for(int j=0;j<trg_dof  ;j++) trg_poten_fmm.push_back(poten_vec[i*trg_dof  +j]);
@@ -61,32 +60,36 @@ void CheckFMMOutput(pvfmm::FMM_Tree<FMM_Mat_t>* mytree, const pvfmm::Kernel<type
         trg_iter++;
       }
     }
-    n=static_cast<FMMNode_t*>(mytree->PreorderNxt(n));
+    n=mytree->PreorderNxt(n);
   }
   int trg_cnt=trg_coord.size()/3;
   int send_cnt=trg_cnt*3;
-  std::vector<int> recv_cnts(p), recv_disp(p,0);
-  MPI_Allgather(&send_cnt    , 1, MPI_INT,
-                &recv_cnts[0], 1, MPI_INT, c1);
-  pvfmm::omp_par::scan(&recv_cnts[0], &recv_disp[0], p);
-  int glb_trg_cnt=(recv_disp[p-1]+recv_cnts[p-1])/3;
-  std::vector<Real_t> glb_trg_coord(glb_trg_cnt*3);
-  MPI_Allgatherv(&trg_coord[0]    , send_cnt                    , pvfmm::par::Mpi_datatype<Real_t>::value(),
-                 &glb_trg_coord[0], &recv_cnts[0], &recv_disp[0], pvfmm::par::Mpi_datatype<Real_t>::value(), c1);
+  std::vector<sctl::Long> recv_cnts(p), recv_disp(p, 0);
+  c1.Allgather(sctl::Ptr2ConstItr<int>(&send_cnt, 1), 1,
+               sctl::Ptr2Itr<sctl::Long>(&recv_cnts[0], p), 1);
+  sctl::omp_par::scan(&recv_cnts[0], &recv_disp[0], p);
+  int glb_trg_cnt = (recv_disp[p-1] + recv_cnts[p-1]) / 3;
+  std::vector<Real_t> glb_trg_coord(glb_trg_cnt * 3);
+  c1.Allgatherv(sctl::Ptr2ConstItr<Real_t>(&trg_coord[0], send_cnt), send_cnt,
+                sctl::Ptr2Itr<Real_t>(&glb_trg_coord[0], glb_trg_cnt * 3),
+                sctl::Ptr2ConstItr<sctl::Long>(&recv_cnts[0], p),
+                sctl::Ptr2ConstItr<sctl::Long>(&recv_disp[0], p));
   if(glb_trg_cnt==0) return;
 
   //Direct N-Body.
   std::vector<Real_t> trg_poten_dir(glb_trg_cnt*trg_dof ,0);
   std::vector<Real_t> glb_trg_poten_dir(glb_trg_cnt*trg_dof ,0);
-  pvfmm::Profile::Tic("N-Body Direct",&c1,false,1);
+  sctl::Profile::Tic("N-Body Direct", &c1, false, 1);
   #pragma omp parallel for
   for(int i=0;i<np;i++){
     size_t a=(i*glb_trg_cnt)/np;
     size_t b=((i+1)*glb_trg_cnt)/np;
-    mykernel->ker_poten(&src_coord[0], src_cnt, &src_value[0], dof, &glb_trg_coord[a*3], b-a, &trg_poten_dir[a*trg_dof  ],NULL);
+    mykernel->ker_poten(&src_coord[0], src_cnt, &src_value[0], dof, &glb_trg_coord[a*3], b-a, &trg_poten_dir[a*trg_dof  ]);
   }
-  MPI_Allreduce(&trg_poten_dir[0], &glb_trg_poten_dir[0], trg_poten_dir.size(), pvfmm::par::Mpi_datatype<Real_t>::value(), pvfmm::par::Mpi_datatype<Real_t>::sum(), c1);
-  pvfmm::Profile::Toc();
+  c1.Allreduce(sctl::Ptr2ConstItr<Real_t>(&trg_poten_dir[0], trg_poten_dir.size()),
+               sctl::Ptr2Itr<Real_t>(&glb_trg_poten_dir[0], glb_trg_poten_dir.size()),
+               (sctl::Long)trg_poten_dir.size(), sctl::CommOp::SUM);
+  sctl::Profile::Toc();
 
   //Compute error.
   {
@@ -99,8 +102,8 @@ void CheckFMMOutput(pvfmm::FMM_Tree<FMM_Mat_t>* mytree, const pvfmm::Kernel<type
       if(max>max_) max_=max;
     }
     Real_t glb_max, glb_max_err;
-    MPI_Reduce(&max_   , &glb_max    , 1, pvfmm::par::Mpi_datatype<Real_t>::value(), pvfmm::par::Mpi_datatype<Real_t>::max(), 0, c1);
-    MPI_Reduce(&max_err, &glb_max_err, 1, pvfmm::par::Mpi_datatype<Real_t>::value(), pvfmm::par::Mpi_datatype<Real_t>::max(), 0, c1);
+    c1.Allreduce(sctl::Ptr2ConstItr<Real_t>(&max_,    1), sctl::Ptr2Itr<Real_t>(&glb_max,     1), 1, sctl::CommOp::MAX);
+    c1.Allreduce(sctl::Ptr2ConstItr<Real_t>(&max_err, 1), sctl::Ptr2Itr<Real_t>(&glb_max_err, 1), 1, sctl::CommOp::MAX);
     if(!myrank){
       std::cout<<"Maximum Absolute Error ["<<t_name<<"] :  "<<std::scientific<<glb_max_err<<'\n';
       std::cout<<"Maximum Relative Error ["<<t_name<<"] :  "<<std::scientific<<glb_max_err/glb_max<<'\n';
@@ -114,18 +117,18 @@ void CheckChebOutput(FMMTree_t* mytree, typename TestFn<typename FMMTree_t::Real
   typedef typename FMMTree_t::Node_t FMMNode_t;
   typedef typename FMMTree_t::Real_t Real_t;
 
-  MPI_Comm c1=*mytree->Comm();
-  pvfmm::Profile::Tic((std::string("Compute Error ")+t_name).c_str(),&c1,true,1);
+  const sctl::Comm& c1 = mytree->Comm();
+  sctl::Profile::Tic((std::string("Compute Error ")+t_name).c_str(), &c1, true, 1);
 
-  int myrank; MPI_Comm_rank(c1, &myrank);
+  const int myrank = c1.Rank();
   FMMNode_t* r_node=static_cast<FMMNode_t*>(mytree->RootNode());
   int dof=r_node->DataDOF()/fn_dof;
   std::vector<FMMNode_t*> nodes;
   {
-    FMMNode_t* node=static_cast<FMMNode_t*>(mytree->PreorderFirst());
-    while(node!=NULL){
-      if(node->IsLeaf() && !node->IsGhost()) nodes.push_back(node);
-      node=static_cast<FMMNode_t*>(mytree->PreorderNxt((FMMNode_t*)node));
+    sctl::Iterator<FMMNode_t> node=mytree->PreorderFirst();
+    while(node!=sctl::NullIterator<FMMNode_t>()){
+      if(node->IsLeaf() && !node->IsGhost()) nodes.push_back(&node[0]);
+      node=mytree->PreorderNxt(node);
     }
     if(nodes.size()==0) return;
   }
@@ -142,11 +145,11 @@ void CheckChebOutput(FMMTree_t* mytree, typename TestFn<typename FMMTree_t::Real
     std::vector<Real_t> err_avg(omp_p*dof*fn_dof,0);
     #pragma omp parallel for
     for(int tid=0;tid<omp_p;tid++){
-      pvfmm::Vector<Real_t> out; out.SetZero();
-      pvfmm::Vector<Real_t> fn_out(dof*fn_dof);
+      sctl::Vector<Real_t> out; out.SetZero();
+      sctl::Vector<Real_t> fn_out(dof*fn_dof);
       for(size_t i=(nodes.size()*tid)/omp_p;i<(nodes.size()*(tid+1))/omp_p;i++){
-        pvfmm::Vector<Real_t>& cheb_coeff=nodes[i]->ChebData();
-        cheb_eval(cheb_coeff, cheb_deg, cheb_nds, cheb_nds, cheb_nds, out);
+        sctl::Vector<Real_t>& cheb_coeff=nodes[i]->ChebData();
+        pvfmm::cheb_eval(cheb_coeff, cheb_deg, cheb_nds, cheb_nds, cheb_nds, out);
 
         Real_t* c=nodes[i]->Coord();
         Real_t s=(Real_t)pow(2,-nodes[i]->Depth());
@@ -170,7 +173,9 @@ void CheckChebOutput(FMMTree_t* mytree, typename TestFn<typename FMMTree_t::Real
     for(int tid=1;tid<omp_p;tid++)
       for(int k=0;k<dof*fn_dof;k++)
         err_avg[k]+=err_avg[tid*dof*fn_dof+k];
-    MPI_Allreduce(&err_avg[0], &glb_err_avg[0], dof*fn_dof, pvfmm::par::Mpi_datatype<Real_t>::value(), pvfmm::par::Mpi_datatype<Real_t>::sum(), c1);
+    c1.Allreduce(sctl::Ptr2ConstItr<Real_t>(&err_avg[0],     err_avg.size()),
+                 sctl::Ptr2Itr<Real_t>(&glb_err_avg[0], glb_err_avg.size()),
+                 (sctl::Long)(dof*fn_dof), sctl::CommOp::SUM);
   }
   if(0){ // Write error to file.
     int nn_x=1;
@@ -190,9 +195,9 @@ void CheckChebOutput(FMMTree_t* mytree, typename TestFn<typename FMMTree_t::Real
     int fn_dof=r_node->DataDOF()/dof;
 
     Real_t* fn_out=new Real_t[dof*fn_dof];
-    pvfmm::Matrix<Real_t> M_out    (nn_z*fn_dof*dof,nn_y*nn_x,NULL,true); M_out    .SetZero();
-    pvfmm::Matrix<Real_t> M_out_err(nn_z*fn_dof*dof,nn_y*nn_x,NULL,true); M_out_err.SetZero();
-    r_node->ReadVal(x,y,z,M_out[0],false);
+    sctl::Matrix<Real_t> M_out    (nn_z*fn_dof*dof,nn_y*nn_x, sctl::Ptr2Itr<Real_t>(NULL, (nn_z*fn_dof*dof)*(nn_y*nn_x)),true); M_out    .SetZero();
+    sctl::Matrix<Real_t> M_out_err(nn_z*fn_dof*dof,nn_y*nn_x, sctl::Ptr2Itr<Real_t>(NULL, (nn_z*fn_dof*dof)*(nn_y*nn_x)),true); M_out_err.SetZero();
+    r_node->ReadVal(x,y,z,&M_out[0][0],false);
     for(int l0=0;l0<dof;l0++)
     for(int l1=0;l1<fn_dof;l1++)
     for(int i=0;i<nn_x;i++)
@@ -208,10 +213,11 @@ void CheckChebOutput(FMMTree_t* mytree, typename TestFn<typename FMMTree_t::Real
       }
     }
     delete[] fn_out;
-    pvfmm::Matrix<Real_t> M_global    (nn_z*fn_dof*dof,nn_y*nn_x,NULL,true);
-    pvfmm::Matrix<Real_t> M_global_err(nn_z*fn_dof*dof,nn_y*nn_x,NULL,true);
-    MPI_Reduce(&M_out    [0][0], &M_global    [0][0], nn_x*nn_y*nn_z*fn_dof*dof, pvfmm::par::Mpi_datatype<Real_t>::value(), pvfmm::par::Mpi_datatype<Real_t>::sum(), 0, c1);
-    MPI_Reduce(&M_out_err[0][0], &M_global_err[0][0], nn_x*nn_y*nn_z*fn_dof*dof, pvfmm::par::Mpi_datatype<Real_t>::value(), pvfmm::par::Mpi_datatype<Real_t>::sum(), 0, c1);
+    sctl::Matrix<Real_t> M_global    (nn_z*fn_dof*dof,nn_y*nn_x, sctl::Ptr2Itr<Real_t>(NULL, (nn_z*fn_dof*dof)*(nn_y*nn_x)),true);
+    sctl::Matrix<Real_t> M_global_err(nn_z*fn_dof*dof,nn_y*nn_x, sctl::Ptr2Itr<Real_t>(NULL, (nn_z*fn_dof*dof)*(nn_y*nn_x)),true);
+    const sctl::Long n_elem = (sctl::Long)nn_x*nn_y*nn_z*fn_dof*dof;
+    c1.Allreduce(sctl::Ptr2ConstItr<Real_t>(&M_out    [0][0], n_elem), sctl::Ptr2Itr<Real_t>(&M_global    [0][0], n_elem), n_elem, sctl::CommOp::SUM);
+    c1.Allreduce(sctl::Ptr2ConstItr<Real_t>(&M_out_err[0][0], n_elem), sctl::Ptr2Itr<Real_t>(&M_global_err[0][0], n_elem), n_elem, sctl::CommOp::SUM);
 
     std::string fname;
     fname=std::string("result/"    )+t_name+std::string(".mat");
@@ -223,11 +229,11 @@ void CheckChebOutput(FMMTree_t* mytree, typename TestFn<typename FMMTree_t::Real
   std::vector<Real_t> max_err(omp_p,0), l2_err(omp_p,0);
   #pragma omp parallel for
   for(int tid=0;tid<omp_p;tid++){
-    pvfmm::Vector<Real_t> out; out.SetZero();
-    pvfmm::Vector<Real_t> fn_out(dof*fn_dof);
+    sctl::Vector<Real_t> out; out.SetZero();
+    sctl::Vector<Real_t> fn_out(dof*fn_dof);
     for(size_t i=(nodes.size()*tid)/omp_p;i<(nodes.size()*(tid+1))/omp_p;i++){
-      pvfmm::Vector<Real_t>& cheb_coeff=nodes[i]->ChebData();
-      cheb_eval(cheb_coeff, cheb_deg, cheb_nds, cheb_nds, cheb_nds, out);
+      sctl::Vector<Real_t>& cheb_coeff=nodes[i]->ChebData();
+      pvfmm::cheb_eval(cheb_coeff, cheb_deg, cheb_nds, cheb_nds, cheb_nds, out);
 
       Real_t* c=nodes[i]->Coord();
       Real_t s=(Real_t)pow(2,-nodes[i]->Depth());
@@ -260,25 +266,24 @@ void CheckChebOutput(FMMTree_t* mytree, typename TestFn<typename FMMTree_t::Real
 
   Real_t global_l2, global_l2_err;
   Real_t global_max, global_max_err;
-  MPI_Reduce(&l2     [0], &global_l2     , 1, pvfmm::par::Mpi_datatype<Real_t>::value(), pvfmm::par::Mpi_datatype<Real_t>::sum(), 0, c1);
-  MPI_Reduce(&l2_err [0], &global_l2_err , 1, pvfmm::par::Mpi_datatype<Real_t>::value(), pvfmm::par::Mpi_datatype<Real_t>::sum(), 0, c1);
-  MPI_Reduce(&max    [0], &global_max    , 1, pvfmm::par::Mpi_datatype<Real_t>::value(), pvfmm::par::Mpi_datatype<Real_t>::max(), 0, c1);
-  MPI_Reduce(&max_err[0], &global_max_err, 1, pvfmm::par::Mpi_datatype<Real_t>::value(), pvfmm::par::Mpi_datatype<Real_t>::max(), 0, c1);
+  c1.Allreduce(sctl::Ptr2ConstItr<Real_t>(&l2     [0], 1), sctl::Ptr2Itr<Real_t>(&global_l2,      1), 1, sctl::CommOp::SUM);
+  c1.Allreduce(sctl::Ptr2ConstItr<Real_t>(&l2_err [0], 1), sctl::Ptr2Itr<Real_t>(&global_l2_err,  1), 1, sctl::CommOp::SUM);
+  c1.Allreduce(sctl::Ptr2ConstItr<Real_t>(&max    [0], 1), sctl::Ptr2Itr<Real_t>(&global_max,     1), 1, sctl::CommOp::MAX);
+  c1.Allreduce(sctl::Ptr2ConstItr<Real_t>(&max_err[0], 1), sctl::Ptr2Itr<Real_t>(&global_max_err, 1), 1, sctl::CommOp::MAX);
   if(!myrank){
     std::cout<<"Absolute L2 Error ["<<t_name<<"]     :  "<<std::scientific<<sqrt(global_l2_err)<<'\n';
     std::cout<<"Relative L2 Error ["<<t_name<<"]     :  "<<std::scientific<<sqrt(global_l2_err/global_l2)<<'\n';
     std::cout<<"Maximum Absolute Error ["<<t_name<<"]:  "<<std::scientific<<global_max_err<<'\n';
     std::cout<<"Maximum Relative Error ["<<t_name<<"]:  "<<std::scientific<<global_max_err/global_max<<'\n';
   }
-  pvfmm::Profile::Toc();
+  sctl::Profile::Toc();
 }
 
 
 template <class Real_t>
-std::vector<Real_t> point_distrib(DistribType dist_type, size_t N, MPI_Comm comm){
-  int np, myrank;
-  MPI_Comm_size(comm, &np);
-  MPI_Comm_rank(comm, &myrank);
+std::vector<Real_t> point_distrib(DistribType dist_type, size_t N, const sctl::Comm& comm){
+  const int np     = comm.Size();
+  const int myrank = comm.Rank();
   static size_t seed=myrank+1; seed+=np;
   srand48(seed);
 

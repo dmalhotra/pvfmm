@@ -6,19 +6,19 @@
  * MPI tree.
  */
 
-#include <mpi.h>
 #include <vector>
 #include <string>
 #include <cstdint>
 
 #include <pvfmm_common.hpp>
-#include <mortonid.hpp>
 #include <tree.hpp>
 
 #ifndef _PVFMM_MPI_TREE_HPP_
 #define _PVFMM_MPI_TREE_HPP_
 
 namespace pvfmm{
+
+using MortonId = sctl::Morton<PVFMM_COORD_DIM>;
 
 enum BoundaryType : uint8_t {
   FreeSpace = 0,
@@ -43,7 +43,7 @@ class MPI_Tree: public Tree<TreeNode>{
   /**
    * \brief Constructor.
    */
-  MPI_Tree(MPI_Comm c): Tree<Node_t>() {comm=c;}
+  MPI_Tree(const sctl::Comm& c): Tree<Node_t>(), sctl_comm(c) {}
 
   /**
    * \brief Virtual destructor.
@@ -64,7 +64,7 @@ class MPI_Tree: public Tree<TreeNode>{
    * \brief Find the prticular node. If subdiv is true then subdivide
    * (non-ghost) nodes to create this node.
    */
-  TreeNode* FindNode(MortonId& key, bool subdiv, TreeNode* start=NULL);
+  sctl::Iterator<TreeNode> FindNode(MortonId& key, bool subdiv, sctl::Iterator<TreeNode> start=sctl::NullIterator<TreeNode>());
 
   /**
    * \brief Adaptive coarsening of distributed tree.
@@ -79,7 +79,7 @@ class MPI_Tree: public Tree<TreeNode>{
   /**
    * \brief Redistribute the tree among the processes.
    */
-  void RedistNodes(MortonId* loc_min=NULL);
+  void RedistNodes(sctl::ConstIterator<MortonId> loc_min=sctl::NullIterator<MortonId>());
 
   /**
    * \brief Performs global 2:1 balancing of the tree.
@@ -132,7 +132,7 @@ class MPI_Tree: public Tree<TreeNode>{
   /**
    * \brief Returns a pointer to the comm object.
    */
-  const MPI_Comm* Comm() const {return &comm;}
+  const sctl::Comm& Comm() const { return sctl_comm; }
 
  protected:
 
@@ -140,15 +140,15 @@ class MPI_Tree: public Tree<TreeNode>{
    * \brief Returns a vector with the minimum Morton Id of the regions
    * controlled by each processor.
    */
-  const std::vector<MortonId>& GetMins();
+  const sctl::Vector<MortonId>& GetMins();
 
  private:
 
   void ConstructLET_Hypercube(BoundaryType bndry=FreeSpace);
   void ConstructLET_Sparse(BoundaryType bndry=FreeSpace);
 
-  MPI_Comm comm;
-  std::vector<MortonId> mins;
+  sctl::Comm sctl_comm;
+  sctl::Vector<MortonId> mins;
 
 };
 

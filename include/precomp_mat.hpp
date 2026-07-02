@@ -6,12 +6,11 @@
  * Handles storage of precomputed translation matrices.
  */
 
-#include <mpi.h>
 #include <vector>
 #include <cstdlib>
 
 #include <pvfmm_common.hpp>
-#include <matrix.hpp>
+#include <mat_utils.hpp>
 
 #ifndef _PVFMM_PrecompMAT_HPP_
 #define _PVFMM_PrecompMAT_HPP_
@@ -57,19 +56,19 @@ class PrecompMat{
 
   PrecompMat(bool scale_invar);
 
-  Matrix<T>& Mat(int l, Mat_Type type, size_t indx);
+  sctl::Matrix<T>& Mat(int l, Mat_Type type, size_t indx);
 
-  Permutation<T>& Perm_R(int l, Mat_Type type, size_t indx);
+  sctl::Permutation<T>& Perm_R(int l, Mat_Type type, size_t indx);
 
-  Permutation<T>& Perm_C(int l, Mat_Type type, size_t indx);
+  sctl::Permutation<T>& Perm_C(int l, Mat_Type type, size_t indx);
 
-  Permutation<T>& Perm(Mat_Type type, size_t indx);
+  sctl::Permutation<T>& Perm(Mat_Type type, size_t indx);
 
-  size_t CompactData(int l, Mat_Type type, Matrix<char>& comp_data, size_t offset=0);
+  size_t CompactData(int l, Mat_Type type, sctl::Matrix<char>& comp_data, size_t offset=0);
 
   void Save2File(const char* fname, bool replace=false);
 
-  void LoadFile(const char* fname, MPI_Comm comm);
+  void LoadFile(const char* fname, const sctl::Comm& comm);
 
   std::vector<T>& RelativeTrgCoord();
 
@@ -77,10 +76,10 @@ class PrecompMat{
 
  private:
 
-  std::vector<std::vector<Matrix     <T> > > mat;
-  std::vector<std::vector<Permutation<T> > > perm;
-  std::vector<std::vector<Permutation<T> > > perm_r;
-  std::vector<std::vector<Permutation<T> > > perm_c;
+  std::vector<std::vector<sctl::Matrix     <T> > > mat;
+  std::vector<std::vector<sctl::Permutation<T> > > perm;
+  std::vector<std::vector<sctl::Permutation<T> > > perm_r;
+  std::vector<std::vector<sctl::Permutation<T> > > perm_c;
   std::vector<T> rel_trg_coord;
 
   bool scale_invar;

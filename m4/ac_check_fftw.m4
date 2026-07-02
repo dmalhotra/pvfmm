@@ -75,7 +75,6 @@ AC_DEFUN([AC_CHECK_FFTW],[\
     if test "$cv_lfftw3" = yes; then
         AC_SUBST(FFTW_LIB)
         AC_SUBST(FFTW_INCLUDE)
-        AC_DEFINE(HAVE_FFTW,1,[Define if we have FFTW])
         acx_fftw_ok=yes
         #AC_SUBST(acx_fftw_ok)
     else

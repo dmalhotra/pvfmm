@@ -12,12 +12,22 @@
 #include <tree_node.hpp>
 #include <mpi_node.hpp>
 #include <fmm_pts.hpp>
-#include <vector.hpp>
 
 #ifndef _PVFMM_FMM_NODE_HPP_
 #define _PVFMM_FMM_NODE_HPP_
 
 namespace pvfmm{
+
+/**
+ * \brief Fixed-size header at the start of the data produced by
+ * FMM_Node::Pack. The multipole segment follows the header, then the
+ * packed base-node data (which begins with its own PackedNodeHeader).
+ */
+struct PackedFMMNodeHeader{
+  size_t length;      // total packed length in bytes, including this header
+  size_t mult_length; // length of the multipole segment that follows
+};
+static_assert(sizeof(PackedFMMNodeHeader)==2*sizeof(size_t), "PackedFMMNodeHeader must have no internal padding (defines the wire layout)");
 
 /**
  * \brief Base class for node of FMM_Node.
@@ -37,14 +47,14 @@ class FMM_Node: public Node{
 
     public:
 
-     Vector<Real_t> src_coord; //Point sources.
-     Vector<Real_t> src_value;
+     sctl::Vector<Real_t> src_coord; //Point sources.
+     sctl::Vector<Real_t> src_value;
 
-     Vector<Real_t> surf_coord; //Surface sources.
-     Vector<Real_t> surf_value;
+     sctl::Vector<Real_t> surf_coord; //Surface sources.
+     sctl::Vector<Real_t> surf_value;
 
-     Vector<Real_t> trg_coord; //Target coordinates.
-     Vector<Real_t> trg_value;
+     sctl::Vector<Real_t> trg_coord; //Target coordinates.
+     sctl::Vector<Real_t> trg_value;
   };
 
   /**
@@ -52,7 +62,7 @@ class FMM_Node: public Node{
    */
   FMM_Node(){
     Node_t();
-    fmm_data=NULL;
+    fmm_data=sctl::NullIterator<FMM_Data<Real_t>>();
   }
 
   /**
@@ -63,16 +73,16 @@ class FMM_Node: public Node{
   /**
    * \brief Initialize the node with relevant data.
    */
-  virtual void Initialize(TreeNode* parent_, int path2node_, TreeNode::NodeData*) ;
+  virtual void Initialize(sctl::Iterator<TreeNode> parent_, int path2node_, TreeNode::NodeData*) ;
 
   /**
    * \brief Returns list of coordinate and value vectors which need to be
    * sorted and partitioned across MPI processes and the scatter index is
    * saved.
    */
-  virtual void NodeDataVec(std::vector<Vector<Real_t>*>& coord,
-                           std::vector<Vector<Real_t>*>& value,
-                           std::vector<Vector<size_t>*>& scatter){
+  virtual void NodeDataVec(std::vector<sctl::Vector<Real_t>*>& coord,
+                           std::vector<sctl::Vector<Real_t>*>& value,
+                           std::vector<sctl::Vector<sctl::Long>*>& scatter){
     Node::NodeDataVec(coord, value, scatter);
     coord  .push_back(&src_coord  );
     value  .push_back(&src_value  );
@@ -100,13 +110,14 @@ class FMM_Node: public Node{
   /**
    * \brief Returns reference to fmm_data.
    */
-  FMM_Data<Real_t>*& FMMData(){return fmm_data;}
+  FMM_Data<Real_t>* FMMData(){return (fmm_data==sctl::NullIterator<FMM_Data<Real_t>>() ? NULL : &fmm_data[0]);}
+  void SetFMMData(sctl::Iterator<FMM_Data<Real_t>> data){fmm_data=data;}
 
   /**
    * \brief Allocate a new object of the same type (as the derived class) and
    * return a pointer to it type cast as (TreeNode*).
    */
-  virtual TreeNode* NewNode(TreeNode* n_=NULL);
+  virtual sctl::Iterator<TreeNode> NewNode(sctl::Iterator<TreeNode> n_=sctl::NullIterator<TreeNode>());
 
   /**
    * \brief Evaluates and returns the subdivision condition for this node.
@@ -117,7 +128,7 @@ class FMM_Node: public Node{
   /**
    * \brief Create child nodes and Initialize them.
    */
-  virtual void Subdivide() ;
+  virtual void Subdivide(sctl::Iterator<TreeNode> self_) ;
 
   /**
    * \brief Truncates the tree i.e. makes this a leaf node.
@@ -158,25 +169,25 @@ class FMM_Node: public Node{
   template <class VTUData_t, class VTUNode_t>
   static void VTU_Data(VTUData_t& vtu_data, std::vector<VTUNode_t*>& nodes, int lod);
 
-  Vector<Real_t> src_coord;  //Point sources.
-  Vector<Real_t> src_value;
-  Vector<size_t> src_scatter;
+  sctl::Vector<Real_t> src_coord;  //Point sources.
+  sctl::Vector<Real_t> src_value;
+  sctl::Vector<sctl::Long> src_scatter;
 
-  Vector<Real_t> surf_coord; //Surface sources.
-  Vector<Real_t> surf_value; //Normal and src strength.
-  Vector<size_t> surf_scatter;
+  sctl::Vector<Real_t> surf_coord; //Surface sources.
+  sctl::Vector<Real_t> surf_value; //Normal and src strength.
+  sctl::Vector<sctl::Long> surf_scatter;
 
-  Vector<Real_t> trg_coord;  //Target coordinates.
-  Vector<Real_t> trg_value;
-  Vector<size_t> trg_scatter;
+  sctl::Vector<Real_t> trg_coord;  //Target coordinates.
+  sctl::Vector<Real_t> trg_value;
+  sctl::Vector<sctl::Long> trg_scatter;
 
   size_t pt_cnt[2]; // Number of source, target pts.
-  Vector<FMM_Node*> interac_list[Type_Count];
+  sctl::Vector<sctl::Iterator<FMM_Node>> interac_list[Type_Count]; // allocation iterators (NullIterator = no interaction)
 
  private:
 
-  FMM_Data<Real_t>* fmm_data; //FMM specific data.
-  Vector<char> pkd_data; //Temporary variable for storing packed data.
+  sctl::Iterator<FMM_Data<Real_t>> fmm_data; //FMM specific data.
+  sctl::Vector<char> pkd_data; //Temporary variable for storing packed data.
 };
 
 }//end namespace

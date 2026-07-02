@@ -6,16 +6,14 @@
  * This handles all the translations through matrix multiplications.
  */
 
-#include <mpi.h>
 #include <vector>
 #include <cstdlib>
 
 #include <pvfmm_common.hpp>
 #include <precomp_mat.hpp>
-#include <mem_mgr.hpp>
+
 #include <fmm_pts.hpp>
-#include <vector.hpp>
-#include <matrix.hpp>
+#include <mat_utils.hpp>
 #include <kernel.hpp>
 
 #ifndef _PVFMM_FMM_CHEB_HPP_
@@ -40,16 +38,16 @@ class FMM_Cheb: public FMM_Pts<FMMNode>{
 
    public:
 
-    virtual FMM_Data<Real_t>* NewData(){ return mem::aligned_new<FMMData>();}
+    virtual sctl::Iterator<FMM_Data<Real_t>> NewData(){ return sctl::Iterator<FMM_Data<Real_t>>(sctl::aligned_new<FMMData>());}
 
     //FMM specific node data.
-    Vector<Real_t> cheb_out;
+    sctl::Vector<Real_t> cheb_out;
   };
 
   /**
    * \brief Constructor.
    */
-  FMM_Cheb(mem::MemoryManager* mem_mgr=NULL){};
+  FMM_Cheb(){};
 
   /**
    * \brief Virtual destructor.
@@ -62,7 +60,7 @@ class FMM_Cheb: public FMM_Pts<FMMNode>{
    * \param[in] cheb_deg Degree of Chebyshev polynomials.
    * \param[in] kernel Kernel functions and related data.
    */
-  void Initialize(int mult_order, int cheb_deg, const MPI_Comm& comm, const Kernel<Real_t>* kernel);
+  void Initialize(int mult_order, int cheb_deg, const sctl::Comm& comm, const Kernel<Real_t>* kernel);
 
   /**
    * \brief Number of source points per box (or the parameter describing the
@@ -70,38 +68,38 @@ class FMM_Cheb: public FMM_Pts<FMMNode>{
    */
   int& ChebDeg(){return cheb_deg;}
 
-  virtual void CollectNodeData(FMMTree_t* tree, std::vector<FMMNode*>& nodes, std::vector<Matrix<Real_t> >& buff, std::vector<Vector<FMMNode_t*> >& n_list, std::vector<std::vector<Vector<Real_t>* > > vec_list = std::vector<std::vector<Vector<Real_t>* > >(0));
+  virtual void CollectNodeData(FMMTree_t* tree, std::vector<sctl::Iterator<FMMNode>>& nodes, std::vector<sctl::Matrix<Real_t> >& buff, std::vector<sctl::Vector<sctl::Iterator<FMMNode_t>> >& n_list, std::vector<std::vector<sctl::Vector<Real_t>* > > vec_list = std::vector<std::vector<sctl::Vector<Real_t>* > >(0));
 
   /**
    * \brief Initialize multipole expansions for the given array of leaf nodes
    * at a given level.
    */
-  virtual void Source2UpSetup(SetupData<Real_t>& setup_data, FMMTree_t* tree, std::vector<Matrix<Real_t> >& node_data, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device);
-  virtual void Source2Up     (SetupData<Real_t>& setup_data, bool device=false);
+  virtual void Source2UpSetup(SetupData<FMMNode_t>& setup_data, FMMTree_t* tree, std::vector<sctl::Matrix<Real_t> >& node_data, std::vector<sctl::Vector<sctl::Iterator<FMMNode_t>> >& n_list, int level, bool device);
+  virtual void Source2Up     (SetupData<FMMNode_t>& setup_data, bool device=false);
 
   /**
    * \brief Compute X-List interactions.
    */
-  virtual void X_ListSetup(SetupData<Real_t>& setup_data, FMMTree_t* tree, std::vector<Matrix<Real_t> >& node_data, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device);
-  virtual void X_List     (SetupData<Real_t>& setup_data, bool device=false);
+  virtual void X_ListSetup(SetupData<FMMNode_t>& setup_data, FMMTree_t* tree, std::vector<sctl::Matrix<Real_t> >& node_data, std::vector<sctl::Vector<sctl::Iterator<FMMNode_t>> >& n_list, int level, bool device);
+  virtual void X_List     (SetupData<FMMNode_t>& setup_data, bool device=false);
 
   /**
    * \brief Compute target potential from the local expansion.
    */
-  virtual void Down2TargetSetup(SetupData<Real_t>& setup_data, FMMTree_t* tree, std::vector<Matrix<Real_t> >& node_data, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device);
-  virtual void Down2Target     (SetupData<Real_t>& setup_data, bool device=false);
+  virtual void Down2TargetSetup(SetupData<FMMNode_t>& setup_data, FMMTree_t* tree, std::vector<sctl::Matrix<Real_t> >& node_data, std::vector<sctl::Vector<sctl::Iterator<FMMNode_t>> >& n_list, int level, bool device);
+  virtual void Down2Target     (SetupData<FMMNode_t>& setup_data, bool device=false);
 
   /**
    * \brief Compute W-List interactions.
    */
-  virtual void W_ListSetup(SetupData<Real_t>& setup_data, FMMTree_t* tree, std::vector<Matrix<Real_t> >& node_data, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device);
-  virtual void W_List     (SetupData<Real_t>& setup_data, bool device=false);
+  virtual void W_ListSetup(SetupData<FMMNode_t>& setup_data, FMMTree_t* tree, std::vector<sctl::Matrix<Real_t> >& node_data, std::vector<sctl::Vector<sctl::Iterator<FMMNode_t>> >& n_list, int level, bool device);
+  virtual void W_List     (SetupData<FMMNode_t>& setup_data, bool device=false);
 
   /**
    * \brief Compute U-List interactions.
    */
-  virtual void U_ListSetup(SetupData<Real_t>& setup_data, FMMTree_t* tree, std::vector<Matrix<Real_t> >& node_data, std::vector<Vector<FMMNode_t*> >& n_list, int level, bool device);
-  virtual void U_List     (SetupData<Real_t>& setup_data, bool device=false);
+  virtual void U_ListSetup(SetupData<FMMNode_t>& setup_data, FMMTree_t* tree, std::vector<sctl::Matrix<Real_t> >& node_data, std::vector<sctl::Vector<sctl::Iterator<FMMNode_t>> >& n_list, int level, bool device);
+  virtual void U_List     (SetupData<FMMNode_t>& setup_data, bool device=false);
 
   virtual void PostProcessing(FMMTree_t* tree, std::vector<FMMNode_t*>& nodes, BoundaryType bndry=FreeSpace);
 
@@ -112,8 +110,8 @@ class FMM_Cheb: public FMM_Pts<FMMNode>{
     for(size_t i=0;i<n;i++){
       nodes[i]->DataDOF()=this->kernel->ker_dim[1];
       if(nodes[i]->IsLeaf() && !nodes[i]->IsGhost()){
-        Vector<Real_t>& cheb_data=nodes[i]->ChebData();
-        Vector<Real_t>& cheb_out =((FMMData*)nodes[i]->FMMData())->cheb_out;
+        sctl::Vector<Real_t>& cheb_data=nodes[i]->ChebData();
+        sctl::Vector<Real_t>& cheb_out =((FMMData*)nodes[i]->FMMData())->cheb_out;
         if(cheb_data.Dim()!=cheb_out.Dim()) cheb_data.ReInit(0);
         cheb_data = cheb_out;
       }
@@ -124,9 +122,9 @@ class FMM_Cheb: public FMM_Pts<FMMNode>{
 
  protected:
 
-  virtual Permutation<Real_t>& PrecompPerm(Mat_Type type, Perm_Type perm_indx);
+  virtual sctl::Permutation<Real_t>& PrecompPerm(Mat_Type type, Perm_Type perm_indx);
 
-  virtual Matrix<Real_t>& Precomp(int level, Mat_Type type, size_t mat_indx);
+  virtual sctl::Matrix<Real_t>& Precomp(int level, Mat_Type type, size_t mat_indx);
 
  private:
 

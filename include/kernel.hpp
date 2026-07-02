@@ -11,9 +11,8 @@
 #include <type_traits>
 
 #include <pvfmm_common.hpp>
-#include <mem_mgr.hpp>
-#include <vector.hpp>
-#include <matrix.hpp>
+
+#include <mat_utils.hpp>
 
 #ifndef _PVFMM_FMM_KERNEL_HPP_
 #define _PVFMM_FMM_KERNEL_HPP_
@@ -38,7 +37,7 @@ struct Kernel{
    * \param[out] k_out Output array with potential values.
    */
   typedef void (*Ker_t)(T* r_src, int src_cnt, T* v_src, int dof,
-                        T* r_trg, int trg_cnt, T* k_out, mem::MemoryManager* mem_mgr);
+                        T* r_trg, int trg_cnt, T* k_out);
 
   typedef void (*BuildMat_t)(T* r_src, int src_cnt,
                              T* r_trg, int trg_cnt, T* k_out);
@@ -90,9 +89,9 @@ struct Kernel{
 
   mutable bool init;
   mutable bool scale_invar;
-  mutable Vector<T> src_scal;
-  mutable Vector<T> trg_scal;
-  mutable Vector<Permutation<T> > perm_vec;
+  mutable sctl::Vector<T> src_scal;
+  mutable sctl::Vector<T> trg_scal;
+  mutable sctl::Vector<sctl::Permutation<T> > perm_vec;
 
   mutable const Kernel<T>* k_s2m;
   mutable const Kernel<T>* k_s2l;
@@ -117,9 +116,6 @@ Kernel<T> BuildKernel(const char* name, int dim, std::pair<int,int> k_dim,
 
   size_t dev_ker_poten;
   size_t dev_dbl_layer_poten;
-  #ifdef __INTEL_OFFLOAD
-  #pragma offload target(mic:0)
-  #endif
   {
     dev_ker_poten      =(size_t)A;
     dev_dbl_layer_poten=(size_t)B;
@@ -146,16 +142,13 @@ template <class uKernel> class GenericKernel {
 
   public:
 
-  template <class Real, int digits = -1> static void Eval(Real* r_src, int src_cnt, Real* v_src, int dof, Real* r_trg, int trg_cnt, Real* v_trg, mem::MemoryManager* mem_mgr);
+  template <class Real, int digits = -1> static void Eval(Real* r_src, int src_cnt, Real* v_src, int dof, Real* r_trg, int trg_cnt, Real* v_trg);
 
   template <class Real, int digits = -1> static void BuildMatrix(Real* r_src, int src_cnt, Real* r_trg, int trg_cnt, Real* k_out);
 };
 
 }//end namespace
 
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(push,target(mic))
-#endif
 namespace pvfmm{ // Predefined Kernel-functions
 
 template<class T>
@@ -185,9 +178,6 @@ struct HelmholtzKernel{
 
 
 }//end namespace
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(pop)
-#endif
 
 #include <kernel.txx>
 

@@ -13,7 +13,6 @@
 #include <pvfmm_common.hpp>
 #include <tree_node.hpp>
 #include <mpi_node.hpp>
-#include <vector.hpp>
 
 #ifndef _PVFMM_CHEB_NODE_HPP_
 #define _PVFMM_CHEB_NODE_HPP_
@@ -75,8 +74,8 @@ class Cheb_Node: public MPI_Node<Real_t>{
 
    public:
 
-     Vector<Real_t> cheb_coord; //Chebyshev point samples.
-     Vector<Real_t> cheb_value;
+     sctl::Vector<Real_t> cheb_coord; //Chebyshev point samples.
+     sctl::Vector<Real_t> cheb_value;
 
      Function_t input_fn; // Function pointer.
      int data_dof;    // Dimension of Chebyshev data.
@@ -97,16 +96,16 @@ class Cheb_Node: public MPI_Node<Real_t>{
   /**
    * \brief Initialize the node by passing the relevant data.
    */
-  virtual void Initialize(TreeNode* parent_, int path2node_, TreeNode::NodeData*);
+  virtual void Initialize(sctl::Iterator<TreeNode> parent_, int path2node_, TreeNode::NodeData*);
 
   /**
    * \brief Returns list of coordinate and value vectors which need to be
    * sorted and partitioned across MPI processes and the scatter index is
    * saved.
    */
-  virtual void NodeDataVec(std::vector<Vector<Real_t>*>& coord,
-                        std::vector<Vector<Real_t>*>& value,
-                        std::vector<Vector<size_t>*>& scatter){
+  virtual void NodeDataVec(std::vector<sctl::Vector<Real_t>*>& coord,
+                        std::vector<sctl::Vector<Real_t>*>& value,
+                        std::vector<sctl::Vector<sctl::Long>*>& scatter){
     MPI_Node<Real_t>::NodeDataVec(coord, value, scatter);
     coord  .push_back(&cheb_coord  );
     value  .push_back(&cheb_value  );
@@ -140,13 +139,13 @@ class Cheb_Node: public MPI_Node<Real_t>{
   /**
    * \brief Chebyshev coefficients for the source distribution.
    */
-  Vector<Real_t>& ChebData(){return cheb_coeff;}
+  sctl::Vector<Real_t>& ChebData(){return cheb_coeff;}
 
   /**
    * \brief Allocate a new object of the same type (as the derived class) and
    * return a pointer to it type cast as (TreeNode*).
    */
-  virtual TreeNode* NewNode(TreeNode* n_=NULL);
+  virtual sctl::Iterator<TreeNode> NewNode(sctl::Iterator<TreeNode> n_=sctl::NullIterator<TreeNode>());
 
   /**
    * \brief Evaluates and returns the subdivision condition for this node.
@@ -157,7 +156,7 @@ class Cheb_Node: public MPI_Node<Real_t>{
   /**
    * \brief Create child nodes and Initialize them.
    */
-  virtual void Subdivide();
+  virtual void Subdivide(sctl::Iterator<TreeNode> self_);
 
   /**
    * \brief Truncates the tree i.e. makes this a leaf node.
@@ -210,9 +209,9 @@ class Cheb_Node: public MPI_Node<Real_t>{
   void Curl();
 
   Function_t input_fn;
-  Vector<Real_t> cheb_coord;   //coordinates of points
-  Vector<Real_t> cheb_value;   //value at points
-  Vector<size_t> cheb_scatter; //scatter index mapping original data.
+  sctl::Vector<Real_t> cheb_coord;   //coordinates of points
+  sctl::Vector<Real_t> cheb_value;   //value at points
+  sctl::Vector<sctl::Long> cheb_scatter; //scatter index mapping original data.
 
  private:
 
@@ -225,7 +224,7 @@ class Cheb_Node: public MPI_Node<Real_t>{
   Real_t tol;
   int cheb_deg;
   int data_dof;
-  Vector<Real_t> cheb_coeff;
+  sctl::Vector<Real_t> cheb_coeff;
 };
 
 }//end namespace

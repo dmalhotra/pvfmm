@@ -6,9 +6,9 @@
  */
 
 #include <vector>
+#include <utility>
 
 #include <pvfmm_common.hpp>
-#include <vector.hpp>
 
 #ifndef _PVFMM_CHEB_UTILS_HPP_
 #define _PVFMM_CHEB_UTILS_HPP_
@@ -52,7 +52,7 @@ T cheb_err(T* cheb_coeff, int deg, int dof);
  * \return Estimate of the truncation error.
  */
 template <class T, class Y>
-T cheb_approx(const T* fn_v, int deg, int dof, T* cheb_coeff, mem::MemoryManager* mem_mgr=NULL);
+T cheb_approx(const T* fn_v, int deg, int dof, T* cheb_coeff);
 
 /**
  * \brief Evaluates polynomial values from input coefficients at points on
@@ -69,14 +69,14 @@ T cheb_approx(const T* fn_v, int deg, int dof, T* cheb_coeff, mem::MemoryManager
  * \param[in] in_z The nodes in [0,1] in the Z-direction.
  */
 template <class T>
-void cheb_eval(const Vector<T>& coeff_, int cheb_deg, const std::vector<T>& in_x, const std::vector<T>& in_y, const std::vector<T>& in_z, Vector<T>& out, mem::MemoryManager* mem_mgr=NULL);
+void cheb_eval(const sctl::Vector<T>& coeff_, int cheb_deg, const std::vector<T>& in_x, const std::vector<T>& in_y, const std::vector<T>& in_z, sctl::Vector<T>& out);
 
 /**
  * \brief Evaluates polynomial values from input coefficients at points
  * defined by the values in the coord vector.
  */
 template <class T>
-void cheb_eval(Vector<T>& coeff_, int cheb_deg, std::vector<T>& coord, Vector<T>& out);
+void cheb_eval(sctl::Vector<T>& coeff_, int cheb_deg, std::vector<T>& coord, sctl::Vector<T>& out);
 
 /**
  * \brief Computes a least squares solution for Chebyshev approximation over a
@@ -93,15 +93,15 @@ void cheb_eval(Vector<T>& coeff_, int cheb_deg, std::vector<T>& coord, Vector<T>
  * \param[out] cheb_coeff Output coefficients.
  */
 template <class T>
-void points2cheb(int deg, T* coord, T* val, int n, int dim, T* node_coord, T node_size, Vector<T>& cheb_coeff);
+void points2cheb(int deg, T* coord, T* val, int n, int dim, T* node_coord, T node_size, sctl::Vector<T>& cheb_coeff);
 
 /**
- * \brief Returns an n-point quadrature rule with points 'x' and weights 'w'.
- * Gauss-Legendre quadrature rule for double precision and Chebyshev quadrature
- * rule for other data types.
+ * \brief Returns const references to the cached n-point Gauss-Legendre
+ * quadrature nodes (on [0,1]) and weights. Rules are precomputed once per
+ * order and reused across calls.
  */
 template <class T>
-void quad_rule(int n, T* x, T* w);
+std::pair<const sctl::Vector<T>&, const sctl::Vector<T>&> quad_rule(int n);
 
 /**
  * \brief
@@ -118,7 +118,7 @@ template <class T>
 std::vector<T> cheb_nodes(int deg, int dim);
 
 template <class T>
-void cheb_grad(const Vector<T>& A, int deg, Vector<T>& B, mem::MemoryManager* mem_mgr=NULL);
+void cheb_grad(const sctl::Vector<T>& A, int deg, sctl::Vector<T>& B);
 
 template <class T>
 void cheb_laplacian(T* A, int deg, T* B);

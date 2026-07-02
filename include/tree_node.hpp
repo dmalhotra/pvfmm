@@ -7,6 +7,7 @@
  */
 
 #include <pvfmm_common.hpp>
+#include <sctl.hpp>
 
 #ifndef _PVFMM_TREE_NODE_HPP_
 #define _PVFMM_TREE_NODE_HPP_
@@ -37,7 +38,7 @@ class TreeNode{
   /**
    * \brief Initialize pointers to NULL
    */
-  TreeNode(): dim(0), depth(0), max_depth(PVFMM_MAX_DEPTH), parent(NULL), child(NULL), status(1) { }
+  TreeNode(): dim(0), depth(0), max_depth(PVFMM_MAX_DEPTH), parent(sctl::NullIterator<TreeNode>()), child(sctl::NullIterator<sctl::Iterator<TreeNode>>()), status(1) { }
 
   /**
    * \brief Virtual destructor
@@ -47,7 +48,7 @@ class TreeNode{
   /**
    * \brief Initialize the node by passing the relevant data.
    */
-  virtual void Initialize(TreeNode* parent_, int path2node_, NodeData* data_) ;
+  virtual void Initialize(sctl::Iterator<TreeNode> parent_, int path2node_, NodeData* data_) ;
 
   /**
    * \brief Clear node data.
@@ -67,17 +68,21 @@ class TreeNode{
   /**
    * \brief Returns 'true' if this is a leaf node.
    */
-  bool IsLeaf(){return child == NULL;}
+  bool IsLeaf(){return child == sctl::NullIterator<sctl::Iterator<TreeNode>>();}
 
   /**
    * \brief Returns the child corresponding to the input parameter.
    */
-  TreeNode* Child(int id);
+  /**
+   * \brief Returns the stored (owning, full-length) allocation iterator of
+   * the child node, as carried forward from its allocation in Subdivide.
+   */
+  sctl::Iterator<TreeNode> Child(int id);
 
   /**
-   * \brief Returns a pointer to the parent node.
+   * \brief Returns the iterator for the parent node.
    */
-  TreeNode* Parent();
+  sctl::Iterator<TreeNode> Parent();
 
   /**
    * \brief Returns the index which corresponds to this node among its
@@ -90,7 +95,7 @@ class TreeNode{
    * \brief Allocate a new object of the same type (as the derived class) and
    * return a pointer to it type cast as (TreeNode*).
    */
-  virtual TreeNode* NewNode(TreeNode* n_=NULL);
+  virtual sctl::Iterator<TreeNode> NewNode(sctl::Iterator<TreeNode> n_=sctl::NullIterator<TreeNode>());
 
   /**
    * \brief Evaluates and returns the subdivision condition for this node.
@@ -99,9 +104,13 @@ class TreeNode{
   virtual bool SubdivCond();
 
   /**
-   * \brief Create child nodes and Initialize them.
+   * \brief Create child nodes and Initialize them. `self_` is this node's
+   * own allocation iterator (C++ erases it at the member-function boundary,
+   * so the caller must supply it). It is copied into the children's `parent`
+   * so node iterators are carried forward from allocation, never
+   * reconstructed from raw pointers.
    */
-  virtual void Subdivide() ;
+  virtual void Subdivide(sctl::Iterator<TreeNode> self_) ;
 
   /**
    * \brief Truncates the tree i.e. makes this a leaf node.
@@ -111,12 +120,12 @@ class TreeNode{
   /**
    * \brief Set the parent for this node.
    */
-  void SetParent(TreeNode* p, int path2node_) ;
+  void SetParent(sctl::Iterator<TreeNode> p, int path2node_) ;
 
   /**
    * \brief Set a child for this node.
    */
-  void SetChild(TreeNode* c, int id) ;
+  void SetChild(sctl::Iterator<TreeNode> c, int id) ;
 
   /**
    * \brief Returns status.
@@ -136,12 +145,14 @@ class TreeNode{
   int depth;             //Depth of the node (root -> 0)
   int max_depth;         //Maximum depth
   int path2node;         //Identity among siblings
-  TreeNode* parent;      //Pointer to parent node
-  TreeNode** child;      //Pointer child nodes
+  sctl::Iterator<TreeNode> parent;      //Iterator for parent node (non-owning backreference)
+  sctl::Iterator<sctl::Iterator<TreeNode>> child;   //Owning iterators for child nodes (array)
   int status;
 
 };
 
 }//end namespace
+
+#include <tree_node.txx>
 
 #endif //_PVFMM_TREE_NODE_HPP_

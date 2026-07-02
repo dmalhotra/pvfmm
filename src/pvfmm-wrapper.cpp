@@ -2,6 +2,23 @@
 #include <pvfmm.hpp>
 #include <pvfmm.h>
 
+#if !defined(SCTL_HAVE_MPI)
+// MPI unavailable: no-op stand-ins so the C/Fortran wrapper still builds.
+// Communicator handles are ignored (single-process / self-communicator).
+#define MPI_COMM_WORLD ((MPI_Comm)0)
+static inline MPI_Comm MPI_Comm_f2c(MPI_Fint f) { (void)f; return (MPI_Comm)0; }
+#endif
+
+// Build an sctl::Comm from a C-API communicator handle (self when built w/o MPI).
+static inline sctl::Comm PVFMMComm(MPI_Comm comm) {
+#if defined(SCTL_HAVE_MPI)
+  return sctl::Comm(comm);
+#else
+  (void)comm;
+  return sctl::Comm();
+#endif
+}
+
 #ifdef __cplusplus
 extern "C" { // Volume FM
 #endif
@@ -13,12 +30,14 @@ extern "C" { // Volume FM
 #endif
 
 static void PVFMMEnsureMPIInitialized() {
+#if defined(SCTL_HAVE_MPI)
   int initialized = 0;
   MPI_Initialized(&initialized);
   if (!initialized) {
     int provided = 0;
     MPI_Init_thread(nullptr, nullptr, MPI_THREAD_FUNNELED, &provided);
   }
+#endif
 }
 
 void* PVFMMCreateVolumeFMMF(int m, int q, enum PVFMMKernel kernel, MPI_Comm comm) {
@@ -31,7 +50,7 @@ void* PVFMMCreateVolumeFMMF(int m, int q, enum PVFMMKernel kernel, MPI_Comm comm
   if (kernel == PVFMMBiotSavartPotential) ker = &pvfmm::BiotSavartKernel<float>::potential();
 
   pvfmm::ChebFMM<float>* matrices = new pvfmm::ChebFMM<float>;
-  matrices->Initialize(m, q, comm, ker);
+  matrices->Initialize(m, q, PVFMMComm(comm), ker);
   return (void*)matrices;
 }
 
@@ -45,7 +64,7 @@ void* PVFMMCreateVolumeTreeF(int cheb_deg, int data_dim, void (*fn_ptr)(const fl
     fn_ptr(coord, n, out, fn_ctx);
   };
 
-  auto* tree = ChebFMM_CreateTree(cheb_deg, data_dim, fn_ptr_, trg_coord_, comm, tol, max_pts, periodic?PVFMM_FULL_PERIODIC:pvfmm::FreeSpace, init_depth);
+  auto* tree = ChebFMM_CreateTree(cheb_deg, data_dim, fn_ptr_, trg_coord_, PVFMMComm(comm), tol, max_pts, periodic?PVFMM_FULL_PERIODIC:pvfmm::FreeSpace, init_depth);
   //tree->Write2File("vis",4);
 
   return (void*)tree;
@@ -61,7 +80,7 @@ void* PVFMMCreateVolumeTreeFromCoeffF(long n_nodes, int cheb_deg, int data_dim, 
   #pragma omp parallel for schedule(static)
   for (long i = 0; i < (long)trg_coord_.size(); i++) trg_coord_[i] = trg_coord[i];
 
-  auto* tree = ChebFMM_CreateTree(cheb_deg, node_coord_, fn_coeff_, trg_coord_, comm, periodic?PVFMM_FULL_PERIODIC:pvfmm::FreeSpace);
+  auto* tree = ChebFMM_CreateTree(cheb_deg, node_coord_, fn_coeff_, trg_coord_, PVFMMComm(comm), periodic?PVFMM_FULL_PERIODIC:pvfmm::FreeSpace);
   //tree->Write2File("vis",4);
 
   return (void*)tree;
@@ -139,7 +158,7 @@ void* PVFMMCreateVolumeFMMD(int m, int q, enum PVFMMKernel kernel, MPI_Comm comm
   if (kernel == PVFMMBiotSavartPotential) ker = &pvfmm::BiotSavartKernel<double>::potential();
 
   pvfmm::ChebFMM<double>* matrices = new pvfmm::ChebFMM<double>;
-  matrices->Initialize(m, q, comm, ker);
+  matrices->Initialize(m, q, PVFMMComm(comm), ker);
   return (void*)matrices;
 }
 
@@ -153,7 +172,7 @@ void* PVFMMCreateVolumeTreeD(int cheb_deg, int data_dim, void (*fn_ptr)(const do
     fn_ptr(coord, n, out, fn_ctx);
   };
 
-  auto* tree = ChebFMM_CreateTree(cheb_deg, data_dim, fn_ptr_, trg_coord_, comm, tol, max_pts, periodic?PVFMM_FULL_PERIODIC:pvfmm::FreeSpace, init_depth);
+  auto* tree = ChebFMM_CreateTree(cheb_deg, data_dim, fn_ptr_, trg_coord_, PVFMMComm(comm), tol, max_pts, periodic?PVFMM_FULL_PERIODIC:pvfmm::FreeSpace, init_depth);
   //tree->Write2File("vis",4);
 
   return (void*)tree;
@@ -169,7 +188,7 @@ void* PVFMMCreateVolumeTreeFromCoeffD(long n_nodes, int cheb_deg, int data_dim, 
   #pragma omp parallel for schedule(static)
   for (long i = 0; i < (long)trg_coord_.size(); i++) trg_coord_[i] = trg_coord[i];
 
-  auto* tree = ChebFMM_CreateTree(cheb_deg, node_coord_, fn_coeff_, trg_coord_, comm, periodic?PVFMM_FULL_PERIODIC:pvfmm::FreeSpace);
+  auto* tree = ChebFMM_CreateTree(cheb_deg, node_coord_, fn_coeff_, trg_coord_, PVFMMComm(comm), periodic?PVFMM_FULL_PERIODIC:pvfmm::FreeSpace);
   //tree->Write2File("vis",4);
 
   return (void*)tree;
@@ -257,7 +276,7 @@ void pvfmmcreatevolumetreef_(void** ctx, const int32_t* cheb_deg, const int32_t*
   };
 
   const MPI_Comm comm = MPI_Comm_f2c(*fcomm);
-  auto* tree = ChebFMM_CreateTree(*cheb_deg, *data_dim, fn_ptr_, trg_coord_, comm, *tol, *max_pts, (*periodic)==0?pvfmm::FreeSpace:PVFMM_FULL_PERIODIC, *init_depth);
+  auto* tree = ChebFMM_CreateTree(*cheb_deg, *data_dim, fn_ptr_, trg_coord_, PVFMMComm(comm), *tol, *max_pts, (*periodic)==0?pvfmm::FreeSpace:PVFMM_FULL_PERIODIC, *init_depth);
   //tree->Write2File("vis",4);
 
   (*ctx) = (void*)tree;
@@ -319,7 +338,7 @@ void pvfmmcreatevolumetreed_(void** ctx, const int32_t* cheb_deg, const int32_t*
   };
 
   const MPI_Comm comm = MPI_Comm_f2c(*fcomm);
-  auto* tree = ChebFMM_CreateTree(*cheb_deg, *data_dim, fn_ptr_, trg_coord_, comm, *tol, *max_pts, (*periodic)==0?pvfmm::FreeSpace:PVFMM_FULL_PERIODIC, *init_depth);
+  auto* tree = ChebFMM_CreateTree(*cheb_deg, *data_dim, fn_ptr_, trg_coord_, PVFMMComm(comm), *tol, *max_pts, (*periodic)==0?pvfmm::FreeSpace:PVFMM_FULL_PERIODIC, *init_depth);
   //tree->Write2File("vis",4);
 
   (*ctx) = (void*)tree;
@@ -375,7 +394,8 @@ template<typename Real> struct PVFMMContext{
   int max_depth;
   pvfmm::BoundaryType bndry;
   const pvfmm::Kernel<Real>* ker;
-  MPI_Comm comm;
+  MPI_Comm comm;            // raw handle kept for the C/Fortran API boundary.
+  sctl::Comm sctl_comm;     // sctl wrapper around `comm`, used by sctl::Profile.
 
   typename Node_t::NodeData tree_data;
   Tree_t* tree;
@@ -383,8 +403,9 @@ template<typename Real> struct PVFMMContext{
 };
 
 template<typename Real> static void* PVFMMCreateContext(Real box_size, int n, int m, int max_d, const pvfmm::Kernel<Real>* ker, MPI_Comm comm) {
-  pvfmm::Profile::Tic("FMMContext", &comm, true);
-  bool prof_state=pvfmm::Profile::Enable(false);
+  const sctl::Comm sctl_comm = PVFMMComm(comm);
+  sctl::Profile::Tic("FMMContext", &sctl_comm, true);
+  bool prof_state=sctl::Profile::Enable(false);
 
   // Create new context.
   PVFMMContext<Real>* ctx = new PVFMMContext<Real>;
@@ -404,10 +425,11 @@ template<typename Real> static void* PVFMMCreateContext(Real box_size, int n, in
   }
   ctx->ker=ker;
   ctx->comm=comm;
+  ctx->sctl_comm=sctl_comm;  // share ref-counted Impl, no extra MPI_Comm_dup.
 
   // Initialize FMM matrices.
   ctx->mat=new typename PVFMMContext<Real>::Mat_t();
-  ctx->mat->Initialize(ctx->mult_order, ctx->comm, ctx->ker);
+  ctx->mat->Initialize(ctx->mult_order, PVFMMComm(ctx->comm), ctx->ker);
 
   // Set tree_data
   ctx->tree_data.dim=PVFMM_COORD_DIM;
@@ -415,8 +437,8 @@ template<typename Real> static void* PVFMMCreateContext(Real box_size, int n, in
   ctx->tree_data.max_pts=ctx->max_pts;
   { // ctx->tree_data.pt_coord=... //Set points for initial tree.
     int np, myrank;
-    MPI_Comm_size(ctx->comm, &np);
-    MPI_Comm_rank(ctx->comm, &myrank);
+    np = ctx->sctl_comm.Size();
+    myrank = ctx->sctl_comm.Rank();
 
     std::vector<Real> coord;
     size_t NN=(size_t)ceil(pow((Real)np*ctx->max_pts,1.0/3.0));
@@ -433,12 +455,12 @@ template<typename Real> static void* PVFMMCreateContext(Real box_size, int n, in
 
   // Construct tree.
   bool adap=false; // no data to do adaptive.
-  ctx->tree=new typename PVFMMContext<Real>::Tree_t(comm);
+  ctx->tree=new typename PVFMMContext<Real>::Tree_t(PVFMMComm(comm));
   ctx->tree->Initialize(&ctx->tree_data);
   ctx->tree->InitFMM_Tree(adap,ctx->bndry);
 
-  pvfmm::Profile::Enable(prof_state);
-  pvfmm::Profile::Toc();
+  sctl::Profile::Enable(prof_state);
+  sctl::Profile::Toc();
   return ctx;
 }
 
@@ -453,20 +475,20 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
   PVFMMContext<Real>* ctx=(PVFMMContext<Real>*)ctx_;
   const int* ker_dim=ctx->ker->ker_dim;
 
-  pvfmm::Profile::Tic("FMM",&ctx->comm);
+  sctl::Profile::Tic("FMM", &ctx->sctl_comm);
   Real scale_x, shift_x[PVFMM_COORD_DIM];
   if(ctx->box_size<=0){ // determine bounding box
     Real s0, x0[PVFMM_COORD_DIM];
     Real s1, x1[PVFMM_COORD_DIM];
 
-    auto PVFMMBoundingBox = [](size_t n_src, const Real* x, Real* scale_xr, Real* shift_xr, MPI_Comm comm){
+    auto PVFMMBoundingBox = [](size_t n_src, const Real* x, Real* scale_xr, Real* shift_xr, const sctl::Comm& comm){
       Real& scale_x=*scale_xr;
       Real* shift_x= shift_xr;
 
       assert(n_src>0);
       { // Compute bounding box
-        double loc_min_x[PVFMM_COORD_DIM];
-        double loc_max_x[PVFMM_COORD_DIM];
+        sctl::StaticArray<double,PVFMM_COORD_DIM> loc_min_x;
+        sctl::StaticArray<double,PVFMM_COORD_DIM> loc_max_x;
         assert(n_src>0);
         for(size_t k=0;k<PVFMM_COORD_DIM;k++){
           loc_min_x[k]=loc_max_x[k]=x[k];
@@ -481,10 +503,10 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
           }
         }
 
-        double min_x[PVFMM_COORD_DIM];
-        double max_x[PVFMM_COORD_DIM];
-        MPI_Allreduce(loc_min_x, min_x, PVFMM_COORD_DIM, MPI_DOUBLE, MPI_MIN, comm);
-        MPI_Allreduce(loc_max_x, max_x, PVFMM_COORD_DIM, MPI_DOUBLE, MPI_MAX, comm);
+        sctl::StaticArray<double,PVFMM_COORD_DIM> min_x;
+        sctl::StaticArray<double,PVFMM_COORD_DIM> max_x;
+        comm.Allreduce<double>(loc_min_x, min_x, PVFMM_COORD_DIM, sctl::CommOp::MIN);
+        comm.Allreduce<double>(loc_max_x, max_x, PVFMM_COORD_DIM, sctl::CommOp::MAX);
 
         Real eps=sctl::machine_eps<Real>()*64; // Points should be well within the box.
         scale_x=1/(Real)(max_x[0]-min_x[0]+2*eps);
@@ -497,8 +519,8 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
         }
       }
     };
-    PVFMMBoundingBox(n_src, src_pos, &s0, x0, ctx->comm);
-    PVFMMBoundingBox(n_trg, trg_pos, &s1, x1, ctx->comm);
+    PVFMMBoundingBox(n_src, src_pos, &s0, x0, ctx->sctl_comm);
+    PVFMMBoundingBox(n_trg, trg_pos, &s1, x1, ctx->sctl_comm);
 
     Real c0[PVFMM_COORD_DIM]={(Real)(0.5-x0[0])/s0, (Real)(0.5-x0[1])/s0, (Real)(0.5-x0[2])/s0};
     Real c1[PVFMM_COORD_DIM]={(Real)(0.5-x1[0])/s1, (Real)(0.5-x1[1])/s1, (Real)(0.5-x1[2])/s1};
@@ -519,53 +541,53 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
     shift_x[2]=0;
   }
 
-  pvfmm::Vector<Real>  src_scal;
-  pvfmm::Vector<Real>  trg_scal;
-  pvfmm::Vector<Real> surf_scal;
+  sctl::Vector<Real>  src_scal;
+  sctl::Vector<Real>  trg_scal;
+  sctl::Vector<Real> surf_scal;
   { // Set src_scal, trg_scal
-    pvfmm::Vector<Real>& src_scal_exp=ctx->ker->src_scal;
-    pvfmm::Vector<Real>& trg_scal_exp=ctx->ker->trg_scal;
+    sctl::Vector<Real>& src_scal_exp=ctx->ker->src_scal;
+    sctl::Vector<Real>& trg_scal_exp=ctx->ker->trg_scal;
     src_scal .ReInit(ctx->ker->src_scal.Dim());
     trg_scal .ReInit(ctx->ker->trg_scal.Dim());
     surf_scal.ReInit(PVFMM_COORD_DIM+src_scal.Dim());
-    for(size_t i=0;i<src_scal.Dim();i++){
+    for(sctl::Long i=0;i<src_scal.Dim();i++){
       src_scal [i]=sctl::pow(scale_x, src_scal_exp[i]);
       surf_scal[i]=scale_x*src_scal[i];
     }
-    for(size_t i=0;i<trg_scal.Dim();i++){
+    for(sctl::Long i=0;i<trg_scal.Dim();i++){
       trg_scal[i]=sctl::pow(scale_x, trg_scal_exp[i]);
     }
-    for(size_t i=src_scal.Dim();i<surf_scal.Dim();i++){
+    for(sctl::Long i=src_scal.Dim();i<surf_scal.Dim();i++){
       surf_scal[i]=1;
     }
   }
 
-  pvfmm::Vector<size_t> scatter_index;
+  sctl::Vector<sctl::Long> scatter_index;
   { // Set tree_data
-    pvfmm::Vector<Real>&  trg_coord=ctx->tree_data. trg_coord;
-    pvfmm::Vector<Real>&  src_coord=ctx->tree_data. src_coord;
-    pvfmm::Vector<Real>&  src_value=ctx->tree_data. src_value;
-    pvfmm::Vector<Real>& surf_value=ctx->tree_data.surf_value;
-    pvfmm::Vector<pvfmm::MortonId> pt_mid;
+    sctl::Vector<Real>&  trg_coord=ctx->tree_data. trg_coord;
+    sctl::Vector<Real>&  src_coord=ctx->tree_data. src_coord;
+    sctl::Vector<Real>&  src_value=ctx->tree_data. src_value;
+    sctl::Vector<Real>& surf_value=ctx->tree_data.surf_value;
+    sctl::Vector<pvfmm::MortonId> pt_mid;
 
     std::vector<Node_t*> nodes;
     { // Get list of leaf nodes.
-      std::vector<Node_t*>& all_nodes=ctx->tree->GetNodeList();
+      std::vector<sctl::Iterator<Node_t>>& all_nodes=ctx->tree->GetNodeList();
       for(size_t i=0;i<all_nodes.size();i++){
         if(all_nodes[i]->IsLeaf() && !all_nodes[i]->IsGhost()){
-          nodes.push_back(all_nodes[i]);
+          nodes.push_back(&all_nodes[i][0]);
         }
       }
     }
 
     pvfmm::MortonId min_mid;
     { // Get first MortonId
-      Node_t* n=ctx->tree->PreorderFirst();
-      while(n!=NULL){
+      sctl::Iterator<Node_t> n=ctx->tree->PreorderFirst();
+      while(n!=sctl::NullIterator<Node_t>()){
         if(!n->IsGhost() && n->IsLeaf()) break;
         n=ctx->tree->PreorderNxt(n);
       }
-      assert(n!=NULL);
+      assert(n!=sctl::NullIterator<Node_t>());
       min_mid=n->GetMortonId();
     }
 
@@ -586,7 +608,7 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
               while(src_coord[i*PVFMM_COORD_DIM+j]< 0.0) src_coord[i*PVFMM_COORD_DIM+j]+=1;
               while(src_coord[i*PVFMM_COORD_DIM+j]>=1.0) src_coord[i*PVFMM_COORD_DIM+j]-=1;
             }
-            pt_mid[i]=pvfmm::MortonId(&src_coord[i*PVFMM_COORD_DIM]);
+            pt_mid[i]=pvfmm::MortonId(sctl::Ptr2ConstItr<Real>(&src_coord[i*PVFMM_COORD_DIM],3));
           }
           if(src_value.Dim()) for(size_t i=a;i<b;i++){
             for(int j=0;j<ker_dim[0];j++){
@@ -601,18 +623,18 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
         }
 
         // Scatter src coordinates and values.
-        pvfmm::par::SortScatterIndex( pt_mid  , scatter_index, ctx->comm, &min_mid);
-        pvfmm::par::ScatterForward  ( pt_mid  , scatter_index, ctx->comm);
-        pvfmm::par::ScatterForward  (src_coord, scatter_index, ctx->comm);
-        if( src_value.Dim()) pvfmm::par::ScatterForward( src_value, scatter_index, ctx->comm);
-        if(surf_value.Dim()) pvfmm::par::ScatterForward(surf_value, scatter_index, ctx->comm);
+        ctx->sctl_comm.SortScatterIndex( pt_mid  , scatter_index, &min_mid);
+        ctx->sctl_comm.ScatterForward( pt_mid  , scatter_index);
+        ctx->sctl_comm.ScatterForward(src_coord, scatter_index);
+        if( src_value.Dim()) ctx->sctl_comm.ScatterForward( src_value, scatter_index);
+        if(surf_value.Dim()) ctx->sctl_comm.ScatterForward(surf_value, scatter_index);
       }
       { // Set src tree_data
         std::vector<size_t> part_indx(nodes.size()+1);
         part_indx[nodes.size()]=pt_mid.Dim();
         #pragma omp parallel for
         for(size_t j=0;j<nodes.size();j++){
-          part_indx[j]=std::lower_bound(&pt_mid[0], &pt_mid[0]+pt_mid.Dim(), nodes[j]->GetMortonId())-&pt_mid[0];
+          part_indx[j]=std::lower_bound(pt_mid.begin(), pt_mid.begin()+pt_mid.Dim(), nodes[j]->GetMortonId())-pt_mid.begin();
         }
 
         if(setup){
@@ -620,18 +642,18 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
           for(size_t j=0;j<nodes.size();j++){
             size_t n_pts=part_indx[j+1]-part_indx[j];
             if(src_value.Dim()){
-              nodes[j]-> src_coord.ReInit(n_pts*( PVFMM_COORD_DIM),& src_coord[0]+part_indx[j]*( PVFMM_COORD_DIM),false);
-              nodes[j]-> src_value.ReInit(n_pts*(ker_dim[0]),& src_value[0]+part_indx[j]*(ker_dim[0]),false);
+              nodes[j]-> src_coord.ReInit(n_pts*( PVFMM_COORD_DIM), src_coord.begin()+part_indx[j]*( PVFMM_COORD_DIM),false);
+              nodes[j]-> src_value.ReInit(n_pts*(ker_dim[0]), src_value.begin()+part_indx[j]*(ker_dim[0]),false);
             }else{
-              nodes[j]-> src_coord.ReInit(0,NULL,false);
-              nodes[j]-> src_value.ReInit(0,NULL,false);
+              nodes[j]-> src_coord.ReInit(0,sctl::NullIterator<Real>(),false);
+              nodes[j]-> src_value.ReInit(0,sctl::NullIterator<Real>(),false);
             }
             if(surf_value.Dim()){
-              nodes[j]->surf_coord.ReInit(n_pts*(           PVFMM_COORD_DIM),& src_coord[0]+part_indx[j]*(           PVFMM_COORD_DIM),false);
-              nodes[j]->surf_value.ReInit(n_pts*(ker_dim[0]+PVFMM_COORD_DIM),&surf_value[0]+part_indx[j]*(ker_dim[0]+PVFMM_COORD_DIM),false);
+              nodes[j]->surf_coord.ReInit(n_pts*(           PVFMM_COORD_DIM), src_coord.begin()+part_indx[j]*(           PVFMM_COORD_DIM),false);
+              nodes[j]->surf_value.ReInit(n_pts*(ker_dim[0]+PVFMM_COORD_DIM), surf_value.begin()+part_indx[j]*(ker_dim[0]+PVFMM_COORD_DIM),false);
             }else{
-              nodes[j]->surf_coord.ReInit(0,NULL,false);
-              nodes[j]->surf_value.ReInit(0,NULL,false);
+              nodes[j]->surf_coord.ReInit(0,sctl::NullIterator<Real>(),false);
+              nodes[j]->surf_value.ReInit(0,sctl::NullIterator<Real>(),false);
             }
           }
         }else{
@@ -639,16 +661,16 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
           for(size_t j=0;j<nodes.size();j++){
             size_t n_pts=part_indx[j+1]-part_indx[j];
             if(src_value.Dim()){
-              assert(nodes[j]->src_coord.Dim()==n_pts*( PVFMM_COORD_DIM));
-              assert(nodes[j]->src_value.Dim()==n_pts*(ker_dim[0]));
+              assert((size_t)nodes[j]->src_coord.Dim()==n_pts*( PVFMM_COORD_DIM));
+              assert((size_t)nodes[j]->src_value.Dim()==n_pts*(ker_dim[0]));
               //memcpy(&nodes[j]->src_coord[0],&src_coord[0]+part_indx[j]*( PVFMM_COORD_DIM),n_pts*( PVFMM_COORD_DIM)*sizeof(Real));
-              memcpy(&nodes[j]->src_value[0],&src_value[0]+part_indx[j]*(ker_dim[0]),n_pts*(ker_dim[0])*sizeof(Real));
+              memcpy(nodes[j]->src_value.begin(),src_value.begin()+part_indx[j]*(ker_dim[0]),n_pts*(ker_dim[0])*sizeof(Real));
             }
             if(surf_value.Dim()){
-              assert(nodes[j]->surf_coord.Dim()==n_pts*(           PVFMM_COORD_DIM));
-              assert(nodes[j]->surf_value.Dim()==n_pts*(ker_dim[0]+PVFMM_COORD_DIM));
+              assert((size_t)nodes[j]->surf_coord.Dim()==n_pts*(           PVFMM_COORD_DIM));
+              assert((size_t)nodes[j]->surf_value.Dim()==n_pts*(ker_dim[0]+PVFMM_COORD_DIM));
               //memcpy(&nodes[j]->surf_coord[0],& src_coord[0]+part_indx[j]*(           PVFMM_COORD_DIM),n_pts*(           PVFMM_COORD_DIM)*sizeof(Real));
-              memcpy(&nodes[j]->surf_value[0],&surf_value[0]+part_indx[j]*(ker_dim[0]+PVFMM_COORD_DIM),n_pts*(ker_dim[0]+PVFMM_COORD_DIM)*sizeof(Real));
+              memcpy(nodes[j]->surf_value.begin(),surf_value.begin()+part_indx[j]*(ker_dim[0]+PVFMM_COORD_DIM),n_pts*(ker_dim[0]+PVFMM_COORD_DIM)*sizeof(Real));
             }
           }
         }
@@ -656,10 +678,10 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
     }
     { // Set trg tree_data
       if(trg_pos==src_pos && n_src==n_trg){ // Scatter trg data
-        trg_coord.ReInit(src_coord.Dim(),&src_coord[0],false);
+        trg_coord.ReInit(src_coord.Dim(),src_coord.begin(),false);
       }else{
         // Compute MortonId and copy coordinates.
-        trg_coord.Resize(n_trg*PVFMM_COORD_DIM);
+        if((size_t)trg_coord.Dim()!=(size_t)(n_trg*PVFMM_COORD_DIM)) trg_coord.ReInit(n_trg*PVFMM_COORD_DIM);
         pt_mid    .ReInit(n_trg);
         #pragma omp parallel for
         for(size_t tid=0;tid<omp_p;tid++){
@@ -671,21 +693,21 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
               while(trg_coord[i*PVFMM_COORD_DIM+j]< 0.0) trg_coord[i*PVFMM_COORD_DIM+j]+=1;
               while(trg_coord[i*PVFMM_COORD_DIM+j]>=1.0) trg_coord[i*PVFMM_COORD_DIM+j]-=1;
             }
-            pt_mid[i]=pvfmm::MortonId(&trg_coord[i*PVFMM_COORD_DIM]);
+            pt_mid[i]=pvfmm::MortonId(sctl::Ptr2ConstItr<Real>(&trg_coord[i*PVFMM_COORD_DIM],3));
           }
         }
 
         // Scatter trg coordinates.
-        pvfmm::par::SortScatterIndex( pt_mid  , scatter_index, ctx->comm, &min_mid);
-        pvfmm::par::ScatterForward  ( pt_mid  , scatter_index, ctx->comm);
-        pvfmm::par::ScatterForward  (trg_coord, scatter_index, ctx->comm);
+        ctx->sctl_comm.SortScatterIndex( pt_mid  , scatter_index, &min_mid);
+        ctx->sctl_comm.ScatterForward( pt_mid  , scatter_index);
+        ctx->sctl_comm.ScatterForward(trg_coord, scatter_index);
       }
       { // Set trg tree_data
         std::vector<size_t> part_indx(nodes.size()+1);
         part_indx[nodes.size()]=pt_mid.Dim();
         #pragma omp parallel for
         for(size_t j=0;j<nodes.size();j++){
-          part_indx[j]=std::lower_bound(&pt_mid[0], &pt_mid[0]+pt_mid.Dim(), nodes[j]->GetMortonId())-&pt_mid[0];
+          part_indx[j]=std::lower_bound(pt_mid.begin(), pt_mid.begin()+pt_mid.Dim(), nodes[j]->GetMortonId())-pt_mid.begin();
         }
 
         if(setup){
@@ -693,7 +715,7 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
           for(size_t j=0;j<nodes.size();j++){
             size_t n_pts=part_indx[j+1]-part_indx[j];
             {
-              nodes[j]-> trg_coord.ReInit(n_pts*(PVFMM_COORD_DIM),& trg_coord[0]+part_indx[j]*(PVFMM_COORD_DIM),false);
+              nodes[j]-> trg_coord.ReInit(n_pts*(PVFMM_COORD_DIM), trg_coord.begin()+part_indx[j]*(PVFMM_COORD_DIM),false);
             }
           }
         }else{
@@ -701,7 +723,7 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
           for(size_t j=0;j<nodes.size();j++){
             size_t n_pts=part_indx[j+1]-part_indx[j];
             {
-              assert(nodes[j]->trg_coord.Dim()==n_pts*(PVFMM_COORD_DIM));
+              assert((size_t)nodes[j]->trg_coord.Dim()==n_pts*(PVFMM_COORD_DIM));
               //memcpy(&nodes[j]->trg_coord[0],&trg_coord[0]+part_indx[j]*(PVFMM_COORD_DIM),n_pts*(PVFMM_COORD_DIM)*sizeof(Real));
             }
           }
@@ -718,16 +740,15 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
 
       PVFMMContext<Real>* ctx=(PVFMMContext<Real>*)ctx_;
 
-      int np, myrank;
-      MPI_Comm_size(ctx->comm, &np);
-      MPI_Comm_rank(ctx->comm, &myrank);
+      int myrank;
+      myrank = ctx->sctl_comm.Rank();
 
       long nleaf=0, maxdepth=0;
       std::vector<size_t> all_nodes(PVFMM_MAX_DEPTH+1,0);
       std::vector<size_t> leaf_nodes(PVFMM_MAX_DEPTH+1,0);
-      std::vector<Node_t*>& nodes=ctx->tree->GetNodeList();
+      std::vector<sctl::Iterator<Node_t>>& nodes=ctx->tree->GetNodeList();
       for(size_t i=0;i<nodes.size();i++){
-        Node_t* n=nodes[i];
+        sctl::Iterator<Node_t> n=nodes[i];
         if(!n->IsGhost()) all_nodes[n->Depth()]++;
         if(!n->IsGhost() && n->IsLeaf()){
           leaf_nodes[n->Depth()]++;
@@ -741,7 +762,7 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
       for(int i=0;i<PVFMM_MAX_DEPTH;i++){
         int local_size=all_nodes[i];
         int global_size;
-        MPI_Allreduce(&local_size, &global_size, 1, MPI_INT, MPI_SUM, ctx->comm);
+        ctx->sctl_comm.Allreduce(sctl::Ptr2ConstItr<int>(&local_size,1), sctl::Ptr2Itr<int>(&global_size,1), 1, sctl::CommOp::SUM);
         os1<<global_size<<' ';
       }
       if(!myrank) std::cout<<os1.str()<<'\n';
@@ -750,15 +771,15 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
       for(int i=0;i<PVFMM_MAX_DEPTH;i++){
         int local_size=leaf_nodes[i];
         int global_size;
-        MPI_Allreduce(&local_size, &global_size, 1, MPI_INT, MPI_SUM, ctx->comm);
+        ctx->sctl_comm.Allreduce(sctl::Ptr2ConstItr<int>(&local_size,1), sctl::Ptr2Itr<int>(&global_size,1), 1, sctl::CommOp::SUM);
         os2<<global_size<<' ';
       }
       if(!myrank) std::cout<<os2.str()<<'\n';
 
       long nleaf_glb=0, maxdepth_glb=0;
       { // MPI_Reduce
-        MPI_Allreduce(&nleaf, &nleaf_glb, 1, MPI_INT, MPI_SUM, ctx->comm);
-        MPI_Allreduce(&maxdepth, &maxdepth_glb, 1, MPI_INT, MPI_MAX, ctx->comm);
+        ctx->sctl_comm.Allreduce(sctl::Ptr2ConstItr<int>(&nleaf,1), sctl::Ptr2Itr<int>((int*)&nleaf_glb,1), 1, sctl::CommOp::SUM);
+        ctx->sctl_comm.Allreduce(sctl::Ptr2ConstItr<int>(&maxdepth,1), sctl::Ptr2Itr<int>((int*)&maxdepth_glb,1), 1, sctl::CommOp::MAX);
       }
       if(!myrank) std::cout<<"Number of Leaf Nodes: "<<nleaf_glb<<'\n';
       if(!myrank) std::cout<<"Tree Depth: "<<maxdepth_glb<<'\n';
@@ -775,27 +796,26 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
   ctx->tree->RunFMM();
 
   { // Get target potential.
-    pvfmm::Vector<Real> trg_value;
+    sctl::Vector<Real> trg_value;
     { // Get trg data.
-      Node_t* n=NULL;
-      n=ctx->tree->PreorderFirst();
-      while(n!=NULL){
+      sctl::Iterator<Node_t> n=ctx->tree->PreorderFirst();
+      while(n!=sctl::NullIterator<Node_t>()){
         if(!n->IsGhost() && n->IsLeaf()) break;
         n=ctx->tree->PreorderNxt(n);
       }
-      assert(n!=NULL);
+      assert(n!=sctl::NullIterator<Node_t>());
 
       size_t trg_size=0;
-      const std::vector<Node_t*>& nodes=ctx->tree->GetNodeList();
+      const std::vector<sctl::Iterator<Node_t>>& nodes=ctx->tree->GetNodeList();
       #pragma omp parallel for reduction(+:trg_size)
       for(size_t i=0;i<nodes.size();i++){
         if(nodes[i]->IsLeaf() && !nodes[i]->IsGhost()){
           trg_size+=nodes[i]->trg_value.Dim();
         }
       }
-      trg_value.ReInit(trg_size,&n->trg_value[0]);
+      trg_value.ReInit(trg_size,n->trg_value.begin());
     }
-    pvfmm::par::ScatterReverse  (trg_value, scatter_index, ctx->comm, n_trg);
+    ctx->sctl_comm.ScatterReverse(trg_value, scatter_index, n_trg);
     #pragma omp parallel for
     for(size_t tid=0;tid<omp_p;tid++){
       size_t a=((tid+0)*n_trg)/omp_p;
@@ -807,7 +827,7 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
       }
     }
   }
-  pvfmm::Profile::Toc();
+  sctl::Profile::Toc();
 }
 
 template<typename Real> static void PVFMMDestroyContext(void** ctx){

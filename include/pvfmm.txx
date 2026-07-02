@@ -8,17 +8,15 @@
 #include <mpi_node.hpp>
 #include <fmm_tree.hpp>
 #include <fmm_pts.hpp>
-#include <vector.hpp>
-#include <parUtils.h>
+#include <pvfmm_common.hpp>
 
 namespace pvfmm{
 
 template <class Real>
-inline ChebFMM_Tree<Real>* ChebFMM_CreateTree(int cheb_deg, int data_dim, ChebFn<Real> fn_ptr, const std::vector<Real>& trg_coord, MPI_Comm comm,
+inline ChebFMM_Tree<Real>* ChebFMM_CreateTree(int cheb_deg, int data_dim, ChebFn<Real> fn_ptr, const std::vector<Real>& trg_coord, const sctl::Comm& comm,
                                               Real tol, int max_pts, BoundaryType bndry, int init_depth){
-  int np, myrank;
-  MPI_Comm_size(comm, &np);
-  MPI_Comm_rank(comm, &myrank);
+  const int np = comm.Size();
+  const int myrank = comm.Rank();
 
   typename ChebFMM_Node<Real>::NodeData tree_data;
   tree_data.cheb_deg=cheb_deg;
@@ -57,11 +55,7 @@ inline ChebFMM_Tree<Real>* ChebFMM_CreateTree(int cheb_deg, int data_dim, ChebFn
 }
 
 template <class Real>
-inline ChebFMM_Tree<Real>* ChebFMM_CreateTree(int cheb_deg, const std::vector<Real>& node_coord, const std::vector<Real>& fn_coeff, const std::vector<Real>& trg_coord, MPI_Comm comm, BoundaryType bndry){
-  int np, myrank;
-  MPI_Comm_size(comm, &np);
-  MPI_Comm_rank(comm, &myrank);
-
+inline ChebFMM_Tree<Real>* ChebFMM_CreateTree(int cheb_deg, const std::vector<Real>& node_coord, const std::vector<Real>& fn_coeff, const std::vector<Real>& trg_coord, const sctl::Comm& comm, BoundaryType bndry){
   typename ChebFMM_Node<Real>::NodeData tree_data;
   tree_data.input_fn=ChebFn<Real>();
   tree_data.tol=0;
@@ -76,8 +70,9 @@ inline ChebFMM_Tree<Real>* ChebFMM_CreateTree(int cheb_deg, const std::vector<Re
   tree_data.pt_coord=node_coord;
   const long Ncoeff = (cheb_deg+1)*(cheb_deg+2)*(cheb_deg+3)/6;
   { // Set data_dof
-    long long glb_size[2], loc_size[2] = {(long long)node_coord.size()/PVFMM_COORD_DIM, (long long)fn_coeff.size()/Ncoeff};
-    MPI_Allreduce(&loc_size, &glb_size, 2, par::Mpi_datatype<long long>::value(), par::Mpi_datatype<long long>::sum(), comm);
+    sctl::StaticArray<long long,2> glb_size, loc_size;
+    loc_size[0]=(long long)node_coord.size()/PVFMM_COORD_DIM; loc_size[1]=(long long)fn_coeff.size()/Ncoeff;
+    comm.Allreduce<long long>(loc_size, glb_size, 2, sctl::CommOp::SUM);
     tree_data.data_dof = glb_size[1]/glb_size[0];
   }
   assert(node_coord.size() && (node_coord.size()/PVFMM_COORD_DIM)*PVFMM_COORD_DIM == node_coord.size());
@@ -106,24 +101,24 @@ template <class Real>
 inline void ChebFMM_Evaluate(std::vector<Real>& trg_val, ChebFMM_Tree<Real>* tree, size_t loc_size){
   tree->RunFMM();
 
-  Vector<Real> trg_value;
-  Vector<size_t> trg_scatter;
+  sctl::Vector<Real> trg_value;
+  sctl::Vector<sctl::Long> trg_scatter;
   {// Collect data from each node to trg_value and trg_scatter.
     std::vector<Real> trg_value_;
-    std::vector<size_t> trg_scatter_;
+    std::vector<sctl::Long> trg_scatter_;
     const auto& nodes=tree->GetNodeList();
     for(size_t i=0;i<nodes.size();i++){
       if(nodes[i]->IsLeaf() && !nodes[i]->IsGhost()){
         const auto& trg_value=nodes[i]->trg_value;
         const auto& trg_scatter=nodes[i]->trg_scatter;
-        for(size_t j=0;j<trg_value.Dim();j++) trg_value_.push_back(trg_value[j]);
-        for(size_t j=0;j<trg_scatter.Dim();j++) trg_scatter_.push_back(trg_scatter[j]);
+        for(sctl::Long j=0;j<trg_value.Dim();j++) trg_value_.push_back(trg_value[j]);
+        for(sctl::Long j=0;j<trg_scatter.Dim();j++) trg_scatter_.push_back(trg_scatter[j]);
       }
     }
     trg_value=trg_value_;
     trg_scatter=trg_scatter_;
   }
-  par::ScatterReverse(trg_value,trg_scatter,*tree->Comm(),loc_size);
+  tree->Comm().ScatterReverse(trg_value,trg_scatter,loc_size);
   trg_val.assign(&trg_value[0],&trg_value[0]+trg_value.Dim());;
 }
 
@@ -133,8 +128,8 @@ inline void ChebFMM_GetPotentialCoeff(std::vector<Real>& coeff, ChebFMM_Tree<Rea
   const auto& nodes=tree->GetNodeList();
   for(size_t i=0;i<nodes.size();i++){
     if(nodes[i]->IsLeaf() && !nodes[i]->IsGhost()){
-      Vector<Real>& cheb_out =((typename ChebFMM<Real>::FMMData*)nodes[i]->FMMData())->cheb_out;
-      for (size_t k = 0; k < cheb_out.Dim(); k++) {
+      sctl::Vector<Real>& cheb_out =((typename ChebFMM<Real>::FMMData*)nodes[i]->FMMData())->cheb_out;
+      for (sctl::Long k = 0; k < cheb_out.Dim(); k++) {
         coeff.push_back(cheb_out[k]);
       }
     }
@@ -167,19 +162,19 @@ void ChebFMM_Coeff2Nodes(std::vector<Real>& node_val, int ChebDeg, int dof, cons
 
   #pragma omp parallel
   {
-    Vector<Real> buff(dof*M1);
+    sctl::Vector<Real> buff(dof*M1);
 
     int np = omp_get_num_threads();
     int tid = omp_get_thread_num();
     long a = N*(tid+0)/np;
     long b = N*(tid+1)/np;
     for (long i = a; i < b; i++) {
-      const Vector<Real> coeff_(dof*M0, (Real*)coeff.data() + i * dof*M0, false);
+      const sctl::Vector<Real> coeff_(dof*M0, sctl::Ptr2Itr<Real>((Real*)coeff.data() + i * dof*M0, dof*M0), false);
       cheb_eval(coeff_, ChebDeg, cheb_nds, cheb_nds, cheb_nds, buff);
 
-      const Matrix<Real> buff_(dof,M1, buff.Begin(), false);
-      Matrix<Real> node_val_(M1,dof, (Real*)node_val.data() + i * M1*dof, false);
-      Matrix<Real>::Transpose(node_val_, buff_);
+      const sctl::Matrix<Real> buff_(dof,M1, buff.begin(), false);
+      sctl::Matrix<Real> node_val_(M1,dof, sctl::Ptr2Itr<Real>((Real*)node_val.data() + i * M1*dof, (M1)*(dof)), false);
+      sctl::Matrix<Real>::Transpose(node_val_, buff_);
     }
   }
 }
@@ -195,18 +190,18 @@ void ChebFMM_Nodes2Coeff(std::vector<Real>& coeff, int ChebDeg, int dof, const s
 
   #pragma omp parallel
   {
-    Vector<Real> buff(dof*M1);
+    sctl::ScratchBuf<Real> buff(dof*M1);
 
     int np = omp_get_num_threads();
     int tid = omp_get_thread_num();
     long a = N*(tid+0)/np;
     long b = N*(tid+1)/np;
     for (long i = a; i < b; i++) {
-      const Matrix<Real> node_val_(M1,dof, (Real*)node_val.data() + i * M1*dof, false);
-      Matrix<Real> buff_(dof,M1, buff.Begin(), false);
-      Matrix<Real>::Transpose(buff_, node_val_);
+      const sctl::Matrix<Real> node_val_(M1,dof, sctl::Ptr2Itr<Real>((Real*)node_val.data() + i * M1*dof, (M1)*(dof)), false);
+      sctl::Matrix<Real> buff_(dof,M1, buff.begin(), false);
+      sctl::Matrix<Real>::Transpose(buff_, node_val_);
 
-      cheb_approx<Real,Real>(buff.Begin(), ChebDeg, dof, coeff.data()+i*dof*M0);
+      cheb_approx<Real,Real>(&buff[0], ChebDeg, dof, coeff.data()+i*dof*M0);
     }
   }
 }
@@ -215,12 +210,8 @@ void ChebFMM_Nodes2Coeff(std::vector<Real>& coeff, int ChebDeg, int dof, const s
 template <class Real>
 inline PtFMM_Tree<Real>* PtFMM_CreateTree(const std::vector<Real>&  src_coord, const std::vector<Real>&  src_value,
                                           const std::vector<Real>& surf_coord, const std::vector<Real>& surf_value,
-                                          const std::vector<Real>& trg_coord, MPI_Comm comm, int max_pts,
+                                          const std::vector<Real>& trg_coord, const sctl::Comm& comm, int max_pts,
                                           BoundaryType bndry, int init_depth){
-  int np, myrank;
-  MPI_Comm_size(comm, &np);
-  MPI_Comm_rank(comm, &myrank);
-
   PtFMM_Data<Real> tree_data;
   bool adap=true;
 
@@ -246,7 +237,7 @@ inline PtFMM_Tree<Real>* PtFMM_CreateTree(const std::vector<Real>&  src_coord, c
 
 template <class Real>
 inline PtFMM_Tree<Real>* PtFMM_CreateTree(const std::vector<Real>& src_coord, const std::vector<Real>&  src_value,
-                                          const std::vector<Real>& trg_coord, MPI_Comm comm, int max_pts,
+                                          const std::vector<Real>& trg_coord, const sctl::Comm& comm, int max_pts,
                                           BoundaryType bndry, int init_depth){
   std::vector<Real> surf_coord;
   std::vector<Real> surf_value;
@@ -256,24 +247,24 @@ inline PtFMM_Tree<Real>* PtFMM_CreateTree(const std::vector<Real>& src_coord, co
 template <class Real>
 inline void PtFMM_Evaluate(const PtFMM_Tree<Real>* tree, std::vector<Real>& trg_val, size_t loc_size, const std::vector<Real>* src_val, const std::vector<Real>* surf_val){
   if(src_val){
-    std::vector<size_t> src_scatter_;
+    std::vector<sctl::Long> src_scatter_;
     const auto& nodes=((PtFMM_Tree<Real>*)tree)->GetNodeList();
     for(size_t i=0;i<nodes.size();i++){
       if(nodes[i]->IsLeaf() && !nodes[i]->IsGhost()){
         const auto& src_scatter=nodes[i]->src_scatter;
-        for(size_t j=0;j<src_scatter.Dim();j++) src_scatter_.push_back(src_scatter[j]);
+        for(sctl::Long j=0;j<src_scatter.Dim();j++) src_scatter_.push_back(src_scatter[j]);
       }
     }
 
-    Vector<Real> src_value=*src_val;
-    Vector<size_t> src_scatter=src_scatter_;
-    par::ScatterForward(src_value,src_scatter,*tree->Comm());
+    sctl::Vector<Real> src_value(*src_val);
+    sctl::Vector<sctl::Long> src_scatter(src_scatter_);
+    tree->Comm().ScatterForward(src_value,src_scatter);
 
     size_t indx=0;
     for(size_t i=0;i<nodes.size();i++){
       if(nodes[i]->IsLeaf() && !nodes[i]->IsGhost()){
-        Vector<Real>& src_value_=nodes[i]->src_value;
-        for(size_t j=0;j<src_value_.Dim();j++){
+        sctl::Vector<Real>& src_value_=nodes[i]->src_value;
+        for(sctl::Long j=0;j<src_value_.Dim();j++){
           src_value_[j]=src_value[indx];
           indx++;
         }
@@ -281,24 +272,24 @@ inline void PtFMM_Evaluate(const PtFMM_Tree<Real>* tree, std::vector<Real>& trg_
     }
   }
   if(surf_val){
-    std::vector<size_t> surf_scatter_;
+    std::vector<sctl::Long> surf_scatter_;
     const auto& nodes=((PtFMM_Tree<Real>*)tree)->GetNodeList();
     for(size_t i=0;i<nodes.size();i++){
       if(nodes[i]->IsLeaf() && !nodes[i]->IsGhost()){
         const auto& surf_scatter=nodes[i]->surf_scatter;
-        for(size_t j=0;j<surf_scatter.Dim();j++) surf_scatter_.push_back(surf_scatter[j]);
+        for(sctl::Long j=0;j<surf_scatter.Dim();j++) surf_scatter_.push_back(surf_scatter[j]);
       }
     }
 
-    Vector<Real> surf_value=*surf_val;
-    Vector<size_t> surf_scatter=surf_scatter_;
-    par::ScatterForward(surf_value,surf_scatter,*tree->Comm());
+    sctl::Vector<Real> surf_value(*surf_val);
+    sctl::Vector<sctl::Long> surf_scatter(surf_scatter_);
+    tree->Comm().ScatterForward(surf_value,surf_scatter);
 
     size_t indx=0;
     for(size_t i=0;i<nodes.size();i++){
       if(nodes[i]->IsLeaf() && !nodes[i]->IsGhost()){
-        Vector<Real>& surf_value_=nodes[i]->surf_value;
-        for(size_t j=0;j<surf_value_.Dim();j++){
+        sctl::Vector<Real>& surf_value_=nodes[i]->surf_value;
+        for(sctl::Long j=0;j<surf_value_.Dim();j++){
           surf_value_[j]=surf_value[indx];
           indx++;
         }
@@ -306,24 +297,24 @@ inline void PtFMM_Evaluate(const PtFMM_Tree<Real>* tree, std::vector<Real>& trg_
     }
   }
   ((PtFMM_Tree<Real>*)tree)->RunFMM();
-  Vector<Real> trg_value;
-  Vector<size_t> trg_scatter;
+  sctl::Vector<Real> trg_value;
+  sctl::Vector<sctl::Long> trg_scatter;
   {
     std::vector<Real> trg_value_;
-    std::vector<size_t> trg_scatter_;
+    std::vector<sctl::Long> trg_scatter_;
     const auto& nodes=((PtFMM_Tree<Real>*)tree)->GetNodeList();
     for(size_t i=0;i<nodes.size();i++){
       if(nodes[i]->IsLeaf() && !nodes[i]->IsGhost()){
         const auto& trg_value=nodes[i]->trg_value;
         const auto& trg_scatter=nodes[i]->trg_scatter;
-        for(size_t j=0;j<trg_value.Dim();j++) trg_value_.push_back(trg_value[j]);
-        for(size_t j=0;j<trg_scatter.Dim();j++) trg_scatter_.push_back(trg_scatter[j]);
+        for(sctl::Long j=0;j<trg_value.Dim();j++) trg_value_.push_back(trg_value[j]);
+        for(sctl::Long j=0;j<trg_scatter.Dim();j++) trg_scatter_.push_back(trg_scatter[j]);
       }
     }
     trg_value=trg_value_;
     trg_scatter=trg_scatter_;
   }
-  par::ScatterReverse(trg_value,trg_scatter,*tree->Comm(),loc_size);
+  tree->Comm().ScatterReverse(trg_value,trg_scatter,loc_size);
   trg_val.assign(&trg_value[0],&trg_value[0]+trg_value.Dim());;
 }
 

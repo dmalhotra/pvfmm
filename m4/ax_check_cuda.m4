@@ -141,8 +141,6 @@ EOF
    # Returning to the original flags
    CXXFLAGS=${ax_save_CXXFLAGS}
    LIBS=${ax_save_LIBS}
-
-   AC_DEFINE(HAVE_CUDA,1,[Define if we have CUDA])
 fi
 
 if test "x$ac_compile_nvcc" != "xyes"; then

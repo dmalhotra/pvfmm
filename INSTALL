@@ -22,9 +22,8 @@ configure, build, and install this package.
 
   2. Type `make' to compile the package.
 
-  3. The Doxygen source code documentation can be compiled using `make
-     doxygen-doc' and documentation of algorithms, pseudocodes and 
-     results can be compiled using `make pdf-doc'.
+  3. The Doxygen source code documentation (HTML and PDF) can be compiled
+     using `make doxygen-doc' (requires doxygen; the PDF also needs pdflatex).
 
   4. Type `make install' to install the programs and any data files and
      documentation.  When installing into a prefix owned by root, it is
@@ -85,17 +84,6 @@ are given below:
      module load fftw
      module swap PrgEnv-pgi PrgEnv-intel
      ./configure MPICXX="CC" F77="ftn"
-
-`Stampede (TACC)' (CUDA build)
-     module load fftw3 cuda
-     ./configure CXXFLAGS="-mavx -wd3218 -wd2570 -no-offload" --with-fftw="$TACC_FFTW3_DIR" FLIBS=" " --with-cuda="$TACC_CUDA_DIR" NVCCFLAGS="-arch=compute_35 -code=sm_35"
-
-`Stampede (TACC)' (Offload build)
-     module load fftw3
-     ./configure CXXFLAGS="-mavx -wd3218 -wd2570" --with-fftw="$TACC_FFTW3_DIR" FLIBS=" "
-
-`Stampede (TACC)' (Native build)
-     ./configure --host=x86_64-k1om-linux CXXFLAGS="-mmic -wd3218 -wd2570 -I$TACC_MKL_INC -DPVFMM_FFTW3_MKL" F77=ifort FFLAGS="-mmic" FLIBS=" " --with-fftw-include="$TACC_MKL_INC/fftw" --with-fftw-lib="-mkl"
 
 `Ronaldo (ICES)'
      ./configure CXXFLAGS="-msse4" --with-fftw="$FFTW_DIR"
@@ -158,8 +146,10 @@ operates.
      `PVFMM_DIR' environment variable if defined, or the current
      directory at execution.
 
-`CXXFLAGS=-msse4' or 'CXXFLAGS=-mavx'
-     To use SSE or AVX optimized implementation of kernel functions.
+   The build is compiled with `-O3 -march=native' by default, so the
+kernel functions use the best SIMD instructions available on the build
+host automatically. To target a different ISA, override on the command
+line, e.g. `CXXFLAGS=-mavx'.
 
 `configure' also accepts some other, not widely useful, options.  Run
 `configure --help' for more details.
@@ -173,5 +163,5 @@ operates.
 To compile the library: make
 To install the library: make install
 To compile all examples: make all-examples
-To compile documentation: make doxygen-doc pdf-doc
+To compile documentation (HTML + PDF): make doxygen-doc
 
