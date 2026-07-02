@@ -23,8 +23,7 @@ $$u(x) = \int_{[0,1]^3} K(x, y)\, f(y)\, dy,$$
 
 where the source density $f$ is represented by piecewise Chebyshev
 polynomials on an adaptive octree. This is the basis of volume
-integral-equation formulations for problems with (mildly varying)
-coefficients and smooth or piecewise-smooth right-hand sides.
+integral-equation solvers with smooth or piecewise-smooth right-hand sides.
 
 ## Method
 

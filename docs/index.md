@@ -3,8 +3,8 @@
 PVFMM (Parallel Volume Fast Multipole Method) is a library for solving
 certain types of elliptic partial differential equations: it supports Stokes,
 Poisson, Biot–Savart, and Helmholtz problems on the unit cube, with
-free-space or periodic boundary conditions, with constant or mildly varying
-coefficients. The method is based on a volume-potential integral-equation
+free-space or periodic boundary conditions. The method is based on a
+volume-potential integral-equation
 formulation accelerated by the kernel-independent fast multipole method
 (KIFMM), and the same machinery provides fast $O(N)$ particle N-body sums.
 

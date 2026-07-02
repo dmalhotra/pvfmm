@@ -7,8 +7,8 @@
    differential equations. 
     
    * We support Stokes, Poisson, and Helmholtz problems on the unit
-     cube, with free-space or periodic boundary conditions, with
-     constant or mildly varying coefficients. Our method is based on
+     cube, with free-space or periodic boundary conditions. Our method is
+     based on
      volume potential integral equation formulation accelerated by the
      Kernel Independent Fast Multipole Method. 
 
