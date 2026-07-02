@@ -35,6 +35,19 @@ enum PVFMMKernel{
 };
 
 /**
+ * \brief Boundary conditions. The values PVFMMBoundaryFreeSpace (0) and
+ * PVFMMBoundaryPXYZ (1) coincide with the boolean periodic flag accepted by
+ * earlier versions of this interface.
+ */
+enum PVFMMBoundaryType{
+  PVFMMBoundaryFreeSpace = 0, /**< free-space (decaying) boundary conditions */
+  PVFMMBoundaryPXYZ      = 1, /**< periodic in x, y, z */
+  PVFMMBoundaryPX        = 2, /**< periodic in x; free in y, z */
+  PVFMMBoundaryPXY       = 3, /**< periodic in x, y; free in z */
+  PVFMMBoundaryPeriodic  = PVFMMBoundaryPXYZ /**< alias for PVFMMBoundaryPXYZ */
+};
+
+/**
  * \brief Build FMM translation operators.
  *
  * \param[in] m the multipole order (positive, even integer).
@@ -80,7 +93,7 @@ void* PVFMMCreateVolumeFMMF(int m, int q, enum PVFMMKernel kernel, MPI_Comm comm
  *
  * \param[in] max_pts the maximum number of target points per leaf node.
  *
- * \param[in] periodic whether to use periodic boundary conditions.
+ * \param[in] bndry the boundary conditions (see PVFMMBoundaryType).
  *
  * \param[in] init_depth the depth of the initial tree before adaptive
  * refinement. If zero then the depth is the minimum depth so that the number
@@ -89,8 +102,8 @@ void* PVFMMCreateVolumeFMMF(int m, int q, enum PVFMMKernel kernel, MPI_Comm comm
  * \return the pointer to the constructed tree. It must be destroyed using
  * PVFMMDestroyVolumeTreeD to free the resources.
  */
-void* PVFMMCreateVolumeTreeD(int cheb_deg, int data_dim, void (*fn_ptr)(const double* coord, long n, double* out, const void* ctx), const void* fn_ctx, const double* trg_coord, long n_trg, MPI_Comm comm, double tol, int max_pts, bool periodic, int init_depth);
-void* PVFMMCreateVolumeTreeF(int cheb_deg, int data_dim, void (*fn_ptr)(const float* coord, long n, float* out, const void* ctx), const void* fn_ctx, const float* trg_coord, long n_trg, MPI_Comm comm, float tol, int max_pts, bool periodic, int init_depth);
+void* PVFMMCreateVolumeTreeD(int cheb_deg, int data_dim, void (*fn_ptr)(const double* coord, long n, double* out, const void* ctx), const void* fn_ctx, const double* trg_coord, long n_trg, MPI_Comm comm, double tol, int max_pts, enum PVFMMBoundaryType bndry, int init_depth);
+void* PVFMMCreateVolumeTreeF(int cheb_deg, int data_dim, void (*fn_ptr)(const float* coord, long n, float* out, const void* ctx), const void* fn_ctx, const float* trg_coord, long n_trg, MPI_Comm comm, float tol, int max_pts, enum PVFMMBoundaryType bndry, int init_depth);
 
 /**
  * \brief Construct a piecewise Chebyshev volume discretization in [0,1]^3.  It
@@ -119,13 +132,13 @@ void* PVFMMCreateVolumeTreeF(int cheb_deg, int data_dim, void (*fn_ptr)(const fl
  *
  * \param[in] comm MPI communicator.
  *
- * \param[in] periodic whether to use periodic boundary conditions.
+ * \param[in] bndry the boundary conditions (see PVFMMBoundaryType).
  *
  * \return the pointer to the constructed tree. It must be destroyed using
  * PVFMMDestroyVolumeTreeD to free the resources.
  */
-void* PVFMMCreateVolumeTreeFromCoeffD(long Nleaf, int cheb_deg, int data_dim, const double* leaf_coord, const double* fn_coeff, const double* trg_coord, long n_trg, MPI_Comm comm, bool periodic);
-void* PVFMMCreateVolumeTreeFromCoeffF(long Nleaf, int cheb_deg, int data_dim, const float* leaf_coord, const float* fn_coeff, const float* trg_coord, long n_trg, MPI_Comm comm, bool periodic);
+void* PVFMMCreateVolumeTreeFromCoeffD(long Nleaf, int cheb_deg, int data_dim, const double* leaf_coord, const double* fn_coeff, const double* trg_coord, long n_trg, MPI_Comm comm, enum PVFMMBoundaryType bndry);
+void* PVFMMCreateVolumeTreeFromCoeffF(long Nleaf, int cheb_deg, int data_dim, const float* leaf_coord, const float* fn_coeff, const float* trg_coord, long n_trg, MPI_Comm comm, enum PVFMMBoundaryType bndry);
 
 
 
@@ -245,8 +258,11 @@ extern "C" {
 /**
  * \brief Create particle FMM context.
  *
- * \param[in] box_size the period length for periodic boundary conditions. Set
- * to zero for free-space boundary conditions.
+ * \param[in] box_size the domain length; particle coordinates must be in
+ * [0, box_size)^3 and box_size is the period along the periodic directions.
+ * Must be positive unless bndry is PVFMMBoundaryFreeSpace; if it is
+ * non-positive, the (free-space) bounding box is determined from the
+ * particle positions.
  *
  * \param[in] n maximum number of points per leaf node.
  *
@@ -254,14 +270,16 @@ extern "C" {
  *
  * \param[in] kernel the kernel function.
  *
- * \param[in] comm the MPI communicator.
+ * \param[in] bndry the boundary conditions (see PVFMMBoundaryType).
+ *
+ * \param[in] comm the MPI communicator (e.g. MPI_COMM_WORLD). MPI is
+ * initialized on demand if the application has not done so. When the library
+ * is built without MPI, the argument is ignored.
  *
  * \return the particle FMM context pointer.
  */
-void* PVFMMCreateContextD(double box_size, int n, int m, enum PVFMMKernel kernel, MPI_Comm comm);
-void* PVFMMCreateContextF(float box_size, int n, int m, enum PVFMMKernel kernel, MPI_Comm comm);
-void* PVFMMCreateContextDWorld(double box_size, int n, int m, enum PVFMMKernel kernel);
-void* PVFMMCreateContextFWorld(float box_size, int n, int m, enum PVFMMKernel kernel);
+void* PVFMMCreateContextD(double box_size, int n, int m, enum PVFMMKernel kernel, enum PVFMMBoundaryType bndry, MPI_Comm comm);
+void* PVFMMCreateContextF(float box_size, int n, int m, enum PVFMMKernel kernel, enum PVFMMBoundaryType bndry, MPI_Comm comm);
 
 /**
  * \brief Evaluate the potential at the target points.

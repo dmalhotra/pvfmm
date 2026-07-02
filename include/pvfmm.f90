@@ -13,6 +13,16 @@ enum, bind(c)
   enumerator :: PVFMMBiotSavartPotential = 5
 end enum
 
+! Boundary conditions (values 0/1 coincide with the 0/1 periodic flag
+! accepted by earlier versions of this interface)
+enum, bind(c)
+  enumerator :: PVFMMBoundaryFreeSpace = 0 ! free-space (decaying)
+  enumerator :: PVFMMBoundaryPXYZ      = 1 ! periodic in x, y, z
+  enumerator :: PVFMMBoundaryPX        = 2 ! periodic in x; free in y, z
+  enumerator :: PVFMMBoundaryPXY       = 3 ! periodic in x, y; free in z
+  enumerator :: PVFMMBoundaryPeriodic  = 1 ! alias for PVFMMBoundaryPXYZ
+end enum
+
 interface ! Volume FMM
 
   !> Build FMM translation operators.
@@ -95,7 +105,7 @@ interface ! Volume FMM
   !!
   !! @param[in] max_ptr the maximum number of target points per leaf node.
   !!
-  !! @param[in] periodic whether to use periodic boundary conditions.
+  !! @param[in] periodic the boundary conditions (one of the PVFMMBoundary* values).
   !!
   !! @param[in] init_depth the depth of the initial tree defore adaptive
   !! refinement. If zero then the depth is the minimum depth so that the number
@@ -186,7 +196,7 @@ interface ! Volume FMM
   !!
   !! @param[in] comm MPI communicator.
   !!
-  !! @param[in] periodic whether to use periodic boundary conditions.
+  !! @param[in] periodic the boundary conditions (one of the PVFMMBoundary* values).
   subroutine PVFMMCreateVolumeTreeFromCoeffD(tree, n_nodes, cheb_deg,&
       data_dim, node_coord, fn_coeff, trg_coord, n_trg, comm, periodic)&
       bind(C, name="pvfmmcreatevolumetreefromcoeffd_")
@@ -425,15 +435,16 @@ end interface
 interface ! Particle FMM
 
   ! Create single-precision particle FMM context
-  subroutine PVFMMCreateContextF(fmm_ctx, box_size, points_per_leaf, multipole_order, kernel, comm)&
+  subroutine PVFMMCreateContextF(fmm_ctx, box_size, points_per_leaf, multipole_order, kernel, bndry, comm)&
       bind(C, name="pvfmmcreatecontextf_")
     use iso_c_binding
     implicit none
     type(c_ptr), intent(out) :: fmm_ctx ! FMM context
-    real(c_float), intent(in) :: box_size ! domain size for periodic boundary conditions
+    real(c_float), intent(in) :: box_size ! domain length; period along the periodic directions
     integer(c_int32_t), intent(in) :: points_per_leaf ! tuning parameter
     integer(c_int32_t), intent(in) :: multipole_order ! accuracy (even integer)
     integer(c_int32_t), intent(in) :: kernel ! kernel function
+    integer(c_int32_t), intent(in) :: bndry ! boundary conditions (PVFMMBoundary*)
     integer(c_int), intent(in) :: comm ! MPI communicator
   end subroutine
 
@@ -460,15 +471,16 @@ interface ! Particle FMM
 
 
   ! Create double-precision particle FMM context
-  subroutine PVFMMCreateContextD(fmm_ctx, box_size, points_per_leaf, multipole_order, kernel, comm)&
+  subroutine PVFMMCreateContextD(fmm_ctx, box_size, points_per_leaf, multipole_order, kernel, bndry, comm)&
       bind(C, name="pvfmmcreatecontextd_")
     use iso_c_binding
     implicit none
     type(c_ptr), intent(out) :: fmm_ctx ! FMM context
-    real(c_double), intent(in) :: box_size ! domain size for periodic boundary conditions
+    real(c_double), intent(in) :: box_size ! domain length; period along the periodic directions
     integer(c_int32_t), intent(in) :: points_per_leaf ! tuning parameter
     integer(c_int32_t), intent(in) :: multipole_order ! accuracy (even integer)
     integer(c_int32_t), intent(in) :: kernel ! kernel function
+    integer(c_int32_t), intent(in) :: bndry ! boundary conditions (PVFMMBoundary*)
     integer(c_int), intent(in) :: comm ! MPI communicator
   end subroutine
 

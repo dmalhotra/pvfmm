@@ -26,7 +26,14 @@ boundary conditions the source must have zero mean over the box (as in
 `fmm_cheb -test 1`, whose source integrates to zero).
 ```
 
-The C-level interfaces (C, Fortran, Python, Julia) expose only a boolean
-`periodic` flag for the volume FMM (equivalent to `PXYZ`) and, for the
-particle FMM, a `box_size` argument where `0` means free space and a positive
-value means fully periodic with that period.
+The C-level interfaces mirror the full set of boundary types through
+`enum PVFMMBoundaryType` (`PVFMMBoundaryFreeSpace`, `PVFMMBoundaryPXYZ`,
+`PVFMMBoundaryPX`, `PVFMMBoundaryPXY`; values 0/1 coincide with the boolean
+`periodic` flag accepted by earlier versions). The volume-tree constructors
+take it directly, and the particle-FMM constructor `PVFMMCreateContext*`
+takes it together with `box_size` (the domain length, which is the period
+along the periodic directions; `box_size <= 0` is allowed only with free
+space, where the bounding box is determined from the points). The Fortran
+interface uses the `PVFMMBoundary*` constants, and the Python/Julia bindings
+expose an `FMMBoundaryType` with the same values ({doc}`../api/python`,
+{doc}`../api/julia`).

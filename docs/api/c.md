@@ -29,6 +29,13 @@ The (source density, target value) dimensions per point for each kernel are
 listed in {doc}`../concepts/kernels`. The Helmholtz and Stokes stress kernels
 are not available through the C interface.
 
+## Boundary conditions
+
+See {doc}`../concepts/boundary-conditions` for semantics.
+
+```{doxygenenum} PVFMMBoundaryType
+```
+
 ## Volume FMM
 
 Typical call sequence: `PVFMMCreateVolumeFMMD` (build/load translation
@@ -76,14 +83,11 @@ operator construction is cached on disk — see
 
 ## Particle FMM
 
-Typical call sequence: `PVFMMCreateContextD` once, then `PVFMMEvalD` as many
-times as needed (pass `setup=1` whenever particle positions changed, `setup=0`
-if only the densities changed), then `PVFMMDestroyContextD`.
+Typical call sequence: `PVFMMCreateContextD` once, then `PVFMMEvalD` as
+many times as needed (pass `setup=1` whenever particle positions changed,
+`setup=0` if only the densities changed), then `PVFMMDestroyContextD`.
 
 ```{doxygenfunction} PVFMMCreateContextD
-```
-
-```{doxygenfunction} PVFMMCreateContextDWorld
 ```
 
 ```{doxygenfunction} PVFMMEvalD

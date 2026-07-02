@@ -18,14 +18,14 @@ Feature-parity notes:
 - The Helmholtz kernel and the Stokes *stress* kernel are available only from
   C++ (they are not in the C `PVFMMKernel` enum, and hence absent from
   Fortran/Python/Julia).
-- Per-axis periodic boundary conditions (`PX`, `PXY`) are available only
-  through the C++ interface; the C-level interfaces expose a single
-  `periodic` flag (fully periodic) — see
+- Per-axis periodic boundary conditions (`PX`, `PXY`) are available from every
+  interface: C++ takes a `pvfmm::BoundaryType`, the C-level interfaces take a
+  `PVFMMBoundaryType` (whose values 0/1 remain compatible with the older
+  boolean `periodic` flag), and Python/Julia expose `FMMBoundaryType` — see
   {doc}`../concepts/boundary-conditions`.
-- The `PVFMMCreateContext*World` convenience constructors (implicit
-  `MPI_COMM_WORLD`) exist in C and are used by the Julia binding when no
-  communicator is given; Fortran and Python always take an explicit
-  communicator.
+- Every interface takes an explicit communicator. The C particle-context
+  creator initializes MPI on demand, and all communicator arguments are
+  ignored when the library is built without MPI.
 - Every C/Fortran function comes in a double-precision variant (suffix `D`)
   and a single-precision variant (suffix `F`); C++/Python/Julia select
   precision through the template/dtype/type parameter instead.

@@ -28,6 +28,7 @@ The bindings try to load `libpvfmm` from:
 
 ```julia
 using PVFMM
+using MPI
 using Random
 
 # Path to directory containing libpvfmm.dylib / libpvfmm.so
@@ -46,7 +47,8 @@ trg_pos = rand(3 * n_trg)
 sl_den = zeros(3 * n_src)
 sl_den[1:n_src] .= randn(n_src)
 
-ctx = FMMParticleContext(0.0, 50, 8, LaplacePotential)
+MPI.Initialized() || MPI.Init()
+ctx = FMMParticleContext(0.0, 50, 8, LaplacePotential, MPI.COMM_WORLD)
 trg_val = evaluate(ctx, src_pos, sl_den, nothing, trg_pos; setup=true)
 
 println("Computed ", length(trg_val), " output values")

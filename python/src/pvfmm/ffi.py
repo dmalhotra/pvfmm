@@ -47,6 +47,7 @@ double_volume_callback = volume_callback(ctypes.c_double)
 float_volume_callback = volume_callback(ctypes.c_float)
 
 PVFMMKernel = ctypes.c_uint  # enum
+PVFMMBoundaryType = ctypes.c_uint  # enum
 
 # try to load lib
 _custom_location = os.getenv("PVFMM")
@@ -85,7 +86,7 @@ PVFMMCreateVolumeTreeD.argtypes = [
     MPI_Comm,
     ctypes.c_double,
     ctypes.c_int,
-    ctypes.c_bool,
+    PVFMMBoundaryType,
     ctypes.c_int,
 ]
 PVFMMCreateVolumeTreeF = SHARED_LIB.PVFMMCreateVolumeTreeF
@@ -100,7 +101,7 @@ PVFMMCreateVolumeTreeF.argtypes = [
     MPI_Comm,
     ctypes.c_float,
     ctypes.c_int,
-    ctypes.c_bool,
+    PVFMMBoundaryType,
     ctypes.c_int,
 ]
 PVFMMCreateVolumeTreeFromCoeffD = SHARED_LIB.PVFMMCreateVolumeTreeFromCoeffD
@@ -114,7 +115,7 @@ PVFMMCreateVolumeTreeFromCoeffD.argtypes = [
     double_array,
     ctypes.c_long,
     MPI_Comm,
-    ctypes.c_bool,
+    PVFMMBoundaryType,
 ]
 PVFMMCreateVolumeTreeFromCoeffF = SHARED_LIB.PVFMMCreateVolumeTreeFromCoeffF
 PVFMMCreateVolumeTreeFromCoeffF.restype = ctypes.c_void_p
@@ -127,7 +128,7 @@ PVFMMCreateVolumeTreeFromCoeffF.argtypes = [
     float_array,
     ctypes.c_long,
     MPI_Comm,
-    ctypes.c_bool,
+    PVFMMBoundaryType,
 ]
 PVFMMEvaluateVolumeFMMD = SHARED_LIB.PVFMMEvaluateVolumeFMMD
 PVFMMEvaluateVolumeFMMD.restype = None
@@ -224,6 +225,7 @@ PVFMMCreateContextD.argtypes = [
     ctypes.c_int,
     ctypes.c_int,
     PVFMMKernel,
+    PVFMMBoundaryType,
     MPI_Comm,
 ]
 PVFMMCreateContextF = SHARED_LIB.PVFMMCreateContextF
@@ -233,6 +235,7 @@ PVFMMCreateContextF.argtypes = [
     ctypes.c_int,
     ctypes.c_int,
     PVFMMKernel,
+    PVFMMBoundaryType,
     MPI_Comm,
 ]
 PVFMMEvalD = SHARED_LIB.PVFMMEvalD

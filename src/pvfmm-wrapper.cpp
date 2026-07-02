@@ -23,11 +23,17 @@ static inline sctl::Comm PVFMMComm(MPI_Comm comm) {
 extern "C" { // Volume FM
 #endif
 
-#ifdef PVFMM_EXTENDED_BC
-#define PVFMM_FULL_PERIODIC pvfmm::PXYZ
-#else
-#define PVFMM_FULL_PERIODIC pvfmm::Periodic
-#endif
+// Map the C-API boundary type to pvfmm::BoundaryType. Takes int so the
+// Fortran shims can pass the int32 flag through; values 0/1 also cover the
+// boolean periodic flag accepted by earlier versions of the C API.
+static pvfmm::BoundaryType PVFMMBndry(int bndry) {
+  switch (bndry) {
+    case PVFMMBoundaryPXYZ: return pvfmm::PXYZ;
+    case PVFMMBoundaryPX:   return pvfmm::PX;
+    case PVFMMBoundaryPXY:  return pvfmm::PXY;
+    default:                return pvfmm::FreeSpace;
+  }
+}
 
 static void PVFMMEnsureMPIInitialized() {
 #if defined(SCTL_HAVE_MPI)
@@ -54,7 +60,7 @@ void* PVFMMCreateVolumeFMMF(int m, int q, enum PVFMMKernel kernel, MPI_Comm comm
   return (void*)matrices;
 }
 
-void* PVFMMCreateVolumeTreeF(int cheb_deg, int data_dim, void (*fn_ptr)(const float* coord, long n, float* out, const void* ctx), const void* fn_ctx, const float* trg_coord, long n_trg, MPI_Comm comm, float tol, int max_pts, bool periodic, int init_depth) {
+void* PVFMMCreateVolumeTreeF(int cheb_deg, int data_dim, void (*fn_ptr)(const float* coord, long n, float* out, const void* ctx), const void* fn_ctx, const float* trg_coord, long n_trg, MPI_Comm comm, float tol, int max_pts, enum PVFMMBoundaryType bndry, int init_depth) {
   const int COORD_DIM = 3;
   std::vector<float> trg_coord_(n_trg*COORD_DIM);
   #pragma omp parallel for schedule(static)
@@ -64,13 +70,13 @@ void* PVFMMCreateVolumeTreeF(int cheb_deg, int data_dim, void (*fn_ptr)(const fl
     fn_ptr(coord, n, out, fn_ctx);
   };
 
-  auto* tree = ChebFMM_CreateTree(cheb_deg, data_dim, fn_ptr_, trg_coord_, PVFMMComm(comm), tol, max_pts, periodic?PVFMM_FULL_PERIODIC:pvfmm::FreeSpace, init_depth);
+  auto* tree = ChebFMM_CreateTree(cheb_deg, data_dim, fn_ptr_, trg_coord_, PVFMMComm(comm), tol, max_pts, PVFMMBndry(bndry), init_depth);
   //tree->Write2File("vis",4);
 
   return (void*)tree;
 }
 
-void* PVFMMCreateVolumeTreeFromCoeffF(long n_nodes, int cheb_deg, int data_dim, const float* node_coord, const float* fn_coeff, const float* trg_coord, long n_trg, MPI_Comm comm, bool periodic) {
+void* PVFMMCreateVolumeTreeFromCoeffF(long n_nodes, int cheb_deg, int data_dim, const float* node_coord, const float* fn_coeff, const float* trg_coord, long n_trg, MPI_Comm comm, enum PVFMMBoundaryType bndry) {
   const int COORD_DIM = 3;
   std::vector<float> node_coord_(n_nodes*COORD_DIM), fn_coeff_(n_nodes*data_dim*(cheb_deg+1)*(cheb_deg+2)*(cheb_deg+3)/6), trg_coord_(n_trg*COORD_DIM);
   #pragma omp parallel for schedule(static)
@@ -80,7 +86,7 @@ void* PVFMMCreateVolumeTreeFromCoeffF(long n_nodes, int cheb_deg, int data_dim, 
   #pragma omp parallel for schedule(static)
   for (long i = 0; i < (long)trg_coord_.size(); i++) trg_coord_[i] = trg_coord[i];
 
-  auto* tree = ChebFMM_CreateTree(cheb_deg, node_coord_, fn_coeff_, trg_coord_, PVFMMComm(comm), periodic?PVFMM_FULL_PERIODIC:pvfmm::FreeSpace);
+  auto* tree = ChebFMM_CreateTree(cheb_deg, node_coord_, fn_coeff_, trg_coord_, PVFMMComm(comm), PVFMMBndry(bndry));
   //tree->Write2File("vis",4);
 
   return (void*)tree;
@@ -162,7 +168,7 @@ void* PVFMMCreateVolumeFMMD(int m, int q, enum PVFMMKernel kernel, MPI_Comm comm
   return (void*)matrices;
 }
 
-void* PVFMMCreateVolumeTreeD(int cheb_deg, int data_dim, void (*fn_ptr)(const double* coord, long n, double* out, const void* ctx), const void* fn_ctx, const double* trg_coord, long n_trg, MPI_Comm comm, double tol, int max_pts, bool periodic, int init_depth) {
+void* PVFMMCreateVolumeTreeD(int cheb_deg, int data_dim, void (*fn_ptr)(const double* coord, long n, double* out, const void* ctx), const void* fn_ctx, const double* trg_coord, long n_trg, MPI_Comm comm, double tol, int max_pts, enum PVFMMBoundaryType bndry, int init_depth) {
   const int COORD_DIM = 3;
   std::vector<double> trg_coord_(n_trg*COORD_DIM);
   #pragma omp parallel for schedule(static)
@@ -172,13 +178,13 @@ void* PVFMMCreateVolumeTreeD(int cheb_deg, int data_dim, void (*fn_ptr)(const do
     fn_ptr(coord, n, out, fn_ctx);
   };
 
-  auto* tree = ChebFMM_CreateTree(cheb_deg, data_dim, fn_ptr_, trg_coord_, PVFMMComm(comm), tol, max_pts, periodic?PVFMM_FULL_PERIODIC:pvfmm::FreeSpace, init_depth);
+  auto* tree = ChebFMM_CreateTree(cheb_deg, data_dim, fn_ptr_, trg_coord_, PVFMMComm(comm), tol, max_pts, PVFMMBndry(bndry), init_depth);
   //tree->Write2File("vis",4);
 
   return (void*)tree;
 }
 
-void* PVFMMCreateVolumeTreeFromCoeffD(long n_nodes, int cheb_deg, int data_dim, const double* node_coord, const double* fn_coeff, const double* trg_coord, long n_trg, MPI_Comm comm, bool periodic) {
+void* PVFMMCreateVolumeTreeFromCoeffD(long n_nodes, int cheb_deg, int data_dim, const double* node_coord, const double* fn_coeff, const double* trg_coord, long n_trg, MPI_Comm comm, enum PVFMMBoundaryType bndry) {
   const int COORD_DIM = 3;
   std::vector<double> node_coord_(n_nodes*COORD_DIM), fn_coeff_(n_nodes*data_dim*(cheb_deg+1)*(cheb_deg+2)*(cheb_deg+3)/6), trg_coord_(n_trg*COORD_DIM);
   #pragma omp parallel for schedule(static)
@@ -188,7 +194,7 @@ void* PVFMMCreateVolumeTreeFromCoeffD(long n_nodes, int cheb_deg, int data_dim, 
   #pragma omp parallel for schedule(static)
   for (long i = 0; i < (long)trg_coord_.size(); i++) trg_coord_[i] = trg_coord[i];
 
-  auto* tree = ChebFMM_CreateTree(cheb_deg, node_coord_, fn_coeff_, trg_coord_, PVFMMComm(comm), periodic?PVFMM_FULL_PERIODIC:pvfmm::FreeSpace);
+  auto* tree = ChebFMM_CreateTree(cheb_deg, node_coord_, fn_coeff_, trg_coord_, PVFMMComm(comm), PVFMMBndry(bndry));
   //tree->Write2File("vis",4);
 
   return (void*)tree;
@@ -276,7 +282,7 @@ void pvfmmcreatevolumetreef_(void** ctx, const int32_t* cheb_deg, const int32_t*
   };
 
   const MPI_Comm comm = MPI_Comm_f2c(*fcomm);
-  auto* tree = ChebFMM_CreateTree(*cheb_deg, *data_dim, fn_ptr_, trg_coord_, PVFMMComm(comm), *tol, *max_pts, (*periodic)==0?pvfmm::FreeSpace:PVFMM_FULL_PERIODIC, *init_depth);
+  auto* tree = ChebFMM_CreateTree(*cheb_deg, *data_dim, fn_ptr_, trg_coord_, PVFMMComm(comm), *tol, *max_pts, PVFMMBndry(*periodic), *init_depth);
   //tree->Write2File("vis",4);
 
   (*ctx) = (void*)tree;
@@ -284,7 +290,7 @@ void pvfmmcreatevolumetreef_(void** ctx, const int32_t* cheb_deg, const int32_t*
 
 void pvfmmcreatevolumetreefromcoefff_(void** ctx, const int64_t* n_nodes, const int32_t* cheb_deg, const int32_t* data_dim, const float* node_coord, const float* fn_coeff, const float* trg_coord, const int64_t* n_trg, const MPI_Fint* fcomm, const int32_t* periodic) {
   const MPI_Comm comm = MPI_Comm_f2c(*fcomm);
-  (*ctx) = PVFMMCreateVolumeTreeFromCoeffF(*n_nodes, *cheb_deg, *data_dim, node_coord, fn_coeff, trg_coord, *n_trg, comm, *periodic);
+  (*ctx) = PVFMMCreateVolumeTreeFromCoeffF(*n_nodes, *cheb_deg, *data_dim, node_coord, fn_coeff, trg_coord, *n_trg, comm, (enum PVFMMBoundaryType)*periodic);
 }
 
 void pvfmmdestroyvolumetreef_(void** ctx) {
@@ -338,7 +344,7 @@ void pvfmmcreatevolumetreed_(void** ctx, const int32_t* cheb_deg, const int32_t*
   };
 
   const MPI_Comm comm = MPI_Comm_f2c(*fcomm);
-  auto* tree = ChebFMM_CreateTree(*cheb_deg, *data_dim, fn_ptr_, trg_coord_, PVFMMComm(comm), *tol, *max_pts, (*periodic)==0?pvfmm::FreeSpace:PVFMM_FULL_PERIODIC, *init_depth);
+  auto* tree = ChebFMM_CreateTree(*cheb_deg, *data_dim, fn_ptr_, trg_coord_, PVFMMComm(comm), *tol, *max_pts, PVFMMBndry(*periodic), *init_depth);
   //tree->Write2File("vis",4);
 
   (*ctx) = (void*)tree;
@@ -346,7 +352,7 @@ void pvfmmcreatevolumetreed_(void** ctx, const int32_t* cheb_deg, const int32_t*
 
 void pvfmmcreatevolumetreefromcoeffd_(void** ctx, const int64_t* n_nodes, const int32_t* cheb_deg, const int32_t* data_dim, const double* node_coord, const double* fn_coeff, const double* trg_coord, const int64_t* n_trg, const MPI_Fint* fcomm, const int32_t* periodic) {
   const MPI_Comm comm = MPI_Comm_f2c(*fcomm);
-  (*ctx) = PVFMMCreateVolumeTreeFromCoeffD(*n_nodes, *cheb_deg, *data_dim, node_coord, fn_coeff, trg_coord, *n_trg, comm, *periodic);
+  (*ctx) = PVFMMCreateVolumeTreeFromCoeffD(*n_nodes, *cheb_deg, *data_dim, node_coord, fn_coeff, trg_coord, *n_trg, comm, (enum PVFMMBoundaryType)*periodic);
 }
 
 void pvfmmdestroyvolumetreed_(void** ctx) {
@@ -402,7 +408,23 @@ template<typename Real> struct PVFMMContext{
   Mat_t* mat;
 };
 
-template<typename Real> static void* PVFMMCreateContext(Real box_size, int n, int m, int max_d, const pvfmm::Kernel<Real>* ker, MPI_Comm comm) {
+// Kernel lookup for the C-API enum.
+template <typename Real> static const pvfmm::Kernel<Real>* PVFMMKernelPtr(enum PVFMMKernel kernel) {
+  if (kernel == PVFMMLaplacePotential   ) return &pvfmm::LaplaceKernel   <Real>::potential();
+  if (kernel == PVFMMLaplaceGradient    ) return &pvfmm::LaplaceKernel   <Real>::gradient();
+  if (kernel == PVFMMStokesPressure     ) return &pvfmm::StokesKernel    <Real>::pressure();
+  if (kernel == PVFMMStokesVelocity     ) return &pvfmm::StokesKernel    <Real>::velocity();
+  if (kernel == PVFMMStokesVelocityGrad ) return &pvfmm::StokesKernel    <Real>::vel_grad();
+  if (kernel == PVFMMBiotSavartPotential) return &pvfmm::BiotSavartKernel<Real>::potential();
+  return nullptr;
+}
+
+template<typename Real> static void* PVFMMCreateContext(Real box_size, int n, int m, int max_d, const pvfmm::Kernel<Real>* ker, pvfmm::BoundaryType bndry, MPI_Comm comm) {
+  if (bndry != pvfmm::BoundaryType::FreeSpace && box_size <= 0) {
+    fprintf(stderr, "PVFMMCreateContext error: periodic boundary conditions require box_size > 0\n");
+    return nullptr;
+  }
+  PVFMMEnsureMPIInitialized();
   const sctl::Comm sctl_comm = PVFMMComm(comm);
   sctl::Profile::Tic("FMMContext", &sctl_comm, true);
   bool prof_state=sctl::Profile::Enable(false);
@@ -415,14 +437,7 @@ template<typename Real> static void* PVFMMCreateContext(Real box_size, int n, in
   ctx->max_pts=n;
   ctx->mult_order=m;
   ctx->max_depth=max_d;
-  if (box_size<=0) ctx->bndry=pvfmm::BoundaryType::FreeSpace;
-  else {
-    #ifndef PVFMM_EXTENDED_BC
-    ctx->bndry=pvfmm::BoundaryType::Periodic;
-    #else
-    ctx->bndry=pvfmm::BoundaryType::PXYZ;
-    #endif
-  }
+  ctx->bndry=bndry;
   ctx->ker=ker;
   ctx->comm=comm;
   ctx->sctl_comm=sctl_comm;  // share ref-counted Impl, no extra MPI_Comm_dup.
@@ -848,22 +863,15 @@ template<typename Real> static void PVFMMDestroyContext(void** ctx){
 extern "C" {
 #endif
 
-// Create single-precision particle FMM context
-void pvfmmcreatecontextf_(void** ctx, float* box_size, int32_t* n, int32_t* m, int32_t* kernel, MPI_Fint* fcomm) {
-  MPI_Comm comm = MPI_Comm_f2c(*fcomm);
-  const pvfmm::Kernel<float>* ker = nullptr;
-  if (*kernel == PVFMMLaplacePotential   ) ker = &pvfmm::LaplaceKernel   <float>::potential();
-  if (*kernel == PVFMMLaplaceGradient    ) ker = &pvfmm::LaplaceKernel   <float>::gradient();
-  if (*kernel == PVFMMStokesPressure     ) ker = &pvfmm::StokesKernel    <float>::pressure();
-  if (*kernel == PVFMMStokesVelocity     ) ker = &pvfmm::StokesKernel    <float>::velocity();
-  if (*kernel == PVFMMStokesVelocityGrad ) ker = &pvfmm::StokesKernel    <float>::vel_grad();
-  if (*kernel == PVFMMBiotSavartPotential) ker = &pvfmm::BiotSavartKernel<float>::potential();
-  (*ctx) = PVFMMCreateContext<float>(*box_size, *n, *m, PVFMM_MAX_DEPTH, ker, comm);
-}
-
 // Evaluate potential in single-precision
 void pvfmmevalf_(const float* src_pos, const float* sl_den, int64_t* n_src, const float* trg_pos, float* trg_val, int64_t* n_trg, void** ctx_, int32_t* setup) {
   PVFMMEval<float>(src_pos, sl_den, nullptr, *n_src, trg_pos, trg_val, *n_trg, *ctx_, *setup);
+}
+
+// Create single-precision particle FMM context
+void pvfmmcreatecontextf_(void** ctx, float* box_size, int32_t* n, int32_t* m, int32_t* kernel, int32_t* bndry, MPI_Fint* fcomm) {
+  MPI_Comm comm = MPI_Comm_f2c(*fcomm);
+  (*ctx) = PVFMMCreateContext<float>(*box_size, *n, *m, PVFMM_MAX_DEPTH, PVFMMKernelPtr<float>((enum PVFMMKernel)*kernel), PVFMMBndry(*bndry), comm);
 }
 
 // Destroy single-precision particle FMM context
@@ -872,22 +880,15 @@ void pvfmmdestroycontextf_(void** ctx) {
 }
 
 
-// Create double-precision particle FMM context
-void pvfmmcreatecontextd_(void** ctx, double* box_size, int32_t* n, int32_t* m, int32_t* kernel, MPI_Fint* fcomm) {
-  MPI_Comm comm = MPI_Comm_f2c(*fcomm);
-  const pvfmm::Kernel<double>* ker = nullptr;
-  if (*kernel == PVFMMLaplacePotential   ) ker = &pvfmm::LaplaceKernel   <double>::potential();
-  if (*kernel == PVFMMLaplaceGradient    ) ker = &pvfmm::LaplaceKernel   <double>::gradient();
-  if (*kernel == PVFMMStokesPressure     ) ker = &pvfmm::StokesKernel    <double>::pressure();
-  if (*kernel == PVFMMStokesVelocity     ) ker = &pvfmm::StokesKernel    <double>::velocity();
-  if (*kernel == PVFMMStokesVelocityGrad ) ker = &pvfmm::StokesKernel    <double>::vel_grad();
-  if (*kernel == PVFMMBiotSavartPotential) ker = &pvfmm::BiotSavartKernel<double>::potential();
-  (*ctx) = PVFMMCreateContext<double>(*box_size, *n, *m, PVFMM_MAX_DEPTH, ker, comm);
-}
-
 // Evaluate potential in double-precision
 void pvfmmevald_(const double* src_pos, const double* sl_den, int64_t* n_src, const double* trg_pos, double* trg_val, int64_t* n_trg, void** ctx_, int32_t* setup) {
   PVFMMEval<double>(src_pos, sl_den, nullptr, *n_src, trg_pos, trg_val, *n_trg, *ctx_, *setup);
+}
+
+// Create double-precision particle FMM context
+void pvfmmcreatecontextd_(void** ctx, double* box_size, int32_t* n, int32_t* m, int32_t* kernel, int32_t* bndry, MPI_Fint* fcomm) {
+  MPI_Comm comm = MPI_Comm_f2c(*fcomm);
+  (*ctx) = PVFMMCreateContext<double>(*box_size, *n, *m, PVFMM_MAX_DEPTH, PVFMMKernelPtr<double>((enum PVFMMKernel)*kernel), PVFMMBndry(*bndry), comm);
 }
 
 // Destroy double-precision particle FMM context
@@ -898,20 +899,8 @@ void pvfmmdestroycontextd_(void** ctx) {
 
 
 
-void* PVFMMCreateContextF(float box_size, int n, int m, enum PVFMMKernel kernel, MPI_Comm comm) {
-  const pvfmm::Kernel<float>* ker = nullptr;
-  if (kernel == PVFMMLaplacePotential   ) ker = &pvfmm::LaplaceKernel   <float>::potential();
-  if (kernel == PVFMMLaplaceGradient    ) ker = &pvfmm::LaplaceKernel   <float>::gradient();
-  if (kernel == PVFMMStokesPressure     ) ker = &pvfmm::StokesKernel    <float>::pressure();
-  if (kernel == PVFMMStokesVelocity     ) ker = &pvfmm::StokesKernel    <float>::velocity();
-  if (kernel == PVFMMStokesVelocityGrad ) ker = &pvfmm::StokesKernel    <float>::vel_grad();
-  if (kernel == PVFMMBiotSavartPotential) ker = &pvfmm::BiotSavartKernel<float>::potential();
-  return PVFMMCreateContext<float>(box_size, n, m, PVFMM_MAX_DEPTH, ker, comm);
-}
-
-void* PVFMMCreateContextFWorld(float box_size, int n, int m, enum PVFMMKernel kernel) {
-  PVFMMEnsureMPIInitialized();
-  return PVFMMCreateContextF(box_size, n, m, kernel, MPI_COMM_WORLD);
+void* PVFMMCreateContextF(float box_size, int n, int m, enum PVFMMKernel kernel, enum PVFMMBoundaryType bndry, MPI_Comm comm) {
+  return PVFMMCreateContext<float>(box_size, n, m, PVFMM_MAX_DEPTH, PVFMMKernelPtr<float>(kernel), PVFMMBndry(bndry), comm);
 }
 
 void PVFMMEvalF(const float* src_pos, const float* sl_den, const float* dl_den, long n_src, const float* trg_pos, float* trg_val, long n_trg, const void* ctx, int setup) {
@@ -923,20 +912,8 @@ void PVFMMDestroyContextF(void** ctx) {
 }
 
 
-void* PVFMMCreateContextD(double box_size, int n, int m, enum PVFMMKernel kernel, MPI_Comm comm) {
-  const pvfmm::Kernel<double>* ker = nullptr;
-  if (kernel == PVFMMLaplacePotential   ) ker = &pvfmm::LaplaceKernel   <double>::potential();
-  if (kernel == PVFMMLaplaceGradient    ) ker = &pvfmm::LaplaceKernel   <double>::gradient();
-  if (kernel == PVFMMStokesPressure     ) ker = &pvfmm::StokesKernel    <double>::pressure();
-  if (kernel == PVFMMStokesVelocity     ) ker = &pvfmm::StokesKernel    <double>::velocity();
-  if (kernel == PVFMMStokesVelocityGrad ) ker = &pvfmm::StokesKernel    <double>::vel_grad();
-  if (kernel == PVFMMBiotSavartPotential) ker = &pvfmm::BiotSavartKernel<double>::potential();
-  return PVFMMCreateContext<double>(box_size, n, m, PVFMM_MAX_DEPTH, ker, comm);
-}
-
-void* PVFMMCreateContextDWorld(double box_size, int n, int m, enum PVFMMKernel kernel) {
-  PVFMMEnsureMPIInitialized();
-  return PVFMMCreateContextD(box_size, n, m, kernel, MPI_COMM_WORLD);
+void* PVFMMCreateContextD(double box_size, int n, int m, enum PVFMMKernel kernel, enum PVFMMBoundaryType bndry, MPI_Comm comm) {
+  return PVFMMCreateContext<double>(box_size, n, m, PVFMM_MAX_DEPTH, PVFMMKernelPtr<double>(kernel), PVFMMBndry(bndry), comm);
 }
 
 void PVFMMEvalD(const double* src_pos, const double* sl_den, const double* dl_den, long n_src, const double* trg_pos, double* trg_val, long n_trg, const void* ctx, int setup) {

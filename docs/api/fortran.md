@@ -20,23 +20,26 @@ All functions come in double-precision (`D` suffix, `real(c_double)`) and
 single-precision (`F` suffix, `real(c_float)`) variants; only the `D` variants
 are listed below. Opaque handles are `type(c_ptr)`. Communicators are passed
 as plain `integer` Fortran MPI handles (e.g. `MPI_COMM_WORLD` from `mpif.h`).
-Unlike the C interface there are no `*World` variants — the communicator is
-always explicit. See {doc}`../tutorials/c-fortran` for complete programs.
+See {doc}`../tutorials/c-fortran` for complete programs.
 
 The kernel constants (`PVFMMLaplacePotential`, `PVFMMLaplaceGradient`,
 `PVFMMStokesPressure`, `PVFMMStokesVelocity`, `PVFMMStokesVelocityGrad`,
-`PVFMMBiotSavartPotential`) mirror the C `PVFMMKernel` enum.
+`PVFMMBiotSavartPotential`) mirror the C `PVFMMKernel` enum, and the boundary
+constants (`PVFMMBoundaryFreeSpace`, `PVFMMBoundaryPXYZ`, `PVFMMBoundaryPX`,
+`PVFMMBoundaryPXY`, alias `PVFMMBoundaryPeriodic`) mirror `PVFMMBoundaryType`
+— see {doc}`../concepts/boundary-conditions`.
 
 ## Particle FMM
 
 ```fortran
 subroutine PVFMMCreateContextD(fmm_ctx, box_size, points_per_leaf, &
-                               multipole_order, kernel, comm)
+                                 multipole_order, kernel, bndry, comm)
   type(c_ptr),        intent(out) :: fmm_ctx         ! FMM context
-  real(c_double),     intent(in)  :: box_size        ! period length; 0 = free space
+  real(c_double),     intent(in)  :: box_size        ! domain length; period along periodic directions
   integer(c_int32_t), intent(in)  :: points_per_leaf ! max points per leaf node
   integer(c_int32_t), intent(in)  :: multipole_order ! accuracy (positive, even)
   integer(c_int32_t), intent(in)  :: kernel          ! PVFMMKernel value
+  integer(c_int32_t), intent(in)  :: bndry           ! PVFMMBoundary* constant
   integer(c_int),     intent(in)  :: comm            ! MPI communicator
 ```
 
@@ -113,6 +116,6 @@ end subroutine
 
 ```{note}
 Unlike the C callback, the Fortran callback receives no user context pointer,
-and `periodic` is passed as `integer(c_int32_t)` (0 or 1) rather than a
-logical.
+and `periodic` is passed as `integer(c_int32_t)` — one of the
+`PVFMMBoundary*` constants (0/1 keep the old free-space/periodic meaning).
 ```

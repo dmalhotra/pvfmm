@@ -76,18 +76,19 @@ Based on `julia/test/reference_comparison.jl`:
 ```julia
 ENV["PVFMM"] = "/path/to/dir-containing-libpvfmm"
 using PVFMM
+using MPI
+MPI.Init()
 
 N = 10000
 src_pos = rand(3N); src_den = rand(3N) .- 0.5; trg_pos = rand(3N)
 
-# comm omitted -> MPI_COMM_WORLD (via the C *World constructors)
-ctx = FMMParticleContext(-1.0, 1000, 10, PVFMM.StokesVelocity)
+ctx = FMMParticleContext(-1.0, 1000, 10, PVFMM.StokesVelocity, MPI.COMM_WORLD)
 
 trg_val = evaluate(ctx, src_pos, src_den, nothing, trg_pos)
 trg_val = evaluate(ctx, src_pos, src_den, nothing, trg_pos; setup=false)
 ```
 
-An explicit communicator (e.g. `MPI.COMM_WORLD` from MPI.jl) can be passed as
-the fifth argument. The volume-FMM path (`FMMVolumeContext`,
-`from_function` / `from_coefficients`, `evaluate`, `get_values`) follows the
-Python API one-to-one — see {doc}`../api/julia`.
+Per-axis periodicity is selected with the `boundary` keyword (e.g.
+`boundary=PVFMM.PX` with `box_size > 0`). The volume-FMM path
+(`FMMVolumeContext`, `from_function` / `from_coefficients`, `evaluate`,
+`get_values`) follows the Python API one-to-one — see {doc}`../api/julia`.

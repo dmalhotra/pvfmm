@@ -20,13 +20,14 @@ The whole workflow is three calls — create a context, evaluate, destroy:
 
 MPI_Init(&argc, &argv);
 
-// box_size <= 0 selects free-space boundary conditions; a positive value
-// makes the domain periodic with that period.
+// box_size is the domain length (the period along periodic directions); for
+// free space, box_size <= 0 means the bounding box is found from the points.
 double box_size = -1;
 int points_per_box = 1000;   // max points per leaf (tuning parameter)
 int multipole_order = 10;    // accuracy (positive, even)
 void* ctx = PVFMMCreateContextD(box_size, points_per_box, multipole_order,
-                                PVFMMBiotSavartPotential, MPI_COMM_WORLD);
+                                  PVFMMBiotSavartPotential,
+                                  PVFMMBoundaryFreeSpace, MPI_COMM_WORLD);
 
 // src_X: 3*Ns coords, src_V: 3*Ns densities, trg_X: 3*Nt coords,
 // trg_V: 3*Nt outputs; NULL = no double-layer sources; setup=1 because
@@ -108,8 +109,8 @@ program main
   call MPI_Init(ierror)
 
   call PVFMMCreateContextD(fmm_ctx, box_size, points_per_leaf, &
-                           multipole_order, PVFMMBiotSavartPotential, &
-                           MPI_COMM_WORLD)
+                             multipole_order, PVFMMBiotSavartPotential, &
+                             PVFMMBoundaryFreeSpace, MPI_COMM_WORLD)
 
   call PVFMMEvalD(Xs, Vs, Ns, Xt, Vt, Nt, fmm_ctx, setup)
 

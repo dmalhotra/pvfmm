@@ -1,5 +1,6 @@
 from .wrapper import (
     FMMKernel,
+    FMMBoundaryType,
     FMMVolumeContext,
     FMMParticleContext,
     FMMVolumeTree,
@@ -9,6 +10,7 @@ from .wrapper import (
 
 __all__ = [
     "FMMKernel",
+    "FMMBoundaryType",
     "FMMVolumeContext",
     "FMMParticleContext",
     "FMMVolumeTree",

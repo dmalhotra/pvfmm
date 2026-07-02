@@ -36,6 +36,23 @@ class FMMKernel(Enum):
     BiotSavartPotential = 5
 
 
+class FMMBoundaryType(Enum):
+    """Mirroring PVFMMBoundaryType in pvfmm.h; values 0/1 coincide with the
+    boolean periodic flag."""
+
+    FreeSpace = 0
+    PXYZ = 1
+    PX = 2
+    PXY = 3
+    Periodic = 1  # alias for PXYZ
+
+
+def _boundary_value(boundary: Union[bool, FMMBoundaryType]) -> int:
+    if isinstance(boundary, FMMBoundaryType):
+        return boundary.value
+    return int(bool(boundary))
+
+
 # read out of calls to BuildKernel in pvfmm/include/kernel.txx
 KERNEL_DIMS = {
     FMMKernel.LaplacePotential: (1, 1),
@@ -98,19 +115,30 @@ class FMMParticleContext:
         kernel: FMMKernel,
         comm: MPI.Comm,
         dtype=np.float64,
+        boundary: Optional[FMMBoundaryType] = None,
     ):
         self.kernel = kernel
         self.dtype = np.dtype(dtype)
         if multipole_order <= 0 or multipole_order % 2 != 0:
             raise ValueError("multipole order must be even and postive")
 
+        if boundary is None:
+            # legacy convention: box_size <= 0 -> free space, > 0 -> fully periodic
+            boundary = (
+                FMMBoundaryType.Periodic if box_size > 0 else FMMBoundaryType.FreeSpace
+            )
         self._ptr = get_function_dtype("PVFMMCreateContext", dtype)(
             float(box_size),
             max_points,
             multipole_order,
             int(self.kernel.value),
+            _boundary_value(boundary),
             ffi.get_MPI_COMM(comm),
         )
+        if self._ptr is None:
+            raise ValueError(
+                "PVFMMCreateContext failed (periodic boundaries need box_size > 0)"
+            )
 
     def __del__(self):
         if hasattr(self, "_ptr"):
@@ -208,7 +236,7 @@ class FMMVolumeTree:
         comm: MPI.Comm,
         tol: float,
         max_pts: int,
-        periodic: bool,
+        periodic: Union[bool, FMMBoundaryType],
         init_depth: int,
     ) -> "FMMVolumeTree":
         n_trg = len(trg_coord) // 3
@@ -224,7 +252,7 @@ class FMMVolumeTree:
             ffi.get_MPI_COMM(comm),
             tol,
             max_pts,
-            periodic,
+            _boundary_value(periodic),
             init_depth,
         )
         return cls(ptr, cheb_deg, data_dim, n_trg, dtype)
@@ -238,7 +266,7 @@ class FMMVolumeTree:
         fn_coeff: np.ndarray,
         trg_coord: Optional[np.ndarray],
         comm: MPI.Comm,
-        periodic: bool,
+        periodic: Union[bool, FMMBoundaryType],
     ) -> "FMMVolumeTree":
         if len(leaf_coord) % 3 != 0:
             raise ValueError(
@@ -278,7 +306,7 @@ class FMMVolumeTree:
             trg_coord,
             n_trg,
             ffi.get_MPI_COMM(comm),
-            periodic,
+            _boundary_value(periodic),
         )
         return cls(ptr, cheb_deg, data_dim, n_trg, dtype)
 

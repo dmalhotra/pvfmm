@@ -47,18 +47,37 @@ class FMMKernel(Enum):
 Mirrors the C `PVFMMKernel` enum. Source/target dimensions per kernel are
 listed in {doc}`../concepts/kernels`.
 
+## FMMBoundaryType
+
+```python
+class FMMBoundaryType(Enum):
+    FreeSpace = 0
+    PXYZ      = 1
+    PX        = 2
+    PXY       = 3
+    Periodic  = 1   # alias for PXYZ
+```
+
+Mirrors the C `PVFMMBoundaryType` enum
+({doc}`../concepts/boundary-conditions`); functions taking a `periodic`
+argument also still accept a plain bool (`False`/`True` = free space / fully
+periodic).
+
 ## Particle FMM
 
 ```python
-class FMMParticleContext(box_size, max_points, multipole_order, kernel, comm, dtype=np.float64)
+class FMMParticleContext(box_size, max_points, multipole_order, kernel, comm,
+                         dtype=np.float64, boundary=None)
 ```
 
 Creates a particle-FMM context (`PVFMMCreateContext*`). `box_size` is the
-period length for periodic boundary conditions (`0` for free space);
-`max_points` is the maximum number of points per leaf node;
-`multipole_order` must be positive and even; `comm` is an `mpi4py`
-communicator. The underlying context is freed when the object is
-garbage-collected.
+domain length and the period along the periodic directions (`<= 0` allowed
+only for free space); `max_points` is the maximum number of points per leaf
+node; `multipole_order` must be positive and even; `comm` is an `mpi4py`
+communicator. Passing `boundary=FMMBoundaryType.PX` (etc.) selects the
+boundary conditions explicitly; with `boundary=None` the sign of `box_size`
+decides (`> 0` fully periodic, otherwise free space). The underlying context
+is freed when the object is garbage-collected.
 
 ```python
 FMMParticleContext.evaluate(src_pos, sl_den, dl_den, trg_pos, setup=True) -> np.ndarray
@@ -108,7 +127,8 @@ FMMVolumeTree.from_coefficients(cheb_deg, data_dim, leaf_coord, fn_coeff,
 Builds the tree from given leaf-node coordinates and Chebyshev coefficients
 (`PVFMMCreateVolumeTreeFromCoeff*`); `fn_coeff` must have length
 `N_leaf * data_dim * (cheb_deg+1)(cheb_deg+2)(cheb_deg+3)/6`. `trg_coord` may
-be `None`.
+be `None`. In both constructors `periodic` accepts a bool or an
+`FMMBoundaryType`.
 
 ```python
 FMMVolumeTree.evaluate(fmm: FMMVolumeContext, loc_size: int) -> np.ndarray

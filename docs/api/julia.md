@@ -25,10 +25,10 @@ Precision is selected with the type parameter/keyword (`Float64` default,
 one of those types (which covers `MPI.Comm` from MPI.jl). Contexts and trees
 are freed by GC finalizers.
 
-Exported names: `FMMKernel`, `FMMVolumeContext`, `FMMParticleContext`,
-`FMMVolumeTree`, `nodes_to_coeff`, `from_function`, `from_coefficients`,
-`evaluate`, `leaf_count`, `get_leaf_coordinates`, `get_coefficients`,
-`get_values`.
+Exported names: `FMMKernel`, `FMMBoundaryType`, `FMMVolumeContext`,
+`FMMParticleContext`, `FMMVolumeTree`, `nodes_to_coeff`, `from_function`,
+`from_coefficients`, `evaluate`, `leaf_count`, `get_leaf_coordinates`,
+`get_coefficients`, `get_values`.
 
 ## FMMKernel
 
@@ -45,17 +45,36 @@ end
 
 Source/target dimensions per kernel are listed in {doc}`../concepts/kernels`.
 
+## FMMBoundaryType
+
+```julia
+@enum FMMBoundaryType begin
+    FreeSpace = 0
+    PXYZ = 1
+    PX = 2
+    PXY = 3
+end
+const Periodic = PXYZ  # alias
+```
+
+Mirrors the C `PVFMMBoundaryType` enum
+({doc}`../concepts/boundary-conditions`); `periodic` arguments also still
+accept a plain `Bool`.
+
 ## Particle FMM
 
 ```julia
-FMMParticleContext(box_size, max_points, multipole_order, kernel, comm=nothing; T=Float64)
+FMMParticleContext(box_size, max_points, multipole_order, kernel, comm;
+                   T=Float64, boundary=nothing)
 ```
 
-Creates a particle-FMM context. `box_size` is the period length for periodic
-boundary conditions (`0` for free space); `multipole_order` must be positive
-and even. When `comm === nothing` the context is created on `MPI_COMM_WORLD`
-via the C `PVFMMCreateContext*World` entry points (Julia is the only binding
-exposing these).
+Creates a particle-FMM context (`PVFMMCreateContext*`). `box_size` is the
+domain length and the period along the periodic directions (`<= 0` allowed
+only for free space); `multipole_order` must be positive and even; `comm` is
+required (e.g. `MPI.COMM_WORLD` from MPI.jl). Passing `boundary=PVFMM.PX`
+(etc.) selects the boundary conditions explicitly; with
+`boundary === nothing` the sign of `box_size` decides (`> 0` fully periodic,
+otherwise free space).
 
 ```julia
 evaluate(ctx::FMMParticleContext{T}, src_pos, sl_den, dl_den, trg_pos; setup=true)

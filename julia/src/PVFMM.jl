@@ -3,6 +3,7 @@ module PVFMM
 using Libdl
 
 export FMMKernel
+export FMMBoundaryType
 export FMMVolumeContext
 export FMMParticleContext
 export FMMVolumeTree
@@ -32,6 +33,19 @@ const KERNEL_DIMS = Dict(
     StokesVelocityGrad => (3, 9),
     BiotSavartPotential => (3, 3),
 )
+
+# Mirrors PVFMMBoundaryType in pvfmm.h; values 0/1 coincide with the old
+# boolean periodic flag.
+@enum FMMBoundaryType begin
+    FreeSpace = 0
+    PXYZ = 1
+    PX = 2
+    PXY = 3
+end
+const Periodic = PXYZ  # alias
+
+_boundary_value(b::FMMBoundaryType) = Cuint(b)
+_boundary_value(b::Bool) = Cuint(b)
 
 const _LIB_HANDLE = Ref{Ptr{Cvoid}}(C_NULL)
 
@@ -145,36 +159,33 @@ function FMMParticleContext(
     max_points::Integer,
     multipole_order::Integer,
     kernel::FMMKernel,
-    comm=nothing;
+    comm;
     T::Type{<:AbstractFloat}=Float64,
+    boundary::Union{Nothing,Bool,FMMBoundaryType}=nothing,
 )
     _check_multipole_order(multipole_order)
-    sym = comm === nothing ? Symbol("PVFMMCreateContext" * _suffix(T) * "World") : Symbol("PVFMMCreateContext" * _suffix(T))
+    if boundary === nothing
+        # legacy convention: box_size <= 0 -> free space, > 0 -> fully periodic
+        boundary = box_size > 0 ? PXYZ : FreeSpace
+    end
+    bc = _boundary_value(boundary)
+    sym = Symbol("PVFMMCreateContext" * _suffix(T))
     fp = Libdl.dlsym(_libpvfmm(), sym)
+    kind, comm_arg = _comm_kind(comm)
     ptr = if T === Float64
-        if comm === nothing
-            ccall(fp, Ptr{Cvoid}, (Cdouble, Cint, Cint, Cuint), Cdouble(box_size), Cint(max_points), Cint(multipole_order), Cuint(kernel))
+        if kind === :int
+            ccall(fp, Ptr{Cvoid}, (Cdouble, Cint, Cint, Cuint, Cuint, Cint), Cdouble(box_size), Cint(max_points), Cint(multipole_order), Cuint(kernel), bc, comm_arg)
         else
-            kind, comm_arg = _comm_kind(comm)
-            if kind === :int
-                ccall(fp, Ptr{Cvoid}, (Cdouble, Cint, Cint, Cuint, Cint), Cdouble(box_size), Cint(max_points), Cint(multipole_order), Cuint(kernel), comm_arg)
-            else
-                ccall(fp, Ptr{Cvoid}, (Cdouble, Cint, Cint, Cuint, Ptr{Cvoid}), Cdouble(box_size), Cint(max_points), Cint(multipole_order), Cuint(kernel), comm_arg)
-            end
+            ccall(fp, Ptr{Cvoid}, (Cdouble, Cint, Cint, Cuint, Cuint, Ptr{Cvoid}), Cdouble(box_size), Cint(max_points), Cint(multipole_order), Cuint(kernel), bc, comm_arg)
         end
     else
-        if comm === nothing
-            ccall(fp, Ptr{Cvoid}, (Cfloat, Cint, Cint, Cuint), Cfloat(box_size), Cint(max_points), Cint(multipole_order), Cuint(kernel))
+        if kind === :int
+            ccall(fp, Ptr{Cvoid}, (Cfloat, Cint, Cint, Cuint, Cuint, Cint), Cfloat(box_size), Cint(max_points), Cint(multipole_order), Cuint(kernel), bc, comm_arg)
         else
-            kind, comm_arg = _comm_kind(comm)
-            if kind === :int
-                ccall(fp, Ptr{Cvoid}, (Cfloat, Cint, Cint, Cuint, Cint), Cfloat(box_size), Cint(max_points), Cint(multipole_order), Cuint(kernel), comm_arg)
-            else
-                ccall(fp, Ptr{Cvoid}, (Cfloat, Cint, Cint, Cuint, Ptr{Cvoid}), Cfloat(box_size), Cint(max_points), Cint(multipole_order), Cuint(kernel), comm_arg)
-            end
+            ccall(fp, Ptr{Cvoid}, (Cfloat, Cint, Cint, Cuint, Cuint, Ptr{Cvoid}), Cfloat(box_size), Cint(max_points), Cint(multipole_order), Cuint(kernel), bc, comm_arg)
         end
     end
-    ptr == C_NULL && error("PVFMMCreateContext returned NULL")
+    ptr == C_NULL && error("PVFMMCreateContext returned NULL (periodic boundaries need box_size > 0)")
     ctx = FMMParticleContext{T}(ptr, kernel)
     finalizer(ctx) do obj
         ref = Ref(obj.ptr)
@@ -262,7 +273,7 @@ function from_function(
     comm,
     tol::Real,
     max_pts::Integer,
-    periodic::Bool,
+    periodic::Union{Bool,FMMBoundaryType},
     init_depth::Integer,
 ) where {T<:AbstractFloat}
     length(trg_coord) % 3 == 0 || throw(ArgumentError("Target coordinates length must be a multiple of 3"))
@@ -272,15 +283,15 @@ function from_function(
     kind, comm_arg = _comm_kind(comm)
     ptr = if T === Float64
         if kind === :int
-            ccall(fp, Ptr{Cvoid}, (Cint, Cint, Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cvoid}, Clong, Cint, Cdouble, Cint, Bool, Cint), Cint(cheb_deg), Cint(data_dim), fn_ptr, fn_ctx, pointer(trg_coord), Clong(n_trg), comm_arg, Cdouble(tol), Cint(max_pts), periodic, Cint(init_depth))
+            ccall(fp, Ptr{Cvoid}, (Cint, Cint, Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cvoid}, Clong, Cint, Cdouble, Cint, Cuint, Cint), Cint(cheb_deg), Cint(data_dim), fn_ptr, fn_ctx, pointer(trg_coord), Clong(n_trg), comm_arg, Cdouble(tol), Cint(max_pts), _boundary_value(periodic), Cint(init_depth))
         else
-            ccall(fp, Ptr{Cvoid}, (Cint, Cint, Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cvoid}, Clong, Ptr{Cvoid}, Cdouble, Cint, Bool, Cint), Cint(cheb_deg), Cint(data_dim), fn_ptr, fn_ctx, pointer(trg_coord), Clong(n_trg), comm_arg, Cdouble(tol), Cint(max_pts), periodic, Cint(init_depth))
+            ccall(fp, Ptr{Cvoid}, (Cint, Cint, Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cvoid}, Clong, Ptr{Cvoid}, Cdouble, Cint, Cuint, Cint), Cint(cheb_deg), Cint(data_dim), fn_ptr, fn_ctx, pointer(trg_coord), Clong(n_trg), comm_arg, Cdouble(tol), Cint(max_pts), _boundary_value(periodic), Cint(init_depth))
         end
     else
         if kind === :int
-            ccall(fp, Ptr{Cvoid}, (Cint, Cint, Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cvoid}, Clong, Cint, Cfloat, Cint, Bool, Cint), Cint(cheb_deg), Cint(data_dim), fn_ptr, fn_ctx, pointer(trg_coord), Clong(n_trg), comm_arg, Cfloat(tol), Cint(max_pts), periodic, Cint(init_depth))
+            ccall(fp, Ptr{Cvoid}, (Cint, Cint, Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cvoid}, Clong, Cint, Cfloat, Cint, Cuint, Cint), Cint(cheb_deg), Cint(data_dim), fn_ptr, fn_ctx, pointer(trg_coord), Clong(n_trg), comm_arg, Cfloat(tol), Cint(max_pts), _boundary_value(periodic), Cint(init_depth))
         else
-            ccall(fp, Ptr{Cvoid}, (Cint, Cint, Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cvoid}, Clong, Ptr{Cvoid}, Cfloat, Cint, Bool, Cint), Cint(cheb_deg), Cint(data_dim), fn_ptr, fn_ctx, pointer(trg_coord), Clong(n_trg), comm_arg, Cfloat(tol), Cint(max_pts), periodic, Cint(init_depth))
+            ccall(fp, Ptr{Cvoid}, (Cint, Cint, Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cvoid}, Clong, Ptr{Cvoid}, Cfloat, Cint, Cuint, Cint), Cint(cheb_deg), Cint(data_dim), fn_ptr, fn_ctx, pointer(trg_coord), Clong(n_trg), comm_arg, Cfloat(tol), Cint(max_pts), _boundary_value(periodic), Cint(init_depth))
         end
     end
     ptr == C_NULL && error("PVFMMCreateVolumeTree returned NULL")
@@ -301,7 +312,7 @@ function from_coefficients(
     fn_coeff::AbstractVector{T},
     trg_coord::Union{Nothing,AbstractVector{T}},
     comm,
-    periodic::Bool,
+    periodic::Union{Bool,FMMBoundaryType},
 ) where {T<:AbstractFloat}
     length(leaf_coord) % 3 == 0 || throw(ArgumentError("Leaf coordinates length must be a multiple of 3"))
     N_leaf = length(leaf_coord) ÷ 3
@@ -315,9 +326,9 @@ function from_coefficients(
     fp = Libdl.dlsym(_libpvfmm(), sym)
     kind, comm_arg = _comm_kind(comm)
     ptr = if kind === :int
-        ccall(fp, Ptr{Cvoid}, (Clong, Cint, Cint, Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cvoid}, Clong, Cint, Bool), Clong(N_leaf), Cint(cheb_deg), Cint(data_dim), pointer(leaf_coord), pointer(fn_coeff), pointer(trg_buf), Clong(n_trg), comm_arg, periodic)
+        ccall(fp, Ptr{Cvoid}, (Clong, Cint, Cint, Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cvoid}, Clong, Cint, Cuint), Clong(N_leaf), Cint(cheb_deg), Cint(data_dim), pointer(leaf_coord), pointer(fn_coeff), pointer(trg_buf), Clong(n_trg), comm_arg, _boundary_value(periodic))
     else
-        ccall(fp, Ptr{Cvoid}, (Clong, Cint, Cint, Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cvoid}, Clong, Ptr{Cvoid}, Bool), Clong(N_leaf), Cint(cheb_deg), Cint(data_dim), pointer(leaf_coord), pointer(fn_coeff), pointer(trg_buf), Clong(n_trg), comm_arg, periodic)
+        ccall(fp, Ptr{Cvoid}, (Clong, Cint, Cint, Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cvoid}, Clong, Ptr{Cvoid}, Cuint), Clong(N_leaf), Cint(cheb_deg), Cint(data_dim), pointer(leaf_coord), pointer(fn_coeff), pointer(trg_buf), Clong(n_trg), comm_arg, _boundary_value(periodic))
     end
     ptr == C_NULL && error("PVFMMCreateVolumeTreeFromCoeff returned NULL")
     tree = FMMVolumeTree{T}(ptr, cheb_deg, (cheb_deg + 1)^3, (cheb_deg + 1) * (cheb_deg + 2) * (cheb_deg + 3) ÷ 6, data_dim, n_trg, nothing)

@@ -6,19 +6,20 @@ program main
   integer ierror
   integer :: comm
   real*8 :: box_size
-  integer*4 :: points_per_leaf, multipole_order, kernel
+  integer*4 :: points_per_leaf, multipole_order, kernel, bndry
   type (c_ptr) :: fmm_ctx
   integer*8 :: Ns, Nt
 
   call MPI_Init(ierror)
 
   ! Create FMM context
-  box_size = -1.0 ! for periodic boundary conditions
+  box_size = -1.0 ! free space: bounding box determined from the points
   points_per_leaf = 1000 ! tuning parameter
   multipole_order = 10 ! accuracy
   kernel = PVFMMBiotSavartPotential ! kernel function
+  bndry = PVFMMBoundaryFreeSpace ! boundary conditions
   comm = MPI_COMM_WORLD
-  call PVFMMCreateContextD(fmm_ctx, box_size, points_per_leaf, multipole_order, kernel, comm)
+  call PVFMMCreateContextD(fmm_ctx, box_size, points_per_leaf, multipole_order, kernel, bndry, comm)
 
   ! Evaluate FMM
   Ns = 20000

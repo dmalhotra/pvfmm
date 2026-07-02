@@ -82,11 +82,12 @@ int main(int argc, char** argv) {
 
   void* ctx;
   { // Create FMM context
-    double box_size = -1;
+    double box_size = -1; // free space: bounding box determined from the points
     int points_per_box = 1000;
     int multipole_order = 10;
     enum PVFMMKernel kernel = PVFMMBiotSavartPotential;
-    ctx = PVFMMCreateContextD(box_size, points_per_box, multipole_order, kernel, MPI_COMM_WORLD);
+    enum PVFMMBoundaryType bndry = PVFMMBoundaryFreeSpace;
+    ctx = PVFMMCreateContextD(box_size, points_per_box, multipole_order, kernel, bndry, MPI_COMM_WORLD);
   }
 
   test_FMM(ctx);

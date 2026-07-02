@@ -1,4 +1,6 @@
 using Test
+using MPI
+MPI.Initialized() || MPI.Init()
 using LinearAlgebra
 using Random
 
@@ -122,7 +124,7 @@ end
     @testset "Laplace potential" begin
         sl = zeros(3 * nsrc)
         sl[1:nsrc] .= charges
-        ctx = PVFMM.FMMParticleContext(0.0, 50, 8, PVFMM.LaplacePotential)
+        ctx = PVFMM.FMMParticleContext(0.0, 50, 8, PVFMM.LaplacePotential, MPI.COMM_WORLD)
         pv_out = PVFMM.evaluate(ctx, src_flat, sl, nothing, trg_flat; setup=true)
         ref = _direct_laplace_potential_3d(sources, charges, targets)
         _assert_close_up_to_scale(ref, pv_out[1:ntrg])
@@ -131,7 +133,7 @@ end
     @testset "Laplace gradient" begin
         sl = zeros(3 * nsrc)
         sl[1:nsrc] .= charges
-        ctx = PVFMM.FMMParticleContext(0.0, 50, 8, PVFMM.LaplaceGradient)
+        ctx = PVFMM.FMMParticleContext(0.0, 50, 8, PVFMM.LaplaceGradient, MPI.COMM_WORLD)
         pv_out = PVFMM.evaluate(ctx, src_flat, sl, nothing, trg_flat; setup=true)
         ref = _direct_laplace_gradient_3d(sources, charges, targets)
         _assert_close_up_to_scale(vec(ref), vec(reshape(pv_out, 3, ntrg)))
@@ -139,7 +141,7 @@ end
 
     @testset "Stokes velocity" begin
         sl = _aos_flat(forces)
-        ctx = PVFMM.FMMParticleContext(0.0, 50, 8, PVFMM.StokesVelocity)
+        ctx = PVFMM.FMMParticleContext(0.0, 50, 8, PVFMM.StokesVelocity, MPI.COMM_WORLD)
         pv_out = PVFMM.evaluate(ctx, src_flat, sl, nothing, trg_flat; setup=true)
         ref = _direct_stokes_velocity_3d(sources, forces, targets)
         _assert_close_up_to_scale(vec(ref), vec(reshape(pv_out, 3, ntrg)))
@@ -147,7 +149,7 @@ end
 
     @testset "Stokes pressure" begin
         sl = _aos_flat(forces)
-        ctx = PVFMM.FMMParticleContext(0.0, 50, 8, PVFMM.StokesPressure)
+        ctx = PVFMM.FMMParticleContext(0.0, 50, 8, PVFMM.StokesPressure, MPI.COMM_WORLD)
         pv_out = PVFMM.evaluate(ctx, src_flat, sl, nothing, trg_flat; setup=true)
         ref = _direct_stokes_pressure_3d(sources, forces, targets)
         _assert_close_up_to_scale(ref, pv_out[1:ntrg])
