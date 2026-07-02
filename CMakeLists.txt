@@ -47,8 +47,9 @@ else()
               ${LAPACK_LIBRARIES})
 endif()
 
-# Periodic boundary conditions (pvfmm-specific; no SCTL equivalent)
-option(PVFMM_EXTENDED_BC "Enable extended per-axis periodic boundary conditions" ON)
+# STKFMM-compatibility mode: disables pvfmm's built-in periodization so STKFMM
+# can apply its own periodization scheme. Only enable when building STKFMM.
+option(PVFMM_EXTENDED_BC "Disable built-in periodization (STKFMM compatibility)" OFF)
 if(PVFMM_EXTENDED_BC)
   list(APPEND PVFMM_DEFINES "PVFMM_EXTENDED_BC")
 endif()
