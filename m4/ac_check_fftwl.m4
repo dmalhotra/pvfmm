@@ -68,7 +68,6 @@ AC_DEFUN([AC_CHECK_FFTWL],[\
     if test "$cv_lfftw3l" = yes; then
         AC_SUBST(FFTWL_LIB)
         AC_SUBST(FFTW_INCLUDE)
-        AC_DEFINE(HAVE_FFTWL,1,[Define if we have long double FFTW])
         acx_fftwl_ok=yes
     else
         acx_fftwl_ok=no

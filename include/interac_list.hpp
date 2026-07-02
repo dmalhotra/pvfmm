@@ -11,6 +11,7 @@
 #include <cstdlib>
 
 #include <pvfmm_common.hpp>
+#include <tree_node.hpp>
 #include <precomp_mat.hpp>
 #include <mat_utils.hpp>
 

@@ -270,6 +270,7 @@ AC_SUBST(SCTL_PROFILE_DEFAULT)
 # above if mpicxx is missing), so SCTL_HAVE_MPI is always on; the rest
 # track detection results.
 SCTL_DEFS="-DSCTL_HAVE_MPI"
+if test "x$cv_quad_prec"        = xyes; then SCTL_DEFS="$SCTL_DEFS -DSCTL_QUAD_T=$cv_quad_type"; fi
 if test "x$acx_blas_ok"         = xyes; then SCTL_DEFS="$SCTL_DEFS -DSCTL_HAVE_BLAS";    fi
 if test "x$acx_lapack_ok"       = xyes; then SCTL_DEFS="$SCTL_DEFS -DSCTL_HAVE_LAPACK";  fi
 if test "x$acx_fftw_ok"         = xyes; then SCTL_DEFS="$SCTL_DEFS -DSCTL_HAVE_FFTW";    fi

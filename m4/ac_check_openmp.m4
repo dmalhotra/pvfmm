@@ -24,9 +24,7 @@ AC_DEFUN([CHECK_OPENMP],
 
     AC_MSG_RESULT($cv_openmp)
 
-    if test "$cv_openmp" = yes; then
-        AC_DEFINE(HAVE_OPENMP,1,[Define if compiler supports OpenMP])
-    else
+    if test "$cv_openmp" != yes; then
         CFLAGS="$XCFLAGS"
         CXXFLAGS="$XCXXFLAGS"
     fi
