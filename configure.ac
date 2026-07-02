@@ -1,5 +1,5 @@
 AC_PREREQ([2.61])
-AC_INIT([PVFMM],[1.0.0],[contact@pvfmm.org])
+AC_INIT([PVFMM],[m4_esyscmd_s([cat version.txt])],[contact@pvfmm.org])
 
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([build-aux])
