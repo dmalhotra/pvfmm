@@ -118,8 +118,41 @@ if $USE_OPENMP; then
     AC_MSG_ERROR([Don't know how to enable OpenMP.
 		  Please specify the OpenMP flag using: --with-openmp-flag=<flag>.]);
   fi
+
+  # Link the OpenMP runtime into libpvfmm explicitly: libtool links the shared
+  # library with -nostdlib, under which clang adds neither its implicit OpenMP
+  # runtime nor the search path to find it (gcc still adds -lgomp), leaving
+  # __kmpc_* undefined for non-clang-driven links (e.g. the C/Fortran examples
+  # linked via mpicc). Resolve the runtime file the -fopenmp link test actually
+  # uses; fall back to probing common library names.
+  OPENMP_LIB=""
+  AC_MSG_CHECKING([for the OpenMP runtime library])
+  AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <omp.h>]],
+                                  [[omp_get_num_threads();]])],
+                 [omp_runtime=`ldd conftest$ac_exeext 2>/dev/null | awk '/lib@<:@gi@:>@?omp@<:@^ @:>@*\.so/ { print $3; exit }'`
+                  # -Wl, so libtool passes the versioned .so path through to the linker
+                  test -n "$omp_runtime" && OPENMP_LIB="-Wl,$omp_runtime"])
+  AC_MSG_RESULT([${OPENMP_LIB:-unknown}])
+  if test -z "$OPENMP_LIB"; then
+    case "$ax_cv_cxx_compiler_vendor" in
+      gnu)   omp_lib_candidates="-lgomp";;
+      clang) omp_lib_candidates="-lomp";;
+      intel) omp_lib_candidates="-liomp5";;
+      *)     omp_lib_candidates="";;
+    esac
+    for omp_lib in $omp_lib_candidates; do
+      AC_MSG_CHECKING([whether the OpenMP runtime links as $omp_lib])
+      XLIBS="$LIBS"; LIBS="$LIBS $omp_lib"
+      AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <omp.h>]],
+                                      [[omp_get_num_threads();]])],
+                     [OPENMP_LIB="$omp_lib"], [])
+      LIBS="$XLIBS"
+      AS_IF([test -n "$OPENMP_LIB"], [AC_MSG_RESULT(yes); break], [AC_MSG_RESULT(no)])
+    done
+  fi
 fi
 AC_LANG_WERROR([off])
+AC_SUBST(OPENMP_LIB)
 
 # Check for FFTW
 AC_CHECK_FFTW
