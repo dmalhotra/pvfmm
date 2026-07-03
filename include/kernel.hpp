@@ -167,8 +167,8 @@ template<class T>
 struct StokesKernel{
   inline static const Kernel<T>& velocity(); ///< Stokeslet; kernel dimensions (3,3)
   inline static const Kernel<T>& pressure(); ///< associated pressure; kernel dimensions (3,1)
-  inline static const Kernel<T>& stress  (); ///< stress tensor; kernel dimensions (3,9)
-  inline static const Kernel<T>& vel_grad(); ///< velocity gradient; kernel dimensions (3,9)
+  inline static const Kernel<T>& stress  (); ///< stress tensor (symmetric); kernel dimensions (3,9)
+  inline static const Kernel<T>& vel_grad(); ///< velocity gradient, \f$\partial u_k/\partial x_i\f$ at index \f$3i+k\f$; kernel dimensions (3,9)
 };
 
 /**

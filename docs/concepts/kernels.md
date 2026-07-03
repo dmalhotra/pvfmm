@@ -43,7 +43,9 @@ with the associated pressure
 $$p(x) = \frac{1}{4\pi} \sum_j \frac{f_j \cdot r_j}{r_j^3},$$
 
 and `stress()` / `vel_grad()` returning the 3×3 stress and velocity-gradient
-tensors per target (9 values, row-major).
+tensors per target (9 values). The stress tensor is symmetric; `vel_grad()`
+stores $\partial u_k / \partial x_i$ at index $3i + k$ (the transpose of
+row-major $\nabla u$).
 
 **Biot–Savart** — velocity induced by vortex sources $\omega_j$:
 

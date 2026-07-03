@@ -34,6 +34,17 @@ TARGET_BIN = \
        $(BINDIR)/fmm_pts \
        $(BINDIR)/fmm_cheb
 
+ifneq ($(CC_PVFMM),)
+TARGET_BIN += \
+       $(BINDIR)/example-c \
+       $(BINDIR)/example2-c
+endif
+ifneq ($(FC_PVFMM),)
+TARGET_BIN += \
+       $(BINDIR)/example-f \
+       $(BINDIR)/example2-f
+endif
+
 all : $(TARGET_BIN)
 
 $(BINDIR)/%: $(SRCDIR)/%.f90
