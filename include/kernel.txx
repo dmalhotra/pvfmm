@@ -1283,7 +1283,7 @@ struct laplace_dbl_poten : public GenericKernel<laplace_dbl_poten_> {};
 struct laplace_grad_ {
   static const int FLOPS = 16;
   template <class Real> static Real ScaleFactor() {
-    return 1/(4*sctl::const_pi<Real>());
+    return -1/(4*sctl::const_pi<Real>());
   }
   template <class VecType, int digits> static void uKerEval(VecType (&u)[3], const VecType (&r)[3], const VecType (&f)[1], const void* ctx_ptr) {
     VecType r2 = r[0]*r[0]+r[1]*r[1]+r[2]*r[2];

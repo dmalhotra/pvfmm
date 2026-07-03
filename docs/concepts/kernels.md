@@ -29,7 +29,9 @@ With target point $x$, source points $y_j$, and source densities $f_j$
 
 $$u(x) = \frac{1}{4\pi} \sum_j \frac{f_j}{|x - y_j|},$$
 
-and `gradient()` evaluates $\nabla u(x)$.
+and `gradient()` evaluates the gradient
+
+$$\nabla u(x) = -\frac{1}{4\pi} \sum_j \frac{f_j\, r_j}{r_j^3}, \qquad r_j = x - y_j$$
 
 **Stokes velocity** — the Stokeslet (free-space Green's function of the
 Stokes equations with unit viscosity):

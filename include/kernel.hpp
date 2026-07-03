@@ -151,29 +151,42 @@ template <class uKernel> class GenericKernel {
 
 namespace pvfmm{ // Predefined Kernel-functions
 
+/**
+ * \brief Green's function of the Poisson equation \f$-\Delta u = f\f$.
+ */
 template<class T>
 struct LaplaceKernel{
-  inline static const Kernel<T>& potential();
-  inline static const Kernel<T>& gradient();
+  inline static const Kernel<T>& potential(); ///< \f$u(x)=\frac{1}{4\pi}\sum_j f_j/|x-y_j|\f$; kernel dimensions (1,1)
+  inline static const Kernel<T>& gradient();  ///< \f$\nabla u(x)=-\frac{1}{4\pi}\sum_j f_j\,r_j/|r_j|^3\f$, \f$r_j=x-y_j\f$; kernel dimensions (1,3)
 };
 
+/**
+ * \brief Green's functions of the Stokes equations (unit viscosity).
+ */
 template<class T>
 struct StokesKernel{
-  inline static const Kernel<T>& velocity();
-  inline static const Kernel<T>& pressure();
-  inline static const Kernel<T>& stress  ();
-  inline static const Kernel<T>& vel_grad();
+  inline static const Kernel<T>& velocity(); ///< Stokeslet; kernel dimensions (3,3)
+  inline static const Kernel<T>& pressure(); ///< associated pressure; kernel dimensions (3,1)
+  inline static const Kernel<T>& stress  (); ///< stress tensor; kernel dimensions (3,9)
+  inline static const Kernel<T>& vel_grad(); ///< velocity gradient; kernel dimensions (3,9)
 };
 
+/**
+ * \brief Velocity induced by vortex sources (Biot-Savart law).
+ */
 template<class T>
 struct BiotSavartKernel{
-  inline static const Kernel<T>& potential();
+  inline static const Kernel<T>& potential(); ///< \f$u(x)=\frac{1}{4\pi}\sum_j \omega_j\times r_j/|r_j|^3\f$; kernel dimensions (3,3)
 };
 
-
+/**
+ * \brief Green's function of the Helmholtz equation \f$-\Delta u-\mu^2 u=f\f$
+ * with fixed wavenumber \f$\mu=20\pi\f$ (see kernel.txx). Complex values are
+ * stored as interleaved (real, imaginary) pairs.
+ */
 template<class T>
 struct HelmholtzKernel{
-  inline static const Kernel<T>& potential();
+  inline static const Kernel<T>& potential(); ///< \f$u(x)=\frac{1}{4\pi}\sum_j e^{i\mu|r_j|}/|r_j|\,f_j\f$; kernel dimensions (2,2)
 };
 
 

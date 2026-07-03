@@ -5,7 +5,7 @@ using Random
 const _PVFMM_BUILD_DIR = normpath(joinpath(@__DIR__, "..", "..", "build"))
 const _PVFMM_LIBNAME = Sys.iswindows() ? "libpvfmm.dll" : (Sys.isapple() ? "libpvfmm.dylib" : "libpvfmm.so")
 const _PVFMM_DYLIB = joinpath(_PVFMM_BUILD_DIR, _PVFMM_LIBNAME)
-ENV["PVFMM"] = _PVFMM_BUILD_DIR
+haskey(ENV, "PVFMM") || (ENV["PVFMM"] = _PVFMM_BUILD_DIR)
 
 function _aos_flat(coords::AbstractMatrix{T}) where {T}
     n = size(coords, 2)
@@ -27,6 +27,7 @@ end
 function _assert_close_up_to_scale(a::AbstractVector{Float64}, b::AbstractVector{Float64}; atol=5e-7, rtol=5e-2)
     s = _best_scale(a, b)
     @test isfinite(s)
+    @test s > 0  # sign-sensitive: a flipped kernel must not pass
     @test isapprox(s .* a, b; atol=atol, rtol=rtol)
 end
 
@@ -120,19 +121,17 @@ end
     forces = randn(3, nsrc)
 
     @testset "Laplace potential" begin
-        sl = zeros(3 * nsrc)
-        sl[1:nsrc] .= charges
         ctx = PVFMM.FMMParticleContext(0.0, 50, 8, PVFMM.LaplacePotential)
-        pv_out = PVFMM.evaluate(ctx, src_flat, sl, nothing, trg_flat; setup=true)
+        pv_out = PVFMM.evaluate(ctx, src_flat, charges, nothing, trg_flat; setup=true)
+        @test length(pv_out) == ntrg
         ref = _direct_laplace_potential_3d(sources, charges, targets)
-        _assert_close_up_to_scale(ref, pv_out[1:ntrg])
+        _assert_close_up_to_scale(ref, pv_out)
     end
 
     @testset "Laplace gradient" begin
-        sl = zeros(3 * nsrc)
-        sl[1:nsrc] .= charges
         ctx = PVFMM.FMMParticleContext(0.0, 50, 8, PVFMM.LaplaceGradient)
-        pv_out = PVFMM.evaluate(ctx, src_flat, sl, nothing, trg_flat; setup=true)
+        pv_out = PVFMM.evaluate(ctx, src_flat, charges, nothing, trg_flat; setup=true)
+        @test length(pv_out) == 3 * ntrg
         ref = _direct_laplace_gradient_3d(sources, charges, targets)
         _assert_close_up_to_scale(vec(ref), vec(reshape(pv_out, 3, ntrg)))
     end
@@ -149,7 +148,16 @@ end
         sl = _aos_flat(forces)
         ctx = PVFMM.FMMParticleContext(0.0, 50, 8, PVFMM.StokesPressure)
         pv_out = PVFMM.evaluate(ctx, src_flat, sl, nothing, trg_flat; setup=true)
+        @test length(pv_out) == ntrg
         ref = _direct_stokes_pressure_3d(sources, forces, targets)
-        _assert_close_up_to_scale(ref, pv_out[1:ntrg])
+        _assert_close_up_to_scale(ref, pv_out)
+    end
+
+    @testset "Stokes velocity gradient (smoke)" begin
+        sl = _aos_flat(forces)
+        ctx = PVFMM.FMMParticleContext(0.0, 50, 8, PVFMM.StokesVelocityGrad)
+        pv_out = PVFMM.evaluate(ctx, src_flat, sl, nothing, trg_flat; setup=true)
+        @test length(pv_out) == 9 * ntrg
+        @test all(isfinite, pv_out)
     end
 end
