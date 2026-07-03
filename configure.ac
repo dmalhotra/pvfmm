@@ -16,6 +16,26 @@ AC_LANG([C++])
 AX_PROG_CXX_MPI(,[CXX=$MPICXX],[])
 AX_MPI([CXX=$MPICXX; CC=$MPICC; CFLAGS=$CFLAGS],
        [AC_MSG_ERROR([Cannot find mpicxx. Make sure that MPI is installed and location of compiler is in PATH.])])
+
+# MPI C and Fortran compiler wrappers, exported through MakeVariables
+# (CC_PVFMM/FC_PVFMM) for the examples and downstream makefiles. Prefer
+# siblings of MPICXX so a full-path MPICXX=... invocation selects the
+# matching wrappers; fall back to a PATH search. Both are optional (only
+# the C/Fortran examples need them).
+AC_ARG_VAR(MPICC,[MPI C compiler command])
+AC_ARG_VAR(MPIFC,[MPI Fortran compiler command])
+mpi_bindir=`AS_DIRNAME(["$MPICXX"])`
+if test -z "$MPICC" && test -x "$mpi_bindir/mpicc"; then MPICC="$mpi_bindir/mpicc"; fi
+if test -z "$MPIFC"; then
+  for pvfmm_mpifc in mpifort mpif90; do
+    if test -x "$mpi_bindir/$pvfmm_mpifc"; then MPIFC="$mpi_bindir/$pvfmm_mpifc"; break; fi
+  done
+fi
+AC_CHECK_PROGS(MPICC, [mpicc], [])
+AC_CHECK_PROGS(MPIFC, [mpifort mpif90], [])
+AC_SUBST(MPICC)
+AC_SUBST(MPIFC)
+
 AX_COMPILER_VENDOR
 AC_PROG_AWK
 AC_PROG_F77

@@ -94,20 +94,14 @@ is freed when the object is garbage-collected.
 FMMParticleContext.evaluate(src_pos, sl_den, dl_den, trg_pos, setup=True) -> np.ndarray
 ```
 
-Evaluates the potential at the target points (`PVFMMEval*`). `sl_den`
-(single-layer density, same length as `src_pos`) and `dl_den` (double-layer
-density + normals, twice the length of `src_pos`) may each be `None`. Pass
-`setup=True` whenever source or target *positions* changed since the last
-call; `setup=False` re-uses the tree when only densities changed.
-
-```{caution}
-The returned array has length `len(trg_pos)`, i.e. three values per target,
-which matches kernels with three output components (Stokes velocity,
-Biot–Savart, Laplace gradient). For kernels with a different target dimension
-(see {doc}`../concepts/kernels`) only the first `n_trg * trg_dim` entries are
-meaningful — and `StokesVelocityGrad` (9 components) does not fit and must not
-be used through this method.
-```
+Evaluates the potential at the target points (`PVFMMEval*`). With
+`(src_dim, trg_dim)` the kernel dimensions from {doc}`../concepts/kernels`:
+`sl_den` (single-layer density) has `src_dim` values per source, `dl_den`
+(double-layer density + normal) has `src_dim + 3` values per source, and the
+returned array has `trg_dim` values per target; either density may be
+`None`. Pass `setup=True` whenever source or target *positions* changed
+since the last call; `setup=False` re-uses the tree when only densities
+changed.
 
 ## Volume FMM
 

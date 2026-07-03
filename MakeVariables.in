@@ -8,6 +8,8 @@ PKG_SUBDIR_PVFMM =
 
 # Compiler and flags.
 CXX_PVFMM = @MPICXX@
+CC_PVFMM = @MPICC@
+FC_PVFMM = @MPIFC@
 
 # The PVFMM library and headers.
 PVFMM_INCLUDES = -I$(TOP_SRCDIR_PVFMM)/include$(PKG_SUBDIR_PVFMM)

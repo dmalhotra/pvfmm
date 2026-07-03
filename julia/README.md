@@ -42,9 +42,8 @@ n_trg = 10
 src_pos = rand(3 * n_src)
 trg_pos = rand(3 * n_trg)
 
-# For LaplacePotential, only the first component of each source density triplet is used.
-sl_den = zeros(3 * n_src)
-sl_den[1:n_src] .= randn(n_src)
+# LaplacePotential takes one density value per source point (see KERNEL_DIMS).
+sl_den = randn(n_src)
 
 ctx = FMMParticleContext(0.0, 50, 8, LaplacePotential)
 trg_val = evaluate(ctx, src_pos, sl_den, nothing, trg_pos; setup=true)

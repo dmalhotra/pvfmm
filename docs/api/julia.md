@@ -82,16 +82,12 @@ sign of `box_size` decides (`> 0` fully periodic, otherwise free space).
 evaluate(ctx::FMMParticleContext{T}, src_pos, sl_den, dl_den, trg_pos; setup=true)
 ```
 
-Evaluates the potential at the target points. `sl_den` (same length as
-`src_pos`) and `dl_den` (twice the length of `src_pos`) may each be
-`nothing`. Pass `setup=true` whenever source or target *positions* changed.
-
-```{caution}
-As in the Python binding, the returned vector has length `length(trg_pos)`
-(three values per target); for kernels whose target dimension is not 3, only
-the first `n_trg * trg_dim` entries are meaningful, and `StokesVelocityGrad`
-must not be used through this method.
-```
+Evaluates the potential at the target points. With `(src_dim, trg_dim)` the
+kernel dimensions from {doc}`../concepts/kernels`: `sl_den` (single-layer
+density) has `src_dim` values per source, `dl_den` (double-layer density +
+normal) has `src_dim + 3` values per source, and the returned vector has
+`trg_dim` values per target; either density may be `nothing`. Pass
+`setup=true` whenever source or target *positions* changed.
 
 ## Volume FMM
 

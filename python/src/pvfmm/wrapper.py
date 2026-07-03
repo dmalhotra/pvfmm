@@ -1,3 +1,5 @@
+"""Pythonic layer over the PVFMM C API (raw ctypes bindings live in pvfmm.ffi)."""
+
 from __future__ import annotations
 
 import ctypes
@@ -11,6 +13,12 @@ from . import ffi
 def nodes_to_coeff(
     N_leaf: int, cheb_deg: int, dof: int, node_val: np.ndarray
 ) -> np.ndarray:
+    """Convert function values on tensor-product Chebyshev nodes (first kind)
+    to Chebyshev coefficients.
+
+    node_val holds N_leaf*(cheb_deg+1)^3*dof values; the result has
+    N_leaf*(cheb_deg+1)(cheb_deg+2)(cheb_deg+3)/6*dof coefficients.
+    """
     is_double = node_val.dtype == np.float64
     Ncoef = (cheb_deg + 1) * (cheb_deg + 2) * (cheb_deg + 3) // 6
     # TODO: is this the valid size of the output array?
@@ -78,6 +86,14 @@ def get_function_dtype(function_name: str, dtype: np.dtype) -> Callable:
 
 
 class FMMVolumeContext:
+    """Volume-FMM translation operators for one (kernel, multipole_order,
+    chebyshev_degree, dtype) combination.
+
+    Construction precomputes (or loads from the Precomp_* cache; see
+    $PVFMM_DIR) the operators, which can take a while on first use. Pass the
+    instance to FMMVolumeTree.evaluate(). comm is an mpi4py communicator.
+    """
+
     def __init__(
         self,
         multipole_order: int,
@@ -105,6 +121,16 @@ class FMMVolumeContext:
 
 
 class FMMParticleContext:
+    """Particle-FMM evaluator for one kernel.
+
+    box_size is the domain length and the period along the periodic
+    directions (must be > 0 for periodic boundaries; <= 0 with free space
+    means the bounding box is computed from the points). boundary is an
+    FMMBoundaryType; if None, box_size > 0 selects fully periodic and
+    box_size <= 0 free space. comm is an mpi4py communicator; if None, the
+    world communicator is obtained from the library and mpi4py is not needed.
+    """
+
     def __init__(
         self,
         box_size: float,
@@ -175,6 +201,15 @@ class FMMParticleContext:
         trg_pos: np.ndarray,
         setup: bool = True,
     ) -> np.ndarray:
+        """Evaluate the potential at trg_pos due to sources at src_pos.
+
+        With (kdim0, kdim1) = KERNEL_DIMS[kernel]: sl_den (single-layer) has
+        kdim0 values per source, dl_den (double-layer density + normal) has
+        kdim0+3 values per source, and the result has kdim1 values per
+        target; either density may be None. Arrays are flat, in
+        array-of-structures order. Pass setup=False when only densities (not
+        positions) changed since the last call.
+        """
         if src_pos.dtype != self.dtype:
             raise ValueError(
                 f"Source array had the wrong dtype: {src_pos.dtype}. "
@@ -186,25 +221,31 @@ class FMMParticleContext:
             raise ValueError(
                 "Source arrays must have a length which is a multiple of 3"
             )
+        n_src = source_length // 3
+        kdim0, kdim1 = KERNEL_DIMS[self.kernel]
 
         if sl_den is not None:
             if sl_den.dtype != self.dtype:
                 raise ValueError(
-                    f"Source array had the wrong dtype: {src_pos.dtype}. "
+                    f"Source array had the wrong dtype: {sl_den.dtype}. "
                     f"This object was created with dtype {self.dtype}"
                 )
-            if len(sl_den) != source_length:
-                raise ValueError("Source arrays must all be of the same length!")
+            if len(sl_den) != n_src * kdim0:
+                raise ValueError(
+                    f"Single-layer density must have {kdim0} value(s) per "
+                    f"source point for {self.kernel.name}"
+                )
         if dl_den is not None:
             if dl_den.dtype != self.dtype:
                 raise ValueError(
-                    f"Source array had the wrong dtype: {src_pos.dtype}. "
+                    f"Source array had the wrong dtype: {dl_den.dtype}. "
                     f"This object was created with dtype {self.dtype}"
                 )
-            if len(dl_den) != source_length * 2:
-                raise ValueError("Source arrays must all be of the same length!")
-
-        n_src = source_length // 3
+            if len(dl_den) != n_src * (kdim0 + 3):
+                raise ValueError(
+                    f"Double-layer density must have {kdim0}+3 values per "
+                    f"source point (density + normal) for {self.kernel.name}"
+                )
 
         target_length = len(trg_pos)
         if target_length % 3 != 0:
@@ -212,7 +253,7 @@ class FMMParticleContext:
                 "Target arrays must have a length which is a multiple of 3"
             )
         n_trg = target_length // 3
-        trg_val = np.empty(target_length, dtype=self.dtype)
+        trg_val = np.empty(n_trg * kdim1, dtype=self.dtype)
 
         get_function_dtype("PVFMMEval", self.dtype)(
             src_pos,
@@ -229,6 +270,13 @@ class FMMParticleContext:
 
 
 class FMMVolumeTree:
+    """Piecewise-Chebyshev volume discretization of a source density on an
+    adaptive octree over [0,1]^3.
+
+    Build with from_function() or from_coefficients(), then call evaluate()
+    with a matching FMMVolumeContext.
+    """
+
     def __init__(
         self,
         ptr: ctypes.c_void_p,
@@ -260,6 +308,10 @@ class FMMVolumeTree:
         periodic: Union[bool, FMMBoundaryType],
         init_depth: int,
     ) -> "FMMVolumeTree":
+        """Build the tree by adaptively refining until the Chebyshev
+        interpolation of fn (a C callback; see ffi.double_volume_callback)
+        meets tol, with at most max_pts targets per leaf.
+        """
         n_trg = len(trg_coord) // 3
 
         dtype = trg_coord.dtype
@@ -289,6 +341,10 @@ class FMMVolumeTree:
         comm: MPI.Comm,
         periodic: Union[bool, FMMBoundaryType],
     ) -> "FMMVolumeTree":
+        """Build the tree from given leaf-node coordinates and Chebyshev
+        coefficients of the source density (see nodes_to_coeff); trg_coord
+        may be None.
+        """
         if len(leaf_coord) % 3 != 0:
             raise ValueError(
                 "Leaf coordinates must have a length which is a multiple of 3"
@@ -338,6 +394,9 @@ class FMMVolumeTree:
             )
 
     def evaluate(self, fmm: FMMVolumeContext, loc_size: int) -> np.ndarray:
+        """Run the volume FMM; returns the potential at the target points
+        (n_trg * kernel-target-dimension values).
+        """
         if fmm.dtype != self.dtype:
             raise ValueError(
                 f"Volume context has dtype {fmm.dtype}, "
@@ -352,15 +411,19 @@ class FMMVolumeTree:
         return trg_val
 
     def leaf_count(self) -> int:
+        """Number of leaf nodes in the tree."""
         return int(get_function_dtype("PVFMMGetLeafCount", self.dtype)(self._ptr))
 
     def get_leaf_coordinates(self) -> np.ndarray:
+        """Coordinates of the leaf-node corners (3 values per leaf)."""
         Nleaf = self.leaf_count()
         leaf_coord = np.empty(Nleaf * 3, dtype=self.dtype)
         get_function_dtype("PVFMMGetLeafCoord", self.dtype)(leaf_coord, self._ptr)
         return leaf_coord
 
     def get_coefficients(self) -> np.ndarray:
+        """Chebyshev coefficients of the computed potential (requires a prior
+        evaluate())."""
         if self._used_kernel is None:
             raise ValueError(
                 "Cannot get coefficients of an un-evaluated tree"
@@ -372,6 +435,8 @@ class FMMVolumeTree:
         return coeff
 
     def get_values(self) -> np.ndarray:
+        """Computed potential on the tensor-product Chebyshev nodes of each
+        leaf (requires a prior evaluate())."""
         coeff = self.get_coefficients()
         n_leaf = self.leaf_count()
         (_kdim0, kdim1) = KERNEL_DIMS[self._used_kernel]

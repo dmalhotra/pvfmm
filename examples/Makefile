@@ -8,9 +8,13 @@ ifndef CXX_PVFMM
 $(error Cannot find file: MakeVariables)
 endif
 
-# FC=$(FC_PVFMM) # TODO: for now, FC must be provided by user
-# CC=$(CC_PVFMM) # TODO: for now, CC must be provided by user
 CXX=$(CXX_PVFMM)
+ifneq ($(CC_PVFMM),)
+CC=$(CC_PVFMM)
+endif
+ifneq ($(FC_PVFMM),)
+FC=$(FC_PVFMM)
+endif
 CXXFLAGS=$(CXXFLAGS_PVFMM)
 LDLIBS=$(LDLIBS_PVFMM)
 
@@ -26,6 +30,7 @@ TARGET_BIN = \
        $(BINDIR)/example1 \
        $(BINDIR)/example2 \
        $(BINDIR)/example-sctl \
+       $(BINDIR)/kernel-test \
        $(BINDIR)/fmm_pts \
        $(BINDIR)/fmm_cheb
 

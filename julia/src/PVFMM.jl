@@ -16,6 +16,10 @@ export get_leaf_coordinates
 export get_coefficients
 export get_values
 
+"""
+Kernel functions (mirrors `PVFMMKernel` in pvfmm.h). Source/target dimensions
+per point are in `PVFMM.KERNEL_DIMS`.
+"""
 @enum FMMKernel begin
     LaplacePotential = 0
     LaplaceGradient = 1
@@ -34,8 +38,11 @@ const KERNEL_DIMS = Dict(
     BiotSavartPotential => (3, 3),
 )
 
-# Mirrors PVFMMBoundaryType in pvfmm.h; values 0/1 coincide with the old
-# boolean periodic flag.
+"""
+Boundary conditions (mirrors `PVFMMBoundaryType` in pvfmm.h); values 0/1
+coincide with the old boolean periodic flag. `Periodic` is an alias for
+`PXYZ`.
+"""
 @enum FMMBoundaryType begin
     FreeSpace = 0
     PXYZ = 1
@@ -110,6 +117,11 @@ mutable struct FMMParticleContext{T<:AbstractFloat}
     kernel::FMMKernel
 end
 
+"""
+Piecewise-Chebyshev volume discretization of a source density on an adaptive
+octree over [0,1]^3. Build with `from_function` or `from_coefficients`, then
+call `evaluate(tree, fmm, loc_size)` with a matching `FMMVolumeContext`.
+"""
 mutable struct FMMVolumeTree{T<:AbstractFloat}
     ptr::Ptr{Cvoid}
     cheb_deg::Int
@@ -128,6 +140,14 @@ function _destroy_ptr!(ctx_ref::Ref{Ptr{Cvoid}}, T::Type{<:AbstractFloat}, base:
     return nothing
 end
 
+"""
+    FMMVolumeContext(multipole_order, chebyshev_degree, kernel, comm; T=Float64)
+
+Volume-FMM translation operators for one (kernel, order, degree, precision)
+combination. Construction precomputes (or loads from the `Precomp_*` cache;
+see `PVFMM_DIR`) the operators, which can take a while on first use. Pass the
+instance to `evaluate(tree, fmm, loc_size)`.
+"""
 function FMMVolumeContext(
     multipole_order::Integer,
     chebyshev_degree::Integer,
@@ -154,6 +174,18 @@ function FMMVolumeContext(
     return ctx
 end
 
+"""
+    FMMParticleContext(box_size, max_points, multipole_order, kernel,
+                       comm=nothing; T=Float64, boundary=nothing)
+
+Particle-FMM evaluator for one kernel. `box_size` is the domain length and
+the period along the periodic directions (must be > 0 for periodic
+boundaries; <= 0 with free space means the bounding box is computed from the
+points). `boundary` is an `FMMBoundaryType`; if `nothing`, `box_size > 0`
+selects fully periodic and `box_size <= 0` free space. `comm` may be an MPI
+communicator (e.g. `MPI.COMM_WORLD` from MPI.jl); if omitted, the world
+communicator is obtained from the library and MPI.jl is not needed.
+"""
 function FMMParticleContext(
     box_size::Real,
     max_points::Integer,
@@ -219,6 +251,17 @@ function FMMParticleContext(
     return ctx
 end
 
+"""
+    evaluate(ctx::FMMParticleContext, src_pos, sl_den, dl_den, trg_pos; setup=true)
+
+Evaluate the potential at `trg_pos` due to sources at `src_pos`. With
+`(kdim0, kdim1) = KERNEL_DIMS[kernel]`: `sl_den` (single-layer) has `kdim0`
+values per source, `dl_den` (double-layer density + normal) has `kdim0+3`
+values per source, and the result has `kdim1` values per target; either
+density may be `nothing`. Arrays are flat, in array-of-structures order. Pass
+`setup=false` when only densities (not positions) changed since the last
+call.
+"""
 function evaluate(
     ctx::FMMParticleContext{T},
     src_pos::AbstractVector{T},
@@ -229,16 +272,17 @@ function evaluate(
 ) where {T<:AbstractFloat}
     length(src_pos) % 3 == 0 || throw(ArgumentError("Source positions length must be a multiple of 3"))
     n_src = length(src_pos) ÷ 3
+    kdim0, kdim1 = KERNEL_DIMS[ctx.kernel]
     if sl_den !== nothing
-        length(sl_den) == length(src_pos) || throw(ArgumentError("Single-layer density length must match source positions length"))
+        length(sl_den) == n_src * kdim0 || throw(ArgumentError("Single-layer density must have $kdim0 value(s) per source point for $(ctx.kernel)"))
     end
     if dl_den !== nothing
-        length(dl_den) == 2 * length(src_pos) || throw(ArgumentError("Double-layer density length must be 2x source positions length"))
+        length(dl_den) == n_src * (kdim0 + 3) || throw(ArgumentError("Double-layer density must have $(kdim0 + 3) values per source point (density + normal) for $(ctx.kernel)"))
     end
 
     length(trg_pos) % 3 == 0 || throw(ArgumentError("Target positions length must be a multiple of 3"))
     n_trg = length(trg_pos) ÷ 3
-    trg_val = Vector{T}(undef, length(trg_pos))
+    trg_val = Vector{T}(undef, n_trg * kdim1)
 
     sym = Symbol("PVFMMEval" * _suffix(T))
     fp = Libdl.dlsym(_libpvfmm(), sym)
@@ -259,6 +303,12 @@ function evaluate(
     return trg_val
 end
 
+"""
+    nodes_to_coeff(N_leaf, cheb_deg, dof, node_val)
+
+Convert function values on tensor-product Chebyshev nodes (first kind) to
+Chebyshev coefficients.
+"""
 function nodes_to_coeff(
     N_leaf::Integer,
     cheb_deg::Integer,
@@ -287,6 +337,15 @@ function _coeff_to_nodes(
     return node_val
 end
 
+"""
+    from_function(FMMVolumeTree{T}, cheb_deg, data_dim, fn_ptr, fn_ctx,
+                  trg_coord, comm, tol, max_pts, periodic, init_depth)
+
+Build a piecewise-Chebyshev volume discretization by adaptive refinement
+until the interpolation of the density callback `fn_ptr` (a C function
+pointer `void fn(const T* coord, long n, T* out, const void* ctx)`) meets
+`tol`, with at most `max_pts` targets per leaf.
+"""
 function from_function(
     ::Type{FMMVolumeTree{T}},
     cheb_deg::Integer,
@@ -328,6 +387,14 @@ function from_function(
     return tree
 end
 
+"""
+    from_coefficients(FMMVolumeTree{T}, cheb_deg, data_dim, leaf_coord,
+                      fn_coeff, trg_coord, comm, periodic)
+
+Build the volume tree from given leaf-node coordinates and Chebyshev
+coefficients of the source density (see `nodes_to_coeff`); `trg_coord` may be
+`nothing`.
+"""
 function from_coefficients(
     ::Type{FMMVolumeTree{T}},
     cheb_deg::Integer,
@@ -364,6 +431,12 @@ function from_coefficients(
     return tree
 end
 
+"""
+    evaluate(tree::FMMVolumeTree, fmm::FMMVolumeContext, loc_size)
+
+Run the volume FMM; returns the potential at the target points
+(`n_trg * kernel-target-dimension` values).
+"""
 function evaluate(tree::FMMVolumeTree{T}, fmm::FMMVolumeContext{T}, loc_size::Integer) where {T<:AbstractFloat}
     _, kdim1 = KERNEL_DIMS[fmm.kernel]
     trg_val = Vector{T}(undef, tree.n_trg * kdim1)
@@ -374,12 +447,22 @@ function evaluate(tree::FMMVolumeTree{T}, fmm::FMMVolumeContext{T}, loc_size::In
     return trg_val
 end
 
+"""
+    leaf_count(tree)
+
+Number of leaf nodes in the tree.
+"""
 function leaf_count(tree::FMMVolumeTree{T}) where {T<:AbstractFloat}
     sym = Symbol("PVFMMGetLeafCount" * _suffix(T))
     fp = Libdl.dlsym(_libpvfmm(), sym)
     return Int(ccall(fp, Clong, (Ptr{Cvoid},), tree.ptr))
 end
 
+"""
+    get_leaf_coordinates(tree)
+
+Coordinates of the leaf-node corners (3 values per leaf).
+"""
 function get_leaf_coordinates(tree::FMMVolumeTree{T}) where {T<:AbstractFloat}
     n_leaf = leaf_count(tree)
     leaf_coord = Vector{T}(undef, 3 * n_leaf)
@@ -389,6 +472,12 @@ function get_leaf_coordinates(tree::FMMVolumeTree{T}) where {T<:AbstractFloat}
     return leaf_coord
 end
 
+"""
+    get_coefficients(tree)
+
+Chebyshev coefficients of the computed potential (requires a prior
+`evaluate`).
+"""
 function get_coefficients(tree::FMMVolumeTree{T}) where {T<:AbstractFloat}
     tree.used_kernel === nothing && throw(ArgumentError("Cannot get coefficients of an unevaluated tree"))
     n_leaf = leaf_count(tree)
@@ -400,6 +489,12 @@ function get_coefficients(tree::FMMVolumeTree{T}) where {T<:AbstractFloat}
     return coeff
 end
 
+"""
+    get_values(tree)
+
+Computed potential on the tensor-product Chebyshev nodes of each leaf
+(requires a prior `evaluate`).
+"""
 function get_values(tree::FMMVolumeTree{T}) where {T<:AbstractFloat}
     coeff = get_coefficients(tree)
     n_leaf = leaf_count(tree)

@@ -9,6 +9,12 @@
 static inline MPI_Comm MPI_Comm_f2c(MPI_Fint f) { (void)f; return (MPI_Comm)0; }
 #endif
 
+#if defined(SCTL_HAVE_MPI)
+// pvfmm.f90 and the dlopen bindings pass Fortran communicator handles as
+// plain 32-bit ints (integer(c_int)); MPI_Comm_f2c must agree.
+static_assert(sizeof(MPI_Fint) == sizeof(int), "MPI_Fint is expected to be int-sized");
+#endif
+
 // Build an sctl::Comm from a C-API communicator handle (self when built w/o MPI).
 static inline sctl::Comm PVFMMComm(MPI_Comm comm) {
 #if defined(SCTL_HAVE_MPI)
