@@ -27,6 +27,6 @@ add_executable(fmm_pts ./src/fmm_pts.cpp)
 target_link_libraries(fmm_pts PRIVATE pvfmmStatic "${example_DEPS}")
 target_include_directories(fmm_pts PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-add_executable(fmm_cheb ./src/example1.cpp)
+add_executable(fmm_cheb ./src/fmm_cheb.cpp)
 target_link_libraries(fmm_cheb PRIVATE pvfmmStatic "${example_DEPS}")
 target_include_directories(fmm_cheb PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
