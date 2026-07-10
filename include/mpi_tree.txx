@@ -839,7 +839,7 @@ inline int balanceOctree (sctl::Vector<MortonId > &in, sctl::Vector<MortonId > &
     const int new_rank = new_comm.Rank();
     const int new_size = new_comm.Size();
     if(out.Dim()) {
-      MortonId nxt_mid; // root (origin, depth 0)
+      MortonId nxt_mid{}; // root (origin, depth 0)
       { // Get last octant from previous process.
         assert(out.Dim());
 
