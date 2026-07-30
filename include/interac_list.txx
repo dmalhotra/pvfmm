@@ -395,8 +395,10 @@ void InteracList<Node_t>::InitList(int max_r, int min_r, int step, Mat_Type t){
   }
   assert(count_==count);
 
-  interac_class[t].resize(count);
-  perm_list[t].resize(count);
+  // Clear before resizing: Initialize() may be called more than once, and
+  // perm_list entries are appended to below.
+  interac_class[t].clear(); interac_class[t].resize(count);
+  perm_list[t].clear();     perm_list[t].resize(count);
   if(!use_symmetries){ // Set interac_class=self
     for(size_t j=0;j<count;j++){
       int c_hash = coord_hash(&M[j][0]);

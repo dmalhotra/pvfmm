@@ -80,6 +80,7 @@ void FMM_Cheb<FMMNode>::Initialize(int mult_order, int cheb_deg_, const sctl::Co
 
   int dim=3; //Only supporting 3D
   cheb_deg=cheb_deg_;
+  this->mat_fname.clear(); // else a second Initialize() reuses the file for the previous cheb_deg/mult_order
   if(this->mat_fname.size()==0){
     std::stringstream st;
     st<<PVFMM_PRECOMP_DATA_PATH;
@@ -1068,7 +1069,7 @@ void FMM_Cheb<FMMNode>::Down2Target     (SetupData<FMMNode_t>& setup_data, bool 
 template <class FMMNode>
 void FMM_Cheb<FMMNode>::PostProcessing(FMMTree_t* tree, std::vector<FMMNode_t*>& nodes, BoundaryType bndry){
 #ifndef PVFMM_EXTENDED_BC
-  if(this->kernel->k_m2l->vol_poten && bndry==Periodic && PVFMM_BC_LEVELS>0){ // Add analytical near-field to target potential
+  if(this->kernel->k_m2l->vol_poten && this->kernel->k_m2t->vol_poten && bndry==Periodic && PVFMM_BC_LEVELS>0){ // Add analytical near-field to target potential
     const Kernel<Real_t>& k_m2t=*this->kernel->k_m2t;
     int ker_dim[2]={k_m2t.ker_dim[0],k_m2t.ker_dim[1]};
 

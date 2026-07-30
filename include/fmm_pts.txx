@@ -233,6 +233,16 @@ void FMM_Pts<FMMNode>::Initialize(int mult_order, const sctl::Comm& comm_, const
   kernel=kernel_;
   assert(kernel!=NULL);
 
+  { // Discard data cached for a previous multipole_order, so that Initialize()
+    // can be called again on the same object.
+    if(mat_fname_auto) mat_fname.clear(); // else the old order's precomputed file is reloaded
+    vprecomp_fft_flag=false;    // else the FFT plans keep the old transform size
+    vlist_fft_flag   =false;
+    vlist_ifft_flag  =false;
+    vlist_fft_map .ReInit(0);
+    vlist_ifft_map.ReInit(0);
+  }
+
   bool save_precomp=false;
   if (mat)  delete mat;
   mat=new PrecompMat<Real_t>(ScaleInvar());
@@ -262,6 +272,7 @@ void FMM_Pts<FMMNode>::Initialize(int mult_order, const sctl::Comm& comm_, const
     else st<<"_t"<<sizeof(Real_t);
     st<<".data";
     this->mat_fname=st.str();
+    this->mat_fname_auto=true;
     save_precomp=true;
   }
   this->mat->LoadFile(mat_fname.c_str(), this->sctl_comm);
@@ -990,7 +1001,7 @@ sctl::Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat
           sctl::Matrix<Real_t> M = M2L;
           for (int level = 1; level < PVFMM_BC_LEVELS; level++) M = M2L + M2M * (Pr * M * Pc) * L2L;
 
-          if (mat_indx == BoundaryType::PXYZ && kernel->k_m2l->vol_poten) { // Correction for far-field of analytical volume potential
+          if (mat_indx == BoundaryType::PXYZ && kernel->k_m2l->vol_poten && kernel->k_m2t->vol_poten) { // Correction for far-field of analytical volume potential
             int ker_dim[2] = {kernel->k_m2l->ker_dim[0], kernel->k_m2l->ker_dim[1]};
             sctl::Matrix<Real_t> M_far;
             { // Compute M_far
@@ -1080,7 +1091,7 @@ sctl::Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat
                       corner_vals[i][k*ker_dim[1]+j] += M_e2pt[i][j];
                 }
               }
-              if (mat_indx == BoundaryType::PXYZ && kernel->k_m2l->vol_poten) { // Subtract analytical vol_poten at corners
+              if (mat_indx == BoundaryType::PXYZ && kernel->k_m2l->vol_poten && kernel->k_m2t->vol_poten) { // Subtract analytical vol_poten at corners
                 sctl::Matrix<Real_t> M_analytic(ker_dim[0], n_corner*ker_dim[1]); M_analytic.SetZero();
                 kernel->k_m2l->vol_poten(&corner_pts[0], n_corner, &M_analytic[0][0]);
                 for (size_t j = 0; j < n_surf; j++)
@@ -5908,7 +5919,8 @@ void FMM_Pts<FMMNode>::Down2Target(SetupData<FMMNode_t>&  setup_data, bool devic
 template <class FMMNode>
 void FMM_Pts<FMMNode>::PostProcessing(FMMTree_t* tree, std::vector<FMMNode_t*>& nodes, BoundaryType bndry){
 #ifndef PVFMM_EXTENDED_BC
-  if(kernel->k_m2l->vol_poten && bndry==PXYZ && PVFMM_BC_LEVELS>0){ // Add analytical near-field to target potential
+  // The correction is built from k_m2l and evaluated with k_m2t, so both are needed.
+  if(kernel->k_m2l->vol_poten && kernel->k_m2t->vol_poten && bndry==PXYZ && PVFMM_BC_LEVELS>0){ // Add analytical near-field to target potential
     // TODO: Unclear what should be done for PX, PXY boundary conditions
     const Kernel<Real_t>& k_m2t=*kernel->k_m2t;
     int ker_dim[2]={k_m2t.ker_dim[0],k_m2t.ker_dim[1]};

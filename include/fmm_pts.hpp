@@ -124,7 +124,7 @@ class FMM_Pts{
    * \brief Constructor.
    */
   FMM_Pts(): vprecomp_fft_flag(false), vlist_fft_flag(false), vlist_ifft_flag(false),
-             kernel(NULL), mat(NULL), m2c(NULL){};
+             kernel(NULL), mat(NULL), mat_fname_auto(false), m2c(NULL){};
 
   /**
    * \brief Virtual destructor.
@@ -259,6 +259,7 @@ class FMM_Pts{
   const Kernel<Real_t>* kernel;    //The kernel function.
   PrecompMat<Real_t>* mat;   //Handles storage of matrices.
   std::string mat_fname;
+  bool mat_fname_auto;       // mat_fname was derived from multipole_order here, not set by a derived class
   int multipole_order;       //Order of multipole expansion.
   sctl::Comm sctl_comm;
   Real_t* m2c;
