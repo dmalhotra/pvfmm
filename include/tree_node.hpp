@@ -38,7 +38,7 @@ class TreeNode{
   /**
    * \brief Initialize pointers to NULL
    */
-  TreeNode(): dim(0), depth(0), max_depth(PVFMM_MAX_DEPTH), parent(sctl::NullIterator<TreeNode>()), child(sctl::NullIterator<sctl::Iterator<TreeNode>>()), status(1) { }
+  TreeNode(): dim(0), depth(0), max_depth(sctl::MAX_DEPTH), parent(sctl::NullIterator<TreeNode>()), child(sctl::NullIterator<sctl::Iterator<TreeNode>>()), status(1) { }
 
   /**
    * \brief Virtual destructor

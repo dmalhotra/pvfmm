@@ -43,7 +43,7 @@ struct SortPair{
  */
 inline int p2oLocal(sctl::Vector<MortonId> & nodes, sctl::Vector<MortonId>& leaves,
     unsigned int maxNumPts, unsigned int maxDepth, bool complete) {
-  assert(maxDepth<=PVFMM_MAX_DEPTH);
+  assert(maxDepth<=sctl::MAX_DEPTH);
 
   std::vector<MortonId> leaves_lst;
   unsigned int init_size=leaves.Dim();
@@ -1139,12 +1139,12 @@ void MPI_Tree<TreeNode>::SetColleagues(BoundaryType bndry, Node_t* node){
       curr_node=this->PreorderNxt(curr_node);
     }
 
-    sctl::Vector<std::vector<Node_t*> > nodes(PVFMM_MAX_DEPTH);
+    sctl::Vector<std::vector<Node_t*> > nodes(sctl::MAX_DEPTH);
     while(curr_node!=sctl::NullIterator<Node_t>()){
       nodes[curr_node->Depth()].push_back(&curr_node[0]);
       curr_node=this->PreorderNxt(curr_node);
     }
-    for(size_t i=0;i<PVFMM_MAX_DEPTH;i++){
+    for(size_t i=0;i<sctl::MAX_DEPTH;i++){
       size_t j0=nodes[i].size();
       auto& nodes_=nodes[i];
       #pragma omp parallel for

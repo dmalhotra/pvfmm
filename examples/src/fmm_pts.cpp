@@ -142,8 +142,8 @@ void fmm_test(int ker, size_t N, size_t M, Real_t b, int dist, int mult_order, i
 
   { //Output max tree depth.
     long nleaf=0, maxdepth=0;
-    std::vector<size_t> all_nodes(PVFMM_MAX_DEPTH+1,0);
-    std::vector<size_t> leaf_nodes(PVFMM_MAX_DEPTH+1,0);
+    std::vector<size_t> all_nodes(sctl::MAX_DEPTH+1,0);
+    std::vector<size_t> leaf_nodes(sctl::MAX_DEPTH+1,0);
     std::vector<sctl::Iterator<FMMNode_t>>& nodes=tree.GetNodeList();
     for(size_t i=0;i<nodes.size();i++){
       sctl::Iterator<FMMNode_t> n=nodes[i];
@@ -156,7 +156,7 @@ void fmm_test(int ker, size_t N, size_t M, Real_t b, int dist, int mult_order, i
     }
 
     if(!myrank) std::cout<<"All  Nodes: ";
-    for(int i=0;i<PVFMM_MAX_DEPTH;i++){
+    for(int i=0;i<sctl::MAX_DEPTH;i++){
       int local_size=all_nodes[i];
       int global_size;
       comm.Allreduce(sctl::Ptr2ConstItr<int>(&local_size, 1), sctl::Ptr2Itr<int>(&global_size, 1), 1, sctl::CommOp::SUM);
@@ -165,7 +165,7 @@ void fmm_test(int ker, size_t N, size_t M, Real_t b, int dist, int mult_order, i
     if(!myrank) std::cout<<'\n';
 
     if(!myrank) std::cout<<"Leaf Nodes: ";
-    for(int i=0;i<PVFMM_MAX_DEPTH;i++){
+    for(int i=0;i<sctl::MAX_DEPTH;i++){
       int local_size=leaf_nodes[i];
       int global_size;
       comm.Allreduce(sctl::Ptr2ConstItr<int>(&local_size, 1), sctl::Ptr2Itr<int>(&global_size, 1), 1, sctl::CommOp::SUM);

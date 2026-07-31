@@ -30,37 +30,37 @@ FMM_Cheb<FMMNode>::~FMM_Cheb() {
       if(f==NULL) { //File does not exists.
         { // Delete easy to compute matrices.
           Mat_Type type=W_Type;
-          for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
+          for(int l=-PVFMM_BC_LEVELS;l<sctl::MAX_DEPTH;l++)
           for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
             sctl::Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
             M.ReInit(0,0);
           }
           type=V_Type;
-          for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
+          for(int l=-PVFMM_BC_LEVELS;l<sctl::MAX_DEPTH;l++)
           for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
             sctl::Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
             M.ReInit(0,0);
           }
           type=V1_Type;
-          for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
+          for(int l=-PVFMM_BC_LEVELS;l<sctl::MAX_DEPTH;l++)
           for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
             sctl::Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
             M.ReInit(0,0);
           }
           type=U2U_Type;
-          for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
+          for(int l=-PVFMM_BC_LEVELS;l<sctl::MAX_DEPTH;l++)
           for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
             sctl::Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
             M.ReInit(0,0);
           }
           type=D2D_Type;
-          for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
+          for(int l=-PVFMM_BC_LEVELS;l<sctl::MAX_DEPTH;l++)
           for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
             sctl::Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
             M.ReInit(0,0);
           }
           type=D2T_Type;
-          for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
+          for(int l=-PVFMM_BC_LEVELS;l<sctl::MAX_DEPTH;l++)
           for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
             sctl::Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
             M.ReInit(0,0);
@@ -155,37 +155,37 @@ void FMM_Cheb<FMMNode>::Initialize(int mult_order, int cheb_deg_, const sctl::Co
     if(f==NULL) { //File does not exists.
       { // Delete easy to compute matrices.
         Mat_Type type=W_Type;
-        for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
+        for(int l=-PVFMM_BC_LEVELS;l<sctl::MAX_DEPTH;l++)
         for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
           sctl::Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
           M.ReInit(0,0);
         }
         type=V_Type;
-        for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
+        for(int l=-PVFMM_BC_LEVELS;l<sctl::MAX_DEPTH;l++)
         for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
           sctl::Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
           M.ReInit(0,0);
         }
         type=V1_Type;
-        for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
+        for(int l=-PVFMM_BC_LEVELS;l<sctl::MAX_DEPTH;l++)
         for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
           sctl::Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
           M.ReInit(0,0);
         }
         type=U2U_Type;
-        for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
+        for(int l=-PVFMM_BC_LEVELS;l<sctl::MAX_DEPTH;l++)
         for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
           sctl::Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
           M.ReInit(0,0);
         }
         type=D2D_Type;
-        for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
+        for(int l=-PVFMM_BC_LEVELS;l<sctl::MAX_DEPTH;l++)
         for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
           sctl::Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
           M.ReInit(0,0);
         }
         type=D2T_Type;
-        for(int l=-PVFMM_BC_LEVELS;l<PVFMM_MAX_DEPTH;l++)
+        for(int l=-PVFMM_BC_LEVELS;l<sctl::MAX_DEPTH;l++)
         for(size_t indx=0;indx<this->interac_list.ListCount(type);indx++){
           sctl::Matrix<Real_t>& M=this->mat->Mat(l, type, indx);
           M.ReInit(0,0);

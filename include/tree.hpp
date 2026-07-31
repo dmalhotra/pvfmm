@@ -30,7 +30,7 @@ class Tree{
   /**
    * \brief Constructor.
    */
-  Tree(): dim(0), root_node(sctl::NullIterator<Node_t>()), max_depth(PVFMM_MAX_DEPTH) { };
+  Tree(): dim(0), root_node(sctl::NullIterator<Node_t>()), max_depth(sctl::MAX_DEPTH) { };
 
   /**
    * \brief Virtual destructor.

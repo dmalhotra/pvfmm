@@ -292,7 +292,7 @@ void FMM_Pts<FMMNode>::Initialize(int mult_order, const sctl::Comm& comm_, const
   sctl::Profile::Tic("PrecompBC",&this->sctl_comm,false,4);
   { /*
     int type=BC_Type;
-    for(int l=0;l<PVFMM_MAX_DEPTH;l++)
+    for(int l=0;l<sctl::MAX_DEPTH;l++)
     for(size_t indx=0;indx<this->interac_list.ListCount((Mat_Type)type);indx++){
       sctl::Matrix<Real_t>& M=this->mat->Mat(l, (Mat_Type)type, indx);
       M.ReInit(0,0);
@@ -1267,7 +1267,7 @@ sctl::Matrix<typename FMMNode::Real_t>& FMM_Pts<FMMNode>::Precomp(int level, Mat
 template <class FMMNode>
 void FMM_Pts<FMMNode>::PrecompAll(Mat_Type type, int level){
   if(level==-1){
-    for(int l=0;l<PVFMM_MAX_DEPTH;l++){
+    for(int l=0;l<sctl::MAX_DEPTH;l++){
       PrecompAll(type, l);
     }
     return;
@@ -1326,7 +1326,7 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<sctl::Iterat
     std::vector<sctl::Iterator<FMMNode_t>> node_lst;
     {// Construct node_lst
       node_lst.clear();
-      std::vector<std::vector<sctl::Iterator<FMMNode_t>>> node_lst_(PVFMM_MAX_DEPTH+1);
+      std::vector<std::vector<sctl::Iterator<FMMNode_t>>> node_lst_(sctl::MAX_DEPTH+1);
       sctl::Iterator<FMMNode_t> r_node=sctl::NullIterator<FMMNode_t>();
       for(size_t i=0;i<node.size();i++){
         if(!node[i]->IsLeaf()){
@@ -1339,7 +1339,7 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<sctl::Iterat
         if(node[i]->Depth()==0) r_node=node[i];
       }
       size_t chld_cnt=1UL<<PVFMM_COORD_DIM;
-      for(int i=PVFMM_MAX_DEPTH;i>=0;i--){
+      for(int i=sctl::MAX_DEPTH;i>=0;i--){
         for(size_t j=0;j<node_lst_[i].size();j++){
           for(size_t k=0;k<chld_cnt;k++){
             sctl::Iterator<FMMNode_t> node=(sctl::Iterator<FMMNode_t>)node_lst_[i][j]->Child(k);
@@ -1347,7 +1347,7 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<sctl::Iterat
           }
         }
       }
-      for(int i=0;i<=PVFMM_MAX_DEPTH;i++){
+      for(int i=0;i<=sctl::MAX_DEPTH;i++){
         for(size_t j=0;j<node_lst_[i].size();j++){
           if(node_lst_[i][j]->pt_cnt[0]){
             for(size_t k=0;k<chld_cnt;k++){
@@ -1386,7 +1386,7 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<sctl::Iterat
     std::vector<sctl::Iterator<FMMNode_t>> node_lst;
     {// Construct node_lst
       node_lst.clear();
-      std::vector<std::vector<sctl::Iterator<FMMNode_t>>> node_lst_(PVFMM_MAX_DEPTH+1);
+      std::vector<std::vector<sctl::Iterator<FMMNode_t>>> node_lst_(sctl::MAX_DEPTH+1);
       sctl::Iterator<FMMNode_t> r_node=sctl::NullIterator<FMMNode_t>();
       for(size_t i=0;i<node.size();i++){
         if(!node[i]->IsLeaf()){
@@ -1397,7 +1397,7 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<sctl::Iterat
         if(node[i]->Depth()==0) r_node=node[i];
       }
       size_t chld_cnt=1UL<<PVFMM_COORD_DIM;
-      for(int i=PVFMM_MAX_DEPTH;i>=0;i--){
+      for(int i=sctl::MAX_DEPTH;i>=0;i--){
         for(size_t j=0;j<node_lst_[i].size();j++){
           for(size_t k=0;k<chld_cnt;k++){
             sctl::Iterator<FMMNode_t> node=(sctl::Iterator<FMMNode_t>)node_lst_[i][j]->Child(k);
@@ -1405,7 +1405,7 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<sctl::Iterat
           }
         }
       }
-      for(int i=0;i<=PVFMM_MAX_DEPTH;i++){
+      for(int i=0;i<=sctl::MAX_DEPTH;i++){
         for(size_t j=0;j<node_lst_[i].size();j++){
           if(node_lst_[i][j]->pt_cnt[1]){
             for(size_t k=0;k<chld_cnt;k++){
@@ -1436,11 +1436,11 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<sctl::Iterat
     int indx=2;
     std::vector<sctl::Iterator<FMMNode_t>> node_lst;
     {
-      std::vector<std::vector<sctl::Iterator<FMMNode_t>>> node_lst_(PVFMM_MAX_DEPTH+1);
+      std::vector<std::vector<sctl::Iterator<FMMNode_t>>> node_lst_(sctl::MAX_DEPTH+1);
       for(size_t i=0;i<node.size();i++)
         if(!node[i]->IsLeaf())
           node_lst_[node[i]->Depth()].push_back(node[i]);
-      for(int i=0;i<=PVFMM_MAX_DEPTH;i++)
+      for(int i=0;i<=sctl::MAX_DEPTH;i++)
         for(size_t j=0;j<node_lst_[i].size();j++)
           node_lst.push_back(node_lst_[i][j]);
     }
@@ -1450,11 +1450,11 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<sctl::Iterat
     int indx=3;
     std::vector<sctl::Iterator<FMMNode_t>> node_lst;
     {
-      std::vector<std::vector<sctl::Iterator<FMMNode_t>>> node_lst_(PVFMM_MAX_DEPTH+1);
+      std::vector<std::vector<sctl::Iterator<FMMNode_t>>> node_lst_(sctl::MAX_DEPTH+1);
       for(size_t i=0;i<node.size();i++)
         if(!node[i]->IsLeaf() && !node[i]->IsGhost())
           node_lst_[node[i]->Depth()].push_back(node[i]);
-      for(int i=0;i<=PVFMM_MAX_DEPTH;i++)
+      for(int i=0;i<=sctl::MAX_DEPTH;i++)
         for(size_t j=0;j<node_lst_[i].size();j++)
           node_lst.push_back(node_lst_[i][j]);
     }
@@ -1552,11 +1552,11 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<sctl::Iterat
     { // check and equiv surfaces.
       if(tree->upwd_check_surf.size()==0){
         size_t m=MultipoleOrder();
-        tree->upwd_check_surf.resize(PVFMM_MAX_DEPTH);
-        tree->upwd_equiv_surf.resize(PVFMM_MAX_DEPTH);
-        tree->dnwd_check_surf.resize(PVFMM_MAX_DEPTH);
-        tree->dnwd_equiv_surf.resize(PVFMM_MAX_DEPTH);
-        for(size_t depth=0;depth<PVFMM_MAX_DEPTH;depth++){
+        tree->upwd_check_surf.resize(sctl::MAX_DEPTH);
+        tree->upwd_equiv_surf.resize(sctl::MAX_DEPTH);
+        tree->dnwd_check_surf.resize(sctl::MAX_DEPTH);
+        tree->dnwd_equiv_surf.resize(sctl::MAX_DEPTH);
+        for(size_t depth=0;depth<sctl::MAX_DEPTH;depth++){
           Real_t c[3]={0.0,0.0,0.0};
           tree->upwd_check_surf[depth].ReInit((6*(m-1)*(m-1)+2)*PVFMM_COORD_DIM);
           tree->upwd_equiv_surf[depth].ReInit((6*(m-1)*(m-1)+2)*PVFMM_COORD_DIM);
@@ -1568,7 +1568,7 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<sctl::Iterat
           tree->dnwd_equiv_surf[depth]=d_equiv_surf(m,c,depth);
         }
       }
-      for(size_t depth=0;depth<PVFMM_MAX_DEPTH;depth++){
+      for(size_t depth=0;depth<sctl::MAX_DEPTH;depth++){
         vec_lst.push_back(&tree->upwd_check_surf[depth]);
         vec_lst.push_back(&tree->upwd_equiv_surf[depth]);
         vec_lst.push_back(&tree->dnwd_check_surf[depth]);
@@ -1650,7 +1650,7 @@ void FMM_Pts<FMMNode>::CollectNodeData(FMMTree_t* tree, std::vector<sctl::Iterat
 
 template <class FMMNode>
 void FMM_Pts<FMMNode>::SetupPrecomp(SetupData<FMMNode_t>& setup_data, bool device){
-  if(setup_data.precomp_data==NULL || setup_data.level>PVFMM_MAX_DEPTH) return;
+  if(setup_data.precomp_data==NULL || setup_data.level>sctl::MAX_DEPTH) return;
 
   sctl::Profile::Tic("SetupPrecomp",&this->sctl_comm,true,25);
   if(setup_data.precomp_data_mirror) setup_data.precomp_data_mirror->Free(); // CompactData below may reallocate the host buffer
@@ -2237,7 +2237,7 @@ void FMM_Pts<FMMNode>::Source2UpSetup(SetupData<FMMNode_t>&  setup_data, FMMTree
     sctl::Vector<size_t> interac_cnt;
     sctl::Vector<size_t> interac_dsp;
     sctl::Vector<size_t> interac_cst;
-    sctl::Vector<Real_t> scal[4*PVFMM_MAX_DEPTH];
+    sctl::Vector<Real_t> scal[4*sctl::MAX_DEPTH];
     sctl::Matrix<Real_t> M[4];
   };
   struct ptSetupData{
@@ -2380,7 +2380,7 @@ void FMM_Pts<FMMNode>::Source2UpSetup(SetupData<FMMNode_t>&  setup_data, FMMTree
     std::vector<std::vector<size_t> > interac_cnt_(omp_p);
     if(this->ScaleInvar()){ // Set scal
       const Kernel<Real_t>* ker=kernel->k_m2m;
-      for(size_t l=0;l<PVFMM_MAX_DEPTH;l++){ // scal[l*4+2]
+      for(size_t l=0;l<sctl::MAX_DEPTH;l++){ // scal[l*4+2]
         sctl::Vector<Real_t>& scal=data.interac_data.scal[l*4+2];
         sctl::Vector<Real_t>& scal_exp=ker->trg_scal;
         scal.ReInit(scal_exp.Dim());
@@ -2388,7 +2388,7 @@ void FMM_Pts<FMMNode>::Source2UpSetup(SetupData<FMMNode_t>&  setup_data, FMMTree
           scal[i]=sctl::pow<Real_t>(2.0,-scal_exp[i]*l);
         }
       }
-      for(size_t l=0;l<PVFMM_MAX_DEPTH;l++){ // scal[l*4+3]
+      for(size_t l=0;l<sctl::MAX_DEPTH;l++){ // scal[l*4+3]
         sctl::Vector<Real_t>& scal=data.interac_data.scal[l*4+3];
         sctl::Vector<Real_t>& scal_exp=ker->src_scal;
         scal.ReInit(scal_exp.Dim());
@@ -3990,7 +3990,7 @@ void FMM_Pts<FMMNode>::PtSetup(SetupData<FMMNode_t>& setup_data, void* data_){
     sctl::Vector<size_t> interac_cnt;
     sctl::Vector<size_t> interac_dsp;
     sctl::Vector<size_t> interac_cst;
-    sctl::Vector<Real_t> scal[4*PVFMM_MAX_DEPTH];
+    sctl::Vector<Real_t> scal[4*sctl::MAX_DEPTH];
     sctl::Matrix<Real_t> M[4];
   };
   struct ptSetupData{
@@ -4068,7 +4068,7 @@ void FMM_Pts<FMMNode>::PtSetup(SetupData<FMMNode_t>& setup_data, void* data_){
       size_t      interac_cnt_size; size_t       interac_cnt_offset;
       size_t      interac_dsp_size; size_t       interac_dsp_offset;
       size_t      interac_cst_size; size_t       interac_cst_offset;
-      size_t scal_dim[4*PVFMM_MAX_DEPTH]; size_t scal_offset[4*PVFMM_MAX_DEPTH];
+      size_t scal_dim[4*sctl::MAX_DEPTH]; size_t scal_offset[4*sctl::MAX_DEPTH];
       size_t            Mdim[4][2]; size_t              M_offset[4];
     };
     PackedSetupData pkd_data;
@@ -4109,7 +4109,7 @@ void FMM_Pts<FMMNode>::PtSetup(SetupData<FMMNode_t>& setup_data, void* data_){
       pkd_data.interac_dsp_offset=offset; pkd_data.interac_dsp_size=intdata.interac_dsp.Dim(); offset+=mem::align_ptr(sizeof(size_t)*pkd_data.interac_dsp_size);
       pkd_data.interac_cst_offset=offset; pkd_data.interac_cst_size=intdata.interac_cst.Dim(); offset+=mem::align_ptr(sizeof(size_t)*pkd_data.interac_cst_size);
 
-      for(size_t i=0;i<4*PVFMM_MAX_DEPTH;i++){
+      for(size_t i=0;i<4*sctl::MAX_DEPTH;i++){
         pkd_data.scal_offset[i]=offset; pkd_data.scal_dim[i]=intdata.scal[i].Dim(); offset+=mem::align_ptr(sizeof(Real_t)*pkd_data.scal_dim[i]);
       }
       for(size_t i=0;i<4;i++){
@@ -4151,7 +4151,7 @@ void FMM_Pts<FMMNode>::PtSetup(SetupData<FMMNode_t>& setup_data, void* data_){
       if(pkd_data.interac_cnt_size) memcpy(&buff[0][pkd_data.interac_cnt_offset], &intdata.interac_cnt[0], pkd_data.interac_cnt_size*sizeof(size_t));
       if(pkd_data.interac_dsp_size) memcpy(&buff[0][pkd_data.interac_dsp_offset], &intdata.interac_dsp[0], pkd_data.interac_dsp_size*sizeof(size_t));
       if(pkd_data.interac_cst_size) memcpy(&buff[0][pkd_data.interac_cst_offset], &intdata.interac_cst[0], pkd_data.interac_cst_size*sizeof(size_t));
-      for(size_t i=0;i<4*PVFMM_MAX_DEPTH;i++){
+      for(size_t i=0;i<4*sctl::MAX_DEPTH;i++){
         if(intdata.scal[i].Dim()) memcpy(&buff[0][pkd_data.scal_offset[i]], &intdata.scal[i][0], intdata.scal[i].Dim()*sizeof(Real_t));
       }
       for(size_t i=0;i<4;i++){
@@ -4227,7 +4227,7 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<FMMNode_t>& setup_data, bool device
       sctl::Vector<size_t> interac_cnt;
       sctl::Vector<size_t> interac_dsp;
       sctl::Vector<size_t> interac_cst;
-      sctl::Vector<Real_t> scal[4*PVFMM_MAX_DEPTH];
+      sctl::Vector<Real_t> scal[4*sctl::MAX_DEPTH];
       sctl::Matrix<Real_t> M[4];
     };
     struct ptSetupData{
@@ -4281,7 +4281,7 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<FMMNode_t>& setup_data, bool device
         size_t      interac_cnt_size; size_t       interac_cnt_offset;
         size_t      interac_dsp_size; size_t       interac_dsp_offset;
         size_t      interac_cst_size; size_t       interac_cst_offset;
-        size_t scal_dim[4*PVFMM_MAX_DEPTH]; size_t scal_offset[4*PVFMM_MAX_DEPTH];
+        size_t scal_dim[4*sctl::MAX_DEPTH]; size_t scal_offset[4*sctl::MAX_DEPTH];
         size_t            Mdim[4][2]; size_t              M_offset[4];
       };
       DeviceMatrix<char>& setupdata=interac_data;
@@ -4321,7 +4321,7 @@ void FMM_Pts<FMMNode>::EvalListPts(SetupData<FMMNode_t>& setup_data, bool device
       intdata.interac_cnt.ReInit(pkd_data.interac_cnt_size, sctl::Ptr2Itr<size_t>((size_t*)&setupdata[0][pkd_data.interac_cnt_offset], pkd_data.interac_cnt_size), false);
       intdata.interac_dsp.ReInit(pkd_data.interac_dsp_size, sctl::Ptr2Itr<size_t>((size_t*)&setupdata[0][pkd_data.interac_dsp_offset], pkd_data.interac_dsp_size), false);
       intdata.interac_cst.ReInit(pkd_data.interac_cst_size, sctl::Ptr2Itr<size_t>((size_t*)&setupdata[0][pkd_data.interac_cst_offset], pkd_data.interac_cst_size), false);
-      for(size_t i=0;i<4*PVFMM_MAX_DEPTH;i++){
+      for(size_t i=0;i<4*sctl::MAX_DEPTH;i++){
         intdata.scal[i].ReInit(pkd_data.scal_dim[i], sctl::Ptr2Itr<Real_t>((Real_t*)&setupdata[0][pkd_data.scal_offset[i]], pkd_data.scal_dim[i]),false);
       }
       for(size_t i=0;i<4;i++){
@@ -4642,7 +4642,7 @@ void FMM_Pts<FMMNode>::X_ListSetup(SetupData<FMMNode_t>&  setup_data, FMMTree_t*
     sctl::Vector<size_t> interac_cnt;
     sctl::Vector<size_t> interac_dsp;
     sctl::Vector<size_t> interac_cst;
-    sctl::Vector<Real_t> scal[4*PVFMM_MAX_DEPTH];
+    sctl::Vector<Real_t> scal[4*sctl::MAX_DEPTH];
     sctl::Matrix<Real_t> M[4];
   };
   struct ptSetupData{
@@ -4947,7 +4947,7 @@ void FMM_Pts<FMMNode>::W_ListSetup(SetupData<FMMNode_t>&  setup_data, FMMTree_t*
     sctl::Vector<size_t> interac_cnt;
     sctl::Vector<size_t> interac_dsp;
     sctl::Vector<size_t> interac_cst;
-    sctl::Vector<Real_t> scal[4*PVFMM_MAX_DEPTH];
+    sctl::Vector<Real_t> scal[4*sctl::MAX_DEPTH];
     sctl::Matrix<Real_t> M[4];
   };
   struct ptSetupData{
@@ -5235,7 +5235,7 @@ void FMM_Pts<FMMNode>::U_ListSetup(SetupData<FMMNode_t>& setup_data, FMMTree_t* 
     sctl::Vector<size_t> interac_cnt;
     sctl::Vector<size_t> interac_dsp;
     sctl::Vector<size_t> interac_cst;
-    sctl::Vector<Real_t> scal[4*PVFMM_MAX_DEPTH];
+    sctl::Vector<Real_t> scal[4*sctl::MAX_DEPTH];
     sctl::Matrix<Real_t> M[4];
   };
   struct ptSetupData{
@@ -5634,7 +5634,7 @@ void FMM_Pts<FMMNode>::Down2TargetSetup(SetupData<FMMNode_t>&  setup_data, FMMTr
     sctl::Vector<size_t> interac_cnt;
     sctl::Vector<size_t> interac_dsp;
     sctl::Vector<size_t> interac_cst;
-    sctl::Vector<Real_t> scal[4*PVFMM_MAX_DEPTH];
+    sctl::Vector<Real_t> scal[4*sctl::MAX_DEPTH];
     sctl::Matrix<Real_t> M[4];
   };
   struct ptSetupData{
@@ -5763,7 +5763,7 @@ void FMM_Pts<FMMNode>::Down2TargetSetup(SetupData<FMMNode_t>&  setup_data, FMMTr
     std::vector<std::vector<size_t> > interac_cnt_(omp_p);
     if(this->ScaleInvar()){ // Set scal
       const Kernel<Real_t>* ker=kernel->k_l2l;
-      for(size_t l=0;l<PVFMM_MAX_DEPTH;l++){ // scal[l*4+0]
+      for(size_t l=0;l<sctl::MAX_DEPTH;l++){ // scal[l*4+0]
         sctl::Vector<Real_t>& scal=data.interac_data.scal[l*4+0];
         sctl::Vector<Real_t>& scal_exp=ker->trg_scal;
         scal.ReInit(scal_exp.Dim());
@@ -5771,7 +5771,7 @@ void FMM_Pts<FMMNode>::Down2TargetSetup(SetupData<FMMNode_t>&  setup_data, FMMTr
           scal[i]=sctl::pow<Real_t>(2.0,-scal_exp[i]*l);
         }
       }
-      for(size_t l=0;l<PVFMM_MAX_DEPTH;l++){ // scal[l*4+1]
+      for(size_t l=0;l<sctl::MAX_DEPTH;l++){ // scal[l*4+1]
         sctl::Vector<Real_t>& scal=data.interac_data.scal[l*4+1];
         sctl::Vector<Real_t>& scal_exp=ker->src_scal;
         scal.ReInit(scal_exp.Dim());
