@@ -34,7 +34,8 @@
 //Verbose (sctl::Profile stdout output + pvfmm diagnostics; enable with -DSCTL_VERBOSE)
 //#define SCTL_VERBOSE
 
-#define PVFMM_MAX_DEPTH 30
+// Octree depth is limited by what sctl::Morton can encode; use sctl::MAX_DEPTH directly
+// rather than a second constant that could drift from it.
 
 #define PVFMM_BC_LEVELS 45
 
@@ -80,12 +81,6 @@ inline uintptr_t align_ptr(uintptr_t ptr){
 }
 }//end namespace
 }//end namespace
-
-// Keep sctl::Morton<3>'s depth range in lock-step with pvfmm's octree depth
-// (must be set before sctl.hpp so sctl::MortonCode picks the right code width).
-#ifndef SCTL_MAX_DEPTH
-#define SCTL_MAX_DEPTH PVFMM_MAX_DEPTH
-#endif
 
 #include <sctl.hpp>
 

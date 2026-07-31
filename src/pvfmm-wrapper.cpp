@@ -765,8 +765,8 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
       myrank = ctx->sctl_comm.Rank();
 
       long nleaf=0, maxdepth=0;
-      std::vector<size_t> all_nodes(PVFMM_MAX_DEPTH+1,0);
-      std::vector<size_t> leaf_nodes(PVFMM_MAX_DEPTH+1,0);
+      std::vector<size_t> all_nodes(sctl::MAX_DEPTH+1,0);
+      std::vector<size_t> leaf_nodes(sctl::MAX_DEPTH+1,0);
       std::vector<sctl::Iterator<Node_t>>& nodes=ctx->tree->GetNodeList();
       for(size_t i=0;i<nodes.size();i++){
         sctl::Iterator<Node_t> n=nodes[i];
@@ -780,7 +780,7 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
 
       std::stringstream os1,os2;
       os1<<"All Nodes";
-      for(int i=0;i<PVFMM_MAX_DEPTH;i++){
+      for(int i=0;i<sctl::MAX_DEPTH;i++){
         int local_size=all_nodes[i];
         int global_size;
         ctx->sctl_comm.Allreduce(sctl::Ptr2ConstItr<int>(&local_size,1), sctl::Ptr2Itr<int>(&global_size,1), 1, sctl::CommOp::SUM);
@@ -789,7 +789,7 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
       if(!myrank) std::cout<<os1.str()<<'\n';
 
       os2<<"Leaf Nodes: ";
-      for(int i=0;i<PVFMM_MAX_DEPTH;i++){
+      for(int i=0;i<sctl::MAX_DEPTH;i++){
         int local_size=leaf_nodes[i];
         int global_size;
         ctx->sctl_comm.Allreduce(sctl::Ptr2ConstItr<int>(&local_size,1), sctl::Ptr2Itr<int>(&global_size,1), 1, sctl::CommOp::SUM);
@@ -877,7 +877,7 @@ void pvfmmevalf_(const float* src_pos, const float* sl_den, int64_t* n_src, cons
 // Create single-precision particle FMM context
 void pvfmmcreatecontextf_(void** ctx, float* box_size, int32_t* n, int32_t* m, int32_t* kernel, int32_t* bndry, MPI_Fint* fcomm) {
   MPI_Comm comm = MPI_Comm_f2c(*fcomm);
-  (*ctx) = PVFMMCreateContext<float>(*box_size, *n, *m, PVFMM_MAX_DEPTH, PVFMMKernelPtr<float>((enum PVFMMKernel)*kernel), PVFMMBndry(*bndry), comm);
+  (*ctx) = PVFMMCreateContext<float>(*box_size, *n, *m, sctl::MAX_DEPTH, PVFMMKernelPtr<float>((enum PVFMMKernel)*kernel), PVFMMBndry(*bndry), comm);
 }
 
 // Destroy single-precision particle FMM context
@@ -894,7 +894,7 @@ void pvfmmevald_(const double* src_pos, const double* sl_den, int64_t* n_src, co
 // Create double-precision particle FMM context
 void pvfmmcreatecontextd_(void** ctx, double* box_size, int32_t* n, int32_t* m, int32_t* kernel, int32_t* bndry, MPI_Fint* fcomm) {
   MPI_Comm comm = MPI_Comm_f2c(*fcomm);
-  (*ctx) = PVFMMCreateContext<double>(*box_size, *n, *m, PVFMM_MAX_DEPTH, PVFMMKernelPtr<double>((enum PVFMMKernel)*kernel), PVFMMBndry(*bndry), comm);
+  (*ctx) = PVFMMCreateContext<double>(*box_size, *n, *m, sctl::MAX_DEPTH, PVFMMKernelPtr<double>((enum PVFMMKernel)*kernel), PVFMMBndry(*bndry), comm);
 }
 
 // Destroy double-precision particle FMM context
@@ -906,7 +906,7 @@ void pvfmmdestroycontextd_(void** ctx) {
 
 
 void* PVFMMCreateContextF(float box_size, int n, int m, enum PVFMMKernel kernel, enum PVFMMBoundaryType bndry, MPI_Comm comm) {
-  return PVFMMCreateContext<float>(box_size, n, m, PVFMM_MAX_DEPTH, PVFMMKernelPtr<float>(kernel), PVFMMBndry(bndry), comm);
+  return PVFMMCreateContext<float>(box_size, n, m, sctl::MAX_DEPTH, PVFMMKernelPtr<float>(kernel), PVFMMBndry(bndry), comm);
 }
 
 void PVFMMEvalF(const float* src_pos, const float* sl_den, const float* dl_den, long n_src, const float* trg_pos, float* trg_val, long n_trg, const void* ctx, int setup) {
@@ -919,7 +919,7 @@ void PVFMMDestroyContextF(void** ctx) {
 
 
 void* PVFMMCreateContextD(double box_size, int n, int m, enum PVFMMKernel kernel, enum PVFMMBoundaryType bndry, MPI_Comm comm) {
-  return PVFMMCreateContext<double>(box_size, n, m, PVFMM_MAX_DEPTH, PVFMMKernelPtr<double>(kernel), PVFMMBndry(bndry), comm);
+  return PVFMMCreateContext<double>(box_size, n, m, sctl::MAX_DEPTH, PVFMMKernelPtr<double>(kernel), PVFMMBndry(bndry), comm);
 }
 
 void PVFMMEvalD(const double* src_pos, const double* sl_den, const double* dl_den, long n_src, const double* trg_pos, double* trg_val, long n_trg, const void* ctx, int setup) {

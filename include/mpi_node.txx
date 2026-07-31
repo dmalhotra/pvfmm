@@ -60,7 +60,7 @@ void MPI_Node<T>::ClearData(){
 template <class T>
 MortonId MPI_Node<T>::GetMortonId(){
   assert(coord);
-  Real_t s=0.25/(1UL<<PVFMM_MAX_DEPTH);
+  Real_t s=0.25/(1UL<<sctl::MAX_DEPTH);
   sctl::StaticArray<Real_t,3> mc{coord[0]+s,coord[1]+s,coord[2]+s}; // TODO: Use integer coordinates instead of floating point.
   return MortonId((sctl::ConstIterator<Real_t>)mc, Depth());
 }
