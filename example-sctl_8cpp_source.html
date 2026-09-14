@@ -120,10 +120,10 @@ document.addEventListener('DOMContentLoaded', () => {
 <div class="line"><a id="l00012" name="l00012"></a><span class="lineno">   12</span> </div>
 <div class="line"><a id="l00013" name="l00013"></a><span class="lineno">   13</span>  <span class="comment">// Create target and source vectors.</span></div>
 <div class="line"><a id="l00014" name="l00014"></a><span class="lineno">   14</span>  <span class="keyword">const</span> Long N = 50000/comm.Size();</div>
-<div class="line"><a id="l00015" name="l00015"></a><span class="lineno">   15</span>  Vector&lt;Real&gt; trg_coord(N*DIM);</div>
-<div class="line"><a id="l00016" name="l00016"></a><span class="lineno">   16</span>  Vector&lt;Real&gt;  sl_coord(N*DIM);</div>
-<div class="line"><a id="l00017" name="l00017"></a><span class="lineno">   17</span>  Vector&lt;Real&gt;  dl_coord(N*DIM);</div>
-<div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span>  Vector&lt;Real&gt;  dl_norml(N*DIM);</div>
+<div class="line"><a id="l00015" name="l00015"></a><span class="lineno">   15</span>  sctl::Vector&lt;Real&gt; trg_coord(N*DIM);</div>
+<div class="line"><a id="l00016" name="l00016"></a><span class="lineno">   16</span>  sctl::Vector&lt;Real&gt;  sl_coord(N*DIM);</div>
+<div class="line"><a id="l00017" name="l00017"></a><span class="lineno">   17</span>  sctl::Vector&lt;Real&gt;  dl_coord(N*DIM);</div>
+<div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span>  sctl::Vector&lt;Real&gt;  dl_norml(N*DIM);</div>
 <div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span>  <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; a : trg_coord) a = (Real)(drand48()-0.5);</div>
 <div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span>  <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; a :  sl_coord) a = (Real)(drand48()-0.5);</div>
 <div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span>  <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; a :  dl_coord) a = (Real)(drand48()-0.5);</div>
@@ -132,8 +132,8 @@ document.addEventListener('DOMContentLoaded', () => {
 <div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span>  Long n_dl  =  dl_coord.Dim()/DIM;</div>
 <div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span> </div>
 <div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span>  <span class="comment">// Set source charges.</span></div>
-<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span>  Vector&lt;Real&gt; sl_den(n_sl*kernel_sl.SrcDim());</div>
-<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span>  Vector&lt;Real&gt; dl_den(n_dl*kernel_dl.SrcDim());</div>
+<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span>  sctl::Vector&lt;Real&gt; sl_den(n_sl*kernel_sl.SrcDim());</div>
+<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span>  sctl::Vector&lt;Real&gt; dl_den(n_dl*kernel_dl.SrcDim());</div>
 <div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span>  <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; a : sl_den) a = (Real)(drand48() - 0.5);</div>
 <div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span>  <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; a : dl_den) a = (Real)(drand48() - 0.5);</div>
 <div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span> </div>
@@ -153,7 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
 <div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>  fmm.SetSrcDensity(<span class="stringliteral">&quot;SingleLayer&quot;</span>, sl_den);</div>
 <div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>  fmm.SetSrcDensity(<span class="stringliteral">&quot;DoubleLayer&quot;</span>, dl_den);</div>
 <div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span> </div>
-<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>  Vector&lt;Real&gt; Ufmm, Uref;</div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>  sctl::Vector&lt;Real&gt; Ufmm, Uref;</div>
 <div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>  fmm.Eval(Ufmm, <span class="stringliteral">&quot;Potential&quot;</span>); <span class="comment">// Warm-up run</span></div>
 <div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>  Ufmm = 0;</div>
 <div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span> </div>
@@ -166,12 +166,12 @@ document.addEventListener('DOMContentLoaded', () => {
 <div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>  Profile::Toc();</div>
 <div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>  Profile::print(&amp;comm);</div>
 <div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span> </div>
-<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>  Vector&lt;Real&gt; Uerr = Uref - Ufmm;</div>
+<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>  sctl::Vector&lt;Real&gt; Uerr = Uref - Ufmm;</div>
 <div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>  { <span class="comment">// Print error</span></div>
 <div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>    StaticArray&lt;Real,2&gt; loc_err{0,0}, glb_err{0,0};</div>
 <div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>    <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; a : Uerr) loc_err[0] = std::max&lt;Real&gt;(loc_err[0], fabs(a));</div>
 <div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>    <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; a : Uref) loc_err[1] = std::max&lt;Real&gt;(loc_err[1], fabs(a));</div>
-<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>    comm.Allreduce&lt;Real&gt;(loc_err, glb_err, 2, CommOp::MAX);</div>
+<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>    comm.Allreduce(loc_err + 0, glb_err + 0, 2, CommOp::MAX);</div>
 <div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>    <span class="keywordflow">if</span> (!comm.Rank()) std::cout&lt;&lt;<span class="stringliteral">&quot;Maximum relative error: &quot;</span>&lt;&lt;glb_err[0]/glb_err[1]&lt;&lt;<span class="charliteral">&#39;\n&#39;</span>;</div>
 <div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>  }</div>
 <div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>}</div>

@@ -106,6 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
   <div class="summary">
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="#pro-attribs">Protected Attributes</a> &#124;
 <a href="classpvfmm_1_1FMM__Tree-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">pvfmm::FMM_Tree&lt; FMM_Mat_t &gt; Class Template Reference</div></div>
@@ -139,8 +140,8 @@ Public Types</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-methods" class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:afc667787b5d524fd2cf7ac9d70dbeda8" id="r_afc667787b5d524fd2cf7ac9d70dbeda8"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#afc667787b5d524fd2cf7ac9d70dbeda8">FMM_Tree</a> (MPI_Comm c)</td></tr>
-<tr class="memdesc:afc667787b5d524fd2cf7ac9d70dbeda8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor.  <br /></td></tr>
+<tr class="memitem:a71e8e6a1968d54bc287619e417158766" id="r_a71e8e6a1968d54bc287619e417158766"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a71e8e6a1968d54bc287619e417158766">FMM_Tree</a> (const sctl::Comm &amp;c)</td></tr>
+<tr class="memdesc:a71e8e6a1968d54bc287619e417158766"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor.  <br /></td></tr>
 <tr class="memitem:aec24f6ca47940a3a28c5fc08caddcd91" id="r_aec24f6ca47940a3a28c5fc08caddcd91"><td class="memItemLeft">virtual&#160;</td><td class="memItemRight"><a class="el" href="#aec24f6ca47940a3a28c5fc08caddcd91">~FMM_Tree</a> ()</td></tr>
 <tr class="memdesc:aec24f6ca47940a3a28c5fc08caddcd91"><td class="mdescLeft">&#160;</td><td class="mdescRight">Virtual destructor.  <br /></td></tr>
 <tr class="memitem:a359d63570a0e460a465ca9684263caf2" id="r_a359d63570a0e460a465ca9684263caf2"><td class="memItemLeft">virtual void&#160;</td><td class="memItemRight"><a class="el" href="#a359d63570a0e460a465ca9684263caf2">Initialize</a> (typename Node_t::NodeData *data_)</td></tr>
@@ -173,20 +174,20 @@ void&#160;</td><td class="memItemRight"><b>DownwardPass</b> ()</td></tr>
 void&#160;</td><td class="memItemRight"><b>Copy_FMMOutput</b> ()</td></tr>
 <tr class="memdesc:a68f874542d94f68d85cf305fc02c1daf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy FMM output to the tree. <br /></td></tr>
 <tr class="inherit_header pub_methods_classpvfmm_1_1MPI__Tree"><td colspan="2">Public Member Functions inherited from <a class="el" href="classpvfmm_1_1MPI__Tree.html">pvfmm::MPI_Tree&lt; FMM_Mat_t::FMMNode_t &gt;</a></td></tr>
-<tr class="memitem:a71e3424f16945f3e7f78260a18acda2e pub_methods_classpvfmm_1_1MPI__Tree" id="r_a71e3424f16945f3e7f78260a18acda2e"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="classpvfmm_1_1MPI__Tree.html#a71e3424f16945f3e7f78260a18acda2e">MPI_Tree</a> (MPI_Comm c)</td></tr>
-<tr class="memdesc:a71e3424f16945f3e7f78260a18acda2e pub_methods_classpvfmm_1_1MPI__Tree"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor.  <br /></td></tr>
+<tr class="memitem:adf5fdd78a96e785e4a3acec001d57980 pub_methods_classpvfmm_1_1MPI__Tree" id="r_adf5fdd78a96e785e4a3acec001d57980"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="classpvfmm_1_1MPI__Tree.html#adf5fdd78a96e785e4a3acec001d57980">MPI_Tree</a> (const sctl::Comm &amp;c)</td></tr>
+<tr class="memdesc:adf5fdd78a96e785e4a3acec001d57980 pub_methods_classpvfmm_1_1MPI__Tree"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor.  <br /></td></tr>
 <tr class="memitem:a3707f95d6734aa47311a5f454dd35f3d pub_methods_classpvfmm_1_1MPI__Tree" id="r_a3707f95d6734aa47311a5f454dd35f3d"><td class="memItemLeft">virtual&#160;</td><td class="memItemRight"><a class="el" href="classpvfmm_1_1MPI__Tree.html#a3707f95d6734aa47311a5f454dd35f3d">~MPI_Tree</a> ()</td></tr>
 <tr class="memdesc:a3707f95d6734aa47311a5f454dd35f3d pub_methods_classpvfmm_1_1MPI__Tree"><td class="mdescLeft">&#160;</td><td class="mdescRight">Virtual destructor.  <br /></td></tr>
-<tr class="memitem:a6d94432a7fdafc7104287332f6be88e1 pub_methods_classpvfmm_1_1MPI__Tree" id="r_a6d94432a7fdafc7104287332f6be88e1"><td class="memItemLeft">FMM_Mat_t::FMMNode_t *&#160;</td><td class="memItemRight"><a class="el" href="classpvfmm_1_1MPI__Tree.html#a6d94432a7fdafc7104287332f6be88e1">FindNode</a> (<a class="el" href="classpvfmm_1_1MortonId.html">MortonId</a> &amp;key, bool subdiv, FMM_Mat_t::FMMNode_t *start=NULL)</td></tr>
-<tr class="memdesc:a6d94432a7fdafc7104287332f6be88e1 pub_methods_classpvfmm_1_1MPI__Tree"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize the distributed MPI tree.  <br /></td></tr>
+<tr class="memitem:ab64e97b183d1c35e734f577caacbfd65 pub_methods_classpvfmm_1_1MPI__Tree" id="r_ab64e97b183d1c35e734f577caacbfd65"><td class="memItemLeft">sctl::Iterator&lt; FMM_Mat_t::FMMNode_t &gt;&#160;</td><td class="memItemRight"><a class="el" href="classpvfmm_1_1MPI__Tree.html#ab64e97b183d1c35e734f577caacbfd65">FindNode</a> (MortonId &amp;key, bool subdiv, sctl::Iterator&lt; FMM_Mat_t::FMMNode_t &gt; start=sctl::NullIterator&lt; FMM_Mat_t::FMMNode_t &gt;())</td></tr>
+<tr class="memdesc:ab64e97b183d1c35e734f577caacbfd65 pub_methods_classpvfmm_1_1MPI__Tree"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize the distributed MPI tree.  <br /></td></tr>
 <tr class="memitem:a79d62dc4f093829802c3c9c3391fbda2 pub_methods_classpvfmm_1_1MPI__Tree" id="r_a79d62dc4f093829802c3c9c3391fbda2"><td class="memItemLeft">
 virtual void&#160;</td><td class="memItemRight"><b>CoarsenTree</b> ()</td></tr>
 <tr class="memdesc:a79d62dc4f093829802c3c9c3391fbda2 pub_methods_classpvfmm_1_1MPI__Tree"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adaptive coarsening of distributed tree. <br /></td></tr>
 <tr class="memitem:a07582554434ecb7f395b5641f7f21085 pub_methods_classpvfmm_1_1MPI__Tree" id="r_a07582554434ecb7f395b5641f7f21085"><td class="memItemLeft">virtual void&#160;</td><td class="memItemRight"><a class="el" href="classpvfmm_1_1MPI__Tree.html#a07582554434ecb7f395b5641f7f21085">RefineTree</a> ()</td></tr>
 <tr class="memdesc:a07582554434ecb7f395b5641f7f21085 pub_methods_classpvfmm_1_1MPI__Tree"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adaptive refinement of distributed tree.  <br /></td></tr>
-<tr class="memitem:a886b01023d59a5a667df75a910f36dc9 pub_methods_classpvfmm_1_1MPI__Tree" id="r_a886b01023d59a5a667df75a910f36dc9"><td class="memItemLeft">
-void&#160;</td><td class="memItemRight"><b>RedistNodes</b> (<a class="el" href="classpvfmm_1_1MortonId.html">MortonId</a> *loc_min=NULL)</td></tr>
-<tr class="memdesc:a886b01023d59a5a667df75a910f36dc9 pub_methods_classpvfmm_1_1MPI__Tree"><td class="mdescLeft">&#160;</td><td class="mdescRight">Redistribute the tree among the processes. <br /></td></tr>
+<tr class="memitem:a253b499f02c77a9b507582beeacb70a2 pub_methods_classpvfmm_1_1MPI__Tree" id="r_a253b499f02c77a9b507582beeacb70a2"><td class="memItemLeft">
+void&#160;</td><td class="memItemRight"><b>RedistNodes</b> (sctl::ConstIterator&lt; MortonId &gt; loc_min=sctl::NullIterator&lt; MortonId &gt;())</td></tr>
+<tr class="memdesc:a253b499f02c77a9b507582beeacb70a2 pub_methods_classpvfmm_1_1MPI__Tree"><td class="mdescLeft">&#160;</td><td class="mdescRight">Redistribute the tree among the processes. <br /></td></tr>
 <tr class="memitem:a301fbcb543bc31b65695e3f7dc335963 pub_methods_classpvfmm_1_1MPI__Tree" id="r_a301fbcb543bc31b65695e3f7dc335963"><td class="memItemLeft">
 void&#160;</td><td class="memItemRight"><b>Balance21</b> (BoundaryType bndry=FreeSpace)</td></tr>
 <tr class="memdesc:a301fbcb543bc31b65695e3f7dc335963 pub_methods_classpvfmm_1_1MPI__Tree"><td class="mdescLeft">&#160;</td><td class="mdescRight">Performs global 2:1 balancing of the tree. <br /></td></tr>
@@ -205,8 +206,8 @@ void&#160;</td><td class="memItemRight"><b>ConstructLET</b> (BoundaryType bndry=
 <tr class="memitem:a8ba8ed5e897a4e82bcbf53b4d2cb381d pub_methods_classpvfmm_1_1MPI__Tree" id="r_a8ba8ed5e897a4e82bcbf53b4d2cb381d"><td class="memItemLeft">
 void&#160;</td><td class="memItemRight"><b>Write2File</b> (const char *fname, int lod=-1)</td></tr>
 <tr class="memdesc:a8ba8ed5e897a4e82bcbf53b4d2cb381d pub_methods_classpvfmm_1_1MPI__Tree"><td class="mdescLeft">&#160;</td><td class="mdescRight">Write to a &lt;fname&gt;.vtu file. <br /></td></tr>
-<tr class="memitem:a19ed9131dde8121428c94fb9b7b5b753 pub_methods_classpvfmm_1_1MPI__Tree" id="r_a19ed9131dde8121428c94fb9b7b5b753"><td class="memItemLeft">const MPI_Comm *&#160;</td><td class="memItemRight"><a class="el" href="classpvfmm_1_1MPI__Tree.html#a19ed9131dde8121428c94fb9b7b5b753">Comm</a> () const</td></tr>
-<tr class="memdesc:a19ed9131dde8121428c94fb9b7b5b753 pub_methods_classpvfmm_1_1MPI__Tree"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a pointer to the comm object.  <br /></td></tr>
+<tr class="memitem:a61e59a311f21b365b9aabeb72ddc9248 pub_methods_classpvfmm_1_1MPI__Tree" id="r_a61e59a311f21b365b9aabeb72ddc9248"><td class="memItemLeft">const sctl::Comm &amp;&#160;</td><td class="memItemRight"><a class="el" href="classpvfmm_1_1MPI__Tree.html#a61e59a311f21b365b9aabeb72ddc9248">Comm</a> () const</td></tr>
+<tr class="memdesc:a61e59a311f21b365b9aabeb72ddc9248 pub_methods_classpvfmm_1_1MPI__Tree"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a pointer to the comm object.  <br /></td></tr>
 <tr class="inherit_header pub_methods_classpvfmm_1_1Tree"><td colspan="2">Public Member Functions inherited from <a class="el" href="classpvfmm_1_1Tree.html">pvfmm::Tree&lt; FMM_Mat_t::FMMNode_t &gt;</a></td></tr>
 <tr class="memitem:a156615e6ca2adfb9af22b2f3062c6bc9 pub_methods_classpvfmm_1_1Tree" id="r_a156615e6ca2adfb9af22b2f3062c6bc9"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="classpvfmm_1_1Tree.html#a156615e6ca2adfb9af22b2f3062c6bc9">Tree</a> ()</td></tr>
 <tr class="memdesc:a156615e6ca2adfb9af22b2f3062c6bc9 pub_methods_classpvfmm_1_1Tree"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor.  <br /></td></tr>
@@ -215,58 +216,62 @@ virtual&#160;</td><td class="memItemRight"><b>~Tree</b> ()</td></tr>
 <tr class="memdesc:a3ddbc29d7767b5811a51ef34a91f8bd0 pub_methods_classpvfmm_1_1Tree"><td class="mdescLeft">&#160;</td><td class="mdescRight">Virtual destructor. <br /></td></tr>
 <tr class="memitem:a212a87c8a1c5a0855954f9197db5d26b pub_methods_classpvfmm_1_1Tree" id="r_a212a87c8a1c5a0855954f9197db5d26b"><td class="memItemLeft">Node_t *&#160;</td><td class="memItemRight"><a class="el" href="classpvfmm_1_1Tree.html#a212a87c8a1c5a0855954f9197db5d26b">RootNode</a> ()</td></tr>
 <tr class="memdesc:a212a87c8a1c5a0855954f9197db5d26b pub_methods_classpvfmm_1_1Tree"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a pointer to the root node.  <br /></td></tr>
-<tr class="memitem:ac223589d8ee198d625ce2937a8fe7d5c pub_methods_classpvfmm_1_1Tree" id="r_ac223589d8ee198d625ce2937a8fe7d5c"><td class="memItemLeft">Node_t *&#160;</td><td class="memItemRight"><a class="el" href="classpvfmm_1_1Tree.html#ac223589d8ee198d625ce2937a8fe7d5c">NewNode</a> ()</td></tr>
-<tr class="memdesc:ac223589d8ee198d625ce2937a8fe7d5c pub_methods_classpvfmm_1_1Tree"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a new node of the same type as the root node.  <br /></td></tr>
-<tr class="memitem:af2f4348c3cd69534089ebeb10521a465 pub_methods_classpvfmm_1_1Tree" id="r_af2f4348c3cd69534089ebeb10521a465"><td class="memItemLeft">
-Node_t *&#160;</td><td class="memItemRight"><b>PreorderFirst</b> ()</td></tr>
-<tr class="memdesc:af2f4348c3cd69534089ebeb10521a465 pub_methods_classpvfmm_1_1Tree"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a pointer to the first node in preorder traversal (the root node). <br /></td></tr>
-<tr class="memitem:ac527d20ad889d9d17711984546dabe8f pub_methods_classpvfmm_1_1Tree" id="r_ac527d20ad889d9d17711984546dabe8f"><td class="memItemLeft">
-Node_t *&#160;</td><td class="memItemRight"><b>PreorderNxt</b> (Node_t *curr_node)</td></tr>
-<tr class="memdesc:ac527d20ad889d9d17711984546dabe8f pub_methods_classpvfmm_1_1Tree"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a pointer to the next node in preorder traversal. <br /></td></tr>
-<tr class="memitem:a81586b0834830f8616935eb75ed66799 pub_methods_classpvfmm_1_1Tree" id="r_a81586b0834830f8616935eb75ed66799"><td class="memItemLeft">
-Node_t *&#160;</td><td class="memItemRight"><b>PostorderFirst</b> ()</td></tr>
-<tr class="memdesc:a81586b0834830f8616935eb75ed66799 pub_methods_classpvfmm_1_1Tree"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a pointer to the first node in postorder traversal. <br /></td></tr>
-<tr class="memitem:aa2056782db2ee81b5f0a937d942a61e0 pub_methods_classpvfmm_1_1Tree" id="r_aa2056782db2ee81b5f0a937d942a61e0"><td class="memItemLeft">
-Node_t *&#160;</td><td class="memItemRight"><b>PostorderNxt</b> (Node_t *curr_node)</td></tr>
-<tr class="memdesc:aa2056782db2ee81b5f0a937d942a61e0 pub_methods_classpvfmm_1_1Tree"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a pointer to the next node in postorder traversal. <br /></td></tr>
-<tr class="memitem:a73760e7cf0fb4804050f4e38057c20de pub_methods_classpvfmm_1_1Tree" id="r_a73760e7cf0fb4804050f4e38057c20de"><td class="memItemLeft">
-std::vector&lt; FMM_Mat_t::FMMNode_t * &gt; &amp;&#160;</td><td class="memItemRight"><b>GetNodeList</b> ()</td></tr>
-<tr class="memdesc:a73760e7cf0fb4804050f4e38057c20de pub_methods_classpvfmm_1_1Tree"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a list of all nodes in preorder traversal. <br /></td></tr>
+<tr class="memitem:a37fea66f2fe14008ede0958f5c2dbd3d pub_methods_classpvfmm_1_1Tree" id="r_a37fea66f2fe14008ede0958f5c2dbd3d"><td class="memItemLeft">sctl::Iterator&lt; Node_t &gt;&#160;</td><td class="memItemRight"><a class="el" href="classpvfmm_1_1Tree.html#a37fea66f2fe14008ede0958f5c2dbd3d">NewNode</a> ()</td></tr>
+<tr class="memdesc:a37fea66f2fe14008ede0958f5c2dbd3d pub_methods_classpvfmm_1_1Tree"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a new node of the same type as the root node.  <br /></td></tr>
+<tr class="memitem:a61ee95a26ee1d104e839a5ce8820dcfc pub_methods_classpvfmm_1_1Tree" id="r_a61ee95a26ee1d104e839a5ce8820dcfc"><td class="memItemLeft">
+sctl::Iterator&lt; Node_t &gt;&#160;</td><td class="memItemRight"><b>PreorderFirst</b> ()</td></tr>
+<tr class="memdesc:a61ee95a26ee1d104e839a5ce8820dcfc pub_methods_classpvfmm_1_1Tree"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a pointer to the first node in preorder traversal (the root node). <br /></td></tr>
+<tr class="memitem:a45c333342b3b5abf6968f69b5e5c8e10 pub_methods_classpvfmm_1_1Tree" id="r_a45c333342b3b5abf6968f69b5e5c8e10"><td class="memItemLeft">
+sctl::Iterator&lt; Node_t &gt;&#160;</td><td class="memItemRight"><b>PreorderNxt</b> (sctl::Iterator&lt; Node_t &gt; curr_node)</td></tr>
+<tr class="memdesc:a45c333342b3b5abf6968f69b5e5c8e10 pub_methods_classpvfmm_1_1Tree"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a pointer to the next node in preorder traversal. <br /></td></tr>
+<tr class="memitem:a3843baac2cb6bf21cb75e2b860cb8ac3 pub_methods_classpvfmm_1_1Tree" id="r_a3843baac2cb6bf21cb75e2b860cb8ac3"><td class="memItemLeft">
+sctl::Iterator&lt; Node_t &gt;&#160;</td><td class="memItemRight"><b>PostorderFirst</b> ()</td></tr>
+<tr class="memdesc:a3843baac2cb6bf21cb75e2b860cb8ac3 pub_methods_classpvfmm_1_1Tree"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a pointer to the first node in postorder traversal. <br /></td></tr>
+<tr class="memitem:ab5234a466eb05d5311d7d9a372f5079d pub_methods_classpvfmm_1_1Tree" id="r_ab5234a466eb05d5311d7d9a372f5079d"><td class="memItemLeft">
+sctl::Iterator&lt; Node_t &gt;&#160;</td><td class="memItemRight"><b>PostorderNxt</b> (sctl::Iterator&lt; Node_t &gt; curr_node)</td></tr>
+<tr class="memdesc:ab5234a466eb05d5311d7d9a372f5079d pub_methods_classpvfmm_1_1Tree"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a pointer to the next node in postorder traversal. <br /></td></tr>
+<tr class="memitem:afbc34ccc7cfc064c13ea85d0a7b366b9 pub_methods_classpvfmm_1_1Tree" id="r_afbc34ccc7cfc064c13ea85d0a7b366b9"><td class="memItemLeft">
+std::vector&lt; sctl::Iterator&lt; FMM_Mat_t::FMMNode_t &gt; &gt; &amp;&#160;</td><td class="memItemRight"><b>GetNodeList</b> ()</td></tr>
+<tr class="memdesc:afbc34ccc7cfc064c13ea85d0a7b366b9 pub_methods_classpvfmm_1_1Tree"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a list of all nodes in preorder traversal. <br /></td></tr>
 <tr class="memitem:afe9ff3386592e9c8800441e27db45115 pub_methods_classpvfmm_1_1Tree" id="r_afe9ff3386592e9c8800441e27db45115"><td class="memItemLeft">int&#160;</td><td class="memItemRight"><a class="el" href="classpvfmm_1_1Tree.html#afe9ff3386592e9c8800441e27db45115">Dim</a> ()</td></tr>
 <tr class="memdesc:afe9ff3386592e9c8800441e27db45115 pub_methods_classpvfmm_1_1Tree"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dimension of the tree.  <br /></td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-pub-attribs" class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
+Public Attributes</h2></td></tr>
+<tr class="memitem:a957030ce6b5ac429eb7c86fc16f6259f" id="r_a957030ce6b5ac429eb7c86fc16f6259f"><td class="memItemLeft">std::vector&lt; <a class="el" href="classpvfmm_1_1DeviceMirror.html">DeviceMirror</a> &gt;&#160;</td><td class="memItemRight"><a class="el" href="#a957030ce6b5ac429eb7c86fc16f6259f">node_data_buff_mirror</a></td></tr>
+<tr class="memitem:a1d1b9a58deb1d94992dad4966cc52cb8" id="r_a1d1b9a58deb1d94992dad4966cc52cb8"><td class="memItemLeft">std::vector&lt; <a class="el" href="classpvfmm_1_1DeviceMirror.html">DeviceMirror</a> &gt;&#160;</td><td class="memItemRight"><a class="el" href="#a1d1b9a58deb1d94992dad4966cc52cb8">precomp_lst_mirror</a></td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pro-attribs" class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
-<tr class="memitem:ad3096adecdfb6fea80c0aa31bc056d5c" id="r_ad3096adecdfb6fea80c0aa31bc056d5c"><td class="memItemLeft">std::vector&lt; <a class="el" href="classpvfmm_1_1Matrix.html">Matrix</a>&lt; Real_t &gt; &gt;&#160;</td><td class="memItemRight"><a class="el" href="#ad3096adecdfb6fea80c0aa31bc056d5c">node_data_buff</a></td></tr>
-<tr class="memitem:af86038fd9b25ec253656964deea39fb4" id="r_af86038fd9b25ec253656964deea39fb4"><td class="memItemLeft"><a class="el" href="classpvfmm_1_1Matrix.html">pvfmm::Matrix</a>&lt; Node_t * &gt;&#160;</td><td class="memItemRight"><a class="el" href="#af86038fd9b25ec253656964deea39fb4">node_interac_lst</a></td></tr>
+<tr class="memitem:aeef15459631cf639b1269fadd91362f5" id="r_aeef15459631cf639b1269fadd91362f5"><td class="memItemLeft">std::vector&lt; sctl::Matrix&lt; Real_t &gt; &gt;&#160;</td><td class="memItemRight"><a class="el" href="#aeef15459631cf639b1269fadd91362f5">node_data_buff</a></td></tr>
+<tr class="memitem:a48ed49b188153c778f9234d57fef2b2a" id="r_a48ed49b188153c778f9234d57fef2b2a"><td class="memItemLeft">sctl::Matrix&lt; sctl::Iterator&lt; Node_t &gt; &gt;&#160;</td><td class="memItemRight"><a class="el" href="#a48ed49b188153c778f9234d57fef2b2a">node_interac_lst</a></td></tr>
 <tr class="memitem:a4bd58c3889458fb3bd295d966c03c376" id="r_a4bd58c3889458fb3bd295d966c03c376"><td class="memItemLeft"><a class="el" href="classpvfmm_1_1InteracList.html">InteracList</a>&lt; Node_t &gt;&#160;</td><td class="memItemRight"><a class="el" href="#a4bd58c3889458fb3bd295d966c03c376">interac_list</a></td></tr>
 <tr class="memitem:a792a08e7cf215999e84dbc3e7a918997" id="r_a792a08e7cf215999e84dbc3e7a918997"><td class="memItemLeft">FMM_Mat_t *&#160;</td><td class="memItemRight"><a class="el" href="#a792a08e7cf215999e84dbc3e7a918997">fmm_mat</a></td></tr>
 <tr class="memitem:a289dd0f2f4d44a32b1411932a78c3f47" id="r_a289dd0f2f4d44a32b1411932a78c3f47"><td class="memItemLeft">BoundaryType&#160;</td><td class="memItemRight"><a class="el" href="#a289dd0f2f4d44a32b1411932a78c3f47">bndry</a></td></tr>
-<tr class="memitem:a6cbf0a4d33b482f7de0c12839fe9926a" id="r_a6cbf0a4d33b482f7de0c12839fe9926a"><td class="memItemLeft">std::vector&lt; <a class="el" href="classpvfmm_1_1Matrix.html">Matrix</a>&lt; char &gt; &gt;&#160;</td><td class="memItemRight"><a class="el" href="#a6cbf0a4d33b482f7de0c12839fe9926a">precomp_lst</a></td></tr>
-<tr class="memitem:a25d8a021b6f816bed32ed28946a5c8de" id="r_a25d8a021b6f816bed32ed28946a5c8de"><td class="memItemLeft">std::vector&lt; <a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; Real_t &gt; &gt;&#160;</td><td class="memItemRight"><a class="el" href="#a25d8a021b6f816bed32ed28946a5c8de">setup_data</a></td></tr>
-<tr class="memitem:a6a7ad349e526cec215ddf22d0112865c" id="r_a6a7ad349e526cec215ddf22d0112865c"><td class="memItemLeft">std::vector&lt; <a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt; Real_t &gt; &gt;&#160;</td><td class="memItemRight"><a class="el" href="#a6a7ad349e526cec215ddf22d0112865c">upwd_check_surf</a></td></tr>
-<tr class="memitem:a25190f5bcbe177b21d5efbea090cbb2d" id="r_a25190f5bcbe177b21d5efbea090cbb2d"><td class="memItemLeft">std::vector&lt; <a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt; Real_t &gt; &gt;&#160;</td><td class="memItemRight"><a class="el" href="#a25190f5bcbe177b21d5efbea090cbb2d">upwd_equiv_surf</a></td></tr>
-<tr class="memitem:a832f883ed41167c50bc0a36e2a72e53f" id="r_a832f883ed41167c50bc0a36e2a72e53f"><td class="memItemLeft">std::vector&lt; <a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt; Real_t &gt; &gt;&#160;</td><td class="memItemRight"><a class="el" href="#a832f883ed41167c50bc0a36e2a72e53f">dnwd_check_surf</a></td></tr>
-<tr class="memitem:a58fa1b59e6df5b6b106adfcbd2faf05e" id="r_a58fa1b59e6df5b6b106adfcbd2faf05e"><td class="memItemLeft">std::vector&lt; <a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt; Real_t &gt; &gt;&#160;</td><td class="memItemRight"><a class="el" href="#a58fa1b59e6df5b6b106adfcbd2faf05e">dnwd_equiv_surf</a></td></tr>
+<tr class="memitem:aa37be4dcec5e564216f1d51186f05e06" id="r_aa37be4dcec5e564216f1d51186f05e06"><td class="memItemLeft">std::vector&lt; sctl::Matrix&lt; char &gt; &gt;&#160;</td><td class="memItemRight"><a class="el" href="#aa37be4dcec5e564216f1d51186f05e06">precomp_lst</a></td></tr>
+<tr class="memitem:a58347fd88c51087ff31df6ca71964ded" id="r_a58347fd88c51087ff31df6ca71964ded"><td class="memItemLeft">std::vector&lt; <a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; typename FMM_Mat_t::FMMNode_t &gt; &gt;&#160;</td><td class="memItemRight"><a class="el" href="#a58347fd88c51087ff31df6ca71964ded">setup_data</a></td></tr>
+<tr class="memitem:a6e0ce08ebd196fdbb20649309e7f2012" id="r_a6e0ce08ebd196fdbb20649309e7f2012"><td class="memItemLeft">std::vector&lt; sctl::Vector&lt; Real_t &gt; &gt;&#160;</td><td class="memItemRight"><a class="el" href="#a6e0ce08ebd196fdbb20649309e7f2012">upwd_check_surf</a></td></tr>
+<tr class="memitem:aaeb7a277d2ee084e5b3ff52d15c08563" id="r_aaeb7a277d2ee084e5b3ff52d15c08563"><td class="memItemLeft">std::vector&lt; sctl::Vector&lt; Real_t &gt; &gt;&#160;</td><td class="memItemRight"><a class="el" href="#aaeb7a277d2ee084e5b3ff52d15c08563">upwd_equiv_surf</a></td></tr>
+<tr class="memitem:af1558cd4e39bf46b222ef857ee9e9f39" id="r_af1558cd4e39bf46b222ef857ee9e9f39"><td class="memItemLeft">std::vector&lt; sctl::Vector&lt; Real_t &gt; &gt;&#160;</td><td class="memItemRight"><a class="el" href="#af1558cd4e39bf46b222ef857ee9e9f39">dnwd_check_surf</a></td></tr>
+<tr class="memitem:a340e65a347850cb4bee41d28389396dd" id="r_a340e65a347850cb4bee41d28389396dd"><td class="memItemLeft">std::vector&lt; sctl::Vector&lt; Real_t &gt; &gt;&#160;</td><td class="memItemRight"><a class="el" href="#a340e65a347850cb4bee41d28389396dd">dnwd_equiv_surf</a></td></tr>
 <tr class="inherit_header pro_attribs_classpvfmm_1_1Tree"><td colspan="2">Protected Attributes inherited from <a class="el" href="classpvfmm_1_1Tree.html">pvfmm::Tree&lt; FMM_Mat_t::FMMNode_t &gt;</a></td></tr>
 <tr class="memitem:a0d8fb5c23590318239f4389e466c3975 pro_attribs_classpvfmm_1_1Tree" id="r_a0d8fb5c23590318239f4389e466c3975"><td class="memItemLeft">int&#160;</td><td class="memItemRight"><a class="el" href="classpvfmm_1_1Tree.html#a0d8fb5c23590318239f4389e466c3975">dim</a></td></tr>
-<tr class="memitem:a8d8d108d333ac5a885926fba9cc9bf1c pro_attribs_classpvfmm_1_1Tree" id="r_a8d8d108d333ac5a885926fba9cc9bf1c"><td class="memItemLeft">Node_t *&#160;</td><td class="memItemRight"><a class="el" href="classpvfmm_1_1Tree.html#a8d8d108d333ac5a885926fba9cc9bf1c">root_node</a></td></tr>
+<tr class="memitem:acda64f5dca0800bb7ba4230d49d0c27e pro_attribs_classpvfmm_1_1Tree" id="r_acda64f5dca0800bb7ba4230d49d0c27e"><td class="memItemLeft">sctl::Iterator&lt; Node_t &gt;&#160;</td><td class="memItemRight"><a class="el" href="classpvfmm_1_1Tree.html#acda64f5dca0800bb7ba4230d49d0c27e">root_node</a></td></tr>
 <tr class="memitem:aef151493283a01fc64a70cce41b10e4f pro_attribs_classpvfmm_1_1Tree" id="r_aef151493283a01fc64a70cce41b10e4f"><td class="memItemLeft">int&#160;</td><td class="memItemRight"><a class="el" href="classpvfmm_1_1Tree.html#aef151493283a01fc64a70cce41b10e4f">max_depth</a></td></tr>
-<tr class="memitem:ac400fed2bc837482307dff5550ac7db8 pro_attribs_classpvfmm_1_1Tree" id="r_ac400fed2bc837482307dff5550ac7db8"><td class="memItemLeft">std::vector&lt; FMM_Mat_t::FMMNode_t * &gt;&#160;</td><td class="memItemRight"><a class="el" href="classpvfmm_1_1Tree.html#ac400fed2bc837482307dff5550ac7db8">node_lst</a></td></tr>
-<tr class="memitem:a2ecd1ddedcaceddc9fa17c900e50e4fa pro_attribs_classpvfmm_1_1Tree" id="r_a2ecd1ddedcaceddc9fa17c900e50e4fa"><td class="memItemLeft"><a class="el" href="classpvfmm_1_1mem_1_1MemoryManager.html">mem::MemoryManager</a>&#160;</td><td class="memItemRight"><a class="el" href="classpvfmm_1_1Tree.html#a2ecd1ddedcaceddc9fa17c900e50e4fa">memgr</a></td></tr>
+<tr class="memitem:a62bf12899bc99dc408acbe803fd636a2 pro_attribs_classpvfmm_1_1Tree" id="r_a62bf12899bc99dc408acbe803fd636a2"><td class="memItemLeft">std::vector&lt; sctl::Iterator&lt; FMM_Mat_t::FMMNode_t &gt; &gt;&#160;</td><td class="memItemRight"><a class="el" href="classpvfmm_1_1Tree.html#a62bf12899bc99dc408acbe803fd636a2">node_lst</a></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-inherited" class="groupheader"><a id="inherited" name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
 <tr class="inherit_header pro_methods_classpvfmm_1_1MPI__Tree"><td colspan="2">Protected Member Functions inherited from <a class="el" href="classpvfmm_1_1MPI__Tree.html">pvfmm::MPI_Tree&lt; FMM_Mat_t::FMMNode_t &gt;</a></td></tr>
-<tr class="memitem:a41159606c7280f385ae771e1f6f105cd pro_methods_classpvfmm_1_1MPI__Tree" id="r_a41159606c7280f385ae771e1f6f105cd"><td class="memItemLeft">
-const std::vector&lt; <a class="el" href="classpvfmm_1_1MortonId.html">MortonId</a> &gt; &amp;&#160;</td><td class="memItemRight"><b>GetMins</b> ()</td></tr>
-<tr class="memdesc:a41159606c7280f385ae771e1f6f105cd pro_methods_classpvfmm_1_1MPI__Tree"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a vector with the minimum Morton Id of the regions controlled by each processor. <br /></td></tr>
+<tr class="memitem:a67852348c23a6842c720c54c587e1bfe pro_methods_classpvfmm_1_1MPI__Tree" id="r_a67852348c23a6842c720c54c587e1bfe"><td class="memItemLeft">
+const sctl::Vector&lt; MortonId &gt; &amp;&#160;</td><td class="memItemRight"><b>GetMins</b> ()</td></tr>
+<tr class="memdesc:a67852348c23a6842c720c54c587e1bfe pro_methods_classpvfmm_1_1MPI__Tree"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a vector with the minimum Morton Id of the regions controlled by each processor. <br /></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><div class="compoundTemplParams">template&lt;class FMM_Mat_t&gt;<br />
 class pvfmm::FMM_Tree&lt; FMM_Mat_t &gt;</div><p>Base class for FMM tree. </p>
 
-<p class="definition">Definition at line <a class="el" href="fmm__tree_8hpp_source.html#l00026">26</a> of file <a class="el" href="fmm__tree_8hpp_source.html">fmm_tree.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="fmm__tree_8hpp_source.html#l00025">25</a> of file <a class="el" href="fmm__tree_8hpp_source.html">fmm_tree.hpp</a>.</p>
 </div><a name="doc-typedef-members" id="doc-typedef-members"></a><h2 id="header-doc-typedef-members" class="groupheader">Member Typedef Documentation</h2>
 <a id="ae25c7277cd7d3bfed738ee519538d0ff" name="ae25c7277cd7d3bfed738ee519538d0ff"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae25c7277cd7d3bfed738ee519538d0ff">&#9670;&#160;</a></span>Node_t</h2>
@@ -282,7 +287,7 @@ template&lt;class FMM_Mat_t&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="fmm__tree_8hpp_source.html#l00031">31</a> of file <a class="el" href="fmm__tree_8hpp_source.html">fmm_tree.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="fmm__tree_8hpp_source.html#l00030">30</a> of file <a class="el" href="fmm__tree_8hpp_source.html">fmm_tree.hpp</a>.</p>
 
 </div>
 </div>
@@ -300,13 +305,13 @@ template&lt;class FMM_Mat_t&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="fmm__tree_8hpp_source.html#l00032">32</a> of file <a class="el" href="fmm__tree_8hpp_source.html">fmm_tree.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="fmm__tree_8hpp_source.html#l00031">31</a> of file <a class="el" href="fmm__tree_8hpp_source.html">fmm_tree.hpp</a>.</p>
 
 </div>
 </div>
 <a name="doc-constructors" id="doc-constructors"></a><h2 id="header-doc-constructors" class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="afc667787b5d524fd2cf7ac9d70dbeda8" name="afc667787b5d524fd2cf7ac9d70dbeda8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afc667787b5d524fd2cf7ac9d70dbeda8">&#9670;&#160;</a></span>FMM_Tree()</h2>
+<a id="a71e8e6a1968d54bc287619e417158766" name="a71e8e6a1968d54bc287619e417158766"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a71e8e6a1968d54bc287619e417158766">&#9670;&#160;</a></span>FMM_Tree()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -319,7 +324,7 @@ template&lt;class FMM_Mat_t&gt; </div>
         <tr>
           <td class="memname"><a class="el" href="classpvfmm_1_1FMM__Tree.html">pvfmm::FMM_Tree</a>&lt; FMM_Mat_t &gt;::FMM_Tree </td>
           <td>(</td>
-          <td class="paramtype">MPI_Comm</td>          <td class="paramname"><span class="paramname"><em>c</em></span></td><td>)</td>
+          <td class="paramtype">const sctl::Comm &amp;</td>          <td class="paramname"><span class="paramname"><em>c</em></span></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -332,7 +337,7 @@ template&lt;class FMM_Mat_t&gt; </div>
 
 <p>Constructor. </p>
 
-<p class="definition">Definition at line <a class="el" href="fmm__tree_8hpp_source.html#l00037">37</a> of file <a class="el" href="fmm__tree_8hpp_source.html">fmm_tree.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="fmm__tree_8hpp_source.html#l00036">36</a> of file <a class="el" href="fmm__tree_8hpp_source.html">fmm_tree.hpp</a>.</p>
 
 </div>
 </div>
@@ -348,7 +353,7 @@ template&lt;class FMM_Mat_t&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual <a class="el" href="classpvfmm_1_1FMM__Tree.html">pvfmm::FMM_Tree</a>&lt; FMM_Mat_t &gt;::~<a class="el" href="#afc667787b5d524fd2cf7ac9d70dbeda8">FMM_Tree</a> </td>
+          <td class="memname">virtual <a class="el" href="classpvfmm_1_1FMM__Tree.html">pvfmm::FMM_Tree</a>&lt; FMM_Mat_t &gt;::~<a class="el" href="#a71e8e6a1968d54bc287619e417158766">FMM_Tree</a> </td>
           <td>(</td>
           <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td></td>
@@ -363,7 +368,7 @@ template&lt;class FMM_Mat_t&gt; </div>
 
 <p>Virtual destructor. </p>
 
-<p class="definition">Definition at line <a class="el" href="fmm__tree_8hpp_source.html#l00042">42</a> of file <a class="el" href="fmm__tree_8hpp_source.html">fmm_tree.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="fmm__tree_8hpp_source.html#l00041">41</a> of file <a class="el" href="fmm__tree_8hpp_source.html">fmm_tree.hpp</a>.</p>
 
 </div>
 </div>
@@ -422,12 +427,12 @@ template&lt;class FMM_Mat_t&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="fmm__tree_8hpp_source.html#l00101">101</a> of file <a class="el" href="fmm__tree_8hpp_source.html">fmm_tree.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="fmm__tree_8hpp_source.html#l00100">100</a> of file <a class="el" href="fmm__tree_8hpp_source.html">fmm_tree.hpp</a>.</p>
 
 </div>
 </div>
-<a id="a832f883ed41167c50bc0a36e2a72e53f" name="a832f883ed41167c50bc0a36e2a72e53f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a832f883ed41167c50bc0a36e2a72e53f">&#9670;&#160;</a></span>dnwd_check_surf</h2>
+<a id="af1558cd4e39bf46b222ef857ee9e9f39" name="af1558cd4e39bf46b222ef857ee9e9f39"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af1558cd4e39bf46b222ef857ee9e9f39">&#9670;&#160;</a></span>dnwd_check_surf</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -438,7 +443,33 @@ template&lt;class FMM_Mat_t&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::vector&lt;<a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt;Real_t&gt; &gt; <a class="el" href="classpvfmm_1_1FMM__Tree.html">pvfmm::FMM_Tree</a>&lt; FMM_Mat_t &gt;::dnwd_check_surf</td>
+          <td class="memname">std::vector&lt;sctl::Vector&lt;Real_t&gt; &gt; <a class="el" href="classpvfmm_1_1FMM__Tree.html">pvfmm::FMM_Tree</a>&lt; FMM_Mat_t &gt;::dnwd_check_surf</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel protected">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="fmm__tree_8hpp_source.html#l00107">107</a> of file <a class="el" href="fmm__tree_8hpp_source.html">fmm_tree.hpp</a>.</p>
+
+</div>
+</div>
+<a id="a340e65a347850cb4bee41d28389396dd" name="a340e65a347850cb4bee41d28389396dd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a340e65a347850cb4bee41d28389396dd">&#9670;&#160;</a></span>dnwd_equiv_surf</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class FMM_Mat_t&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;sctl::Vector&lt;Real_t&gt; &gt; <a class="el" href="classpvfmm_1_1FMM__Tree.html">pvfmm::FMM_Tree</a>&lt; FMM_Mat_t &gt;::dnwd_equiv_surf</td>
         </tr>
       </table>
   </td>
@@ -449,32 +480,6 @@ template&lt;class FMM_Mat_t&gt; </div>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="fmm__tree_8hpp_source.html#l00108">108</a> of file <a class="el" href="fmm__tree_8hpp_source.html">fmm_tree.hpp</a>.</p>
-
-</div>
-</div>
-<a id="a58fa1b59e6df5b6b106adfcbd2faf05e" name="a58fa1b59e6df5b6b106adfcbd2faf05e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a58fa1b59e6df5b6b106adfcbd2faf05e">&#9670;&#160;</a></span>dnwd_equiv_surf</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;class FMM_Mat_t&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">std::vector&lt;<a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt;Real_t&gt; &gt; <a class="el" href="classpvfmm_1_1FMM__Tree.html">pvfmm::FMM_Tree</a>&lt; FMM_Mat_t &gt;::dnwd_equiv_surf</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel protected">protected</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="fmm__tree_8hpp_source.html#l00109">109</a> of file <a class="el" href="fmm__tree_8hpp_source.html">fmm_tree.hpp</a>.</p>
 
 </div>
 </div>
@@ -500,7 +505,7 @@ template&lt;class FMM_Mat_t&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="fmm__tree_8hpp_source.html#l00100">100</a> of file <a class="el" href="fmm__tree_8hpp_source.html">fmm_tree.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="fmm__tree_8hpp_source.html#l00099">99</a> of file <a class="el" href="fmm__tree_8hpp_source.html">fmm_tree.hpp</a>.</p>
 
 </div>
 </div>
@@ -526,12 +531,12 @@ template&lt;class FMM_Mat_t&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="fmm__tree_8hpp_source.html#l00099">99</a> of file <a class="el" href="fmm__tree_8hpp_source.html">fmm_tree.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="fmm__tree_8hpp_source.html#l00098">98</a> of file <a class="el" href="fmm__tree_8hpp_source.html">fmm_tree.hpp</a>.</p>
 
 </div>
 </div>
-<a id="ad3096adecdfb6fea80c0aa31bc056d5c" name="ad3096adecdfb6fea80c0aa31bc056d5c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad3096adecdfb6fea80c0aa31bc056d5c">&#9670;&#160;</a></span>node_data_buff</h2>
+<a id="aeef15459631cf639b1269fadd91362f5" name="aeef15459631cf639b1269fadd91362f5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeef15459631cf639b1269fadd91362f5">&#9670;&#160;</a></span>node_data_buff</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -542,7 +547,51 @@ template&lt;class FMM_Mat_t&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::vector&lt;<a class="el" href="classpvfmm_1_1Matrix.html">Matrix</a>&lt;Real_t&gt; &gt; <a class="el" href="classpvfmm_1_1FMM__Tree.html">pvfmm::FMM_Tree</a>&lt; FMM_Mat_t &gt;::node_data_buff</td>
+          <td class="memname">std::vector&lt;sctl::Matrix&lt;Real_t&gt; &gt; <a class="el" href="classpvfmm_1_1FMM__Tree.html">pvfmm::FMM_Tree</a>&lt; FMM_Mat_t &gt;::node_data_buff</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel protected">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="fmm__tree_8hpp_source.html#l00096">96</a> of file <a class="el" href="fmm__tree_8hpp_source.html">fmm_tree.hpp</a>.</p>
+
+</div>
+</div>
+<a id="a957030ce6b5ac429eb7c86fc16f6259f" name="a957030ce6b5ac429eb7c86fc16f6259f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a957030ce6b5ac429eb7c86fc16f6259f">&#9670;&#160;</a></span>node_data_buff_mirror</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class FMM_Mat_t&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;<a class="el" href="classpvfmm_1_1DeviceMirror.html">DeviceMirror</a>&gt; <a class="el" href="classpvfmm_1_1FMM__Tree.html">pvfmm::FMM_Tree</a>&lt; FMM_Mat_t &gt;::node_data_buff_mirror</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="fmm__tree_8hpp_source.html#l00117">117</a> of file <a class="el" href="fmm__tree_8hpp_source.html">fmm_tree.hpp</a>.</p>
+
+</div>
+</div>
+<a id="a48ed49b188153c778f9234d57fef2b2a" name="a48ed49b188153c778f9234d57fef2b2a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a48ed49b188153c778f9234d57fef2b2a">&#9670;&#160;</a></span>node_interac_lst</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class FMM_Mat_t&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">sctl::Matrix&lt;sctl::Iterator&lt;Node_t&gt; &gt; <a class="el" href="classpvfmm_1_1FMM__Tree.html">pvfmm::FMM_Tree</a>&lt; FMM_Mat_t &gt;::node_interac_lst</td>
         </tr>
       </table>
   </td>
@@ -556,8 +605,8 @@ template&lt;class FMM_Mat_t&gt; </div>
 
 </div>
 </div>
-<a id="af86038fd9b25ec253656964deea39fb4" name="af86038fd9b25ec253656964deea39fb4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af86038fd9b25ec253656964deea39fb4">&#9670;&#160;</a></span>node_interac_lst</h2>
+<a id="aa37be4dcec5e564216f1d51186f05e06" name="aa37be4dcec5e564216f1d51186f05e06"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa37be4dcec5e564216f1d51186f05e06">&#9670;&#160;</a></span>precomp_lst</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -568,7 +617,7 @@ template&lt;class FMM_Mat_t&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classpvfmm_1_1Matrix.html">pvfmm::Matrix</a>&lt;Node_t*&gt; <a class="el" href="classpvfmm_1_1FMM__Tree.html">pvfmm::FMM_Tree</a>&lt; FMM_Mat_t &gt;::node_interac_lst</td>
+          <td class="memname">std::vector&lt;sctl::Matrix&lt;char&gt; &gt; <a class="el" href="classpvfmm_1_1FMM__Tree.html">pvfmm::FMM_Tree</a>&lt; FMM_Mat_t &gt;::precomp_lst</td>
         </tr>
       </table>
   </td>
@@ -578,12 +627,30 @@ template&lt;class FMM_Mat_t&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="fmm__tree_8hpp_source.html#l00098">98</a> of file <a class="el" href="fmm__tree_8hpp_source.html">fmm_tree.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="fmm__tree_8hpp_source.html#l00102">102</a> of file <a class="el" href="fmm__tree_8hpp_source.html">fmm_tree.hpp</a>.</p>
 
 </div>
 </div>
-<a id="a6cbf0a4d33b482f7de0c12839fe9926a" name="a6cbf0a4d33b482f7de0c12839fe9926a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6cbf0a4d33b482f7de0c12839fe9926a">&#9670;&#160;</a></span>precomp_lst</h2>
+<a id="a1d1b9a58deb1d94992dad4966cc52cb8" name="a1d1b9a58deb1d94992dad4966cc52cb8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1d1b9a58deb1d94992dad4966cc52cb8">&#9670;&#160;</a></span>precomp_lst_mirror</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class FMM_Mat_t&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;<a class="el" href="classpvfmm_1_1DeviceMirror.html">DeviceMirror</a>&gt; <a class="el" href="classpvfmm_1_1FMM__Tree.html">pvfmm::FMM_Tree</a>&lt; FMM_Mat_t &gt;::precomp_lst_mirror</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="fmm__tree_8hpp_source.html#l00118">118</a> of file <a class="el" href="fmm__tree_8hpp_source.html">fmm_tree.hpp</a>.</p>
+
+</div>
+</div>
+<a id="a58347fd88c51087ff31df6ca71964ded" name="a58347fd88c51087ff31df6ca71964ded"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a58347fd88c51087ff31df6ca71964ded">&#9670;&#160;</a></span>setup_data</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -594,7 +661,7 @@ template&lt;class FMM_Mat_t&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::vector&lt;<a class="el" href="classpvfmm_1_1Matrix.html">Matrix</a>&lt;char&gt; &gt; <a class="el" href="classpvfmm_1_1FMM__Tree.html">pvfmm::FMM_Tree</a>&lt; FMM_Mat_t &gt;::precomp_lst</td>
+          <td class="memname">std::vector&lt;<a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt;typename FMM_Mat_t::FMMNode_t&gt; &gt; <a class="el" href="classpvfmm_1_1FMM__Tree.html">pvfmm::FMM_Tree</a>&lt; FMM_Mat_t &gt;::setup_data</td>
         </tr>
       </table>
   </td>
@@ -608,8 +675,8 @@ template&lt;class FMM_Mat_t&gt; </div>
 
 </div>
 </div>
-<a id="a25d8a021b6f816bed32ed28946a5c8de" name="a25d8a021b6f816bed32ed28946a5c8de"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a25d8a021b6f816bed32ed28946a5c8de">&#9670;&#160;</a></span>setup_data</h2>
+<a id="a6e0ce08ebd196fdbb20649309e7f2012" name="a6e0ce08ebd196fdbb20649309e7f2012"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6e0ce08ebd196fdbb20649309e7f2012">&#9670;&#160;</a></span>upwd_check_surf</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -620,7 +687,7 @@ template&lt;class FMM_Mat_t&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::vector&lt;<a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt;Real_t&gt; &gt; <a class="el" href="classpvfmm_1_1FMM__Tree.html">pvfmm::FMM_Tree</a>&lt; FMM_Mat_t &gt;::setup_data</td>
+          <td class="memname">std::vector&lt;sctl::Vector&lt;Real_t&gt; &gt; <a class="el" href="classpvfmm_1_1FMM__Tree.html">pvfmm::FMM_Tree</a>&lt; FMM_Mat_t &gt;::upwd_check_surf</td>
         </tr>
       </table>
   </td>
@@ -630,12 +697,12 @@ template&lt;class FMM_Mat_t&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="fmm__tree_8hpp_source.html#l00104">104</a> of file <a class="el" href="fmm__tree_8hpp_source.html">fmm_tree.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="fmm__tree_8hpp_source.html#l00105">105</a> of file <a class="el" href="fmm__tree_8hpp_source.html">fmm_tree.hpp</a>.</p>
 
 </div>
 </div>
-<a id="a6a7ad349e526cec215ddf22d0112865c" name="a6a7ad349e526cec215ddf22d0112865c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6a7ad349e526cec215ddf22d0112865c">&#9670;&#160;</a></span>upwd_check_surf</h2>
+<a id="aaeb7a277d2ee084e5b3ff52d15c08563" name="aaeb7a277d2ee084e5b3ff52d15c08563"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaeb7a277d2ee084e5b3ff52d15c08563">&#9670;&#160;</a></span>upwd_equiv_surf</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -646,7 +713,7 @@ template&lt;class FMM_Mat_t&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::vector&lt;<a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt;Real_t&gt; &gt; <a class="el" href="classpvfmm_1_1FMM__Tree.html">pvfmm::FMM_Tree</a>&lt; FMM_Mat_t &gt;::upwd_check_surf</td>
+          <td class="memname">std::vector&lt;sctl::Vector&lt;Real_t&gt; &gt; <a class="el" href="classpvfmm_1_1FMM__Tree.html">pvfmm::FMM_Tree</a>&lt; FMM_Mat_t &gt;::upwd_equiv_surf</td>
         </tr>
       </table>
   </td>
@@ -657,32 +724,6 @@ template&lt;class FMM_Mat_t&gt; </div>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="fmm__tree_8hpp_source.html#l00106">106</a> of file <a class="el" href="fmm__tree_8hpp_source.html">fmm_tree.hpp</a>.</p>
-
-</div>
-</div>
-<a id="a25190f5bcbe177b21d5efbea090cbb2d" name="a25190f5bcbe177b21d5efbea090cbb2d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a25190f5bcbe177b21d5efbea090cbb2d">&#9670;&#160;</a></span>upwd_equiv_surf</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;class FMM_Mat_t&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">std::vector&lt;<a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt;Real_t&gt; &gt; <a class="el" href="classpvfmm_1_1FMM__Tree.html">pvfmm::FMM_Tree</a>&lt; FMM_Mat_t &gt;::upwd_equiv_surf</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel protected">protected</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="fmm__tree_8hpp_source.html#l00107">107</a> of file <a class="el" href="fmm__tree_8hpp_source.html">fmm_tree.hpp</a>.</p>
 
 </div>
 </div>

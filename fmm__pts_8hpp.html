@@ -111,19 +111,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <p>This file contains the definition of the FMM_Pts class. This handles all the translations for point sources and targets.  
 <a href="#details">More...</a></p>
-<div class="textblock"><code>#include &lt;mpi.h&gt;</code><br />
-<code>#include &lt;string&gt;</code><br />
+<div class="textblock"><code>#include &lt;string&gt;</code><br />
 <code>#include &lt;vector&gt;</code><br />
 <code>#include &lt;cstdlib&gt;</code><br />
 <code>#include &lt;<a class="el" href="pvfmm__common_8hpp_source.html">pvfmm_common.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="device__wrapper_8hpp_source.html">device_wrapper.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="interac__list_8hpp_source.html">interac_list.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="precomp__mat_8hpp_source.html">precomp_mat.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="fft__wrapper_8hpp_source.html">fft_wrapper.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="mpi__tree_8hpp_source.html">mpi_tree.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="mpi__node_8hpp_source.html">mpi_node.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="mem__mgr_8hpp_source.html">mem_mgr.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="vector_8hpp_source.html">vector.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="matrix_8hpp_source.html">matrix.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="mat__utils_8hpp_source.html">mat_utils.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>&gt;</code><br />
 <code>#include &lt;fmm_pts.txx&gt;</code><br />
 </div>
@@ -133,7 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
 Classes</h2></td></tr>
 <tr class="memitem:pvfmm_3A_3AFMM_5FData_3C_20Real_5Ft_20_3E" id="r_pvfmm_3A_3AFMM_5FData_3C_20Real_5Ft_20_3E"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classpvfmm_1_1FMM__Data.html">pvfmm::FMM_Data&lt; Real_t &gt;</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">This class contains FMM specific data that each node contains along with the functions for manipulating the data.  <a href="classpvfmm_1_1FMM__Data.html#details">More...</a><br /></td></tr>
-<tr class="memitem:pvfmm_3A_3ASetupData_3C_20Real_5Ft_20_3E" id="r_pvfmm_3A_3ASetupData_3C_20Real_5Ft_20_3E"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structpvfmm_1_1SetupData.html">pvfmm::SetupData&lt; Real_t &gt;</a></td></tr>
+<tr class="memitem:pvfmm_3A_3ASetupData_3C_20FMMNode_5Ft_20_3E" id="r_pvfmm_3A_3ASetupData_3C_20FMMNode_5Ft_20_3E"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structpvfmm_1_1SetupData.html">pvfmm::SetupData&lt; FMMNode_t &gt;</a></td></tr>
 <tr class="memitem:pvfmm_3A_3AFMM_5FPts_3C_20FMMNode_20_3E" id="r_pvfmm_3A_3AFMM_5FPts_3C_20FMMNode_20_3E"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classpvfmm_1_1FMM__Pts.html">pvfmm::FMM_Pts&lt; FMMNode &gt;</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">This class manages all the translation operators for particle FMM.  <a href="classpvfmm_1_1FMM__Pts.html#details">More...</a><br /></td></tr>
 <tr class="memitem:pvfmm_3A_3AFMM_5FPts_3C_20FMMNode_20_3E_3A_3AFMMData" id="r_pvfmm_3A_3AFMM_5FPts_3C_20FMMNode_20_3E_3A_3AFMMData"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classpvfmm_1_1FMM__Pts_1_1FMMData.html">pvfmm::FMM_Pts&lt; FMMNode &gt;::FMMData</a></td></tr>

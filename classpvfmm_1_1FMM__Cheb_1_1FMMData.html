@@ -128,7 +128,7 @@ Inheritance diagram for pvfmm::FMM_Cheb&lt; FMMNode &gt;::FMMData:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-methods" class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a618682392afe2b09f1f49a55f2ac2029" id="r_a618682392afe2b09f1f49a55f2ac2029"><td class="memItemLeft">virtual <a class="el" href="classpvfmm_1_1FMM__Data.html">FMM_Data</a>&lt; Real_t &gt; *&#160;</td><td class="memItemRight"><a class="el" href="#a618682392afe2b09f1f49a55f2ac2029">NewData</a> ()</td></tr>
+<tr class="memitem:aeac1cf3cb03bbe129b6459f730b608fb" id="r_aeac1cf3cb03bbe129b6459f730b608fb"><td class="memItemLeft">virtual sctl::Iterator&lt; <a class="el" href="classpvfmm_1_1FMM__Data.html">FMM_Data</a>&lt; Real_t &gt; &gt;&#160;</td><td class="memItemRight"><a class="el" href="#aeac1cf3cb03bbe129b6459f730b608fb">NewData</a> ()</td></tr>
 <tr class="inherit_header pub_methods_classpvfmm_1_1FMM__Data"><td colspan="2">Public Member Functions inherited from <a class="el" href="classpvfmm_1_1FMM__Data.html">pvfmm::FMM_Data&lt; Real_t &gt;</a></td></tr>
 <tr class="memitem:a377bcc4890ee031acfa50082f60c6351 pub_methods_classpvfmm_1_1FMM__Data" id="r_a377bcc4890ee031acfa50082f60c6351"><td class="memItemLeft">
 virtual void&#160;</td><td class="memItemRight"><b>Clear</b> ()</td></tr>
@@ -145,19 +145,19 @@ virtual void&#160;</td><td class="memItemRight"><b>InitMultipole</b> (<a class="
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-attribs" class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:a436272387d2a7bd787d0b1ee0eb2e7d2" id="r_a436272387d2a7bd787d0b1ee0eb2e7d2"><td class="memItemLeft"><a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt; Real_t &gt;&#160;</td><td class="memItemRight"><a class="el" href="#a436272387d2a7bd787d0b1ee0eb2e7d2">cheb_out</a></td></tr>
+<tr class="memitem:a1aea1470fc571ef1730a470e4318d09f" id="r_a1aea1470fc571ef1730a470e4318d09f"><td class="memItemLeft">sctl::Vector&lt; Real_t &gt;&#160;</td><td class="memItemRight"><a class="el" href="#a1aea1470fc571ef1730a470e4318d09f">cheb_out</a></td></tr>
 <tr class="inherit_header pub_attribs_classpvfmm_1_1FMM__Data"><td colspan="2">Public Attributes inherited from <a class="el" href="classpvfmm_1_1FMM__Data.html">pvfmm::FMM_Data&lt; Real_t &gt;</a></td></tr>
-<tr class="memitem:a415ede9fea498a40ef0170907487bdd5 pub_attribs_classpvfmm_1_1FMM__Data" id="r_a415ede9fea498a40ef0170907487bdd5"><td class="memItemLeft"><a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt; Real_t &gt;&#160;</td><td class="memItemRight"><a class="el" href="classpvfmm_1_1FMM__Data.html#a415ede9fea498a40ef0170907487bdd5">upward_equiv</a></td></tr>
-<tr class="memitem:a7bd0c5b5a70fc0b968db0ddfd8cf312f pub_attribs_classpvfmm_1_1FMM__Data" id="r_a7bd0c5b5a70fc0b968db0ddfd8cf312f"><td class="memItemLeft"><a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt; Real_t &gt;&#160;</td><td class="memItemRight"><a class="el" href="classpvfmm_1_1FMM__Data.html#a7bd0c5b5a70fc0b968db0ddfd8cf312f">dnward_equiv</a></td></tr>
+<tr class="memitem:a57eca2bf4ee5de54a111dccf262ecd90 pub_attribs_classpvfmm_1_1FMM__Data" id="r_a57eca2bf4ee5de54a111dccf262ecd90"><td class="memItemLeft">sctl::Vector&lt; Real_t &gt;&#160;</td><td class="memItemRight"><a class="el" href="classpvfmm_1_1FMM__Data.html#a57eca2bf4ee5de54a111dccf262ecd90">upward_equiv</a></td></tr>
+<tr class="memitem:a58e7530a8ac92d8024210db2c73b00b6 pub_attribs_classpvfmm_1_1FMM__Data" id="r_a58e7530a8ac92d8024210db2c73b00b6"><td class="memItemLeft">sctl::Vector&lt; Real_t &gt;&#160;</td><td class="memItemRight"><a class="el" href="classpvfmm_1_1FMM__Data.html#a58e7530a8ac92d8024210db2c73b00b6">dnward_equiv</a></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><div class="compoundTemplParams">template&lt;class FMMNode&gt;<br />
 class pvfmm::FMM_Cheb&lt; FMMNode &gt;::FMMData</div><p>This class contains FMM specific data that each node contains along with the functions functions for manipulating the data. </p>
 
-<p class="definition">Definition at line <a class="el" href="fmm__cheb_8hpp_source.html#l00039">39</a> of file <a class="el" href="fmm__cheb_8hpp_source.html">fmm_cheb.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="fmm__cheb_8hpp_source.html#l00037">37</a> of file <a class="el" href="fmm__cheb_8hpp_source.html">fmm_cheb.hpp</a>.</p>
 </div><a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Member Function Documentation</h2>
-<a id="a618682392afe2b09f1f49a55f2ac2029" name="a618682392afe2b09f1f49a55f2ac2029"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a618682392afe2b09f1f49a55f2ac2029">&#9670;&#160;</a></span>NewData()</h2>
+<a id="aeac1cf3cb03bbe129b6459f730b608fb" name="aeac1cf3cb03bbe129b6459f730b608fb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeac1cf3cb03bbe129b6459f730b608fb">&#9670;&#160;</a></span>NewData()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -168,7 +168,7 @@ template&lt;class FMMNode&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual <a class="el" href="classpvfmm_1_1FMM__Data.html">FMM_Data</a>&lt; Real_t &gt; * <a class="el" href="classpvfmm_1_1FMM__Cheb.html">pvfmm::FMM_Cheb</a>&lt; FMMNode &gt;::FMMData::NewData </td>
+          <td class="memname">virtual sctl::Iterator&lt; <a class="el" href="classpvfmm_1_1FMM__Data.html">FMM_Data</a>&lt; Real_t &gt; &gt; <a class="el" href="classpvfmm_1_1FMM__Cheb.html">pvfmm::FMM_Cheb</a>&lt; FMMNode &gt;::FMMData::NewData </td>
           <td>(</td>
           <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td></td>
@@ -183,13 +183,13 @@ template&lt;class FMMNode&gt; </div>
 
 <p>Reimplemented from <a class="el" href="classpvfmm_1_1FMM__Pts_1_1FMMData.html">pvfmm::FMM_Pts&lt; FMMNode &gt;::FMMData</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="fmm__cheb_8hpp_source.html#l00043">43</a> of file <a class="el" href="fmm__cheb_8hpp_source.html">fmm_cheb.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="fmm__cheb_8hpp_source.html#l00041">41</a> of file <a class="el" href="fmm__cheb_8hpp_source.html">fmm_cheb.hpp</a>.</p>
 
 </div>
 </div>
 <a name="doc-variable-members" id="doc-variable-members"></a><h2 id="header-doc-variable-members" class="groupheader">Member Data Documentation</h2>
-<a id="a436272387d2a7bd787d0b1ee0eb2e7d2" name="a436272387d2a7bd787d0b1ee0eb2e7d2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a436272387d2a7bd787d0b1ee0eb2e7d2">&#9670;&#160;</a></span>cheb_out</h2>
+<a id="a1aea1470fc571ef1730a470e4318d09f" name="a1aea1470fc571ef1730a470e4318d09f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1aea1470fc571ef1730a470e4318d09f">&#9670;&#160;</a></span>cheb_out</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -197,12 +197,12 @@ template&lt;class FMMNode&gt; </div>
 template&lt;class FMMNode&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt;Real_t&gt; <a class="el" href="classpvfmm_1_1FMM__Cheb.html">pvfmm::FMM_Cheb</a>&lt; FMMNode &gt;::FMMData::cheb_out</td>
+          <td class="memname">sctl::Vector&lt;Real_t&gt; <a class="el" href="classpvfmm_1_1FMM__Cheb.html">pvfmm::FMM_Cheb</a>&lt; FMMNode &gt;::FMMData::cheb_out</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="fmm__cheb_8hpp_source.html#l00046">46</a> of file <a class="el" href="fmm__cheb_8hpp_source.html">fmm_cheb.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="fmm__cheb_8hpp_source.html#l00044">44</a> of file <a class="el" href="fmm__cheb_8hpp_source.html">fmm_cheb.hpp</a>.</p>
 
 </div>
 </div>

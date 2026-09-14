@@ -114,10 +114,9 @@ document.addEventListener('DOMContentLoaded', () => {
 <a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;string&gt;</code><br />
 <code>#include &lt;cstdlib&gt;</code><br />
+<code>#include &lt;type_traits&gt;</code><br />
 <code>#include &lt;<a class="el" href="pvfmm__common_8hpp_source.html">pvfmm_common.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="mem__mgr_8hpp_source.html">mem_mgr.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="vector_8hpp_source.html">vector.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="matrix_8hpp_source.html">matrix.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="mat__utils_8hpp_source.html">mat_utils.hpp</a>&gt;</code><br />
 <code>#include &lt;kernel.txx&gt;</code><br />
 </div>
 <p><a href="kernel_8hpp_source.html">Go to the source code of this file.</a></p>
@@ -127,16 +126,18 @@ Classes</h2></td></tr>
 <tr class="memitem:pvfmm_3A_3AKernel_3C_20T_20_3E" id="r_pvfmm_3A_3AKernel_3C_20T_20_3E"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structpvfmm_1_1Kernel.html">pvfmm::Kernel&lt; T &gt;</a></td></tr>
 <tr class="memitem:pvfmm_3A_3AGenericKernel_3C_20uKernel_20_3E" id="r_pvfmm_3A_3AGenericKernel_3C_20uKernel_20_3E"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classpvfmm_1_1GenericKernel.html">pvfmm::GenericKernel&lt; uKernel &gt;</a></td></tr>
 <tr class="memitem:pvfmm_3A_3ALaplaceKernel_3C_20T_20_3E" id="r_pvfmm_3A_3ALaplaceKernel_3C_20T_20_3E"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structpvfmm_1_1LaplaceKernel.html">pvfmm::LaplaceKernel&lt; T &gt;</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Green's function of the Poisson equation <picture><source srcset="form_0_dark.png" media="(prefers-color-scheme: dark)"/><img class="formulaInl" alt="$-\Delta u = f$" src="form_0.png"/></picture>.  <a href="structpvfmm_1_1LaplaceKernel.html#details">More...</a><br /></td></tr>
 <tr class="memitem:pvfmm_3A_3AStokesKernel_3C_20T_20_3E" id="r_pvfmm_3A_3AStokesKernel_3C_20T_20_3E"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structpvfmm_1_1StokesKernel.html">pvfmm::StokesKernel&lt; T &gt;</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Green's functions of the Stokes equations (unit viscosity).  <a href="structpvfmm_1_1StokesKernel.html#details">More...</a><br /></td></tr>
 <tr class="memitem:pvfmm_3A_3ABiotSavartKernel_3C_20T_20_3E" id="r_pvfmm_3A_3ABiotSavartKernel_3C_20T_20_3E"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structpvfmm_1_1BiotSavartKernel.html">pvfmm::BiotSavartKernel&lt; T &gt;</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Velocity induced by vortex sources (Biot-Savart law).  <a href="structpvfmm_1_1BiotSavartKernel.html#details">More...</a><br /></td></tr>
 <tr class="memitem:pvfmm_3A_3AHelmholtzKernel_3C_20T_20_3E" id="r_pvfmm_3A_3AHelmholtzKernel_3C_20T_20_3E"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structpvfmm_1_1HelmholtzKernel.html">pvfmm::HelmholtzKernel&lt; T &gt;</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Green's function of the Helmholtz equation <picture><source srcset="form_1_dark.png" media="(prefers-color-scheme: dark)"/><img class="formulaInl" alt="$-\Delta u-\mu^2 u=f$" src="form_1.png"/></picture> with fixed wavenumber <picture><source srcset="form_2_dark.png" media="(prefers-color-scheme: dark)"/><img class="formulaInl" alt="$\mu=20\pi$" src="form_2.png"/></picture> (see <a class="el" href="kernel_8txx_source.html">kernel.txx</a>). Complex values are stored as interleaved (real, imaginary) pairs.  <a href="structpvfmm_1_1HelmholtzKernel.html#details">More...</a><br /></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ad15f1e952ba6f2d89b6f826212426b55" id="r_ad15f1e952ba6f2d89b6f826212426b55"><td class="memTemplParams" colspan="2">template&lt;typename T, void(*)(T *, int, T *, int, T *, int, T *, <a class="el" href="classpvfmm_1_1mem_1_1MemoryManager.html">mem::MemoryManager</a> *mem_mgr) A, void(*)(T *, int, T *, int, T *, int, T *, <a class="el" href="classpvfmm_1_1mem_1_1MemoryManager.html">mem::MemoryManager</a> *mem_mgr) B&gt; </td></tr>
+<tr class="memitem:ad15f1e952ba6f2d89b6f826212426b55" id="r_ad15f1e952ba6f2d89b6f826212426b55"><td class="memTemplParams" colspan="2">template&lt;typename T, class K1, class K2 = void&gt; </td></tr>
 <tr class="memitem:ad15f1e952ba6f2d89b6f826212426b55 template"><td class="memItemLeft"><a class="el" href="structpvfmm_1_1Kernel.html">Kernel</a>&lt; T &gt;&#160;</td><td class="memItemRight"><a class="el" href="#ad15f1e952ba6f2d89b6f826212426b55">pvfmm::BuildKernel</a> (const char *name, int dim, std::pair&lt; int, int &gt; k_dim, const <a class="el" href="structpvfmm_1_1Kernel.html">Kernel</a>&lt; T &gt; *k_s2m=NULL, const <a class="el" href="structpvfmm_1_1Kernel.html">Kernel</a>&lt; T &gt; *k_s2l=NULL, const <a class="el" href="structpvfmm_1_1Kernel.html">Kernel</a>&lt; T &gt; *k_s2t=NULL, const <a class="el" href="structpvfmm_1_1Kernel.html">Kernel</a>&lt; T &gt; *k_m2m=NULL, const <a class="el" href="structpvfmm_1_1Kernel.html">Kernel</a>&lt; T &gt; *k_m2l=NULL, const <a class="el" href="structpvfmm_1_1Kernel.html">Kernel</a>&lt; T &gt; *k_m2t=NULL, const <a class="el" href="structpvfmm_1_1Kernel.html">Kernel</a>&lt; T &gt; *k_l2l=NULL, const <a class="el" href="structpvfmm_1_1Kernel.html">Kernel</a>&lt; T &gt; *k_l2t=NULL, typename <a class="el" href="structpvfmm_1_1Kernel.html">Kernel</a>&lt; T &gt;::VolPoten vol_poten={}, bool scale_invar_=true)</td></tr>
-<tr class="memitem:af1e4661a982fdd785a2672d97b30e3fc" id="r_af1e4661a982fdd785a2672d97b30e3fc"><td class="memTemplParams" colspan="2">template&lt;typename T, void(*)(T *, int, T *, int, T *, int, T *, <a class="el" href="classpvfmm_1_1mem_1_1MemoryManager.html">mem::MemoryManager</a> *mem_mgr) A&gt; </td></tr>
-<tr class="memitem:af1e4661a982fdd785a2672d97b30e3fc template"><td class="memItemLeft"><a class="el" href="structpvfmm_1_1Kernel.html">Kernel</a>&lt; T &gt;&#160;</td><td class="memItemRight"><a class="el" href="#af1e4661a982fdd785a2672d97b30e3fc">pvfmm::BuildKernel</a> (const char *name, int dim, std::pair&lt; int, int &gt; k_dim, const <a class="el" href="structpvfmm_1_1Kernel.html">Kernel</a>&lt; T &gt; *k_s2m=NULL, const <a class="el" href="structpvfmm_1_1Kernel.html">Kernel</a>&lt; T &gt; *k_s2l=NULL, const <a class="el" href="structpvfmm_1_1Kernel.html">Kernel</a>&lt; T &gt; *k_s2t=NULL, const <a class="el" href="structpvfmm_1_1Kernel.html">Kernel</a>&lt; T &gt; *k_m2m=NULL, const <a class="el" href="structpvfmm_1_1Kernel.html">Kernel</a>&lt; T &gt; *k_m2l=NULL, const <a class="el" href="structpvfmm_1_1Kernel.html">Kernel</a>&lt; T &gt; *k_m2t=NULL, const <a class="el" href="structpvfmm_1_1Kernel.html">Kernel</a>&lt; T &gt; *k_l2l=NULL, const <a class="el" href="structpvfmm_1_1Kernel.html">Kernel</a>&lt; T &gt; *k_l2t=NULL, typename <a class="el" href="structpvfmm_1_1Kernel.html">Kernel</a>&lt; T &gt;::VolPoten vol_poten={}, bool scale_invar_=true)</td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>This file contains the definition of the struct Kernel and also the implementation of various kernels for FMM. </p>
@@ -145,93 +146,13 @@ Functions</h2></td></tr>
 
 <p class="definition">Definition in file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
 </div><a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
-<a id="af1e4661a982fdd785a2672d97b30e3fc" name="af1e4661a982fdd785a2672d97b30e3fc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af1e4661a982fdd785a2672d97b30e3fc">&#9670;&#160;</a></span>BuildKernel() <span class="overload">[1/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T, void(*)(T *, int, T *, int, T *, int, T *, mem::MemoryManager *mem_mgr) A&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">Kernel&lt; T &gt; pvfmm::BuildKernel </td>
-          <td>(</td>
-          <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>name</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>dim</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">std::pair&lt; int, int &gt;</td>          <td class="paramname"><span class="paramname"><em>k_dim</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="structpvfmm_1_1Kernel.html">Kernel</a>&lt; T &gt; *</td>          <td class="paramname"><span class="paramname"><em>k_s2m</em></span><span class="paramdefsep"> = </span><span class="paramdefval">NULL</span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="structpvfmm_1_1Kernel.html">Kernel</a>&lt; T &gt; *</td>          <td class="paramname"><span class="paramname"><em>k_s2l</em></span><span class="paramdefsep"> = </span><span class="paramdefval">NULL</span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="structpvfmm_1_1Kernel.html">Kernel</a>&lt; T &gt; *</td>          <td class="paramname"><span class="paramname"><em>k_s2t</em></span><span class="paramdefsep"> = </span><span class="paramdefval">NULL</span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="structpvfmm_1_1Kernel.html">Kernel</a>&lt; T &gt; *</td>          <td class="paramname"><span class="paramname"><em>k_m2m</em></span><span class="paramdefsep"> = </span><span class="paramdefval">NULL</span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="structpvfmm_1_1Kernel.html">Kernel</a>&lt; T &gt; *</td>          <td class="paramname"><span class="paramname"><em>k_m2l</em></span><span class="paramdefsep"> = </span><span class="paramdefval">NULL</span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="structpvfmm_1_1Kernel.html">Kernel</a>&lt; T &gt; *</td>          <td class="paramname"><span class="paramname"><em>k_m2t</em></span><span class="paramdefsep"> = </span><span class="paramdefval">NULL</span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="structpvfmm_1_1Kernel.html">Kernel</a>&lt; T &gt; *</td>          <td class="paramname"><span class="paramname"><em>k_l2l</em></span><span class="paramdefsep"> = </span><span class="paramdefval">NULL</span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="structpvfmm_1_1Kernel.html">Kernel</a>&lt; T &gt; *</td>          <td class="paramname"><span class="paramname"><em>k_l2t</em></span><span class="paramdefsep"> = </span><span class="paramdefval">NULL</span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">typename <a class="el" href="structpvfmm_1_1Kernel.html">Kernel</a>&lt; T &gt;::VolPoten</td>          <td class="paramname"><span class="paramname"><em>vol_poten</em></span><span class="paramdefsep"> = </span><span class="paramdefval">{}</span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>scale_invar_</em></span><span class="paramdefsep"> = </span><span class="paramdefval">true</span>&#160;)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00137">137</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
-
-</div>
-</div>
 <a id="ad15f1e952ba6f2d89b6f826212426b55" name="ad15f1e952ba6f2d89b6f826212426b55"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad15f1e952ba6f2d89b6f826212426b55">&#9670;&#160;</a></span>BuildKernel() <span class="overload">[2/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ad15f1e952ba6f2d89b6f826212426b55">&#9670;&#160;</a></span>BuildKernel()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename T, void(*)(T *, int, T *, int, T *, int, T *, mem::MemoryManager *mem_mgr) A, void(*)(T *, int, T *, int, T *, int, T *, mem::MemoryManager *mem_mgr) B&gt; </div>
+template&lt;typename T, class K1, class K2 = void&gt; </div>
       <table class="memname">
         <tr>
           <td class="memname">Kernel&lt; T &gt; pvfmm::BuildKernel </td>
@@ -301,7 +222,7 @@ template&lt;typename T, void(*)(T *, int, T *, int, T *, int, T *, mem::MemoryMa
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00105">105</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00108">108</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
 
 </div>
 </div>

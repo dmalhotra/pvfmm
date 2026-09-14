@@ -110,51 +110,51 @@ document.addEventListener('DOMContentLoaded', () => {
 </div><!--header-->
 <div class="contents">
 
-<p>This file contains BLAS and LAPACK wrapper functions.  
+<p>pvfmm-specific Matrix helpers: MatrixTranspose and the device GEMM wrappers (CUBLASGEMM / mat::cublasgemm).  
 <a href="#details">More...</a></p>
-<div class="textblock"><code>#include &lt;<a class="el" href="pvfmm__common_8hpp_source.html">pvfmm_common.hpp</a>&gt;</code><br />
+<div class="textblock"><code>#include &lt;cassert&gt;</code><br />
+<code>#include &lt;<a class="el" href="pvfmm__common_8hpp_source.html">pvfmm_common.hpp</a>&gt;</code><br />
 </div>
 <p><a href="mat__utils_8hpp_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-define-members" class="groupheader"><a id="define-members" name="define-members"></a>
+Macros</h2></td></tr>
+<tr class="memitem:ad44d40e385e78845b25faf71d7a946d4" id="r_ad44d40e385e78845b25faf71d7a946d4"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#ad44d40e385e78845b25faf71d7a946d4">PVFMM_PERM_INT_T</a>&#160;&#160;&#160;sctl::Long</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ab9d1f74f217eb2e38b2ef446afac25c8" id="r_ab9d1f74f217eb2e38b2ef446afac25c8"><td class="memTemplParams" colspan="2">template&lt;class T&gt; </td></tr>
-<tr class="memitem:ab9d1f74f217eb2e38b2ef446afac25c8 template"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ab9d1f74f217eb2e38b2ef446afac25c8">pvfmm::mat::gemm</a> (char TransA, char TransB, int M, int N, int K, T alpha, T *A, int lda, T *B, int ldb, T beta, T *C, int ldc)</td></tr>
-<tr class="memitem:a1501de57e26136dc84a4e8ee3eaf73b7" id="r_a1501de57e26136dc84a4e8ee3eaf73b7"><td class="memTemplParams" colspan="2"><a id="a1501de57e26136dc84a4e8ee3eaf73b7" name="a1501de57e26136dc84a4e8ee3eaf73b7"></a>
+<tr class="memitem:a1a100320741f0fa526c553983e58cd50" id="r_a1a100320741f0fa526c553983e58cd50"><td class="memTemplParams" colspan="2"><a id="a1a100320741f0fa526c553983e58cd50" name="a1a100320741f0fa526c553983e58cd50"></a>
 template&lt;class T&gt; </td></tr>
-<tr class="memitem:a1501de57e26136dc84a4e8ee3eaf73b7 template"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><b>pvfmm::mat::cublasgemm</b> (char TransA, char TransB, int M, int N, int K, T alpha, T *A, int lda, T *B, int ldb, T beta, T *C, int ldc)</td></tr>
-<tr class="memitem:a9446b338f9cb087b979f59403f5524e2" id="r_a9446b338f9cb087b979f59403f5524e2"><td class="memTemplParams" colspan="2">template&lt;class T&gt; </td></tr>
-<tr class="memitem:a9446b338f9cb087b979f59403f5524e2 template"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a9446b338f9cb087b979f59403f5524e2">pvfmm::mat::svd</a> (char *JOBU, char *JOBVT, int *M, int *N, T *A, int *LDA, T *S, T *U, int *LDU, T *VT, int *LDVT, T *WORK, int *LWORK, int *INFO)</td></tr>
-<tr class="memitem:a122dc63271d81423886d858c49b17e85" id="r_a122dc63271d81423886d858c49b17e85"><td class="memTemplParams" colspan="2">template&lt;class T&gt; </td></tr>
-<tr class="memitem:a122dc63271d81423886d858c49b17e85 template"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a122dc63271d81423886d858c49b17e85">pvfmm::mat::pinv</a> (T *M, int n1, int n2, T eps, T *M_)</td></tr>
-<tr class="memdesc:a122dc63271d81423886d858c49b17e85"><td class="mdescLeft">&#160;</td><td class="mdescRight">Computes the pseudo inverse of matrix M(n1xn2) (in row major form) and returns the output M_(n2xn1).  <br /></td></tr>
+<tr class="memitem:a1a100320741f0fa526c553983e58cd50 template"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><b>pvfmm::mat::cublasgemm</b> (char TransA, char TransB, int M, int N, int K, T alpha, const T *A, int lda, const T *B, int ldb, T beta, T *C, int ldc)</td></tr>
+<tr class="memitem:ae4d51eb71fcdf535ec5fd7653ffd33b6" id="r_ae4d51eb71fcdf535ec5fd7653ffd33b6"><td class="memTemplParams" colspan="2">template&lt;class T&gt; </td></tr>
+<tr class="memitem:ae4d51eb71fcdf535ec5fd7653ffd33b6 template"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ae4d51eb71fcdf535ec5fd7653ffd33b6">pvfmm::MatrixTranspose</a> (size_t in_dim1, size_t in_dim2, sctl::ConstIterator&lt; T &gt; in, sctl::Iterator&lt; T &gt; out)</td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>This file contains BLAS and LAPACK wrapper functions. </p>
+<div class="textblock"><p>pvfmm-specific Matrix helpers: MatrixTranspose and the device GEMM wrappers (CUBLASGEMM / mat::cublasgemm). </p>
 <dl class="section author"><dt>Author</dt><dd>Dhairya Malhotra, <a href="#" onclick="location.href='mai'+'lto:'+'dha'+'ir'+'ya.'+'ma'+'lho'+'tr'+'a@g'+'ma'+'il.'+'co'+'m'; return false;">dhair<span class="obfuscator">.nosp@m.</span>ya.m<span class="obfuscator">.nosp@m.</span>alhot<span class="obfuscator">.nosp@m.</span>ra@g<span class="obfuscator">.nosp@m.</span>mail.<span class="obfuscator">.nosp@m.</span>com</a> </dd></dl>
 <dl class="section date"><dt>Date</dt><dd>2-11-2011 </dd></dl>
 
 <p class="definition">Definition in file <a class="el" href="mat__utils_8hpp_source.html">mat_utils.hpp</a>.</p>
 </div><a name="doc-define-members" id="doc-define-members"></a><h2 id="header-doc-define-members" class="groupheader">Macro Definition Documentation</h2>
-<a id="aff54488212e9ecd6e1d6f7ac1d016ba9" name="aff54488212e9ecd6e1d6f7ac1d016ba9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aff54488212e9ecd6e1d6f7ac1d016ba9">&#9670;&#160;</a></span>_PVFMM_MAT_UTILS_</h2>
+<a id="ad44d40e385e78845b25faf71d7a946d4" name="ad44d40e385e78845b25faf71d7a946d4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad44d40e385e78845b25faf71d7a946d4">&#9670;&#160;</a></span>PVFMM_PERM_INT_T</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define _PVFMM_MAT_UTILS_</td>
+          <td class="memname">#define PVFMM_PERM_INT_T&#160;&#160;&#160;sctl::Long</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mat__utils_8hpp_source.html#l00016">16</a> of file <a class="el" href="mat__utils_8hpp_source.html">mat_utils.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mat__utils_8hpp_source.html#l00033">33</a> of file <a class="el" href="mat__utils_8hpp_source.html">mat_utils.hpp</a>.</p>
 
 </div>
 </div>
 <a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
-<a id="ab9d1f74f217eb2e38b2ef446afac25c8" name="ab9d1f74f217eb2e38b2ef446afac25c8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab9d1f74f217eb2e38b2ef446afac25c8">&#9670;&#160;</a></span>gemm()</h2>
+<a id="ae4d51eb71fcdf535ec5fd7653ffd33b6" name="ae4d51eb71fcdf535ec5fd7653ffd33b6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae4d51eb71fcdf535ec5fd7653ffd33b6">&#9670;&#160;</a></span>MatrixTranspose()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -162,201 +162,30 @@ template&lt;class T&gt; </td></tr>
 template&lt;class T&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">void pvfmm::mat::gemm </td>
+          <td class="memname">void pvfmm::MatrixTranspose </td>
           <td>(</td>
-          <td class="paramtype">char</td>          <td class="paramname"><span class="paramname"><em>TransA</em></span>, </td>
+          <td class="paramtype">size_t</td>          <td class="paramname"><span class="paramname"><em>in_dim1</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">char</td>          <td class="paramname"><span class="paramname"><em>TransB</em></span>, </td>
+          <td class="paramtype">size_t</td>          <td class="paramname"><span class="paramname"><em>in_dim2</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>M</em></span>, </td>
+          <td class="paramtype">sctl::ConstIterator&lt; T &gt;</td>          <td class="paramname"><span class="paramname"><em>in</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>N</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>K</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">T</td>          <td class="paramname"><span class="paramname"><em>alpha</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">T *</td>          <td class="paramname"><span class="paramname"><em>A</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>lda</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">T *</td>          <td class="paramname"><span class="paramname"><em>B</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>ldb</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">T</td>          <td class="paramname"><span class="paramname"><em>beta</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">T *</td>          <td class="paramname"><span class="paramname"><em>C</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>ldc</em></span>&#160;)</td>
+          <td class="paramtype">sctl::Iterator&lt; T &gt;</td>          <td class="paramname"><span class="paramname"><em>out</em></span>&#160;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Transpose the in_dim1 x in_dim2 row-major matrix at <span class="tt">in</span> into <span class="tt">out</span> (which receives in_dim2 x in_dim1). If in==out, the transpose is done in place, staging the input through per-thread scratch storage; otherwise the two ranges must not overlap. </p>
 
-<p class="definition">Definition at line <a class="el" href="mat__utils_8hpp_source.html#l00025">25</a> of file <a class="el" href="mat__utils_8hpp_source.html">mat_utils.hpp</a>.</p>
-
-</div>
-</div>
-<a id="a122dc63271d81423886d858c49b17e85" name="a122dc63271d81423886d858c49b17e85"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a122dc63271d81423886d858c49b17e85">&#9670;&#160;</a></span>pinv()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;class T&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">void pvfmm::mat::pinv </td>
-          <td>(</td>
-          <td class="paramtype">T *</td>          <td class="paramname"><span class="paramname"><em>M</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>n1</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>n2</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">T</td>          <td class="paramname"><span class="paramname"><em>eps</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">T *</td>          <td class="paramname"><span class="paramname"><em>M_</em></span>&#160;)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Computes the pseudo inverse of matrix M(n1xn2) (in row major form) and returns the output M_(n2xn1). </p>
-
-<p class="definition">Definition at line <a class="el" href="mat__utils_8hpp_source.html#l00078">78</a> of file <a class="el" href="mat__utils_8hpp_source.html">mat_utils.hpp</a>.</p>
-
-</div>
-</div>
-<a id="a9446b338f9cb087b979f59403f5524e2" name="a9446b338f9cb087b979f59403f5524e2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9446b338f9cb087b979f59403f5524e2">&#9670;&#160;</a></span>svd()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;class T&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">void pvfmm::mat::svd </td>
-          <td>(</td>
-          <td class="paramtype">char *</td>          <td class="paramname"><span class="paramname"><em>JOBU</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">char *</td>          <td class="paramname"><span class="paramname"><em>JOBVT</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int *</td>          <td class="paramname"><span class="paramname"><em>M</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int *</td>          <td class="paramname"><span class="paramname"><em>N</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">T *</td>          <td class="paramname"><span class="paramname"><em>A</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int *</td>          <td class="paramname"><span class="paramname"><em>LDA</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">T *</td>          <td class="paramname"><span class="paramname"><em>S</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">T *</td>          <td class="paramname"><span class="paramname"><em>U</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int *</td>          <td class="paramname"><span class="paramname"><em>LDU</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">T *</td>          <td class="paramname"><span class="paramname"><em>VT</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int *</td>          <td class="paramname"><span class="paramname"><em>LDVT</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">T *</td>          <td class="paramname"><span class="paramname"><em>WORK</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int *</td>          <td class="paramname"><span class="paramname"><em>LWORK</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int *</td>          <td class="paramname"><span class="paramname"><em>INFO</em></span>&#160;)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="mat__utils_8hpp_source.html#l00065">65</a> of file <a class="el" href="mat__utils_8hpp_source.html">mat_utils.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mat__utils_8hpp_source.html#l00042">42</a> of file <a class="el" href="mat__utils_8hpp_source.html">mat_utils.hpp</a>.</p>
 
 </div>
 </div>

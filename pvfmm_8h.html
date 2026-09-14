@@ -104,6 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
 <div id="doc-content">
 <div class="header">
   <div class="summary">
+<a href="#typedef-members">Typedefs</a> &#124;
 <a href="#enum-members">Enumerations</a> &#124;
 <a href="#func-members">Functions</a>  </div>
   <div class="headertitle"><div class="title">pvfmm.h File Reference</div></div>
@@ -112,11 +113,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <p>This file contains the declarations for the C interface to PVFMM.  
 <a href="#details">More...</a></p>
-<div class="textblock"><code>#include &lt;mpi.h&gt;</code><br />
-<code>#include &lt;stdbool.h&gt;</code><br />
+<div class="textblock"><code>#include &lt;stdbool.h&gt;</code><br />
 </div>
 <p><a href="pvfmm_8h_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-typedef-members" class="groupheader"><a id="typedef-members" name="typedef-members"></a>
+Typedefs</h2></td></tr>
+<tr class="memitem:a68c509d4adb3f4a1d6fe3a9b0b87c7b9" id="r_a68c509d4adb3f4a1d6fe3a9b0b87c7b9"><td class="memItemLeft">typedef int&#160;</td><td class="memItemRight"><a class="el" href="#a68c509d4adb3f4a1d6fe3a9b0b87c7b9">MPI_Comm</a></td></tr>
+<tr class="memitem:a2b2b0d89436f806d1aa834bc7f8d78ad" id="r_a2b2b0d89436f806d1aa834bc7f8d78ad"><td class="memItemLeft">typedef int&#160;</td><td class="memItemRight"><a class="el" href="#a2b2b0d89436f806d1aa834bc7f8d78ad">MPI_Fint</a></td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-enum-members" class="groupheader"><a id="enum-members" name="enum-members"></a>
 Enumerations</h2></td></tr>
 <tr class="memitem:aa600131135363c11f423d2bc3d793eea" id="r_aa600131135363c11f423d2bc3d793eea"><td class="memItemLeft">enum &#160;</td><td class="memItemRight"><a class="el" href="#aa600131135363c11f423d2bc3d793eea">PVFMMKernel</a> { <br />
@@ -130,18 +135,28 @@ Enumerations</h2></td></tr>
 <br />
  }</td></tr>
 <tr class="memdesc:aa600131135363c11f423d2bc3d793eea"><td class="mdescLeft">&#160;</td><td class="mdescRight">Kernel functions.  <a href="#aa600131135363c11f423d2bc3d793eea">More...</a><br /></td></tr>
+<tr class="memitem:a49bc8ca425617cde73633e735d7f36f4" id="r_a49bc8ca425617cde73633e735d7f36f4"><td class="memItemLeft">enum &#160;</td><td class="memItemRight"><a class="el" href="#a49bc8ca425617cde73633e735d7f36f4">PVFMMBoundaryType</a> { <br />
+&#160;&#160;<a class="el" href="#a49bc8ca425617cde73633e735d7f36f4a29a20fb789a8ec1dae2bc914a5e757e9">PVFMMBoundaryFreeSpace</a> = 0
+, <a class="el" href="#a49bc8ca425617cde73633e735d7f36f4a5d1e31c92e17ac74722ee1925a35265e">PVFMMBoundaryPXYZ</a> = 1
+, <a class="el" href="#a49bc8ca425617cde73633e735d7f36f4afb00b8e9d991b171a687953427889aa0">PVFMMBoundaryPX</a> = 2
+, <a class="el" href="#a49bc8ca425617cde73633e735d7f36f4a9faabcb77f65999111dc738fb26dd5f2">PVFMMBoundaryPXY</a> = 3
+, <br />
+&#160;&#160;<a class="el" href="#a49bc8ca425617cde73633e735d7f36f4a37d6c92604d4b472883ba66484ce5711">PVFMMBoundaryPeriodic</a> = PVFMMBoundaryPXYZ
+<br />
+ }</td></tr>
+<tr class="memdesc:a49bc8ca425617cde73633e735d7f36f4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Boundary conditions. The values PVFMMBoundaryFreeSpace (0) and PVFMMBoundaryPXYZ (1) coincide with the boolean periodic flag accepted by earlier versions of this interface.  <a href="#a49bc8ca425617cde73633e735d7f36f4">More...</a><br /></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:ac0871c554dd8e26167faabd3fc92d9a3" id="r_ac0871c554dd8e26167faabd3fc92d9a3"><td class="memItemLeft">void *&#160;</td><td class="memItemRight"><a class="el" href="#ac0871c554dd8e26167faabd3fc92d9a3">PVFMMCreateVolumeFMMD</a> (int m, int q, enum <a class="el" href="#aa600131135363c11f423d2bc3d793eea">PVFMMKernel</a> kernel, MPI_Comm comm)</td></tr>
 <tr class="memdesc:ac0871c554dd8e26167faabd3fc92d9a3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Build FMM translation operators.  <br /></td></tr>
 <tr class="memitem:a3f61f928d01378a49dde8d6ef4d8a420" id="r_a3f61f928d01378a49dde8d6ef4d8a420"><td class="memItemLeft">void *&#160;</td><td class="memItemRight"><a class="el" href="#a3f61f928d01378a49dde8d6ef4d8a420">PVFMMCreateVolumeFMMF</a> (int m, int q, enum <a class="el" href="#aa600131135363c11f423d2bc3d793eea">PVFMMKernel</a> kernel, MPI_Comm comm)</td></tr>
-<tr class="memitem:a714c5de544d67244fe758af83b6f310a" id="r_a714c5de544d67244fe758af83b6f310a"><td class="memItemLeft">void *&#160;</td><td class="memItemRight"><a class="el" href="#a714c5de544d67244fe758af83b6f310a">PVFMMCreateVolumeTreeD</a> (int cheb_deg, int data_dim, void(*fn_ptr)(const double *coord, long n, double *out, const void *ctx), const void *fn_ctx, const double *trg_coord, long n_trg, MPI_Comm comm, double tol, int max_pts, bool periodic, int init_depth)</td></tr>
-<tr class="memdesc:a714c5de544d67244fe758af83b6f310a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct a piecewise Chebyshev volume discretization in [0,1]^3. It first constructs a uniform tree of depth init_depth and then adaptively refines each leaf node until the tails of the Chebyshev coefficients in each leaf node are smaller than tol and the number of target points in each leaf node are less than max_pts. It further refines the tree to satisfy the 2:1 balance constraint.  <br /></td></tr>
-<tr class="memitem:aaddd5ba5398a012a86b861915a990f28" id="r_aaddd5ba5398a012a86b861915a990f28"><td class="memItemLeft">void *&#160;</td><td class="memItemRight"><a class="el" href="#aaddd5ba5398a012a86b861915a990f28">PVFMMCreateVolumeTreeF</a> (int cheb_deg, int data_dim, void(*fn_ptr)(const float *coord, long n, float *out, const void *ctx), const void *fn_ctx, const float *trg_coord, long n_trg, MPI_Comm comm, float tol, int max_pts, bool periodic, int init_depth)</td></tr>
-<tr class="memitem:aafbc25ee67bf582f4217cef7ff739a60" id="r_aafbc25ee67bf582f4217cef7ff739a60"><td class="memItemLeft">void *&#160;</td><td class="memItemRight"><a class="el" href="#aafbc25ee67bf582f4217cef7ff739a60">PVFMMCreateVolumeTreeFromCoeffD</a> (long Nleaf, int cheb_deg, int data_dim, const double *leaf_coord, const double *fn_coeff, const double *trg_coord, long n_trg, MPI_Comm comm, bool periodic)</td></tr>
-<tr class="memdesc:aafbc25ee67bf582f4217cef7ff739a60"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct a piecewise Chebyshev volume discretization in [0,1]^3. It first constructs a tree with the given leaf node coordinates and then adds the Chebyshev coefficient to each leaf node.  <br /></td></tr>
-<tr class="memitem:aa3cfb332f6f33ffd718440d142ffd19c" id="r_aa3cfb332f6f33ffd718440d142ffd19c"><td class="memItemLeft">void *&#160;</td><td class="memItemRight"><a class="el" href="#aa3cfb332f6f33ffd718440d142ffd19c">PVFMMCreateVolumeTreeFromCoeffF</a> (long Nleaf, int cheb_deg, int data_dim, const float *leaf_coord, const float *fn_coeff, const float *trg_coord, long n_trg, MPI_Comm comm, bool periodic)</td></tr>
+<tr class="memitem:a6fd8b3f030649f9fd1986bb18a8b3c5a" id="r_a6fd8b3f030649f9fd1986bb18a8b3c5a"><td class="memItemLeft">void *&#160;</td><td class="memItemRight"><a class="el" href="#a6fd8b3f030649f9fd1986bb18a8b3c5a">PVFMMCreateVolumeTreeD</a> (int cheb_deg, int data_dim, void(*fn_ptr)(const double *coord, long n, double *out, const void *ctx), const void *fn_ctx, const double *trg_coord, long n_trg, MPI_Comm comm, double tol, int max_pts, enum <a class="el" href="#a49bc8ca425617cde73633e735d7f36f4">PVFMMBoundaryType</a> bndry, int init_depth)</td></tr>
+<tr class="memdesc:a6fd8b3f030649f9fd1986bb18a8b3c5a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct a piecewise Chebyshev volume discretization in [0,1]^3. It first constructs a uniform tree of depth init_depth and then adaptively refines each leaf node until the tails of the Chebyshev coefficients in each leaf node are smaller than tol and the number of target points in each leaf node are less than max_pts. It further refines the tree to satisfy the 2:1 balance constraint.  <br /></td></tr>
+<tr class="memitem:ae30f964e7b2c9db070ef35e0d721e643" id="r_ae30f964e7b2c9db070ef35e0d721e643"><td class="memItemLeft">void *&#160;</td><td class="memItemRight"><a class="el" href="#ae30f964e7b2c9db070ef35e0d721e643">PVFMMCreateVolumeTreeF</a> (int cheb_deg, int data_dim, void(*fn_ptr)(const float *coord, long n, float *out, const void *ctx), const void *fn_ctx, const float *trg_coord, long n_trg, MPI_Comm comm, float tol, int max_pts, enum <a class="el" href="#a49bc8ca425617cde73633e735d7f36f4">PVFMMBoundaryType</a> bndry, int init_depth)</td></tr>
+<tr class="memitem:afc8b12edfd3cc08f7363d85f07b096fc" id="r_afc8b12edfd3cc08f7363d85f07b096fc"><td class="memItemLeft">void *&#160;</td><td class="memItemRight"><a class="el" href="#afc8b12edfd3cc08f7363d85f07b096fc">PVFMMCreateVolumeTreeFromCoeffD</a> (long Nleaf, int cheb_deg, int data_dim, const double *leaf_coord, const double *fn_coeff, const double *trg_coord, long n_trg, MPI_Comm comm, enum <a class="el" href="#a49bc8ca425617cde73633e735d7f36f4">PVFMMBoundaryType</a> bndry)</td></tr>
+<tr class="memdesc:afc8b12edfd3cc08f7363d85f07b096fc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct a piecewise Chebyshev volume discretization in [0,1]^3. It first constructs a tree with the given leaf node coordinates and then adds the Chebyshev coefficient to each leaf node.  <br /></td></tr>
+<tr class="memitem:a83489dd3f9224362b5e1c95defcbef87" id="r_a83489dd3f9224362b5e1c95defcbef87"><td class="memItemLeft">void *&#160;</td><td class="memItemRight"><a class="el" href="#a83489dd3f9224362b5e1c95defcbef87">PVFMMCreateVolumeTreeFromCoeffF</a> (long Nleaf, int cheb_deg, int data_dim, const float *leaf_coord, const float *fn_coeff, const float *trg_coord, long n_trg, MPI_Comm comm, enum <a class="el" href="#a49bc8ca425617cde73633e735d7f36f4">PVFMMBoundaryType</a> bndry)</td></tr>
 <tr class="memitem:a5d6382a98d23262f008119da61db6c01" id="r_a5d6382a98d23262f008119da61db6c01"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a5d6382a98d23262f008119da61db6c01">PVFMMEvaluateVolumeFMMD</a> (double *trg_value, void *tree, const void *fmm, long loc_size)</td></tr>
 <tr class="memdesc:a5d6382a98d23262f008119da61db6c01"><td class="mdescLeft">&#160;</td><td class="mdescRight">Run volume FMM and evaluate the result at the target points.  <br /></td></tr>
 <tr class="memitem:a7a962ab22460b88f590e811226d0ece4" id="r_a7a962ab22460b88f590e811226d0ece4"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a7a962ab22460b88f590e811226d0ece4">PVFMMEvaluateVolumeFMMF</a> (float *trg_value, void *tree, const void *fmm, long loc_size)</td></tr>
@@ -166,13 +181,13 @@ Functions</h2></td></tr>
 <tr class="memitem:ae3010bec180601bf8b781b33a0df0350" id="r_ae3010bec180601bf8b781b33a0df0350"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ae3010bec180601bf8b781b33a0df0350">PVFMMNodes2CoeffD</a> (double *coeff, long Nleaf, int ChebDeg, int dof, const double *node_val)</td></tr>
 <tr class="memdesc:ae3010bec180601bf8b781b33a0df0350"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convert function values on tensor product Chebyshev nodes (first kind nodes) to coefficients.  <br /></td></tr>
 <tr class="memitem:a862b01344a23b96890e6d6872256d66c" id="r_a862b01344a23b96890e6d6872256d66c"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a862b01344a23b96890e6d6872256d66c">PVFMMNodes2CoeffF</a> (float *coeff, long Nleaf, int ChebDeg, int dof, const float *node_val)</td></tr>
-<tr class="memitem:ac5907e41771f31de4d19e8396c3e88bd" id="r_ac5907e41771f31de4d19e8396c3e88bd"><td class="memItemLeft">void *&#160;</td><td class="memItemRight"><a class="el" href="#ac5907e41771f31de4d19e8396c3e88bd">PVFMMCreateContextD</a> (double box_size, int n, int m, enum <a class="el" href="#aa600131135363c11f423d2bc3d793eea">PVFMMKernel</a> kernel, MPI_Comm comm)</td></tr>
-<tr class="memdesc:ac5907e41771f31de4d19e8396c3e88bd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create particle FMM context.  <br /></td></tr>
-<tr class="memitem:ab3dda68d424c8210cc39d11d0be567ba" id="r_ab3dda68d424c8210cc39d11d0be567ba"><td class="memItemLeft">void *&#160;</td><td class="memItemRight"><a class="el" href="#ab3dda68d424c8210cc39d11d0be567ba">PVFMMCreateContextF</a> (float box_size, int n, int m, enum <a class="el" href="#aa600131135363c11f423d2bc3d793eea">PVFMMKernel</a> kernel, MPI_Comm comm)</td></tr>
-<tr class="memitem:ae3fc1202e9fcb8be7e57a6d3f74b2597" id="r_ae3fc1202e9fcb8be7e57a6d3f74b2597"><td class="memItemLeft">void *&#160;</td><td class="memItemRight"><a class="el" href="#ae3fc1202e9fcb8be7e57a6d3f74b2597">PVFMMCreateContextDWorld</a> (double box_size, int n, int m, enum <a class="el" href="#aa600131135363c11f423d2bc3d793eea">PVFMMKernel</a> kernel)</td></tr>
-<tr class="memitem:a7f6ce08ed6e62b1d00bd248dabcd373f" id="r_a7f6ce08ed6e62b1d00bd248dabcd373f"><td class="memItemLeft">void *&#160;</td><td class="memItemRight"><a class="el" href="#a7f6ce08ed6e62b1d00bd248dabcd373f">PVFMMCreateContextFWorld</a> (float box_size, int n, int m, enum <a class="el" href="#aa600131135363c11f423d2bc3d793eea">PVFMMKernel</a> kernel)</td></tr>
+<tr class="memitem:a74e0b3c0f323635d634119eb8eefb30c" id="r_a74e0b3c0f323635d634119eb8eefb30c"><td class="memItemLeft">void *&#160;</td><td class="memItemRight"><a class="el" href="#a74e0b3c0f323635d634119eb8eefb30c">PVFMMCreateContextD</a> (double box_size, int n, int m, enum <a class="el" href="#aa600131135363c11f423d2bc3d793eea">PVFMMKernel</a> kernel, enum <a class="el" href="#a49bc8ca425617cde73633e735d7f36f4">PVFMMBoundaryType</a> bndry, MPI_Comm comm)</td></tr>
+<tr class="memdesc:a74e0b3c0f323635d634119eb8eefb30c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create particle FMM context.  <br /></td></tr>
+<tr class="memitem:a28ec21c99f2baf97214daaaab6dce2fe" id="r_a28ec21c99f2baf97214daaaab6dce2fe"><td class="memItemLeft">void *&#160;</td><td class="memItemRight"><a class="el" href="#a28ec21c99f2baf97214daaaab6dce2fe">PVFMMCreateContextF</a> (float box_size, int n, int m, enum <a class="el" href="#aa600131135363c11f423d2bc3d793eea">PVFMMKernel</a> kernel, enum <a class="el" href="#a49bc8ca425617cde73633e735d7f36f4">PVFMMBoundaryType</a> bndry, MPI_Comm comm)</td></tr>
+<tr class="memitem:a5178de7f13ab3ea7d4564de5c487563d" id="r_a5178de7f13ab3ea7d4564de5c487563d"><td class="memItemLeft">MPI_Fint&#160;</td><td class="memItemRight"><a class="el" href="#a5178de7f13ab3ea7d4564de5c487563d">PVFMMGetCommWorld</a> (void)</td></tr>
+<tr class="memdesc:a5178de7f13ab3ea7d4564de5c487563d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the world communicator as a Fortran integer handle (MPI_Comm_c2f(MPI_COMM_WORLD)), initializing MPI on demand.  <br /></td></tr>
 <tr class="memitem:a3c5082c3ea69e7829e7284d7921e46e5" id="r_a3c5082c3ea69e7829e7284d7921e46e5"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a3c5082c3ea69e7829e7284d7921e46e5">PVFMMEvalD</a> (const double *src_pos, const double *sl_den, const double *dl_den, long n_src, const double *trg_pos, double *trg_val, long n_trg, const void *ctx, int setup)</td></tr>
-<tr class="memdesc:a3c5082c3ea69e7829e7284d7921e46e5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Evaluate potential in single-precision.  <br /></td></tr>
+<tr class="memdesc:a3c5082c3ea69e7829e7284d7921e46e5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Evaluate the potential at the target points.  <br /></td></tr>
 <tr class="memitem:a1a31aa5aec2737235d203fe3dbd74d97" id="r_a1a31aa5aec2737235d203fe3dbd74d97"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a1a31aa5aec2737235d203fe3dbd74d97">PVFMMEvalF</a> (const float *src_pos, const float *sl_den, const float *dl_den, long n_src, const float *trg_pos, float *trg_val, long n_trg, const void *ctx, int setup)</td></tr>
 <tr class="memitem:a06672c2dc1a66f878c115c1c8a13397e" id="r_a06672c2dc1a66f878c115c1c8a13397e"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a06672c2dc1a66f878c115c1c8a13397e">PVFMMDestroyContextD</a> (void **ctx)</td></tr>
 <tr class="memdesc:a06672c2dc1a66f878c115c1c8a13397e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Destroy the particle FMM context.  <br /></td></tr>
@@ -184,7 +199,70 @@ Functions</h2></td></tr>
 <dl class="section date"><dt>Date</dt><dd>8-5-2018 </dd></dl>
 
 <p class="definition">Definition in file <a class="el" href="pvfmm_8h_source.html">pvfmm.h</a>.</p>
-</div><a name="doc-enum-members" id="doc-enum-members"></a><h2 id="header-doc-enum-members" class="groupheader">Enumeration Type Documentation</h2>
+</div><a name="doc-typedef-members" id="doc-typedef-members"></a><h2 id="header-doc-typedef-members" class="groupheader">Typedef Documentation</h2>
+<a id="a68c509d4adb3f4a1d6fe3a9b0b87c7b9" name="a68c509d4adb3f4a1d6fe3a9b0b87c7b9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a68c509d4adb3f4a1d6fe3a9b0b87c7b9">&#9670;&#160;</a></span>MPI_Comm</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef int MPI_Comm</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="pvfmm_8h_source.html#l00016">16</a> of file <a class="el" href="pvfmm_8h_source.html">pvfmm.h</a>.</p>
+
+</div>
+</div>
+<a id="a2b2b0d89436f806d1aa834bc7f8d78ad" name="a2b2b0d89436f806d1aa834bc7f8d78ad"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2b2b0d89436f806d1aa834bc7f8d78ad">&#9670;&#160;</a></span>MPI_Fint</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef int MPI_Fint</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="pvfmm_8h_source.html#l00017">17</a> of file <a class="el" href="pvfmm_8h_source.html">pvfmm.h</a>.</p>
+
+</div>
+</div>
+<a name="doc-enum-members" id="doc-enum-members"></a><h2 id="header-doc-enum-members" class="groupheader">Enumeration Type Documentation</h2>
+<a id="a49bc8ca425617cde73633e735d7f36f4" name="a49bc8ca425617cde73633e735d7f36f4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a49bc8ca425617cde73633e735d7f36f4">&#9670;&#160;</a></span>PVFMMBoundaryType</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="#a49bc8ca425617cde73633e735d7f36f4">PVFMMBoundaryType</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Boundary conditions. The values PVFMMBoundaryFreeSpace (0) and PVFMMBoundaryPXYZ (1) coincide with the boolean periodic flag accepted by earlier versions of this interface. </p>
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a49bc8ca425617cde73633e735d7f36f4a29a20fb789a8ec1dae2bc914a5e757e9" name="a49bc8ca425617cde73633e735d7f36f4a29a20fb789a8ec1dae2bc914a5e757e9"></a>PVFMMBoundaryFreeSpace&#160;</td><td class="fielddoc"><p>free-space (decaying) boundary conditions </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a49bc8ca425617cde73633e735d7f36f4a5d1e31c92e17ac74722ee1925a35265e" name="a49bc8ca425617cde73633e735d7f36f4a5d1e31c92e17ac74722ee1925a35265e"></a>PVFMMBoundaryPXYZ&#160;</td><td class="fielddoc"><p>periodic in x, y, z </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a49bc8ca425617cde73633e735d7f36f4afb00b8e9d991b171a687953427889aa0" name="a49bc8ca425617cde73633e735d7f36f4afb00b8e9d991b171a687953427889aa0"></a>PVFMMBoundaryPX&#160;</td><td class="fielddoc"><p>periodic in x; free in y, z </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a49bc8ca425617cde73633e735d7f36f4a9faabcb77f65999111dc738fb26dd5f2" name="a49bc8ca425617cde73633e735d7f36f4a9faabcb77f65999111dc738fb26dd5f2"></a>PVFMMBoundaryPXY&#160;</td><td class="fielddoc"><p>periodic in x, y; free in z </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a49bc8ca425617cde73633e735d7f36f4a37d6c92604d4b472883ba66484ce5711" name="a49bc8ca425617cde73633e735d7f36f4a37d6c92604d4b472883ba66484ce5711"></a>PVFMMBoundaryPeriodic&#160;</td><td class="fielddoc"><p>alias for PVFMMBoundaryPXYZ </p>
+</td></tr>
+</table>
+
+<p class="definition">Definition at line <a class="el" href="pvfmm_8h_source.html#l00042">42</a> of file <a class="el" href="pvfmm_8h_source.html">pvfmm.h</a>.</p>
+
+</div>
+</div>
 <a id="aa600131135363c11f423d2bc3d793eea" name="aa600131135363c11f423d2bc3d793eea"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aa600131135363c11f423d2bc3d793eea">&#9670;&#160;</a></span>PVFMMKernel</h2>
 
@@ -199,7 +277,7 @@ Functions</h2></td></tr>
 
 <p>Kernel functions. </p>
 
-<p class="definition">Definition at line <a class="el" href="pvfmm_8h_source.html#l00021">21</a> of file <a class="el" href="pvfmm_8h_source.html">pvfmm.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm_8h_source.html#l00028">28</a> of file <a class="el" href="pvfmm_8h_source.html">pvfmm.h</a>.</p>
 
 </div>
 </div>
@@ -241,7 +319,7 @@ Functions</h2></td></tr>
 <p>Evaluate Chebyshev coefficients at tensor product Chebyshev nodes of first kind. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramdir">[out]</td><td class="paramname">node_val</td><td>node_val the function values at tensor product Chebyshev nodes.</td></tr>
+    <tr><td class="paramdir">[out]</td><td class="paramname">node_val</td><td>the function values at tensor product Chebyshev nodes.</td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">Nleaf</td><td>the number of leaf nodes.</td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">ChebDeg</td><td>the degree of Chebyshev polynomials.</td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">dof</td><td>the number of scalar values at each node point.</td></tr>
@@ -250,7 +328,7 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00219">219</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00250">250</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
 
 </div>
 </div>
@@ -288,12 +366,12 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00111">111</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00142">142</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
 
 </div>
 </div>
-<a id="ac5907e41771f31de4d19e8396c3e88bd" name="ac5907e41771f31de4d19e8396c3e88bd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac5907e41771f31de4d19e8396c3e88bd">&#9670;&#160;</a></span>PVFMMCreateContextD()</h2>
+<a id="a74e0b3c0f323635d634119eb8eefb30c" name="a74e0b3c0f323635d634119eb8eefb30c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a74e0b3c0f323635d634119eb8eefb30c">&#9670;&#160;</a></span>PVFMMCreateContextD()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -321,6 +399,11 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">enum <a class="el" href="#a49bc8ca425617cde73633e735d7f36f4">PVFMMBoundaryType</a></td>          <td class="paramname"><span class="paramname"><em>bndry</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype">MPI_Comm</td>          <td class="paramname"><span class="paramname"><em>comm</em></span>&#160;)</td>
         </tr>
       </table>
@@ -329,55 +412,23 @@ Functions</h2></td></tr>
 <p>Create particle FMM context. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">box_size</td><td>the period length for periodic boundary conditions. Set to zero for free-space boundary conditions.</td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">box_size</td><td>the domain length; particle coordinates must be in [0, box_size)^3 and box_size is the period along the periodic directions. Must be positive unless bndry is PVFMMBoundaryFreeSpace; if it is non-positive, the (free-space) bounding box is determined from the particle positions.</td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">n</td><td>maximum number of points per leaf node.</td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">m</td><td>the multipole order (positive, even integer).</td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">kernel</td><td>the kernel function.</td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">comm</td><td>the MPI communicator.</td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">bndry</td><td>the boundary conditions (see <a class="el" href="#a49bc8ca425617cde73633e735d7f36f4" title="Boundary conditions. The values PVFMMBoundaryFreeSpace (0) and PVFMMBoundaryPXYZ (1) coincide with th...">PVFMMBoundaryType</a>).</td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">comm</td><td>the MPI communicator (e.g. MPI_COMM_WORLD). MPI is initialized on demand if the application has not done so. When the library is built without MPI, the argument is ignored.</td></tr>
   </table>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>the particle FMM context pointer. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00906">906</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00921">921</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
 
 </div>
 </div>
-<a id="ae3fc1202e9fcb8be7e57a6d3f74b2597" name="ae3fc1202e9fcb8be7e57a6d3f74b2597"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae3fc1202e9fcb8be7e57a6d3f74b2597">&#9670;&#160;</a></span>PVFMMCreateContextDWorld()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void * PVFMMCreateContextDWorld </td>
-          <td>(</td>
-          <td class="paramtype">double</td>          <td class="paramname"><span class="paramname"><em>box_size</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>n</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>m</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">enum <a class="el" href="#aa600131135363c11f423d2bc3d793eea">PVFMMKernel</a></td>          <td class="paramname"><span class="paramname"><em>kernel</em></span>&#160;)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00917">917</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
-
-</div>
-</div>
-<a id="ab3dda68d424c8210cc39d11d0be567ba" name="ab3dda68d424c8210cc39d11d0be567ba"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab3dda68d424c8210cc39d11d0be567ba">&#9670;&#160;</a></span>PVFMMCreateContextF()</h2>
+<a id="a28ec21c99f2baf97214daaaab6dce2fe" name="a28ec21c99f2baf97214daaaab6dce2fe"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a28ec21c99f2baf97214daaaab6dce2fe">&#9670;&#160;</a></span>PVFMMCreateContextF()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -405,45 +456,17 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">enum <a class="el" href="#a49bc8ca425617cde73633e735d7f36f4">PVFMMBoundaryType</a></td>          <td class="paramname"><span class="paramname"><em>bndry</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype">MPI_Comm</td>          <td class="paramname"><span class="paramname"><em>comm</em></span>&#160;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00881">881</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a7f6ce08ed6e62b1d00bd248dabcd373f" name="a7f6ce08ed6e62b1d00bd248dabcd373f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7f6ce08ed6e62b1d00bd248dabcd373f">&#9670;&#160;</a></span>PVFMMCreateContextFWorld()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void * PVFMMCreateContextFWorld </td>
-          <td>(</td>
-          <td class="paramtype">float</td>          <td class="paramname"><span class="paramname"><em>box_size</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>n</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>m</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">enum <a class="el" href="#aa600131135363c11f423d2bc3d793eea">PVFMMKernel</a></td>          <td class="paramname"><span class="paramname"><em>kernel</em></span>&#160;)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00892">892</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00908">908</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
 
 </div>
 </div>
@@ -488,7 +511,7 @@ Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>the volume FMM context pointer. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00132">132</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00163">163</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
 
 </div>
 </div>
@@ -521,12 +544,12 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00024">24</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00055">55</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a714c5de544d67244fe758af83b6f310a" name="a714c5de544d67244fe758af83b6f310a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a714c5de544d67244fe758af83b6f310a">&#9670;&#160;</a></span>PVFMMCreateVolumeTreeD()</h2>
+<a id="a6fd8b3f030649f9fd1986bb18a8b3c5a" name="a6fd8b3f030649f9fd1986bb18a8b3c5a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6fd8b3f030649f9fd1986bb18a8b3c5a">&#9670;&#160;</a></span>PVFMMCreateVolumeTreeD()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -579,7 +602,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>periodic</em></span>, </td>
+          <td class="paramtype">enum <a class="el" href="#a49bc8ca425617cde73633e735d7f36f4">PVFMMBoundaryType</a></td>          <td class="paramname"><span class="paramname"><em>bndry</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -601,19 +624,19 @@ Functions</h2></td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">comm</td><td>MPI communicator.</td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">tol</td><td>the tolerance for adaptive refinement.</td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">max_pts</td><td>the maximum number of target points per leaf node.</td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">periodic</td><td>whether to use periodic boundary conditions.</td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">bndry</td><td>the boundary conditions (see <a class="el" href="#a49bc8ca425617cde73633e735d7f36f4" title="Boundary conditions. The values PVFMMBoundaryFreeSpace (0) and PVFMMBoundaryPXYZ (1) coincide with th...">PVFMMBoundaryType</a>).</td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">init_depth</td><td>the depth of the initial tree before adaptive refinement. If zero then the depth is the minimum depth so that the number of leaf nodes is greater than the size of the MPI communicator.</td></tr>
   </table>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>the pointer to the constructed tree. It must be destroyed using PVFMMDestroyVolumeTreeD to free the resources. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00146">146</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00177">177</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
 
 </div>
 </div>
-<a id="aaddd5ba5398a012a86b861915a990f28" name="aaddd5ba5398a012a86b861915a990f28"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aaddd5ba5398a012a86b861915a990f28">&#9670;&#160;</a></span>PVFMMCreateVolumeTreeF()</h2>
+<a id="ae30f964e7b2c9db070ef35e0d721e643" name="ae30f964e7b2c9db070ef35e0d721e643"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae30f964e7b2c9db070ef35e0d721e643">&#9670;&#160;</a></span>PVFMMCreateVolumeTreeF()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -666,7 +689,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>periodic</em></span>, </td>
+          <td class="paramtype">enum <a class="el" href="#a49bc8ca425617cde73633e735d7f36f4">PVFMMBoundaryType</a></td>          <td class="paramname"><span class="paramname"><em>bndry</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -676,12 +699,12 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00038">38</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00069">69</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
 
 </div>
 </div>
-<a id="aafbc25ee67bf582f4217cef7ff739a60" name="aafbc25ee67bf582f4217cef7ff739a60"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aafbc25ee67bf582f4217cef7ff739a60">&#9670;&#160;</a></span>PVFMMCreateVolumeTreeFromCoeffD()</h2>
+<a id="afc8b12edfd3cc08f7363d85f07b096fc" name="afc8b12edfd3cc08f7363d85f07b096fc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afc8b12edfd3cc08f7363d85f07b096fc">&#9670;&#160;</a></span>PVFMMCreateVolumeTreeFromCoeffD()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -729,7 +752,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>periodic</em></span>&#160;)</td>
+          <td class="paramtype">enum <a class="el" href="#a49bc8ca425617cde73633e735d7f36f4">PVFMMBoundaryType</a></td>          <td class="paramname"><span class="paramname"><em>bndry</em></span>&#160;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -745,18 +768,18 @@ Functions</h2></td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">trg_coord</td><td>the target coordinate vector with values: [x1 y1 z1 ... xn yn zn] where (x1 y1 z1) are the coordinates of the first target point.</td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">n_trg</td><td>number of target points.</td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">comm</td><td>MPI communicator.</td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">periodic</td><td>whether to use periodic boundary conditions.</td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">bndry</td><td>the boundary conditions (see <a class="el" href="#a49bc8ca425617cde73633e735d7f36f4" title="Boundary conditions. The values PVFMMBoundaryFreeSpace (0) and PVFMMBoundaryPXYZ (1) coincide with th...">PVFMMBoundaryType</a>).</td></tr>
   </table>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>the pointer to the constructed tree. It must be destroyed using PVFMMDestroyVolumeTreeD to free the resources. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00162">162</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00193">193</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
 
 </div>
 </div>
-<a id="aa3cfb332f6f33ffd718440d142ffd19c" name="aa3cfb332f6f33ffd718440d142ffd19c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa3cfb332f6f33ffd718440d142ffd19c">&#9670;&#160;</a></span>PVFMMCreateVolumeTreeFromCoeffF()</h2>
+<a id="a83489dd3f9224362b5e1c95defcbef87" name="a83489dd3f9224362b5e1c95defcbef87"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a83489dd3f9224362b5e1c95defcbef87">&#9670;&#160;</a></span>PVFMMCreateVolumeTreeFromCoeffF()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -804,12 +827,12 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>periodic</em></span>&#160;)</td>
+          <td class="paramtype">enum <a class="el" href="#a49bc8ca425617cde73633e735d7f36f4">PVFMMBoundaryType</a></td>          <td class="paramname"><span class="paramname"><em>bndry</em></span>&#160;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00054">54</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00085">85</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
 
 </div>
 </div>
@@ -836,7 +859,7 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00926">926</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00929">929</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
 
 </div>
 </div>
@@ -855,7 +878,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00901">901</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00916">916</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
 
 </div>
 </div>
@@ -882,7 +905,7 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00187">187</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00218">218</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
 
 </div>
 </div>
@@ -901,7 +924,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00079">79</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00110">110</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
 
 </div>
 </div>
@@ -928,7 +951,7 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00193">193</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00224">224</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
 
 </div>
 </div>
@@ -947,7 +970,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00085">85</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00116">116</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
 
 </div>
 </div>
@@ -1005,7 +1028,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Evaluate potential in single-precision. </p>
+<p>Evaluate the potential at the target points. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramdir">[in]</td><td class="paramname">src_pos</td><td>the array of source particle positions: [x1 y1 z1 ... xn yn zn] where (x1 y1 z1) are the coordinates of the first source point.</td></tr>
@@ -1021,7 +1044,7 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00922">922</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00925">925</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
 
 </div>
 </div>
@@ -1079,7 +1102,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00897">897</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00912">912</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
 
 </div>
 </div>
@@ -1123,7 +1146,7 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00178">178</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00209">209</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
 
 </div>
 </div>
@@ -1156,7 +1179,30 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00070">70</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00101">101</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a5178de7f13ab3ea7d4564de5c487563d" name="a5178de7f13ab3ea7d4564de5c487563d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5178de7f13ab3ea7d4564de5c487563d">&#9670;&#160;</a></span>PVFMMGetCommWorld()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">MPI_Fint PVFMMGetCommWorld </td>
+          <td>(</td>
+          <td class="paramtype">void</td>          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Get the world communicator as a Fortran integer handle (MPI_Comm_c2f(MPI_COMM_WORLD)), initializing MPI on demand. </p>
+<p>This is a convenience for language bindings that do not link MPI directly: the returned handle can be passed to the Fortran entry points (pvfmmcreatecontextd_/pvfmmcreatecontextf_) without the binding needing to know the platform representation of MPI_Comm. C/C++ callers that already have MPI_COMM_WORLD do not need this. When the library is built without MPI the return value is a placeholder (0) that the library ignores.</p>
+<dl class="section return"><dt>Returns</dt><dd>the world communicator as an MPI_Fint handle. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00933">933</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
 
 </div>
 </div>
@@ -1188,7 +1234,7 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00205">205</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00236">236</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
 
 </div>
 </div>
@@ -1211,7 +1257,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00097">97</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00128">128</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
 
 </div>
 </div>
@@ -1239,7 +1285,7 @@ Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>the number of leaf nodes. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00199">199</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00230">230</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
 
 </div>
 </div>
@@ -1258,7 +1304,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00091">91</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00122">122</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
 
 </div>
 </div>
@@ -1290,7 +1336,7 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00212">212</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00243">243</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
 
 </div>
 </div>
@@ -1313,7 +1359,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00104">104</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00135">135</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
 
 </div>
 </div>
@@ -1363,7 +1409,7 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00228">228</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00259">259</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
 
 </div>
 </div>
@@ -1401,7 +1447,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00120">120</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm-wrapper_8cpp_source.html#l00151">151</a> of file <a class="el" href="pvfmm-wrapper_8cpp_source.html">pvfmm-wrapper.cpp</a>.</p>
 
 </div>
 </div>

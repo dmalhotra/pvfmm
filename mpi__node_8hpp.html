@@ -104,7 +104,8 @@ document.addEventListener('DOMContentLoaded', () => {
 <div id="doc-content">
 <div class="header">
   <div class="summary">
-<a href="#nested-classes">Classes</a>  </div>
+<a href="#nested-classes">Classes</a> &#124;
+<a href="#typedef-members">Typedefs</a>  </div>
   <div class="headertitle"><div class="title">mpi_node.hpp File Reference</div></div>
 </div><!--header-->
 <div class="contents">
@@ -117,8 +118,6 @@ document.addEventListener('DOMContentLoaded', () => {
 <code>#include &lt;stdint.h&gt;</code><br />
 <code>#include &lt;<a class="el" href="pvfmm__common_8hpp_source.html">pvfmm_common.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="tree__node_8hpp_source.html">tree_node.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="mortonid_8hpp_source.html">mortonid.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="vector_8hpp_source.html">vector.hpp</a>&gt;</code><br />
 <code>#include &lt;mpi_node.txx&gt;</code><br />
 </div>
 <p><a href="mpi__node_8hpp_source.html">Go to the source code of this file.</a></p>
@@ -127,10 +126,18 @@ document.addEventListener('DOMContentLoaded', () => {
 Classes</h2></td></tr>
 <tr class="memitem:pvfmm_3A_3APackedData" id="r_pvfmm_3A_3APackedData"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structpvfmm_1_1PackedData.html">pvfmm::PackedData</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A structure for storing packed data for transmitting a node to another MPI process.  <a href="structpvfmm_1_1PackedData.html#details">More...</a><br /></td></tr>
+<tr class="memitem:pvfmm_3A_3APackedNodeHeader" id="r_pvfmm_3A_3APackedNodeHeader"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structpvfmm_1_1PackedNodeHeader.html">pvfmm::PackedNodeHeader</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fixed-size header at the start of the data produced by <a class="el" href="classpvfmm_1_1MPI__Node.html#a7144cdfbfa9df8f5efba2b9da2b79602" title="Pack this node to be transmitted to another process. The node is responsible for allocating and freei...">MPI_Node::Pack</a>. The field order and widths define the wire layout; depth is widened to long long so that the variable-length vector segments that follow the header stay 8-byte aligned.  <a href="structpvfmm_1_1PackedNodeHeader.html#details">More...</a><br /></td></tr>
+<tr class="memitem:pvfmm_3A_3AMidPayloadHeader" id="r_pvfmm_3A_3AMidPayloadHeader"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structpvfmm_1_1MidPayloadHeader.html">pvfmm::MidPayloadHeader</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Wire record header pairing a MortonId with the byte length of the payload that follows. Used to frame packed nodes / multipole data in tree exchange messages. Records may land at non-8-byte offsets in a stream (payload lengths are Real_t multiples), so read/write with memcpy.  <a href="structpvfmm_1_1MidPayloadHeader.html#details">More...</a><br /></td></tr>
 <tr class="memitem:pvfmm_3A_3AMPI_5FNode_3C_20T_20_3E" id="r_pvfmm_3A_3AMPI_5FNode_3C_20T_20_3E"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classpvfmm_1_1MPI__Node.html">pvfmm::MPI_Node&lt; T &gt;</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Virtual base class for a locally essential tree node.  <a href="classpvfmm_1_1MPI__Node.html#details">More...</a><br /></td></tr>
 <tr class="memitem:pvfmm_3A_3AMPI_5FNode_3C_20T_20_3E_3A_3ANodeData" id="r_pvfmm_3A_3AMPI_5FNode_3C_20T_20_3E_3A_3ANodeData"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classpvfmm_1_1MPI__Node_1_1NodeData.html">pvfmm::MPI_Node&lt; T &gt;::NodeData</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Base class for node data. Contains initialization data for the node.  <a href="classpvfmm_1_1MPI__Node_1_1NodeData.html#details">More...</a><br /></td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-typedef-members" class="groupheader"><a id="typedef-members" name="typedef-members"></a>
+Typedefs</h2></td></tr>
+<tr class="memitem:af61d4e2934add9fb1cf45a52b65c295b" id="r_af61d4e2934add9fb1cf45a52b65c295b"><td class="memItemLeft">using&#160;</td><td class="memItemRight"><a class="el" href="#af61d4e2934add9fb1cf45a52b65c295b">pvfmm::MortonId</a> = sctl::Morton&lt;PVFMM_COORD_DIM&gt;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>This file contains the definition of a virtual base class for a locally essential tree node. </p>
@@ -138,7 +145,24 @@ Classes</h2></td></tr>
 <dl class="section date"><dt>Date</dt><dd>12-10-2010 </dd></dl>
 
 <p class="definition">Definition in file <a class="el" href="mpi__node_8hpp_source.html">mpi_node.hpp</a>.</p>
-</div></div><!-- contents -->
+</div><a name="doc-typedef-members" id="doc-typedef-members"></a><h2 id="header-doc-typedef-members" class="groupheader">Typedef Documentation</h2>
+<a id="af61d4e2934add9fb1cf45a52b65c295b" name="af61d4e2934add9fb1cf45a52b65c295b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af61d4e2934add9fb1cf45a52b65c295b">&#9670;&#160;</a></span>MortonId</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef sctl::Morton&lt; PVFMM_COORD_DIM &gt; pvfmm::MortonId = sctl::Morton&lt;PVFMM_COORD_DIM&gt;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="mpi__node_8hpp_source.html#l00022">22</a> of file <a class="el" href="mpi__node_8hpp_source.html">mpi_node.hpp</a>.</p>
+
+</div>
+</div>
+</div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.17.0

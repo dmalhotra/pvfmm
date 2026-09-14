@@ -111,7 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><code>#include &lt;vector&gt;</code><br />
-<code>#include &lt;mpi.h&gt;</code><br />
+<code>#include &lt;sctl.hpp&gt;</code><br />
 <code>#include &lt;<a class="el" href="cheb__utils_8hpp_source.html">cheb_utils.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="fmm__tree_8hpp_source.html">fmm_tree.hpp</a>&gt;</code><br />
 <code>#include &lt;utils.txx&gt;</code><br />
@@ -142,9 +142,9 @@ template&lt;class FMM_Mat_t&gt; </td></tr>
 <tr class="memitem:a4ca148e9d52d0aa79a8cbdfeb5969a5a" id="r_a4ca148e9d52d0aa79a8cbdfeb5969a5a"><td class="memTemplParams" colspan="2"><a id="a4ca148e9d52d0aa79a8cbdfeb5969a5a" name="a4ca148e9d52d0aa79a8cbdfeb5969a5a"></a>
 template&lt;class FMMTree_t&gt; </td></tr>
 <tr class="memitem:a4ca148e9d52d0aa79a8cbdfeb5969a5a template"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><b>CheckChebOutput</b> (FMMTree_t *mytree, typename <a class="el" href="structTestFn.html">TestFn</a>&lt; typename FMMTree_t::Real_t &gt;::Fn_t fn_poten, int fn_dof, std::string t_name=&quot;&quot;)</td></tr>
-<tr class="memitem:ae10ff91609529fa52b08c3497dd0aaac" id="r_ae10ff91609529fa52b08c3497dd0aaac"><td class="memTemplParams" colspan="2"><a id="ae10ff91609529fa52b08c3497dd0aaac" name="ae10ff91609529fa52b08c3497dd0aaac"></a>
+<tr class="memitem:a201d88e9d25566f5cf4fdde2ccf2e54d" id="r_a201d88e9d25566f5cf4fdde2ccf2e54d"><td class="memTemplParams" colspan="2"><a id="a201d88e9d25566f5cf4fdde2ccf2e54d" name="a201d88e9d25566f5cf4fdde2ccf2e54d"></a>
 template&lt;class Real_t&gt; </td></tr>
-<tr class="memitem:ae10ff91609529fa52b08c3497dd0aaac template"><td class="memItemLeft">std::vector&lt; Real_t &gt;&#160;</td><td class="memItemRight"><b>point_distrib</b> (DistribType, size_t N, MPI_Comm comm)</td></tr>
+<tr class="memitem:a201d88e9d25566f5cf4fdde2ccf2e54d template"><td class="memItemLeft">std::vector&lt; Real_t &gt;&#160;</td><td class="memItemRight"><b>point_distrib</b> (DistribType, size_t N, const sctl::Comm &amp;comm)</td></tr>
 <tr class="memitem:a9cdc9d04414541d1342d99521fccfd06" id="r_a9cdc9d04414541d1342d99521fccfd06"><td class="memItemLeft"><a id="a9cdc9d04414541d1342d99521fccfd06" name="a9cdc9d04414541d1342d99521fccfd06"></a>
 void&#160;</td><td class="memItemRight"><b>commandline_option_start</b> (int argc, char **argv, const char *help_text=NULL)</td></tr>
 <tr class="memitem:ad6f3d1307842764e5a3f1525429889e0" id="r_ad6f3d1307842764e5a3f1525429889e0"><td class="memItemLeft"><a id="ad6f3d1307842764e5a3f1525429889e0" name="ad6f3d1307842764e5a3f1525429889e0"></a>

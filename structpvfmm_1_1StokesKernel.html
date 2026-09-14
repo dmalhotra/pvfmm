@@ -109,22 +109,32 @@ document.addEventListener('DOMContentLoaded', () => {
   <div class="headertitle"><div class="title">pvfmm::StokesKernel&lt; T &gt; Struct Template Reference</div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>Green's functions of the Stokes equations (unit viscosity).  
+ <a href="#details">More...</a></p>
+
+<p><code>#include &lt;<a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-static-methods" class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
 <tr class="memitem:a09c81742188fc99e5f82f2b199dcca1a" id="r_a09c81742188fc99e5f82f2b199dcca1a"><td class="memItemLeft"><a id="a09c81742188fc99e5f82f2b199dcca1a" name="a09c81742188fc99e5f82f2b199dcca1a"></a>
 static const <a class="el" href="structpvfmm_1_1Kernel.html">Kernel</a>&lt; T &gt; &amp;&#160;</td><td class="memItemRight"><b>velocity</b> ()</td></tr>
+<tr class="memdesc:a09c81742188fc99e5f82f2b199dcca1a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stokeslet; kernel dimensions (3,3). <br /></td></tr>
 <tr class="memitem:a41111877fa1666c6aa38084c8dee48d4" id="r_a41111877fa1666c6aa38084c8dee48d4"><td class="memItemLeft"><a id="a41111877fa1666c6aa38084c8dee48d4" name="a41111877fa1666c6aa38084c8dee48d4"></a>
 static const <a class="el" href="structpvfmm_1_1Kernel.html">Kernel</a>&lt; T &gt; &amp;&#160;</td><td class="memItemRight"><b>pressure</b> ()</td></tr>
+<tr class="memdesc:a41111877fa1666c6aa38084c8dee48d4"><td class="mdescLeft">&#160;</td><td class="mdescRight">associated pressure; kernel dimensions (3,1) <br /></td></tr>
 <tr class="memitem:ad6e4c592b99b4f85a2245e8302b80648" id="r_ad6e4c592b99b4f85a2245e8302b80648"><td class="memItemLeft"><a id="ad6e4c592b99b4f85a2245e8302b80648" name="ad6e4c592b99b4f85a2245e8302b80648"></a>
 static const <a class="el" href="structpvfmm_1_1Kernel.html">Kernel</a>&lt; T &gt; &amp;&#160;</td><td class="memItemRight"><b>stress</b> ()</td></tr>
+<tr class="memdesc:ad6e4c592b99b4f85a2245e8302b80648"><td class="mdescLeft">&#160;</td><td class="mdescRight">stress tensor (symmetric); kernel dimensions (3,9) <br /></td></tr>
 <tr class="memitem:add051afadee7aa9980a29789f78fec1e" id="r_add051afadee7aa9980a29789f78fec1e"><td class="memItemLeft"><a id="add051afadee7aa9980a29789f78fec1e" name="add051afadee7aa9980a29789f78fec1e"></a>
 static const <a class="el" href="structpvfmm_1_1Kernel.html">Kernel</a>&lt; T &gt; &amp;&#160;</td><td class="memItemRight"><b>vel_grad</b> ()</td></tr>
+<tr class="memdesc:add051afadee7aa9980a29789f78fec1e"><td class="mdescLeft">&#160;</td><td class="mdescRight">velocity gradient, <picture><source srcset="form_6_dark.png" media="(prefers-color-scheme: dark)"/><img class="formulaInl" alt="$\partial u_k/\partial x_i$" src="form_6.png"/></picture> at index <picture><source srcset="form_7_dark.png" media="(prefers-color-scheme: dark)"/><img class="formulaInl" alt="$3i+k$" src="form_7.png"/></picture>; kernel dimensions (3,9) <br /></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><div class="compoundTemplParams">template&lt;class T&gt;<br />
-struct pvfmm::StokesKernel&lt; T &gt;</div>
-<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00194">194</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
+struct pvfmm::StokesKernel&lt; T &gt;</div><p>Green's functions of the Stokes equations (unit viscosity). </p>
+
+<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00167">167</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
 </div><hr/>The documentation for this struct was generated from the following file:<ul>
 <li>include/<a class="el" href="kernel_8hpp_source.html">kernel.hpp</a></li>
 </ul>

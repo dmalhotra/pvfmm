@@ -109,18 +109,26 @@ document.addEventListener('DOMContentLoaded', () => {
   <div class="headertitle"><div class="title">pvfmm::LaplaceKernel&lt; T &gt; Struct Template Reference</div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>Green's function of the Poisson equation <picture><source srcset="form_0_dark.png" media="(prefers-color-scheme: dark)"/><img class="formulaInl" alt="$-\Delta u = f$" src="form_0.png"/></picture>.  
+ <a href="#details">More...</a></p>
+
+<p><code>#include &lt;<a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-static-methods" class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
 <tr class="memitem:a90d282612e58244d49cb6d5d7f826f97" id="r_a90d282612e58244d49cb6d5d7f826f97"><td class="memItemLeft"><a id="a90d282612e58244d49cb6d5d7f826f97" name="a90d282612e58244d49cb6d5d7f826f97"></a>
 static const <a class="el" href="structpvfmm_1_1Kernel.html">Kernel</a>&lt; T &gt; &amp;&#160;</td><td class="memItemRight"><b>potential</b> ()</td></tr>
+<tr class="memdesc:a90d282612e58244d49cb6d5d7f826f97"><td class="mdescLeft">&#160;</td><td class="mdescRight"><picture><source srcset="form_3_dark.png" media="(prefers-color-scheme: dark)"/><img class="formulaInl" alt="$u(x)=\frac{1}{4\pi}\sum_j f_j/|x-y_j|$" src="form_3.png"/></picture>; kernel dimensions (1,1) <br /></td></tr>
 <tr class="memitem:a5296e3b5c50b46914d903989b3a1acb5" id="r_a5296e3b5c50b46914d903989b3a1acb5"><td class="memItemLeft"><a id="a5296e3b5c50b46914d903989b3a1acb5" name="a5296e3b5c50b46914d903989b3a1acb5"></a>
 static const <a class="el" href="structpvfmm_1_1Kernel.html">Kernel</a>&lt; T &gt; &amp;&#160;</td><td class="memItemRight"><b>gradient</b> ()</td></tr>
+<tr class="memdesc:a5296e3b5c50b46914d903989b3a1acb5"><td class="mdescLeft">&#160;</td><td class="mdescRight"><picture><source srcset="form_4_dark.png" media="(prefers-color-scheme: dark)"/><img class="formulaInl" alt="$\nabla u(x)=-\frac{1}{4\pi}\sum_j f_j\,r_j/|r_j|^3$" src="form_4.png"/></picture>, <picture><source srcset="form_5_dark.png" media="(prefers-color-scheme: dark)"/><img class="formulaInl" alt="$r_j=x-y_j$" src="form_5.png"/></picture>; kernel dimensions (1,3) <br /></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><div class="compoundTemplParams">template&lt;class T&gt;<br />
-struct pvfmm::LaplaceKernel&lt; T &gt;</div>
-<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00188">188</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
+struct pvfmm::LaplaceKernel&lt; T &gt;</div><p>Green's function of the Poisson equation <picture><source srcset="form_0_dark.png" media="(prefers-color-scheme: dark)"/><img class="formulaInl" alt="$-\Delta u = f$" src="form_0.png"/></picture>. </p>
+
+<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00158">158</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
 </div><hr/>The documentation for this struct was generated from the following file:<ul>
 <li>include/<a class="el" href="kernel_8hpp_source.html">kernel.hpp</a></li>
 </ul>

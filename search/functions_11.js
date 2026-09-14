@@ -1,7 +1,7 @@
 var searchData=
 [
-  ['u_5flistsetup_0',['U_ListSetup',['../classpvfmm_1_1FMM__Cheb.html#a4e88ba68e561780413e7901cf10c65b0',1,'pvfmm::FMM_Cheb::U_ListSetup()'],['../classpvfmm_1_1FMM__Pts.html#ae96e5095623203b507e8756a1a5080e2',1,'pvfmm::FMM_Pts::U_ListSetup()']]],
-  ['unpack_1',['Unpack',['../classpvfmm_1_1Cheb__Node.html#a1c623ec9cadf0bef526b5a540ee7e334',1,'pvfmm::Cheb_Node::Unpack()'],['../classpvfmm_1_1FMM__Node.html#ae7bc536274407871b4d863495f16576c',1,'pvfmm::FMM_Node::Unpack()'],['../classpvfmm_1_1MPI__Node.html#a3d0fe95615fbae068b1c66300eae7146',1,'pvfmm::MPI_Node::Unpack()']]],
-  ['up2upsetup_2',['Up2UpSetup',['../classpvfmm_1_1FMM__Pts.html#ac42aec7f1befc05bb3e0d72ff2e8876c',1,'pvfmm::FMM_Pts']]],
-  ['upwardpass_3',['UpwardPass',['../classpvfmm_1_1FMM__Tree.html#a8849fecf8f1f45abcf583366d8ae60f1',1,'pvfmm::FMM_Tree']]]
+  ['v_5flistsetup_0',['V_ListSetup',['../classpvfmm_1_1FMM__Pts.html#a273fb390177a5d770a578e97863e5ec4',1,'pvfmm::FMM_Pts']]],
+  ['vel_5fgrad_1',['vel_grad',['../structpvfmm_1_1StokesKernel.html#add051afadee7aa9980a29789f78fec1e',1,'pvfmm::StokesKernel']]],
+  ['velocity_2',['velocity',['../structpvfmm_1_1StokesKernel.html#a09c81742188fc99e5f82f2b199dcca1a',1,'pvfmm::StokesKernel']]],
+  ['vtu_5fdata_3',['VTU_Data',['../classpvfmm_1_1Cheb__Node.html#a59ba4e38e1e312fc5b3746e5de1a7c45',1,'pvfmm::Cheb_Node::VTU_Data()'],['../classpvfmm_1_1FMM__Node.html#a67114fd90083a86d795367eeb3b5fd14',1,'pvfmm::FMM_Node::VTU_Data()'],['../classpvfmm_1_1MPI__Node.html#af11df0d479096f85e860f8f8bd4e6411',1,'pvfmm::MPI_Node::VTU_Data()']]]
 ];

@@ -1,4 +1,6 @@
 var searchData=
 [
-  ['device_0',['Device',['../structpvfmm_1_1Matrix_1_1Device.html',1,'pvfmm::Matrix&lt; T &gt;::Device'],['../structpvfmm_1_1Vector_1_1Device.html',1,'pvfmm::Vector&lt; T &gt;::Device']]]
+  ['devicematrix_0',['DeviceMatrix',['../structpvfmm_1_1DeviceMatrix.html',1,'pvfmm']]],
+  ['devicemirror_1',['DeviceMirror',['../classpvfmm_1_1DeviceMirror.html',1,'pvfmm']]],
+  ['devicevector_2',['DeviceVector',['../structpvfmm_1_1DeviceVector.html',1,'pvfmm']]]
 ];

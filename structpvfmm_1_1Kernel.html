@@ -114,15 +114,16 @@ document.addEventListener('DOMContentLoaded', () => {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-types" class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:a4d682799978fa8abe3a1a40ba86038c1" id="r_a4d682799978fa8abe3a1a40ba86038c1"><td class="memItemLeft">typedef void(*&#160;</td><td class="memItemRight"><a class="el" href="#a4d682799978fa8abe3a1a40ba86038c1">Ker_t</a>) (T *r_src, int src_cnt, T *v_src, int dof, T *r_trg, int trg_cnt, T *k_out, <a class="el" href="classpvfmm_1_1mem_1_1MemoryManager.html">mem::MemoryManager</a> *mem_mgr)</td></tr>
-<tr class="memdesc:a4d682799978fa8abe3a1a40ba86038c1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Evaluate potential due to source points at target coordinates.  <br /></td></tr>
+<tr class="memitem:afc8eb59f18804ff2ced762b390e7a666" id="r_afc8eb59f18804ff2ced762b390e7a666"><td class="memItemLeft">typedef void(*&#160;</td><td class="memItemRight"><a class="el" href="#afc8eb59f18804ff2ced762b390e7a666">Ker_t</a>) (T *r_src, int src_cnt, T *v_src, int dof, T *r_trg, int trg_cnt, T *k_out)</td></tr>
+<tr class="memdesc:afc8eb59f18804ff2ced762b390e7a666"><td class="mdescLeft">&#160;</td><td class="mdescRight">Evaluate potential due to source points at target coordinates.  <br /></td></tr>
+<tr class="memitem:a0fa78ab502fa0eeae997e778625d9220" id="r_a0fa78ab502fa0eeae997e778625d9220"><td class="memItemLeft">typedef void(*&#160;</td><td class="memItemRight"><a class="el" href="#a0fa78ab502fa0eeae997e778625d9220">BuildMat_t</a>) (T *r_src, int src_cnt, T *r_trg, int trg_cnt, T *k_out)</td></tr>
 <tr class="memitem:a54e140382e4d908d9955d3a50c802a36" id="r_a54e140382e4d908d9955d3a50c802a36"><td class="memItemLeft">using&#160;</td><td class="memItemRight"><a class="el" href="#a54e140382e4d908d9955d3a50c802a36">VolPoten</a> = std::function&lt;void(const T* coord, int n, T* out)&gt;</td></tr>
 <tr class="memdesc:a54e140382e4d908d9955d3a50c802a36"><td class="mdescLeft">&#160;</td><td class="mdescRight">Volume potential solution for a constant density f.  <br /></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-methods" class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a4419c8745b66d704a0234ccc3837693b" id="r_a4419c8745b66d704a0234ccc3837693b"><td class="memItemLeft"><a id="a4419c8745b66d704a0234ccc3837693b" name="a4419c8745b66d704a0234ccc3837693b"></a>
-&#160;</td><td class="memItemRight"><b>Kernel</b> (<a class="el" href="#a4d682799978fa8abe3a1a40ba86038c1">Ker_t</a> poten=nullptr, <a class="el" href="#a4d682799978fa8abe3a1a40ba86038c1">Ker_t</a> dbl_poten=nullptr, const char *name=&quot;&quot;, int dim_=0, std::pair&lt; int, int &gt; k_dim=std::make_pair&lt; int, int &gt;(0, 0), size_t dev_poten=(size_t) NULL, size_t dev_dbl_poten=(size_t) NULL)</td></tr>
+&#160;</td><td class="memItemRight"><b>Kernel</b> (<a class="el" href="#afc8eb59f18804ff2ced762b390e7a666">Ker_t</a> poten=nullptr, <a class="el" href="#afc8eb59f18804ff2ced762b390e7a666">Ker_t</a> dbl_poten=nullptr, const char *name=&quot;&quot;, int dim_=0, std::pair&lt; int, int &gt; k_dim=std::make_pair&lt; int, int &gt;(0, 0), size_t dev_poten=(size_t) NULL, size_t dev_dbl_poten=(size_t) NULL)</td></tr>
 <tr class="memdesc:a4419c8745b66d704a0234ccc3837693b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor. <br /></td></tr>
 <tr class="memitem:a4aed543efd4b39c96d2c2f9bba48216a" id="r_a4aed543efd4b39c96d2c2f9bba48216a"><td class="memItemLeft"><a id="a4aed543efd4b39c96d2c2f9bba48216a" name="a4aed543efd4b39c96d2c2f9bba48216a"></a>
 void&#160;</td><td class="memItemRight"><b>Initialize</b> (bool verbose=false) const</td></tr>
@@ -136,15 +137,16 @@ Public Attributes</h2></td></tr>
 <tr class="memitem:a0480065e12aa6e7176296d5d3d46107a" id="r_a0480065e12aa6e7176296d5d3d46107a"><td class="memItemLeft">int&#160;</td><td class="memItemRight"><a class="el" href="#a0480065e12aa6e7176296d5d3d46107a">ker_dim</a> [2]</td></tr>
 <tr class="memitem:a159ea6deb6f5a15aab7441af0f6939aa" id="r_a159ea6deb6f5a15aab7441af0f6939aa"><td class="memItemLeft">int&#160;</td><td class="memItemRight"><a class="el" href="#a159ea6deb6f5a15aab7441af0f6939aa">surf_dim</a></td></tr>
 <tr class="memitem:afc81c8f99aa1ee781940fc28e94d9328" id="r_afc81c8f99aa1ee781940fc28e94d9328"><td class="memItemLeft">std::string&#160;</td><td class="memItemRight"><a class="el" href="#afc81c8f99aa1ee781940fc28e94d9328">ker_name</a></td></tr>
-<tr class="memitem:a1ded1f3be30d7e701de41ffe050e13bf" id="r_a1ded1f3be30d7e701de41ffe050e13bf"><td class="memItemLeft"><a class="el" href="#a4d682799978fa8abe3a1a40ba86038c1">Ker_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a1ded1f3be30d7e701de41ffe050e13bf">ker_poten</a></td></tr>
-<tr class="memitem:a832021b787fcf1e5c04aa509e5e7753d" id="r_a832021b787fcf1e5c04aa509e5e7753d"><td class="memItemLeft"><a class="el" href="#a4d682799978fa8abe3a1a40ba86038c1">Ker_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a832021b787fcf1e5c04aa509e5e7753d">dbl_layer_poten</a></td></tr>
+<tr class="memitem:a1ded1f3be30d7e701de41ffe050e13bf" id="r_a1ded1f3be30d7e701de41ffe050e13bf"><td class="memItemLeft"><a class="el" href="#afc8eb59f18804ff2ced762b390e7a666">Ker_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a1ded1f3be30d7e701de41ffe050e13bf">ker_poten</a></td></tr>
+<tr class="memitem:a832021b787fcf1e5c04aa509e5e7753d" id="r_a832021b787fcf1e5c04aa509e5e7753d"><td class="memItemLeft"><a class="el" href="#afc8eb59f18804ff2ced762b390e7a666">Ker_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a832021b787fcf1e5c04aa509e5e7753d">dbl_layer_poten</a></td></tr>
+<tr class="memitem:ac6851ab4e518d8ad3e1bb340943f0f49" id="r_ac6851ab4e518d8ad3e1bb340943f0f49"><td class="memItemLeft">BuildMat_t&#160;</td><td class="memItemRight"><a class="el" href="#ac6851ab4e518d8ad3e1bb340943f0f49">build_matrix</a> = nullptr</td></tr>
 <tr class="memitem:a28901b57252d18032ff25896500ce7cb" id="r_a28901b57252d18032ff25896500ce7cb"><td class="memItemLeft">size_t&#160;</td><td class="memItemRight"><a class="el" href="#a28901b57252d18032ff25896500ce7cb">dev_ker_poten</a></td></tr>
 <tr class="memitem:a7dc10a3619073e112146b34b3a8f160b" id="r_a7dc10a3619073e112146b34b3a8f160b"><td class="memItemLeft">size_t&#160;</td><td class="memItemRight"><a class="el" href="#a7dc10a3619073e112146b34b3a8f160b">dev_dbl_layer_poten</a></td></tr>
 <tr class="memitem:a1a366cd282a82fa43051857c4b017986" id="r_a1a366cd282a82fa43051857c4b017986"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a1a366cd282a82fa43051857c4b017986">init</a></td></tr>
 <tr class="memitem:a402354fea32e055ea750f1d3d8e484ab" id="r_a402354fea32e055ea750f1d3d8e484ab"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a402354fea32e055ea750f1d3d8e484ab">scale_invar</a></td></tr>
-<tr class="memitem:a6a7184e9f8fcd159a111a21338c80d54" id="r_a6a7184e9f8fcd159a111a21338c80d54"><td class="memItemLeft"><a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt; T &gt;&#160;</td><td class="memItemRight"><a class="el" href="#a6a7184e9f8fcd159a111a21338c80d54">src_scal</a></td></tr>
-<tr class="memitem:af0e06c6d4216d78a36552e4a89284a31" id="r_af0e06c6d4216d78a36552e4a89284a31"><td class="memItemLeft"><a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt; T &gt;&#160;</td><td class="memItemRight"><a class="el" href="#af0e06c6d4216d78a36552e4a89284a31">trg_scal</a></td></tr>
-<tr class="memitem:ae697eb481b088a4113c254ddb8bf3e45" id="r_ae697eb481b088a4113c254ddb8bf3e45"><td class="memItemLeft"><a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt; <a class="el" href="classpvfmm_1_1Permutation.html">Permutation</a>&lt; T &gt; &gt;&#160;</td><td class="memItemRight"><a class="el" href="#ae697eb481b088a4113c254ddb8bf3e45">perm_vec</a></td></tr>
+<tr class="memitem:aa88c99717f983f10727683297a2d4c4f" id="r_aa88c99717f983f10727683297a2d4c4f"><td class="memItemLeft">sctl::Vector&lt; T &gt;&#160;</td><td class="memItemRight"><a class="el" href="#aa88c99717f983f10727683297a2d4c4f">src_scal</a></td></tr>
+<tr class="memitem:adb4ffbdb68d4631c63f6c93455f8b038" id="r_adb4ffbdb68d4631c63f6c93455f8b038"><td class="memItemLeft">sctl::Vector&lt; T &gt;&#160;</td><td class="memItemRight"><a class="el" href="#adb4ffbdb68d4631c63f6c93455f8b038">trg_scal</a></td></tr>
+<tr class="memitem:a4c2e71e799cb6301a67ba6c9e9c69bc9" id="r_a4c2e71e799cb6301a67ba6c9e9c69bc9"><td class="memItemLeft">sctl::Vector&lt; sctl::Permutation&lt; T &gt; &gt;&#160;</td><td class="memItemRight"><a class="el" href="#a4c2e71e799cb6301a67ba6c9e9c69bc9">perm_vec</a></td></tr>
 <tr class="memitem:a62e9d5ccc86b84424d0e6b53170753ee" id="r_a62e9d5ccc86b84424d0e6b53170753ee"><td class="memItemLeft">const <a class="el" href="#a4419c8745b66d704a0234ccc3837693b">Kernel</a>&lt; T &gt; *&#160;</td><td class="memItemRight"><a class="el" href="#a62e9d5ccc86b84424d0e6b53170753ee">k_s2m</a></td></tr>
 <tr class="memitem:aded022980bf2353a5841fb9d6832a01e" id="r_aded022980bf2353a5841fb9d6832a01e"><td class="memItemLeft">const <a class="el" href="#a4419c8745b66d704a0234ccc3837693b">Kernel</a>&lt; T &gt; *&#160;</td><td class="memItemRight"><a class="el" href="#aded022980bf2353a5841fb9d6832a01e">k_s2l</a></td></tr>
 <tr class="memitem:ac8e5ad321006b5ac0acf7ed7750bb4c2" id="r_ac8e5ad321006b5ac0acf7ed7750bb4c2"><td class="memItemLeft">const <a class="el" href="#a4419c8745b66d704a0234ccc3837693b">Kernel</a>&lt; T &gt; *&#160;</td><td class="memItemRight"><a class="el" href="#ac8e5ad321006b5ac0acf7ed7750bb4c2">k_s2t</a></td></tr>
@@ -160,8 +162,8 @@ Public Attributes</h2></td></tr>
 struct pvfmm::Kernel&lt; T &gt;</div>
 <p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00027">27</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
 </div><a name="doc-typedef-members" id="doc-typedef-members"></a><h2 id="header-doc-typedef-members" class="groupheader">Member Typedef Documentation</h2>
-<a id="a4d682799978fa8abe3a1a40ba86038c1" name="a4d682799978fa8abe3a1a40ba86038c1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4d682799978fa8abe3a1a40ba86038c1">&#9670;&#160;</a></span>Ker_t</h2>
+<a id="a0fa78ab502fa0eeae997e778625d9220" name="a0fa78ab502fa0eeae997e778625d9220"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0fa78ab502fa0eeae997e778625d9220">&#9670;&#160;</a></span>BuildMat_t</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -169,7 +171,25 @@ struct pvfmm::Kernel&lt; T &gt;</div>
 template&lt;class T&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">typedef void(* <a class="el" href="structpvfmm_1_1Kernel.html">pvfmm::Kernel</a>&lt; T &gt;::Ker_t) (T *r_src, int src_cnt, T *v_src, int dof, T *r_trg, int trg_cnt, T *k_out, <a class="el" href="classpvfmm_1_1mem_1_1MemoryManager.html">mem::MemoryManager</a> *mem_mgr)</td>
+          <td class="memname">typedef void(* <a class="el" href="structpvfmm_1_1Kernel.html">pvfmm::Kernel</a>&lt; T &gt;::BuildMat_t) (T *r_src, int src_cnt, T *r_trg, int trg_cnt, T *k_out)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00042">42</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
+
+</div>
+</div>
+<a id="afc8eb59f18804ff2ced762b390e7a666" name="afc8eb59f18804ff2ced762b390e7a666"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afc8eb59f18804ff2ced762b390e7a666">&#9670;&#160;</a></span>Ker_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef void(* <a class="el" href="structpvfmm_1_1Kernel.html">pvfmm::Kernel</a>&lt; T &gt;::Ker_t) (T *r_src, int src_cnt, T *v_src, int dof, T *r_trg, int trg_cnt, T *k_out)</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -215,7 +235,7 @@ template&lt;class T&gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00049">49</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00052">52</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
 
 </div>
 </div>
@@ -271,6 +291,24 @@ template&lt;class T&gt; </div>
 </div>
 </div>
 <a name="doc-variable-members" id="doc-variable-members"></a><h2 id="header-doc-variable-members" class="groupheader">Member Data Documentation</h2>
+<a id="ac6851ab4e518d8ad3e1bb340943f0f49" name="ac6851ab4e518d8ad3e1bb340943f0f49"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac6851ab4e518d8ad3e1bb340943f0f49">&#9670;&#160;</a></span>build_matrix</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">BuildMat_t <a class="el" href="structpvfmm_1_1Kernel.html">pvfmm::Kernel</a>&lt; T &gt;::build_matrix = nullptr</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00085">85</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
+
+</div>
+</div>
 <a id="a832021b787fcf1e5c04aa509e5e7753d" name="a832021b787fcf1e5c04aa509e5e7753d"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a832021b787fcf1e5c04aa509e5e7753d">&#9670;&#160;</a></span>dbl_layer_poten</h2>
 
@@ -280,12 +318,12 @@ template&lt;class T&gt; </div>
 template&lt;class T&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="#a4d682799978fa8abe3a1a40ba86038c1">Ker_t</a> <a class="el" href="structpvfmm_1_1Kernel.html">pvfmm::Kernel</a>&lt; T &gt;::dbl_layer_poten</td>
+          <td class="memname"><a class="el" href="#afc8eb59f18804ff2ced762b390e7a666">Ker_t</a> <a class="el" href="structpvfmm_1_1Kernel.html">pvfmm::Kernel</a>&lt; T &gt;::dbl_layer_poten</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00081">81</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00084">84</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
 
 </div>
 </div>
@@ -303,7 +341,7 @@ template&lt;class T&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00084">84</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00088">88</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
 
 </div>
 </div>
@@ -321,7 +359,7 @@ template&lt;class T&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00083">83</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00087">87</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
 
 </div>
 </div>
@@ -339,7 +377,7 @@ template&lt;class T&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00075">75</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00078">78</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
 
 </div>
 </div>
@@ -365,7 +403,7 @@ template&lt;class T&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00086">86</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00090">90</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
 
 </div>
 </div>
@@ -391,7 +429,7 @@ template&lt;class T&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00098">98</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00102">102</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
 
 </div>
 </div>
@@ -417,7 +455,7 @@ template&lt;class T&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00099">99</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00103">103</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
 
 </div>
 </div>
@@ -443,7 +481,7 @@ template&lt;class T&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00096">96</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00100">100</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
 
 </div>
 </div>
@@ -469,7 +507,7 @@ template&lt;class T&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00095">95</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00099">99</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
 
 </div>
 </div>
@@ -495,7 +533,7 @@ template&lt;class T&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00097">97</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00101">101</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
 
 </div>
 </div>
@@ -521,7 +559,7 @@ template&lt;class T&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00093">93</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00097">97</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
 
 </div>
 </div>
@@ -547,7 +585,7 @@ template&lt;class T&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00092">92</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00096">96</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
 
 </div>
 </div>
@@ -573,7 +611,7 @@ template&lt;class T&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00094">94</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00098">98</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
 
 </div>
 </div>
@@ -591,7 +629,7 @@ template&lt;class T&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00076">76</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00079">79</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
 
 </div>
 </div>
@@ -609,7 +647,7 @@ template&lt;class T&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00078">78</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00081">81</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
 
 </div>
 </div>
@@ -622,17 +660,17 @@ template&lt;class T&gt; </div>
 template&lt;class T&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="#a4d682799978fa8abe3a1a40ba86038c1">Ker_t</a> <a class="el" href="structpvfmm_1_1Kernel.html">pvfmm::Kernel</a>&lt; T &gt;::ker_poten</td>
+          <td class="memname"><a class="el" href="#afc8eb59f18804ff2ced762b390e7a666">Ker_t</a> <a class="el" href="structpvfmm_1_1Kernel.html">pvfmm::Kernel</a>&lt; T &gt;::ker_poten</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00080">80</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00083">83</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
 
 </div>
 </div>
-<a id="ae697eb481b088a4113c254ddb8bf3e45" name="ae697eb481b088a4113c254ddb8bf3e45"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae697eb481b088a4113c254ddb8bf3e45">&#9670;&#160;</a></span>perm_vec</h2>
+<a id="a4c2e71e799cb6301a67ba6c9e9c69bc9" name="a4c2e71e799cb6301a67ba6c9e9c69bc9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4c2e71e799cb6301a67ba6c9e9c69bc9">&#9670;&#160;</a></span>perm_vec</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -643,7 +681,7 @@ template&lt;class T&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt;<a class="el" href="classpvfmm_1_1Permutation.html">Permutation</a>&lt;T&gt; &gt; <a class="el" href="structpvfmm_1_1Kernel.html">pvfmm::Kernel</a>&lt; T &gt;::perm_vec</td>
+          <td class="memname">sctl::Vector&lt;sctl::Permutation&lt;T&gt; &gt; <a class="el" href="structpvfmm_1_1Kernel.html">pvfmm::Kernel</a>&lt; T &gt;::perm_vec</td>
         </tr>
       </table>
   </td>
@@ -653,7 +691,7 @@ template&lt;class T&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00090">90</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00094">94</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
 
 </div>
 </div>
@@ -679,12 +717,12 @@ template&lt;class T&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00087">87</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00091">91</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
 
 </div>
 </div>
-<a id="a6a7184e9f8fcd159a111a21338c80d54" name="a6a7184e9f8fcd159a111a21338c80d54"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6a7184e9f8fcd159a111a21338c80d54">&#9670;&#160;</a></span>src_scal</h2>
+<a id="aa88c99717f983f10727683297a2d4c4f" name="aa88c99717f983f10727683297a2d4c4f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa88c99717f983f10727683297a2d4c4f">&#9670;&#160;</a></span>src_scal</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -695,7 +733,7 @@ template&lt;class T&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt;T&gt; <a class="el" href="structpvfmm_1_1Kernel.html">pvfmm::Kernel</a>&lt; T &gt;::src_scal</td>
+          <td class="memname">sctl::Vector&lt;T&gt; <a class="el" href="structpvfmm_1_1Kernel.html">pvfmm::Kernel</a>&lt; T &gt;::src_scal</td>
         </tr>
       </table>
   </td>
@@ -705,7 +743,7 @@ template&lt;class T&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00088">88</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00092">92</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
 
 </div>
 </div>
@@ -723,12 +761,12 @@ template&lt;class T&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00077">77</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00080">80</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
 
 </div>
 </div>
-<a id="af0e06c6d4216d78a36552e4a89284a31" name="af0e06c6d4216d78a36552e4a89284a31"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af0e06c6d4216d78a36552e4a89284a31">&#9670;&#160;</a></span>trg_scal</h2>
+<a id="adb4ffbdb68d4631c63f6c93455f8b038" name="adb4ffbdb68d4631c63f6c93455f8b038"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adb4ffbdb68d4631c63f6c93455f8b038">&#9670;&#160;</a></span>trg_scal</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -739,7 +777,7 @@ template&lt;class T&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt;T&gt; <a class="el" href="structpvfmm_1_1Kernel.html">pvfmm::Kernel</a>&lt; T &gt;::trg_scal</td>
+          <td class="memname">sctl::Vector&lt;T&gt; <a class="el" href="structpvfmm_1_1Kernel.html">pvfmm::Kernel</a>&lt; T &gt;::trg_scal</td>
         </tr>
       </table>
   </td>
@@ -749,7 +787,7 @@ template&lt;class T&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00089">89</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00093">93</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
 
 </div>
 </div>
@@ -775,7 +813,7 @@ template&lt;class T&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00100">100</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="kernel_8hpp_source.html#l00104">104</a> of file <a class="el" href="kernel_8hpp_source.html">kernel.hpp</a>.</p>
 
 </div>
 </div>

@@ -1,0 +1,63 @@
+\documentclass{article}
+\usepackage{iftex}
+\usepackage{ifthen}
+\usepackage{epsfig}
+\usepackage[utf8]{inputenc}
+\usepackage{xcolor}
+\color{white}
+\pagecolor{black}
+\ifPDFTeX
+\usepackage{newunicodechar}
+  \makeatletter
+    \def\doxynewunicodechar#1#2{%
+    \@tempswafalse
+    \edef\nuc@tempa{\detokenize{#1}}%
+    \if\relax\nuc@tempa\relax
+      \nuc@emptyargerr
+    \else
+      \edef\@tempb{\expandafter\@car\nuc@tempa\@nil}%
+      \nuc@check
+      \if@tempswa
+        \@namedef{u8:\nuc@tempa}{#2}%
+      \fi
+    \fi
+  }
+  \makeatother
+  \doxynewunicodechar{⁻}{${}^{-}$}% Superscript minus
+  \doxynewunicodechar{²}{${}^{2}$}% Superscript two
+  \doxynewunicodechar{³}{${}^{3}$}% Superscript three
+
+\fi
+\pagestyle{empty}
+\begin{document}
+$-\Delta u = f$
+\pagebreak
+
+$-\Delta u-\mu^2 u=f$
+\pagebreak
+
+$\mu=20\pi$
+\pagebreak
+
+$u(x)=\frac{1}{4\pi}\sum_j f_j/|x-y_j|$
+\pagebreak
+
+$\nabla u(x)=-\frac{1}{4\pi}\sum_j f_j\,r_j/|r_j|^3$
+\pagebreak
+
+$r_j=x-y_j$
+\pagebreak
+
+$\partial u_k/\partial x_i$
+\pagebreak
+
+$3i+k$
+\pagebreak
+
+$u(x)=\frac{1}{4\pi}\sum_j \omega_j\times r_j/|r_j|^3$
+\pagebreak
+
+$u(x)=\frac{1}{4\pi}\sum_j e^{i\mu|r_j|}/|r_j|\,f_j$
+\pagebreak
+
+\end{document}

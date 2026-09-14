@@ -113,8 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <p>This file contains the declaration of wrapper functions for PVFMM.  
 <a href="#details">More...</a></p>
-<div class="textblock"><code>#include &lt;mpi.h&gt;</code><br />
-<code>#include &lt;vector&gt;</code><br />
+<div class="textblock"><code>#include &lt;vector&gt;</code><br />
 <code>#include &lt;cstdlib&gt;</code><br />
 <code>#include &lt;cmath&gt;</code><br />
 <code>#include &lt;<a class="el" href="pvfmm__common_8hpp_source.html">pvfmm_common.hpp</a>&gt;</code><br />
@@ -154,12 +153,12 @@ Typedefs</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a9656032395eb05b25f714ff5faf95ff0" id="r_a9656032395eb05b25f714ff5faf95ff0"><td class="memTemplParams" colspan="2">template&lt;class Real&gt; </td></tr>
-<tr class="memitem:a9656032395eb05b25f714ff5faf95ff0 template"><td class="memItemLeft"><a class="el" href="#a7a61b596d0645a955e060da9f4748454">ChebFMM_Tree</a>&lt; Real &gt; *&#160;</td><td class="memItemRight"><a class="el" href="#a9656032395eb05b25f714ff5faf95ff0">pvfmm::ChebFMM_CreateTree</a> (int cheb_deg, int data_dim, <a class="el" href="#a1448eacad04baeaaf615a62fb00c4379">ChebFn</a>&lt; Real &gt; fn_ptr, const std::vector&lt; Real &gt; &amp;trg_coord, MPI_Comm comm, Real tol=1e-6, int max_pts=100, BoundaryType bndry=FreeSpace, int init_depth=0)</td></tr>
-<tr class="memdesc:a9656032395eb05b25f714ff5faf95ff0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct a piecewise Chebyshev volume discretization in [0,1]^3. It first constructs a uniform tree of depth init_depth and then adaptively refines each leaf node until the tails of the Chebyshev coefficients in each leaf node are smaller than tol and the number of target points in each leaf node are less than max_pts. It further refines the tree to satisfy the 2:1 balance constraint.  <br /></td></tr>
-<tr class="memitem:ac53014d99322385f17ada88d447f1b46" id="r_ac53014d99322385f17ada88d447f1b46"><td class="memTemplParams" colspan="2">template&lt;class Real&gt; </td></tr>
-<tr class="memitem:ac53014d99322385f17ada88d447f1b46 template"><td class="memItemLeft"><a class="el" href="#a7a61b596d0645a955e060da9f4748454">ChebFMM_Tree</a>&lt; Real &gt; *&#160;</td><td class="memItemRight"><a class="el" href="#ac53014d99322385f17ada88d447f1b46">pvfmm::ChebFMM_CreateTree</a> (int cheb_deg, const std::vector&lt; Real &gt; &amp;leaf_coord, const std::vector&lt; Real &gt; &amp;fn_coeff, const std::vector&lt; Real &gt; &amp;trg_coord, MPI_Comm comm, BoundaryType bndry)</td></tr>
-<tr class="memdesc:ac53014d99322385f17ada88d447f1b46"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct a piecewise Chebyshev volume discretization in [0,1]^3. It first constructs a tree with the given leaf node coordinates and then adds the Chebyshev coefficient to each leaf node.  <br /></td></tr>
+<tr class="memitem:af7f20601200a43ecb8fc7d3cb051dc50" id="r_af7f20601200a43ecb8fc7d3cb051dc50"><td class="memTemplParams" colspan="2">template&lt;class Real&gt; </td></tr>
+<tr class="memitem:af7f20601200a43ecb8fc7d3cb051dc50 template"><td class="memItemLeft"><a class="el" href="#a7a61b596d0645a955e060da9f4748454">ChebFMM_Tree</a>&lt; Real &gt; *&#160;</td><td class="memItemRight"><a class="el" href="#af7f20601200a43ecb8fc7d3cb051dc50">pvfmm::ChebFMM_CreateTree</a> (int cheb_deg, int data_dim, <a class="el" href="#a1448eacad04baeaaf615a62fb00c4379">ChebFn</a>&lt; Real &gt; fn_ptr, const std::vector&lt; Real &gt; &amp;trg_coord, const sctl::Comm &amp;comm, Real tol=1e-6, int max_pts=100, BoundaryType bndry=FreeSpace, int init_depth=0)</td></tr>
+<tr class="memdesc:af7f20601200a43ecb8fc7d3cb051dc50"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct a piecewise Chebyshev volume discretization in [0,1]^3. It first constructs a uniform tree of depth init_depth and then adaptively refines each leaf node until the tails of the Chebyshev coefficients in each leaf node are smaller than tol and the number of target points in each leaf node are less than max_pts. It further refines the tree to satisfy the 2:1 balance constraint.  <br /></td></tr>
+<tr class="memitem:a954d73d659880f73b8c864284ac29d1a" id="r_a954d73d659880f73b8c864284ac29d1a"><td class="memTemplParams" colspan="2">template&lt;class Real&gt; </td></tr>
+<tr class="memitem:a954d73d659880f73b8c864284ac29d1a template"><td class="memItemLeft"><a class="el" href="#a7a61b596d0645a955e060da9f4748454">ChebFMM_Tree</a>&lt; Real &gt; *&#160;</td><td class="memItemRight"><a class="el" href="#a954d73d659880f73b8c864284ac29d1a">pvfmm::ChebFMM_CreateTree</a> (int cheb_deg, const std::vector&lt; Real &gt; &amp;leaf_coord, const std::vector&lt; Real &gt; &amp;fn_coeff, const std::vector&lt; Real &gt; &amp;trg_coord, const sctl::Comm &amp;comm, BoundaryType bndry)</td></tr>
+<tr class="memdesc:a954d73d659880f73b8c864284ac29d1a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct a piecewise Chebyshev volume discretization in [0,1]^3. It first constructs a tree with the given leaf node coordinates and then adds the Chebyshev coefficient to each leaf node.  <br /></td></tr>
 <tr class="memitem:a548c5e1908ecf244b3917c260709d623" id="r_a548c5e1908ecf244b3917c260709d623"><td class="memTemplParams" colspan="2">template&lt;class Real&gt; </td></tr>
 <tr class="memitem:a548c5e1908ecf244b3917c260709d623 template"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a548c5e1908ecf244b3917c260709d623">pvfmm::ChebFMM_Evaluate</a> (std::vector&lt; Real &gt; &amp;trg_value, <a class="el" href="#a7a61b596d0645a955e060da9f4748454">ChebFMM_Tree</a>&lt; Real &gt; *tree, size_t loc_size=0)</td></tr>
 <tr class="memdesc:a548c5e1908ecf244b3917c260709d623"><td class="mdescLeft">&#160;</td><td class="mdescRight">Run volume FMM and evaluate the result at the target points.  <br /></td></tr>
@@ -175,12 +174,12 @@ Functions</h2></td></tr>
 <tr class="memitem:aae7f5c08f79057bc4c94f66d72f879d7" id="r_aae7f5c08f79057bc4c94f66d72f879d7"><td class="memTemplParams" colspan="2">template&lt;class Real&gt; </td></tr>
 <tr class="memitem:aae7f5c08f79057bc4c94f66d72f879d7 template"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#aae7f5c08f79057bc4c94f66d72f879d7">pvfmm::ChebFMM_Nodes2Coeff</a> (std::vector&lt; Real &gt; &amp;coeff, int ChebDeg, int dof, const std::vector&lt; Real &gt; &amp;node_val)</td></tr>
 <tr class="memdesc:aae7f5c08f79057bc4c94f66d72f879d7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convert function values on tensor product Chebyshev nodes (first kind nodes) to coefficients.  <br /></td></tr>
-<tr class="memitem:af48e77bdf4fdc7bea5f728540a956b79" id="r_af48e77bdf4fdc7bea5f728540a956b79"><td class="memTemplParams" colspan="2">template&lt;class Real&gt; </td></tr>
-<tr class="memitem:af48e77bdf4fdc7bea5f728540a956b79 template"><td class="memItemLeft"><a class="el" href="#a0f51aa466c1a246da39e92f087c36ea3">PtFMM_Tree</a>&lt; Real &gt; *&#160;</td><td class="memItemRight"><a class="el" href="#af48e77bdf4fdc7bea5f728540a956b79">pvfmm::PtFMM_CreateTree</a> (const std::vector&lt; Real &gt; &amp;sl_coord, const std::vector&lt; Real &gt; &amp;sl_density, const std::vector&lt; Real &gt; &amp;dl_coord, const std::vector&lt; Real &gt; &amp;dl_density, const std::vector&lt; Real &gt; &amp;trg_coord, MPI_Comm comm, int max_pts=100, BoundaryType bndry=FreeSpace, int init_depth=0)</td></tr>
-<tr class="memdesc:af48e77bdf4fdc7bea5f728540a956b79"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new instance of the tree and return a pointer. The tree must eventually be be destroyed by calling delete.  <br /></td></tr>
-<tr class="memitem:a5eb8771a98533183cc4ba30a9fd71c0d" id="r_a5eb8771a98533183cc4ba30a9fd71c0d"><td class="memTemplParams" colspan="2">template&lt;class Real&gt; </td></tr>
-<tr class="memitem:a5eb8771a98533183cc4ba30a9fd71c0d template"><td class="memItemLeft"><a class="el" href="#a0f51aa466c1a246da39e92f087c36ea3">PtFMM_Tree</a>&lt; Real &gt; *&#160;</td><td class="memItemRight"><a class="el" href="#a5eb8771a98533183cc4ba30a9fd71c0d">pvfmm::PtFMM_CreateTree</a> (const std::vector&lt; Real &gt; &amp;sl_coord, const std::vector&lt; Real &gt; &amp;sl_density, const std::vector&lt; Real &gt; &amp;trg_coord, MPI_Comm comm, int max_pts=100, BoundaryType bndry=FreeSpace, int init_depth=0)</td></tr>
-<tr class="memdesc:a5eb8771a98533183cc4ba30a9fd71c0d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new instance of the tree and return a pointer. The tree must eventually be be destroyed by calling delete.  <br /></td></tr>
+<tr class="memitem:ac2f0189c67a8197f2b66745f98c8413c" id="r_ac2f0189c67a8197f2b66745f98c8413c"><td class="memTemplParams" colspan="2">template&lt;class Real&gt; </td></tr>
+<tr class="memitem:ac2f0189c67a8197f2b66745f98c8413c template"><td class="memItemLeft"><a class="el" href="#a0f51aa466c1a246da39e92f087c36ea3">PtFMM_Tree</a>&lt; Real &gt; *&#160;</td><td class="memItemRight"><a class="el" href="#ac2f0189c67a8197f2b66745f98c8413c">pvfmm::PtFMM_CreateTree</a> (const std::vector&lt; Real &gt; &amp;sl_coord, const std::vector&lt; Real &gt; &amp;sl_density, const std::vector&lt; Real &gt; &amp;dl_coord, const std::vector&lt; Real &gt; &amp;dl_density, const std::vector&lt; Real &gt; &amp;trg_coord, const sctl::Comm &amp;comm, int max_pts=100, BoundaryType bndry=FreeSpace, int init_depth=0)</td></tr>
+<tr class="memdesc:ac2f0189c67a8197f2b66745f98c8413c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new instance of the tree and return a pointer. The tree must eventually be be destroyed by calling delete.  <br /></td></tr>
+<tr class="memitem:aba6aef1ab5c3d0cd4df81d3b377e4918" id="r_aba6aef1ab5c3d0cd4df81d3b377e4918"><td class="memTemplParams" colspan="2">template&lt;class Real&gt; </td></tr>
+<tr class="memitem:aba6aef1ab5c3d0cd4df81d3b377e4918 template"><td class="memItemLeft"><a class="el" href="#a0f51aa466c1a246da39e92f087c36ea3">PtFMM_Tree</a>&lt; Real &gt; *&#160;</td><td class="memItemRight"><a class="el" href="#aba6aef1ab5c3d0cd4df81d3b377e4918">pvfmm::PtFMM_CreateTree</a> (const std::vector&lt; Real &gt; &amp;sl_coord, const std::vector&lt; Real &gt; &amp;sl_density, const std::vector&lt; Real &gt; &amp;trg_coord, const sctl::Comm &amp;comm, int max_pts=100, BoundaryType bndry=FreeSpace, int init_depth=0)</td></tr>
+<tr class="memdesc:aba6aef1ab5c3d0cd4df81d3b377e4918"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new instance of the tree and return a pointer. The tree must eventually be be destroyed by calling delete.  <br /></td></tr>
 <tr class="memitem:aa1465ed63d3cc53525a2171c81b76d2a" id="r_aa1465ed63d3cc53525a2171c81b76d2a"><td class="memTemplParams" colspan="2">template&lt;class Real&gt; </td></tr>
 <tr class="memitem:aa1465ed63d3cc53525a2171c81b76d2a template"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#aa1465ed63d3cc53525a2171c81b76d2a">pvfmm::PtFMM_Evaluate</a> (const <a class="el" href="#a0f51aa466c1a246da39e92f087c36ea3">PtFMM_Tree</a>&lt; Real &gt; *tree, std::vector&lt; Real &gt; &amp;trg_val, size_t loc_size=0, const std::vector&lt; Real &gt; *sl_density=NULL, const std::vector&lt; Real &gt; *dl_density=NULL)</td></tr>
 <tr class="memdesc:aa1465ed63d3cc53525a2171c81b76d2a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Run FMM on the input octree and return the potential at the target points. The setup function PtFMM_Tree::SetupFMM(PtFMM_Tree* fmm_mat) must be called before evaluating FMM for the first time with a tree, or if a tree has changed.  <br /></td></tr>
@@ -204,7 +203,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="pvfmm_8hpp_source.html#l00019">19</a> of file <a class="el" href="pvfmm_8hpp_source.html">pvfmm.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm_8hpp_source.html#l00018">18</a> of file <a class="el" href="pvfmm_8hpp_source.html">pvfmm.hpp</a>.</p>
 
 </div>
 </div>
@@ -226,7 +225,7 @@ template&lt;class Real&gt; </div>
 <p>Manages all the translation operators for volume FMM. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="classpvfmm_1_1FMM__Cheb.html">pvfmm::FMM_Cheb</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="pvfmm_8hpp_source.html#l00033">33</a> of file <a class="el" href="pvfmm_8hpp_source.html">pvfmm.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm_8hpp_source.html#l00032">32</a> of file <a class="el" href="pvfmm_8hpp_source.html">pvfmm.hpp</a>.</p>
 
 </div>
 </div>
@@ -247,7 +246,7 @@ template&lt;class Real&gt; </div>
 <p>Octree node class for volume FMM. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="classpvfmm_1_1FMM__Node.html" title="Base class for node of FMM_Node.">pvfmm::FMM_Node</a>, <a class="el" href="classpvfmm_1_1Cheb__Node.html" title="Tree node class for volume data.">pvfmm::Cheb_Node</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="pvfmm_8hpp_source.html#l00027">27</a> of file <a class="el" href="pvfmm_8hpp_source.html">pvfmm.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm_8hpp_source.html#l00026">26</a> of file <a class="el" href="pvfmm_8hpp_source.html">pvfmm.hpp</a>.</p>
 
 </div>
 </div>
@@ -268,7 +267,7 @@ template&lt;class Real&gt; </div>
 <p>The octree class for volume FMM. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="classpvfmm_1_1FMM__Tree.html" title="Base class for FMM tree.">pvfmm::FMM_Tree</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="pvfmm_8hpp_source.html#l00039">39</a> of file <a class="el" href="pvfmm_8hpp_source.html">pvfmm.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm_8hpp_source.html#l00038">38</a> of file <a class="el" href="pvfmm_8hpp_source.html">pvfmm.hpp</a>.</p>
 
 </div>
 </div>
@@ -289,7 +288,7 @@ template&lt;class Real&gt; </div>
 <p>Evaluator function class for input volume density. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="classpvfmm_1_1Cheb__Node_1_1Function__t.html" title="Evaluator function class for input volume density.">pvfmm::Cheb_Node::Function_t</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="pvfmm_8hpp_source.html#l00047">47</a> of file <a class="el" href="pvfmm_8hpp_source.html">pvfmm.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm_8hpp_source.html#l00046">46</a> of file <a class="el" href="pvfmm_8hpp_source.html">pvfmm.hpp</a>.</p>
 
 </div>
 </div>
@@ -308,9 +307,9 @@ template&lt;class Real&gt; </div>
 </div><div class="memdoc">
 
 <p>Manages all the precomputed matrices and implements all the translation operations in FMM. An instance of PtFMM must be created and initialized with the kernel function to be used. </p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="classpvfmm_1_1FMM__Pts.html" title="This class manages all the translation operators for particle FMM.">pvfmm::FMM_Pts</a>, <a class="el" href="classpvfmm_1_1FMM__Pts.html#a977f530f27bb7287512c4aebf193ab65">pvfmm::PtFMM::Initialize</a> </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="classpvfmm_1_1FMM__Pts.html" title="This class manages all the translation operators for particle FMM.">pvfmm::FMM_Pts</a>, <a class="el" href="classpvfmm_1_1FMM__Pts.html#a9a2a1fd984d68008e59e32d61d2b8d70">pvfmm::PtFMM::Initialize</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="pvfmm_8hpp_source.html#l00199">199</a> of file <a class="el" href="pvfmm_8hpp_source.html">pvfmm.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm_8hpp_source.html#l00198">198</a> of file <a class="el" href="pvfmm_8hpp_source.html">pvfmm.hpp</a>.</p>
 
 </div>
 </div>
@@ -331,7 +330,7 @@ template&lt;class Real&gt; </div>
 <p>The data used to initialize the tree. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="classpvfmm_1_1FMM__Node_1_1NodeData.html" title="Base class for node data. Contains initialization data for the node.">pvfmm::FMM_Node::NodeData</a>, <a class="el" href="classpvfmm_1_1MPI__Node_1_1NodeData.html" title="Base class for node data. Contains initialization data for the node.">pvfmm::MPI_Node::NodeData</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="pvfmm_8hpp_source.html#l00220">220</a> of file <a class="el" href="pvfmm_8hpp_source.html">pvfmm.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm_8hpp_source.html#l00219">219</a> of file <a class="el" href="pvfmm_8hpp_source.html">pvfmm.hpp</a>.</p>
 
 </div>
 </div>
@@ -352,7 +351,7 @@ template&lt;class Real&gt; </div>
 <p>The node data structure used in the tree. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="classpvfmm_1_1FMM__Node.html" title="Base class for node of FMM_Node.">pvfmm::FMM_Node</a>, <a class="el" href="classpvfmm_1_1MPI__Node.html" title="Virtual base class for a locally essential tree node.">pvfmm::MPI_Node</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="pvfmm_8hpp_source.html#l00213">213</a> of file <a class="el" href="pvfmm_8hpp_source.html">pvfmm.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm_8hpp_source.html#l00212">212</a> of file <a class="el" href="pvfmm_8hpp_source.html">pvfmm.hpp</a>.</p>
 
 </div>
 </div>
@@ -373,7 +372,7 @@ template&lt;class Real&gt; </div>
 <p>The FMM tree data structure. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="classpvfmm_1_1FMM__Tree.html" title="Base class for FMM tree.">pvfmm::FMM_Tree</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="pvfmm_8hpp_source.html#l00206">206</a> of file <a class="el" href="pvfmm_8hpp_source.html">pvfmm.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm_8hpp_source.html#l00205">205</a> of file <a class="el" href="pvfmm_8hpp_source.html">pvfmm.hpp</a>.</p>
 
 </div>
 </div>
@@ -422,8 +421,8 @@ template&lt;class Real&gt; </div>
 
 </div>
 </div>
-<a id="ac53014d99322385f17ada88d447f1b46" name="ac53014d99322385f17ada88d447f1b46"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac53014d99322385f17ada88d447f1b46">&#9670;&#160;</a></span>ChebFMM_CreateTree() <span class="overload">[1/2]</span></h2>
+<a id="a954d73d659880f73b8c864284ac29d1a" name="a954d73d659880f73b8c864284ac29d1a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a954d73d659880f73b8c864284ac29d1a">&#9670;&#160;</a></span>ChebFMM_CreateTree() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -453,7 +452,7 @@ template&lt;class Real&gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">MPI_Comm</td>          <td class="paramname"><span class="paramname"><em>comm</em></span>, </td>
+          <td class="paramtype">const sctl::Comm &amp;</td>          <td class="paramname"><span class="paramname"><em>comm</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -479,8 +478,8 @@ template&lt;class Real&gt; </div>
 
 </div>
 </div>
-<a id="a9656032395eb05b25f714ff5faf95ff0" name="a9656032395eb05b25f714ff5faf95ff0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9656032395eb05b25f714ff5faf95ff0">&#9670;&#160;</a></span>ChebFMM_CreateTree() <span class="overload">[2/2]</span></h2>
+<a id="af7f20601200a43ecb8fc7d3cb051dc50" name="af7f20601200a43ecb8fc7d3cb051dc50"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af7f20601200a43ecb8fc7d3cb051dc50">&#9670;&#160;</a></span>ChebFMM_CreateTree() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -510,7 +509,7 @@ template&lt;class Real&gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">MPI_Comm</td>          <td class="paramname"><span class="paramname"><em>comm</em></span>, </td>
+          <td class="paramtype">const sctl::Comm &amp;</td>          <td class="paramname"><span class="paramname"><em>comm</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -701,8 +700,8 @@ template&lt;class Real&gt; </div>
 
 </div>
 </div>
-<a id="af48e77bdf4fdc7bea5f728540a956b79" name="af48e77bdf4fdc7bea5f728540a956b79"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af48e77bdf4fdc7bea5f728540a956b79">&#9670;&#160;</a></span>PtFMM_CreateTree() <span class="overload">[1/2]</span></h2>
+<a id="ac2f0189c67a8197f2b66745f98c8413c" name="ac2f0189c67a8197f2b66745f98c8413c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac2f0189c67a8197f2b66745f98c8413c">&#9670;&#160;</a></span>PtFMM_CreateTree() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -737,7 +736,7 @@ template&lt;class Real&gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">MPI_Comm</td>          <td class="paramname"><span class="paramname"><em>comm</em></span>, </td>
+          <td class="paramtype">const sctl::Comm &amp;</td>          <td class="paramname"><span class="paramname"><em>comm</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -775,8 +774,8 @@ template&lt;class Real&gt; </div>
 
 </div>
 </div>
-<a id="a5eb8771a98533183cc4ba30a9fd71c0d" name="a5eb8771a98533183cc4ba30a9fd71c0d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5eb8771a98533183cc4ba30a9fd71c0d">&#9670;&#160;</a></span>PtFMM_CreateTree() <span class="overload">[2/2]</span></h2>
+<a id="aba6aef1ab5c3d0cd4df81d3b377e4918" name="aba6aef1ab5c3d0cd4df81d3b377e4918"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aba6aef1ab5c3d0cd4df81d3b377e4918">&#9670;&#160;</a></span>PtFMM_CreateTree() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -801,7 +800,7 @@ template&lt;class Real&gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">MPI_Comm</td>          <td class="paramname"><span class="paramname"><em>comm</em></span>, </td>
+          <td class="paramtype">const sctl::Comm &amp;</td>          <td class="paramname"><span class="paramname"><em>comm</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>

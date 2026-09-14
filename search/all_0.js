@@ -1,7 +1,6 @@
 var searchData=
 [
-  ['acknowledgment_0',['Acknowledgment',['../index.html#autotoc_md7',1,'']]],
+  ['acknowledgment_0',['Acknowledgment',['../index.html#autotoc_md8',1,'']]],
   ['addmultipole_1',['AddMultipole',['../classpvfmm_1_1FMM__Node.html#a5017221babc76276fe9768e13ccd98e7',1,'pvfmm::FMM_Node::AddMultipole()'],['../classpvfmm_1_1FMM__Data.html#ac41dc22b90986e380cc9725723591ded',1,'pvfmm::FMM_Data::AddMultipole()']]],
-  ['aligned_5fdelete_2',['aligned_delete',['../mem__mgr_8hpp.html#a0dd8575bddb5f6cf94a1c04916051d66',1,'pvfmm::mem']]],
-  ['aligned_5fnew_3',['aligned_new',['../mem__mgr_8hpp.html#a9bb46eb5003f772502f226d0649d7d03',1,'pvfmm::mem']]]
+  ['allocdevice_2',['AllocDevice',['../classpvfmm_1_1DeviceMirror.html#a3aab2feb59ff5c82bb11530eb0b08201',1,'pvfmm::DeviceMirror']]]
 ];

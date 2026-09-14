@@ -117,13 +117,14 @@ document.addEventListener('DOMContentLoaded', () => {
 <code>#include &lt;<a class="el" href="tree__node_8hpp_source.html">tree_node.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="mpi__node_8hpp_source.html">mpi_node.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="vector_8hpp_source.html">vector.hpp</a>&gt;</code><br />
 <code>#include &lt;fmm_node.txx&gt;</code><br />
 </div>
 <p><a href="fmm__node_8hpp_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-nested-classes" class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Classes</h2></td></tr>
+<tr class="memitem:pvfmm_3A_3APackedFMMNodeHeader" id="r_pvfmm_3A_3APackedFMMNodeHeader"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structpvfmm_1_1PackedFMMNodeHeader.html">pvfmm::PackedFMMNodeHeader</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fixed-size header at the start of the data produced by <a class="el" href="classpvfmm_1_1FMM__Node.html#a914c5f9dad490253d407bdbb342a3683" title="Pack node for transmission using MPI.">FMM_Node::Pack</a>. The multipole segment follows the header, then the packed base-node data (which begins with its own <a class="el" href="structpvfmm_1_1PackedNodeHeader.html" title="Fixed-size header at the start of the data produced by MPI_Node::Pack. The field order and widths def...">PackedNodeHeader</a>).  <a href="structpvfmm_1_1PackedFMMNodeHeader.html#details">More...</a><br /></td></tr>
 <tr class="memitem:pvfmm_3A_3AFMM_5FNode_3C_20Node_20_3E" id="r_pvfmm_3A_3AFMM_5FNode_3C_20Node_20_3E"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classpvfmm_1_1FMM__Node.html">pvfmm::FMM_Node&lt; Node &gt;</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Base class for node of <a class="el" href="classpvfmm_1_1FMM__Node.html" title="Base class for node of FMM_Node.">FMM_Node</a>.  <a href="classpvfmm_1_1FMM__Node.html#details">More...</a><br /></td></tr>
 <tr class="memitem:pvfmm_3A_3AFMM_5FNode_3C_20Node_20_3E_3A_3ANodeData" id="r_pvfmm_3A_3AFMM_5FNode_3C_20Node_20_3E_3A_3ANodeData"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classpvfmm_1_1FMM__Node_1_1NodeData.html">pvfmm::FMM_Node&lt; Node &gt;::NodeData</a></td></tr>

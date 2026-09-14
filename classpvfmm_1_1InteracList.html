@@ -125,23 +125,23 @@ size_t&#160;</td><td class="memItemRight"><b>ListCount</b> (Mat_Type t)</td></tr
 <tr class="memitem:a696d3b39c71b2f9a2fe9671946865b76" id="r_a696d3b39c71b2f9a2fe9671946865b76"><td class="memItemLeft"><a id="a696d3b39c71b2f9a2fe9671946865b76" name="a696d3b39c71b2f9a2fe9671946865b76"></a>
 int *&#160;</td><td class="memItemRight"><b>RelativeCoord</b> (Mat_Type t, size_t i)</td></tr>
 <tr class="memdesc:a696d3b39c71b2f9a2fe9671946865b76"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the relative octant coordinates for an interaction i of type t. <br /></td></tr>
-<tr class="memitem:a1a4e26f132f3a1de40cf41b7b6c0b338" id="r_a1a4e26f132f3a1de40cf41b7b6c0b338"><td class="memItemLeft"><a id="a1a4e26f132f3a1de40cf41b7b6c0b338" name="a1a4e26f132f3a1de40cf41b7b6c0b338"></a>
-void&#160;</td><td class="memItemRight"><b>BuildList</b> (Node_t *n, Mat_Type t)</td></tr>
-<tr class="memdesc:a1a4e26f132f3a1de40cf41b7b6c0b338"><td class="mdescLeft">&#160;</td><td class="mdescRight">Build interaction list for this node. <br /></td></tr>
+<tr class="memitem:a16217092244f10e55b6e0cc1365f7122" id="r_a16217092244f10e55b6e0cc1365f7122"><td class="memItemLeft"><a id="a16217092244f10e55b6e0cc1365f7122" name="a16217092244f10e55b6e0cc1365f7122"></a>
+void&#160;</td><td class="memItemRight"><b>BuildList</b> (sctl::Iterator&lt; Node_t &gt; n, Mat_Type t)</td></tr>
+<tr class="memdesc:a16217092244f10e55b6e0cc1365f7122"><td class="mdescLeft">&#160;</td><td class="mdescRight">Build interaction list for this node. <br /></td></tr>
 <tr class="memitem:a3d1081f463b6bbe478ab4f4a9a5761ea" id="r_a3d1081f463b6bbe478ab4f4a9a5761ea"><td class="memItemLeft"><a id="a3d1081f463b6bbe478ab4f4a9a5761ea" name="a3d1081f463b6bbe478ab4f4a9a5761ea"></a>
 size_t&#160;</td><td class="memItemRight"><b>InteracClass</b> (Mat_Type t, size_t i)</td></tr>
 <tr class="memdesc:a3d1081f463b6bbe478ab4f4a9a5761ea"><td class="mdescLeft">&#160;</td><td class="mdescRight">For an interaction of type t and index i, returns the symmetry class for the same. <br /></td></tr>
-<tr class="memitem:ad6015ada0a25ae50047e7fbd7d0a0647" id="r_ad6015ada0a25ae50047e7fbd7d0a0647"><td class="memItemLeft"><a id="ad6015ada0a25ae50047e7fbd7d0a0647" name="ad6015ada0a25ae50047e7fbd7d0a0647"></a>
-<a class="el" href="classpvfmm_1_1Matrix.html">Matrix</a>&lt; Real_t &gt; &amp;&#160;</td><td class="memItemRight"><b>ClassMat</b> (int l, Mat_Type type, size_t indx)</td></tr>
-<tr class="memitem:a7a05f4b848860c865df9346277b2a03c" id="r_a7a05f4b848860c865df9346277b2a03c"><td class="memItemLeft"><a id="a7a05f4b848860c865df9346277b2a03c" name="a7a05f4b848860c865df9346277b2a03c"></a>
-<a class="el" href="classpvfmm_1_1Permutation.html">Permutation</a>&lt; Real_t &gt; &amp;&#160;</td><td class="memItemRight"><b>Perm_R</b> (int l, Mat_Type type, size_t indx)</td></tr>
-<tr class="memitem:a36f23e36009f0164c277675430beb675" id="r_a36f23e36009f0164c277675430beb675"><td class="memItemLeft"><a id="a36f23e36009f0164c277675430beb675" name="a36f23e36009f0164c277675430beb675"></a>
-<a class="el" href="classpvfmm_1_1Permutation.html">Permutation</a>&lt; Real_t &gt; &amp;&#160;</td><td class="memItemRight"><b>Perm_C</b> (int l, Mat_Type type, size_t indx)</td></tr>
+<tr class="memitem:a177cf2729eb972f976869a7da9ef6a9a" id="r_a177cf2729eb972f976869a7da9ef6a9a"><td class="memItemLeft"><a id="a177cf2729eb972f976869a7da9ef6a9a" name="a177cf2729eb972f976869a7da9ef6a9a"></a>
+sctl::Matrix&lt; Real_t &gt; &amp;&#160;</td><td class="memItemRight"><b>ClassMat</b> (int l, Mat_Type type, size_t indx)</td></tr>
+<tr class="memitem:a38d51d8bff1ba408e2776992e7c1f09e" id="r_a38d51d8bff1ba408e2776992e7c1f09e"><td class="memItemLeft"><a id="a38d51d8bff1ba408e2776992e7c1f09e" name="a38d51d8bff1ba408e2776992e7c1f09e"></a>
+sctl::Permutation&lt; Real_t &gt; &amp;&#160;</td><td class="memItemRight"><b>Perm_R</b> (int l, Mat_Type type, size_t indx)</td></tr>
+<tr class="memitem:a97927002efcc98ae0f8a13bc8978f8c4" id="r_a97927002efcc98ae0f8a13bc8978f8c4"><td class="memItemLeft"><a id="a97927002efcc98ae0f8a13bc8978f8c4" name="a97927002efcc98ae0f8a13bc8978f8c4"></a>
+sctl::Permutation&lt; Real_t &gt; &amp;&#160;</td><td class="memItemRight"><b>Perm_C</b> (int l, Mat_Type type, size_t indx)</td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><div class="compoundTemplParams">template&lt;class Node_t&gt;<br />
 class pvfmm::InteracList&lt; Node_t &gt;</div>
-<p class="definition">Definition at line <a class="el" href="interac__list_8hpp_source.html#l00023">23</a> of file <a class="el" href="interac__list_8hpp_source.html">interac_list.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="interac__list_8hpp_source.html#l00024">24</a> of file <a class="el" href="interac__list_8hpp_source.html">interac_list.hpp</a>.</p>
 </div><a name="doc-constructors" id="doc-constructors"></a><h2 id="header-doc-constructors" class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a3369ca83312063a6e0b165f065664de8" name="a3369ca83312063a6e0b165f065664de8"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a3369ca83312063a6e0b165f065664de8">&#9670;&#160;</a></span>InteracList() <span class="overload">[1/2]</span></h2>
@@ -170,7 +170,7 @@ template&lt;class Node_t&gt; </div>
 
 <p>Constructor. </p>
 
-<p class="definition">Definition at line <a class="el" href="interac__list_8hpp_source.html#l00032">32</a> of file <a class="el" href="interac__list_8hpp_source.html">interac_list.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="interac__list_8hpp_source.html#l00033">33</a> of file <a class="el" href="interac__list_8hpp_source.html">interac_list.hpp</a>.</p>
 
 </div>
 </div>
@@ -201,7 +201,7 @@ template&lt;class Node_t&gt; </div>
 
 <p>Constructor. </p>
 
-<p class="definition">Definition at line <a class="el" href="interac__list_8hpp_source.html#l00037">37</a> of file <a class="el" href="interac__list_8hpp_source.html">interac_list.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="interac__list_8hpp_source.html#l00038">38</a> of file <a class="el" href="interac__list_8hpp_source.html">interac_list.hpp</a>.</p>
 
 </div>
 </div>

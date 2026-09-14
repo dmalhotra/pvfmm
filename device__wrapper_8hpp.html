@@ -103,6 +103,10 @@ document.addEventListener('DOMContentLoaded', () => {
 </div><!-- top -->
 <div id="doc-content">
 <div class="header">
+  <div class="summary">
+<a href="#nested-classes">Classes</a> &#124;
+<a href="#define-members">Macros</a> &#124;
+<a href="#func-members">Functions</a>  </div>
   <div class="headertitle"><div class="title">device_wrapper.hpp File Reference</div></div>
 </div><!--header-->
 <div class="contents">
@@ -112,16 +116,62 @@ document.addEventListener('DOMContentLoaded', () => {
 <div class="textblock"><code>#include &lt;cstdlib&gt;</code><br />
 <code>#include &lt;stdint.h&gt;</code><br />
 <code>#include &lt;<a class="el" href="pvfmm__common_8hpp_source.html">pvfmm_common.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="vector_8hpp_source.html">vector.hpp</a>&gt;</code><br />
+<code>#include &lt;device_wrapper.txx&gt;</code><br />
 </div>
 <p><a href="device__wrapper_8hpp_source.html">Go to the source code of this file.</a></p>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-nested-classes" class="groupheader"><a id="nested-classes" name="nested-classes"></a>
+Classes</h2></td></tr>
+<tr class="memitem:pvfmm_3A_3ADeviceVector_3C_20T_20_3E" id="r_pvfmm_3A_3ADeviceVector_3C_20T_20_3E"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structpvfmm_1_1DeviceVector.html">pvfmm::DeviceVector&lt; T &gt;</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Lightweight handle describing a vector buffer (device or host) to kernel/offload code. Formerly nested as sctl::Vector&lt;T&gt;::Device.  <a href="structpvfmm_1_1DeviceVector.html#details">More...</a><br /></td></tr>
+<tr class="memitem:pvfmm_3A_3ADeviceMatrix_3C_20T_20_3E" id="r_pvfmm_3A_3ADeviceMatrix_3C_20T_20_3E"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structpvfmm_1_1DeviceMatrix.html">pvfmm::DeviceMatrix&lt; T &gt;</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Lightweight handle describing a matrix buffer (device or host) to kernel/offload code. Formerly nested as sctl::Matrix&lt;T&gt;::Device.  <a href="structpvfmm_1_1DeviceMatrix.html#details">More...</a><br /></td></tr>
+<tr class="memitem:pvfmm_3A_3ADeviceMirror" id="r_pvfmm_3A_3ADeviceMirror"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classpvfmm_1_1DeviceMirror.html">pvfmm::DeviceMirror</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Owns the device-side mirror of one host buffer: the page-locked registration of the host range (cudaHostRegister) and the device allocation. This lifecycle state previously lived inside Vector/Matrix as the <span class="tt">dev</span> member and the AllocDevice/FreeDevice/Device2Host methods.  <a href="classpvfmm_1_1DeviceMirror.html#details">More...</a><br /></td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
+Functions</h2></td></tr>
+<tr class="memitem:a26ab79ac0a8a95088db8d93bdf82425e" id="r_a26ab79ac0a8a95088db8d93bdf82425e"><td class="memItemLeft"><a id="a26ab79ac0a8a95088db8d93bdf82425e" name="a26ab79ac0a8a95088db8d93bdf82425e"></a>
+void *&#160;</td><td class="memItemRight"><b>pvfmm::DeviceWrapper::host_malloc</b> (size_t size)</td></tr>
+<tr class="memitem:a85009e7c081d632d4731624eed5e022c" id="r_a85009e7c081d632d4731624eed5e022c"><td class="memItemLeft"><a id="a85009e7c081d632d4731624eed5e022c" name="a85009e7c081d632d4731624eed5e022c"></a>
+void&#160;</td><td class="memItemRight"><b>pvfmm::DeviceWrapper::host_free</b> (void *)</td></tr>
+<tr class="memitem:a7fa8e7b54651b11800513bb05d44cbfd" id="r_a7fa8e7b54651b11800513bb05d44cbfd"><td class="memItemLeft"><a id="a7fa8e7b54651b11800513bb05d44cbfd" name="a7fa8e7b54651b11800513bb05d44cbfd"></a>
+uintptr_t&#160;</td><td class="memItemRight"><b>pvfmm::DeviceWrapper::alloc_device</b> (char *dev_handle, size_t len)</td></tr>
+<tr class="memitem:a34918a0fa7af6ac819f0647119175e6e" id="r_a34918a0fa7af6ac819f0647119175e6e"><td class="memItemLeft"><a id="a34918a0fa7af6ac819f0647119175e6e" name="a34918a0fa7af6ac819f0647119175e6e"></a>
+void&#160;</td><td class="memItemRight"><b>pvfmm::DeviceWrapper::free_device</b> (char *dev_handle, uintptr_t dev_ptr)</td></tr>
+<tr class="memitem:acee134f8a827b1a7fd22437d5e7f848a" id="r_acee134f8a827b1a7fd22437d5e7f848a"><td class="memTemplParams" colspan="2"><a id="acee134f8a827b1a7fd22437d5e7f848a" name="acee134f8a827b1a7fd22437d5e7f848a"></a>
+template&lt;int SYNC = PVFMM_DEVICE_SYNC&gt; </td></tr>
+<tr class="memitem:acee134f8a827b1a7fd22437d5e7f848a template"><td class="memItemLeft">int&#160;</td><td class="memItemRight"><b>pvfmm::DeviceWrapper::host2device</b> (char *host_ptr, char *dev_handle, uintptr_t dev_ptr, size_t len)</td></tr>
+<tr class="memitem:aa17399d2486406a7fd8283c4fe3adf72" id="r_aa17399d2486406a7fd8283c4fe3adf72"><td class="memTemplParams" colspan="2"><a id="aa17399d2486406a7fd8283c4fe3adf72" name="aa17399d2486406a7fd8283c4fe3adf72"></a>
+template&lt;int SYNC = PVFMM_DEVICE_SYNC&gt; </td></tr>
+<tr class="memitem:aa17399d2486406a7fd8283c4fe3adf72 template"><td class="memItemLeft">int&#160;</td><td class="memItemRight"><b>pvfmm::DeviceWrapper::device2host</b> (char *dev_handle, uintptr_t dev_ptr, char *host_ptr, size_t len)</td></tr>
+<tr class="memitem:abc79fce73fa739dd621685a7f48b7b91" id="r_abc79fce73fa739dd621685a7f48b7b91"><td class="memItemLeft"><a id="abc79fce73fa739dd621685a7f48b7b91" name="abc79fce73fa739dd621685a7f48b7b91"></a>
+void&#160;</td><td class="memItemRight"><b>pvfmm::DeviceWrapper::wait</b> (int lock_idx)</td></tr>
+</table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>This file contains definition of DeviceWrapper. </p>
 <dl class="section author"><dt>Author</dt><dd>Dhairya Malhotra, <a href="#" onclick="location.href='mai'+'lto:'+'dha'+'ir'+'ya.'+'ma'+'lho'+'tr'+'a@g'+'ma'+'il.'+'co'+'m'; return false;">dhair<span class="obfuscator">.nosp@m.</span>ya.m<span class="obfuscator">.nosp@m.</span>alhot<span class="obfuscator">.nosp@m.</span>ra@g<span class="obfuscator">.nosp@m.</span>mail.<span class="obfuscator">.nosp@m.</span>com</a> </dd></dl>
 <dl class="section date"><dt>Date</dt><dd>6-5-2013 </dd></dl>
 
 <p class="definition">Definition in file <a class="el" href="device__wrapper_8hpp_source.html">device_wrapper.hpp</a>.</p>
-</div></div><!-- contents -->
+</div><a name="doc-define-members" id="doc-define-members"></a><h2 id="header-doc-define-members" class="groupheader">Macro Definition Documentation</h2>
+<a id="a5e1971a4979e25801838116f0363ffcd" name="a5e1971a4979e25801838116f0363ffcd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5e1971a4979e25801838116f0363ffcd">&#9670;&#160;</a></span>_PVFMM_DEVICE_WRAPPER_HPP_</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define _PVFMM_DEVICE_WRAPPER_HPP_</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="device__wrapper_8hpp_source.html#l00020">20</a> of file <a class="el" href="device__wrapper_8hpp_source.html">device_wrapper.hpp</a>.</p>
+
+</div>
+</div>
+</div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.17.0

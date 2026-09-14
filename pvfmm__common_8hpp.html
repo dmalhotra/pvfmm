@@ -104,25 +104,27 @@ document.addEventListener('DOMContentLoaded', () => {
 <div id="doc-content">
 <div class="header">
   <div class="summary">
-<a href="#define-members">Macros</a>  </div>
+<a href="#define-members">Macros</a> &#124;
+<a href="#func-members">Functions</a>  </div>
   <div class="headertitle"><div class="title">pvfmm_common.hpp File Reference</div></div>
 </div><!--header-->
 <div class="contents">
 
 <p>This file contains common definitions.  
 <a href="#details">More...</a></p>
-<div class="textblock"><code>#include &quot;pvfmm_config.h&quot;</code><br />
-<code>#include &lt;stacktrace.h&gt;</code><br />
+<div class="textblock"><code>#include &lt;cstring&gt;</code><br />
+<code>#include &lt;sctl/stacktrace.h&gt;</code><br />
+<code>#include &lt;cstdint&gt;</code><br />
 <code>#include &lt;sctl.hpp&gt;</code><br />
 </div>
 <p><a href="pvfmm__common_8hpp_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-define-members" class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
+<tr class="memitem:a147f75b6cb0150ab6d37c926dd566cc2" id="r_a147f75b6cb0150ab6d37c926dd566cc2"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a147f75b6cb0150ab6d37c926dd566cc2">PVFMM_PRECOMP_DATA_PATH</a>&#160;&#160;&#160;&quot;&quot;</td></tr>
 <tr class="memitem:a070d2ce7b6bb7e5c05602aa8c308d0c4" id="r_a070d2ce7b6bb7e5c05602aa8c308d0c4"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a070d2ce7b6bb7e5c05602aa8c308d0c4">NULL</a>&#160;&#160;&#160;0</td></tr>
 <tr class="memitem:a48f885296dcc262ff0a69ee95b012b5d" id="r_a48f885296dcc262ff0a69ee95b012b5d"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a48f885296dcc262ff0a69ee95b012b5d">PVFMM_NDEBUG</a></td></tr>
-<tr class="memitem:aaac2d886b67aa8c38e0a78e77e3b7a9a" id="r_aaac2d886b67aa8c38e0a78e77e3b7a9a"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#aaac2d886b67aa8c38e0a78e77e3b7a9a">PVFMM_PROFILE</a>&#160;&#160;&#160;5</td></tr>
-<tr class="memitem:a777ee360fb72ac577e09ae46ace54d1e" id="r_a777ee360fb72ac577e09ae46ace54d1e"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a777ee360fb72ac577e09ae46ace54d1e">PVFMM_MAX_DEPTH</a>&#160;&#160;&#160;30</td></tr>
+<tr class="memitem:af8237bda005563da9f47678da7789b16" id="r_af8237bda005563da9f47678da7789b16"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#af8237bda005563da9f47678da7789b16">SCTL_PROFILE</a>&#160;&#160;&#160;10</td></tr>
 <tr class="memitem:a624cd2b96203574a0fb5c102840534b9" id="r_a624cd2b96203574a0fb5c102840534b9"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a624cd2b96203574a0fb5c102840534b9">PVFMM_BC_LEVELS</a>&#160;&#160;&#160;45</td></tr>
 <tr class="memitem:a63ab7f2f67205c03c34a5e34eb23e16c" id="r_a63ab7f2f67205c03c34a5e34eb23e16c"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a63ab7f2f67205c03c34a5e34eb23e16c">PVFMM_RAD0</a>&#160;&#160;&#160;1.05</td></tr>
 <tr class="memitem:a50bdc78e5b9d46be044016e004645a45" id="r_a50bdc78e5b9d46be044016e004645a45"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a50bdc78e5b9d46be044016e004645a45">PVFMM_RAD1</a>&#160;&#160;&#160;2.95</td></tr>
@@ -136,6 +138,10 @@ Macros</h2></td></tr>
 <tr class="memitem:a68e01b50cd0cccb7b029b216137af1eb" id="r_a68e01b50cd0cccb7b029b216137af1eb"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a68e01b50cd0cccb7b029b216137af1eb">PVFMM_ALLTOALLV_FIX</a></td></tr>
 <tr class="memitem:a5676ab0023629d39b1eacc5b5888d04e" id="r_a5676ab0023629d39b1eacc5b5888d04e"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a5676ab0023629d39b1eacc5b5888d04e">PVFMM_UNUSED</a>(x)</td></tr>
 <tr class="memitem:a6ee23d9114080f1ce3e7ad3ed4281c5c" id="r_a6ee23d9114080f1ce3e7ad3ed4281c5c"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a6ee23d9114080f1ce3e7ad3ed4281c5c">PVFMM_ASSERT_WITH_MSG</a>(cond,  msg)</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
+Functions</h2></td></tr>
+<tr class="memitem:ab2f33e6cad80ee296fd82684ee082dc6" id="r_ab2f33e6cad80ee296fd82684ee082dc6"><td class="memItemLeft">uintptr_t&#160;</td><td class="memItemRight"><a class="el" href="#ab2f33e6cad80ee296fd82684ee082dc6">pvfmm::mem::align_ptr</a> (uintptr_t ptr)</td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>This file contains common definitions. </p>
@@ -156,7 +162,7 @@ Macros</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="pvfmm__common_8hpp_source.html#l00015">15</a> of file <a class="el" href="pvfmm__common_8hpp_source.html">pvfmm_common.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm__common_8hpp_source.html#l00021">21</a> of file <a class="el" href="pvfmm__common_8hpp_source.html">pvfmm_common.hpp</a>.</p>
 
 </div>
 </div>
@@ -172,7 +178,7 @@ Macros</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="pvfmm__common_8hpp_source.html#l00048">48</a> of file <a class="el" href="pvfmm__common_8hpp_source.html">pvfmm_common.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm__common_8hpp_source.html#l00057">57</a> of file <a class="el" href="pvfmm__common_8hpp_source.html">pvfmm_common.hpp</a>.</p>
 
 </div>
 </div>
@@ -195,7 +201,7 @@ Macros</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="pvfmm__common_8hpp_source.html#l00059">59</a> of file <a class="el" href="pvfmm__common_8hpp_source.html">pvfmm_common.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm__common_8hpp_source.html#l00069">69</a> of file <a class="el" href="pvfmm__common_8hpp_source.html">pvfmm_common.hpp</a>.</p>
 
 </div>
 </div>
@@ -211,7 +217,7 @@ Macros</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="pvfmm__common_8hpp_source.html#l00031">31</a> of file <a class="el" href="pvfmm__common_8hpp_source.html">pvfmm_common.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm__common_8hpp_source.html#l00040">40</a> of file <a class="el" href="pvfmm__common_8hpp_source.html">pvfmm_common.hpp</a>.</p>
 
 </div>
 </div>
@@ -227,7 +233,7 @@ Macros</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="pvfmm__common_8hpp_source.html#l00037">37</a> of file <a class="el" href="pvfmm__common_8hpp_source.html">pvfmm_common.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm__common_8hpp_source.html#l00046">46</a> of file <a class="el" href="pvfmm__common_8hpp_source.html">pvfmm_common.hpp</a>.</p>
 
 </div>
 </div>
@@ -243,7 +249,7 @@ Macros</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="pvfmm__common_8hpp_source.html#l00036">36</a> of file <a class="el" href="pvfmm__common_8hpp_source.html">pvfmm_common.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm__common_8hpp_source.html#l00045">45</a> of file <a class="el" href="pvfmm__common_8hpp_source.html">pvfmm_common.hpp</a>.</p>
 
 </div>
 </div>
@@ -259,7 +265,7 @@ Macros</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="pvfmm__common_8hpp_source.html#l00040">40</a> of file <a class="el" href="pvfmm__common_8hpp_source.html">pvfmm_common.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm__common_8hpp_source.html#l00049">49</a> of file <a class="el" href="pvfmm__common_8hpp_source.html">pvfmm_common.hpp</a>.</p>
 
 </div>
 </div>
@@ -275,7 +281,7 @@ Macros</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="pvfmm__common_8hpp_source.html#l00045">45</a> of file <a class="el" href="pvfmm__common_8hpp_source.html">pvfmm_common.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm__common_8hpp_source.html#l00054">54</a> of file <a class="el" href="pvfmm__common_8hpp_source.html">pvfmm_common.hpp</a>.</p>
 
 </div>
 </div>
@@ -291,23 +297,7 @@ Macros</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="pvfmm__common_8hpp_source.html#l00042">42</a> of file <a class="el" href="pvfmm__common_8hpp_source.html">pvfmm_common.hpp</a>.</p>
-
-</div>
-</div>
-<a id="a777ee360fb72ac577e09ae46ace54d1e" name="a777ee360fb72ac577e09ae46ace54d1e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a777ee360fb72ac577e09ae46ace54d1e">&#9670;&#160;</a></span>PVFMM_MAX_DEPTH</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define PVFMM_MAX_DEPTH&#160;&#160;&#160;30</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="pvfmm__common_8hpp_source.html#l00029">29</a> of file <a class="el" href="pvfmm__common_8hpp_source.html">pvfmm_common.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm__common_8hpp_source.html#l00051">51</a> of file <a class="el" href="pvfmm__common_8hpp_source.html">pvfmm_common.hpp</a>.</p>
 
 </div>
 </div>
@@ -323,7 +313,7 @@ Macros</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="pvfmm__common_8hpp_source.html#l00039">39</a> of file <a class="el" href="pvfmm__common_8hpp_source.html">pvfmm_common.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm__common_8hpp_source.html#l00048">48</a> of file <a class="el" href="pvfmm__common_8hpp_source.html">pvfmm_common.hpp</a>.</p>
 
 </div>
 </div>
@@ -339,23 +329,23 @@ Macros</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="pvfmm__common_8hpp_source.html#l00020">20</a> of file <a class="el" href="pvfmm__common_8hpp_source.html">pvfmm_common.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm__common_8hpp_source.html#l00026">26</a> of file <a class="el" href="pvfmm__common_8hpp_source.html">pvfmm_common.hpp</a>.</p>
 
 </div>
 </div>
-<a id="aaac2d886b67aa8c38e0a78e77e3b7a9a" name="aaac2d886b67aa8c38e0a78e77e3b7a9a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aaac2d886b67aa8c38e0a78e77e3b7a9a">&#9670;&#160;</a></span>PVFMM_PROFILE</h2>
+<a id="a147f75b6cb0150ab6d37c926dd566cc2" name="a147f75b6cb0150ab6d37c926dd566cc2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a147f75b6cb0150ab6d37c926dd566cc2">&#9670;&#160;</a></span>PVFMM_PRECOMP_DATA_PATH</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define PVFMM_PROFILE&#160;&#160;&#160;5</td>
+          <td class="memname">#define PVFMM_PRECOMP_DATA_PATH&#160;&#160;&#160;&quot;&quot;</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="pvfmm__common_8hpp_source.html#l00024">24</a> of file <a class="el" href="pvfmm__common_8hpp_source.html">pvfmm_common.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm__common_8hpp_source.html#l00014">14</a> of file <a class="el" href="pvfmm__common_8hpp_source.html">pvfmm_common.hpp</a>.</p>
 
 </div>
 </div>
@@ -371,7 +361,7 @@ Macros</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="pvfmm__common_8hpp_source.html#l00033">33</a> of file <a class="el" href="pvfmm__common_8hpp_source.html">pvfmm_common.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm__common_8hpp_source.html#l00042">42</a> of file <a class="el" href="pvfmm__common_8hpp_source.html">pvfmm_common.hpp</a>.</p>
 
 </div>
 </div>
@@ -387,7 +377,7 @@ Macros</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="pvfmm__common_8hpp_source.html#l00034">34</a> of file <a class="el" href="pvfmm__common_8hpp_source.html">pvfmm_common.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm__common_8hpp_source.html#l00043">43</a> of file <a class="el" href="pvfmm__common_8hpp_source.html">pvfmm_common.hpp</a>.</p>
 
 </div>
 </div>
@@ -407,7 +397,7 @@ Macros</h2></td></tr>
 </div><div class="memdoc">
 <b>Value:</b><div class="fragment"><div class="line">(void)(x)</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="pvfmm__common_8hpp_source.html#l00050">50</a> of file <a class="el" href="pvfmm__common_8hpp_source.html">pvfmm_common.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm__common_8hpp_source.html#l00059">59</a> of file <a class="el" href="pvfmm__common_8hpp_source.html">pvfmm_common.hpp</a>.</p>
 
 </div>
 </div>
@@ -423,7 +413,51 @@ Macros</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="pvfmm__common_8hpp_source.html#l00041">41</a> of file <a class="el" href="pvfmm__common_8hpp_source.html">pvfmm_common.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="pvfmm__common_8hpp_source.html#l00050">50</a> of file <a class="el" href="pvfmm__common_8hpp_source.html">pvfmm_common.hpp</a>.</p>
+
+</div>
+</div>
+<a id="af8237bda005563da9f47678da7789b16" name="af8237bda005563da9f47678da7789b16"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af8237bda005563da9f47678da7789b16">&#9670;&#160;</a></span>SCTL_PROFILE</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SCTL_PROFILE&#160;&#160;&#160;10</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="pvfmm__common_8hpp_source.html#l00031">31</a> of file <a class="el" href="pvfmm__common_8hpp_source.html">pvfmm_common.hpp</a>.</p>
+
+</div>
+</div>
+<a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
+<a id="ab2f33e6cad80ee296fd82684ee082dc6" name="ab2f33e6cad80ee296fd82684ee082dc6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab2f33e6cad80ee296fd82684ee082dc6">&#9670;&#160;</a></span>align_ptr()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">uintptr_t pvfmm::mem::align_ptr </td>
+          <td>(</td>
+          <td class="paramtype">uintptr_t</td>          <td class="paramname"><span class="paramname"><em>ptr</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="pvfmm__common_8hpp_source.html#l00077">77</a> of file <a class="el" href="pvfmm__common_8hpp_source.html">pvfmm_common.hpp</a>.</p>
 
 </div>
 </div>

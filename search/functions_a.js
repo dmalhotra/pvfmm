@@ -1,11 +1,6 @@
 var searchData=
 [
-  ['maxerr_0',['MaxErr',['../classpvfmm_1_1Cheb__Node.html#aa22a5507468967090f45027394898b55',1,'pvfmm::Cheb_Node']]],
-  ['memorymanager_1',['MemoryManager',['../classpvfmm_1_1mem_1_1MemoryManager.html#a782b07f858b6bf6bb1d6c4c033a5071f',1,'pvfmm::mem::MemoryManager']]],
-  ['mpi_5falltoallv_5fdense_2',['Mpi_Alltoallv_dense',['../parUtils_8h.html#a7e80da322953cdae89cbfa208a49fc4b',1,'pvfmm::par']]],
-  ['mpi_5falltoallv_5fsparse_3',['Mpi_Alltoallv_sparse',['../parUtils_8h.html#ad8b641c25451f66dc6aabb6b3fe01b9d',1,'pvfmm::par']]],
-  ['mpi_5fnode_4',['MPI_Node',['../classpvfmm_1_1MPI__Node.html#a2eb25ea9e62b43903d9dd0cc19c9a588',1,'pvfmm::MPI_Node']]],
-  ['mpi_5ftree_5',['MPI_Tree',['../classpvfmm_1_1MPI__Tree.html#a71e3424f16945f3e7f78260a18acda2e',1,'pvfmm::MPI_Tree']]],
-  ['multipoleorder_6',['MultipoleOrder',['../classpvfmm_1_1FMM__Pts.html#a544d2b534f45ef265467c82f6e17f0f1',1,'pvfmm::FMM_Pts']]],
-  ['multipolereducebcast_7',['MultipoleReduceBcast',['../classpvfmm_1_1FMM__Tree.html#a9c2336738e7a6e498009cf6bcadf82cc',1,'pvfmm::FMM_Tree']]]
+  ['newnode_0',['NewNode',['../classpvfmm_1_1Cheb__Node.html#a8a212606a4e6fd2203513f233b868cc6',1,'pvfmm::Cheb_Node::NewNode()'],['../classpvfmm_1_1FMM__Node.html#a153800ec202378086d877250f1066373',1,'pvfmm::FMM_Node::NewNode()'],['../classpvfmm_1_1MPI__Node.html#a1cac2a1af9ff53d63f306f83ee42638b',1,'pvfmm::MPI_Node::NewNode()'],['../classpvfmm_1_1Tree.html#a37fea66f2fe14008ede0958f5c2dbd3d',1,'pvfmm::Tree::NewNode()'],['../classpvfmm_1_1TreeNode.html#a2d7e906dc0a5b3bcde6ae4d5d6890dce',1,'pvfmm::TreeNode::NewNode()']]],
+  ['nodecost_1',['NodeCost',['../classpvfmm_1_1Cheb__Node.html#a49c695c6185736e8a329b6ba1b638bca',1,'pvfmm::Cheb_Node::NodeCost()'],['../classpvfmm_1_1MPI__Node.html#aa85a6a5a0cc41fba1c3cbe57134e2e90',1,'pvfmm::MPI_Node::NodeCost()']]],
+  ['nodedatavec_2',['NodeDataVec',['../classpvfmm_1_1Cheb__Node.html#a829b8434b9cdb5dfe79be92e4987e47f',1,'pvfmm::Cheb_Node::NodeDataVec()'],['../classpvfmm_1_1FMM__Node.html#a80b3ce53399be74876cb70110cfe2989',1,'pvfmm::FMM_Node::NodeDataVec()'],['../classpvfmm_1_1MPI__Node.html#a544a8ce6ae987e29f5f7eb9d606831fb',1,'pvfmm::MPI_Node::NodeDataVec()']]]
 ];

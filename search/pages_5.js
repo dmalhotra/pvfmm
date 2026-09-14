@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['language_20bindings_0',['Language bindings',['../index.html#autotoc_md6',1,'']]],
-  ['license_1',['License',['../index.html#autotoc_md3',1,'']]]
+  ['installing_20pvfmm_0',['Installing PVFMM',['../index.html#autotoc_md5',1,'']]],
+  ['is_20pvfmm_1',['What is PVFMM?',['../index.html#autotoc_md1',1,'']]]
 ];

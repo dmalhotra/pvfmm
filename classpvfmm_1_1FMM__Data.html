@@ -128,7 +128,7 @@ Inheritance diagram for pvfmm::FMM_Data&lt; Real_t &gt;:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-methods" class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a802c05cc4260c84880c45c8a6f25db54" id="r_a802c05cc4260c84880c45c8a6f25db54"><td class="memItemLeft">virtual <a class="el" href="classpvfmm_1_1FMM__Data.html">FMM_Data</a> *&#160;</td><td class="memItemRight"><a class="el" href="#a802c05cc4260c84880c45c8a6f25db54">NewData</a> ()</td></tr>
+<tr class="memitem:af2b9f98b7efbe37b50c140d189558ff0" id="r_af2b9f98b7efbe37b50c140d189558ff0"><td class="memItemLeft">virtual sctl::Iterator&lt; <a class="el" href="classpvfmm_1_1FMM__Data.html">FMM_Data</a> &gt;&#160;</td><td class="memItemRight"><a class="el" href="#af2b9f98b7efbe37b50c140d189558ff0">NewData</a> ()</td></tr>
 <tr class="memitem:a377bcc4890ee031acfa50082f60c6351" id="r_a377bcc4890ee031acfa50082f60c6351"><td class="memItemLeft"><a id="a377bcc4890ee031acfa50082f60c6351" name="a377bcc4890ee031acfa50082f60c6351"></a>
 virtual void&#160;</td><td class="memItemRight"><b>Clear</b> ()</td></tr>
 <tr class="memdesc:a377bcc4890ee031acfa50082f60c6351"><td class="mdescLeft">&#160;</td><td class="mdescRight">Clear all data. <br /></td></tr>
@@ -144,14 +144,14 @@ virtual void&#160;</td><td class="memItemRight"><b>InitMultipole</b> (<a class="
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-attribs" class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:a415ede9fea498a40ef0170907487bdd5" id="r_a415ede9fea498a40ef0170907487bdd5"><td class="memItemLeft"><a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt; Real_t &gt;&#160;</td><td class="memItemRight"><a class="el" href="#a415ede9fea498a40ef0170907487bdd5">upward_equiv</a></td></tr>
-<tr class="memitem:a7bd0c5b5a70fc0b968db0ddfd8cf312f" id="r_a7bd0c5b5a70fc0b968db0ddfd8cf312f"><td class="memItemLeft"><a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt; Real_t &gt;&#160;</td><td class="memItemRight"><a class="el" href="#a7bd0c5b5a70fc0b968db0ddfd8cf312f">dnward_equiv</a></td></tr>
+<tr class="memitem:a57eca2bf4ee5de54a111dccf262ecd90" id="r_a57eca2bf4ee5de54a111dccf262ecd90"><td class="memItemLeft">sctl::Vector&lt; Real_t &gt;&#160;</td><td class="memItemRight"><a class="el" href="#a57eca2bf4ee5de54a111dccf262ecd90">upward_equiv</a></td></tr>
+<tr class="memitem:a58e7530a8ac92d8024210db2c73b00b6" id="r_a58e7530a8ac92d8024210db2c73b00b6"><td class="memItemLeft">sctl::Vector&lt; Real_t &gt;&#160;</td><td class="memItemRight"><a class="el" href="#a58e7530a8ac92d8024210db2c73b00b6">dnward_equiv</a></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><div class="compoundTemplParams">template&lt;class Real_t&gt;<br />
 class pvfmm::FMM_Data&lt; Real_t &gt;</div><p>This class contains FMM specific data that each node contains along with the functions for manipulating the data. </p>
 
-<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00035">35</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00033">33</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
 </div><a name="doc-constructors" id="doc-constructors"></a><h2 id="header-doc-constructors" class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a26148c3869e5234ed6cdc1fca7c10443" name="a26148c3869e5234ed6cdc1fca7c10443"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a26148c3869e5234ed6cdc1fca7c10443">&#9670;&#160;</a></span>~FMM_Data()</h2>
@@ -178,13 +178,13 @@ template&lt;class Real_t&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00039">39</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00037">37</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
 
 </div>
 </div>
 <a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Member Function Documentation</h2>
-<a id="a802c05cc4260c84880c45c8a6f25db54" name="a802c05cc4260c84880c45c8a6f25db54"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a802c05cc4260c84880c45c8a6f25db54">&#9670;&#160;</a></span>NewData()</h2>
+<a id="af2b9f98b7efbe37b50c140d189558ff0" name="af2b9f98b7efbe37b50c140d189558ff0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af2b9f98b7efbe37b50c140d189558ff0">&#9670;&#160;</a></span>NewData()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -195,7 +195,7 @@ template&lt;class Real_t&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual <a class="el" href="classpvfmm_1_1FMM__Data.html">FMM_Data</a> * <a class="el" href="classpvfmm_1_1FMM__Data.html">pvfmm::FMM_Data</a>&lt; Real_t &gt;::NewData </td>
+          <td class="memname">virtual sctl::Iterator&lt; <a class="el" href="classpvfmm_1_1FMM__Data.html">FMM_Data</a> &gt; <a class="el" href="classpvfmm_1_1FMM__Data.html">pvfmm::FMM_Data</a>&lt; Real_t &gt;::NewData </td>
           <td>(</td>
           <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td></td>
@@ -208,13 +208,13 @@ template&lt;class Real_t&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00041">41</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00039">39</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
 
 </div>
 </div>
 <a name="doc-variable-members" id="doc-variable-members"></a><h2 id="header-doc-variable-members" class="groupheader">Member Data Documentation</h2>
-<a id="a7bd0c5b5a70fc0b968db0ddfd8cf312f" name="a7bd0c5b5a70fc0b968db0ddfd8cf312f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7bd0c5b5a70fc0b968db0ddfd8cf312f">&#9670;&#160;</a></span>dnward_equiv</h2>
+<a id="a58e7530a8ac92d8024210db2c73b00b6" name="a58e7530a8ac92d8024210db2c73b00b6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a58e7530a8ac92d8024210db2c73b00b6">&#9670;&#160;</a></span>dnward_equiv</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -222,17 +222,17 @@ template&lt;class Real_t&gt; </div>
 template&lt;class Real_t&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt;Real_t&gt; <a class="el" href="classpvfmm_1_1FMM__Data.html">pvfmm::FMM_Data</a>&lt; Real_t &gt;::dnward_equiv</td>
+          <td class="memname">sctl::Vector&lt;Real_t&gt; <a class="el" href="classpvfmm_1_1FMM__Data.html">pvfmm::FMM_Data</a>&lt; Real_t &gt;::dnward_equiv</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00066">66</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00064">64</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
 
 </div>
 </div>
-<a id="a415ede9fea498a40ef0170907487bdd5" name="a415ede9fea498a40ef0170907487bdd5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a415ede9fea498a40ef0170907487bdd5">&#9670;&#160;</a></span>upward_equiv</h2>
+<a id="a57eca2bf4ee5de54a111dccf262ecd90" name="a57eca2bf4ee5de54a111dccf262ecd90"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a57eca2bf4ee5de54a111dccf262ecd90">&#9670;&#160;</a></span>upward_equiv</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -240,12 +240,12 @@ template&lt;class Real_t&gt; </div>
 template&lt;class Real_t&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt;Real_t&gt; <a class="el" href="classpvfmm_1_1FMM__Data.html">pvfmm::FMM_Data</a>&lt; Real_t &gt;::upward_equiv</td>
+          <td class="memname">sctl::Vector&lt;Real_t&gt; <a class="el" href="classpvfmm_1_1FMM__Data.html">pvfmm::FMM_Data</a>&lt; Real_t &gt;::upward_equiv</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00065">65</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00063">63</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
 
 </div>
 </div>

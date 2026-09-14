@@ -112,7 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
 <div class="line"><a id="l00008" name="l00008"></a><span class="lineno">    8</span><span class="preprocessor">#define _UTILS_</span></div>
 <div class="line"><a id="l00009" name="l00009"></a><span class="lineno">    9</span> </div>
 <div class="line"><a id="l00010" name="l00010"></a><span class="lineno">   10</span><span class="preprocessor">#include &lt;vector&gt;</span></div>
-<div class="line"><a id="l00011" name="l00011"></a><span class="lineno">   11</span><span class="preprocessor">#include &lt;mpi.h&gt;</span></div>
+<div class="line"><a id="l00011" name="l00011"></a><span class="lineno">   11</span><span class="preprocessor">#include &lt;sctl.hpp&gt;</span></div>
 <div class="line"><a id="l00012" name="l00012"></a><span class="lineno">   12</span><span class="preprocessor">#include &lt;<a class="code" href="cheb__utils_8hpp.html">cheb_utils.hpp</a>&gt;</span></div>
 <div class="line"><a id="l00013" name="l00013"></a><span class="lineno">   13</span><span class="preprocessor">#include &lt;<a class="code" href="fmm__tree_8hpp.html">fmm_tree.hpp</a>&gt;</span></div>
 <div class="line"><a id="l00014" name="l00014"></a><span class="lineno">   14</span> </div>
@@ -138,7 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
 <div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span>};</div>
 <div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span> </div>
 <div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span><span class="keyword">template</span> &lt;<span class="keyword">class</span> Real_t&gt;</div>
-<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>std::vector&lt;Real_t&gt; point_distrib(DistribType, <span class="keywordtype">size_t</span> N, MPI_Comm comm);</div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>std::vector&lt;Real_t&gt; point_distrib(DistribType, <span class="keywordtype">size_t</span> N, <span class="keyword">const</span> sctl::Comm&amp; comm);</div>
 <div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span> </div>
 <div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span><span class="keywordtype">void</span> commandline_option_start(<span class="keywordtype">int</span> argc, <span class="keywordtype">char</span>** argv, <span class="keyword">const</span> <span class="keywordtype">char</span>* help_text=NULL);</div>
 <div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span> </div>
@@ -150,7 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
 <div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span> </div>
 <div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span><span class="preprocessor">#endif</span></div>
 <div class="ttc" id="acheb__utils_8hpp_html"><div class="ttname"><a href="cheb__utils_8hpp.html">cheb_utils.hpp</a></div><div class="ttdoc">This file contains chebyshev related functions.</div></div>
-<div class="ttc" id="aclasspvfmm_1_1FMM__Tree_html"><div class="ttname"><a href="classpvfmm_1_1FMM__Tree.html">pvfmm::FMM_Tree</a></div><div class="ttdoc">Base class for FMM tree.</div><div class="ttdef"><b>Definition</b> <a href="fmm__tree_8hpp_source.html#l00026">fmm_tree.hpp:26</a></div></div>
+<div class="ttc" id="aclasspvfmm_1_1FMM__Tree_html"><div class="ttname"><a href="classpvfmm_1_1FMM__Tree.html">pvfmm::FMM_Tree</a></div><div class="ttdoc">Base class for FMM tree.</div><div class="ttdef"><b>Definition</b> <a href="fmm__tree_8hpp_source.html#l00025">fmm_tree.hpp:25</a></div></div>
 <div class="ttc" id="afmm__tree_8hpp_html"><div class="ttname"><a href="fmm__tree_8hpp.html">fmm_tree.hpp</a></div><div class="ttdoc">This file contains the definition of the FMM_Tree class.</div></div>
 <div class="ttc" id="astructTestFn_html"><div class="ttname"><a href="structTestFn.html">TestFn</a></div><div class="ttdef"><b>Definition</b> <a href="#l00019">utils.hpp:19</a></div></div>
 <div class="ttc" id="astructpvfmm_1_1Kernel_html"><div class="ttname"><a href="structpvfmm_1_1Kernel.html">pvfmm::Kernel</a></div><div class="ttdef"><b>Definition</b> <a href="kernel_8hpp_source.html#l00027">kernel.hpp:27</a></div></div>

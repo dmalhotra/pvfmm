@@ -1,9 +1,9 @@
 var searchData=
 [
-  ['getdfd_0',['getDFD',['../classpvfmm_1_1MortonId.html#a326b99404ecb1e5c45c79c77f8115981',1,'pvfmm::MortonId']]],
-  ['getmins_1',['GetMins',['../classpvfmm_1_1MPI__Tree.html#a41159606c7280f385ae771e1f6f105cd',1,'pvfmm::MPI_Tree']]],
-  ['getmortonid_2',['GetMortonId',['../classpvfmm_1_1MPI__Node.html#af3a70f20a30119e2b10487cee8f61d2e',1,'pvfmm::MPI_Node']]],
-  ['getnodelist_3',['GetNodeList',['../classpvfmm_1_1Tree.html#a73760e7cf0fb4804050f4e38057c20de',1,'pvfmm::Tree']]],
-  ['getstatus_4',['GetStatus',['../classpvfmm_1_1TreeNode.html#ae6766030c11156a65f6fba9f18fa637b',1,'pvfmm::TreeNode']]],
-  ['gradient_5',['Gradient',['../classpvfmm_1_1Cheb__Node.html#a1d9cca163bdb2ce8a3b69f4bec1f4f16',1,'pvfmm::Cheb_Node']]]
+  ['getmins_0',['GetMins',['../classpvfmm_1_1MPI__Tree.html#a67852348c23a6842c720c54c587e1bfe',1,'pvfmm::MPI_Tree']]],
+  ['getmortonid_1',['GetMortonId',['../classpvfmm_1_1MPI__Node.html#af3a70f20a30119e2b10487cee8f61d2e',1,'pvfmm::MPI_Node']]],
+  ['getnodelist_2',['GetNodeList',['../classpvfmm_1_1Tree.html#afbc34ccc7cfc064c13ea85d0a7b366b9',1,'pvfmm::Tree']]],
+  ['getstatus_3',['GetStatus',['../classpvfmm_1_1TreeNode.html#ae6766030c11156a65f6fba9f18fa637b',1,'pvfmm::TreeNode']]],
+  ['gradient_4',['Gradient',['../classpvfmm_1_1Cheb__Node.html#a1d9cca163bdb2ce8a3b69f4bec1f4f16',1,'pvfmm::Cheb_Node']]],
+  ['gradient_5',['gradient',['../structpvfmm_1_1LaplaceKernel.html#a5296e3b5c50b46914d903989b3a1acb5',1,'pvfmm::LaplaceKernel']]]
 ];

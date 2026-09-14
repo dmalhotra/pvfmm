@@ -136,76 +136,80 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-types" class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:a7b19a1f1e330c1c3bb6dccb6f8428f3c" id="r_a7b19a1f1e330c1c3bb6dccb6f8428f3c"><td class="memItemLeft">typedef <a class="el" href="classpvfmm_1_1FMM__Tree.html">FMM_Tree</a>&lt; <a class="el" href="#a798dbd1fdf43f29f2bef3e9158b10e40">FMM_Pts</a>&lt; FMMNode &gt; &gt;&#160;</td><td class="memItemRight"><a class="el" href="#a7b19a1f1e330c1c3bb6dccb6f8428f3c">FMMTree_t</a></td></tr>
+<tr class="memitem:a7b19a1f1e330c1c3bb6dccb6f8428f3c" id="r_a7b19a1f1e330c1c3bb6dccb6f8428f3c"><td class="memItemLeft">typedef <a class="el" href="classpvfmm_1_1FMM__Tree.html">FMM_Tree</a>&lt; <a class="el" href="#af803d249cdea84a6f21959ec949f4582">FMM_Pts</a>&lt; FMMNode &gt; &gt;&#160;</td><td class="memItemRight"><a class="el" href="#a7b19a1f1e330c1c3bb6dccb6f8428f3c">FMMTree_t</a></td></tr>
 <tr class="memitem:a2a7a2b2ffbe3af3db57e078166f43cb0" id="r_a2a7a2b2ffbe3af3db57e078166f43cb0"><td class="memItemLeft">typedef FMMNode::Real_t&#160;</td><td class="memItemRight"><a class="el" href="#a2a7a2b2ffbe3af3db57e078166f43cb0">Real_t</a></td></tr>
 <tr class="memitem:ad604cffebfd9a21acd3ca932fd823317" id="r_ad604cffebfd9a21acd3ca932fd823317"><td class="memItemLeft">typedef FMMNode&#160;</td><td class="memItemRight"><a class="el" href="#ad604cffebfd9a21acd3ca932fd823317">FMMNode_t</a></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-methods" class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a798dbd1fdf43f29f2bef3e9158b10e40" id="r_a798dbd1fdf43f29f2bef3e9158b10e40"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a798dbd1fdf43f29f2bef3e9158b10e40">FMM_Pts</a> (<a class="el" href="classpvfmm_1_1mem_1_1MemoryManager.html">mem::MemoryManager</a> *mem_mgr_=NULL)</td></tr>
-<tr class="memdesc:a798dbd1fdf43f29f2bef3e9158b10e40"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor.  <br /></td></tr>
+<tr class="memitem:af803d249cdea84a6f21959ec949f4582" id="r_af803d249cdea84a6f21959ec949f4582"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#af803d249cdea84a6f21959ec949f4582">FMM_Pts</a> ()</td></tr>
+<tr class="memdesc:af803d249cdea84a6f21959ec949f4582"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor.  <br /></td></tr>
 <tr class="memitem:a269c52399c8c59e59f920ce6086ed25d" id="r_a269c52399c8c59e59f920ce6086ed25d"><td class="memItemLeft"><a id="a269c52399c8c59e59f920ce6086ed25d" name="a269c52399c8c59e59f920ce6086ed25d"></a>
 virtual&#160;</td><td class="memItemRight"><b>~FMM_Pts</b> ()</td></tr>
 <tr class="memdesc:a269c52399c8c59e59f920ce6086ed25d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Virtual destructor. <br /></td></tr>
-<tr class="memitem:a977f530f27bb7287512c4aebf193ab65" id="r_a977f530f27bb7287512c4aebf193ab65"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a977f530f27bb7287512c4aebf193ab65">Initialize</a> (int mult_order, const MPI_Comm &amp;comm, const <a class="el" href="structpvfmm_1_1Kernel.html">Kernel</a>&lt; Real_t &gt; *kernel)</td></tr>
-<tr class="memdesc:a977f530f27bb7287512c4aebf193ab65"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize all the translation matrices (or load from file).  <br /></td></tr>
+<tr class="memitem:a795f98544db381c6d13cf5f82f50d8cf" id="r_a795f98544db381c6d13cf5f82f50d8cf"><td class="memItemLeft"><a id="a795f98544db381c6d13cf5f82f50d8cf" name="a795f98544db381c6d13cf5f82f50d8cf"></a>
+&#160;</td><td class="memItemRight"><b>FMM_Pts</b> (FMM_Pts &amp;&amp;)=default</td></tr>
+<tr class="memitem:a3332fd3fe5e21edf8f9362c8eaacdbac" id="r_a3332fd3fe5e21edf8f9362c8eaacdbac"><td class="memItemLeft"><a id="a3332fd3fe5e21edf8f9362c8eaacdbac" name="a3332fd3fe5e21edf8f9362c8eaacdbac"></a>
+<a class="el" href="#af803d249cdea84a6f21959ec949f4582">FMM_Pts</a> &amp;&#160;</td><td class="memItemRight"><b>operator=</b> (<a class="el" href="#af803d249cdea84a6f21959ec949f4582">FMM_Pts</a> &amp;&amp;)=default</td></tr>
+<tr class="memitem:a9a2a1fd984d68008e59e32d61d2b8d70" id="r_a9a2a1fd984d68008e59e32d61d2b8d70"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a9a2a1fd984d68008e59e32d61d2b8d70">Initialize</a> (int mult_order, const sctl::Comm &amp;comm, const <a class="el" href="structpvfmm_1_1Kernel.html">Kernel</a>&lt; Real_t &gt; *kernel)</td></tr>
+<tr class="memdesc:a9a2a1fd984d68008e59e32d61d2b8d70"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize all the translation matrices (or load from file).  <br /></td></tr>
 <tr class="memitem:a544d2b534f45ef265467c82f6e17f0f1" id="r_a544d2b534f45ef265467c82f6e17f0f1"><td class="memItemLeft">int&#160;</td><td class="memItemRight"><a class="el" href="#a544d2b534f45ef265467c82f6e17f0f1">MultipoleOrder</a> ()</td></tr>
 <tr class="memdesc:a544d2b534f45ef265467c82f6e17f0f1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Order for the multipole expansion.  <br /></td></tr>
 <tr class="memitem:a656fda6967d5330c6be2f34718eeb4f7" id="r_a656fda6967d5330c6be2f34718eeb4f7"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a656fda6967d5330c6be2f34718eeb4f7">ScaleInvar</a> ()</td></tr>
 <tr class="memdesc:a656fda6967d5330c6be2f34718eeb4f7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether using scale-invariant kernel?  <br /></td></tr>
-<tr class="memitem:a0f4510caf4c3781798b1c8cb0f8343bf" id="r_a0f4510caf4c3781798b1c8cb0f8343bf"><td class="memItemLeft"><a id="a0f4510caf4c3781798b1c8cb0f8343bf" name="a0f4510caf4c3781798b1c8cb0f8343bf"></a>
-virtual void&#160;</td><td class="memItemRight"><b>CollectNodeData</b> (FMMTree_t *tree, std::vector&lt; FMMNode * &gt; &amp;nodes, std::vector&lt; <a class="el" href="classpvfmm_1_1Matrix.html">Matrix</a>&lt; Real_t &gt; &gt; &amp;buff, std::vector&lt; <a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt; FMMNode_t * &gt; &gt; &amp;n_list, std::vector&lt; std::vector&lt; <a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt; Real_t &gt; * &gt; &gt; vec_list=std::vector&lt; std::vector&lt; <a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt; Real_t &gt; * &gt; &gt;(0))</td></tr>
-<tr class="memitem:ae8d31b4d9592d08e4deec1728bdd7037" id="r_ae8d31b4d9592d08e4deec1728bdd7037"><td class="memItemLeft"><a id="ae8d31b4d9592d08e4deec1728bdd7037" name="ae8d31b4d9592d08e4deec1728bdd7037"></a>
-void&#160;</td><td class="memItemRight"><b>SetupPrecomp</b> (<a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; Real_t &gt; &amp;setup_data, bool device=false)</td></tr>
-<tr class="memitem:ae4430e5b37931505c32e5a4060967a51" id="r_ae4430e5b37931505c32e5a4060967a51"><td class="memItemLeft"><a id="ae4430e5b37931505c32e5a4060967a51" name="ae4430e5b37931505c32e5a4060967a51"></a>
-void&#160;</td><td class="memItemRight"><b>SetupInterac</b> (<a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; Real_t &gt; &amp;setup_data, bool device=false)</td></tr>
-<tr class="memitem:a1b4530456fb3a10b94835b7476e474b2" id="r_a1b4530456fb3a10b94835b7476e474b2"><td class="memTemplParams" colspan="2"><a id="a1b4530456fb3a10b94835b7476e474b2" name="a1b4530456fb3a10b94835b7476e474b2"></a>
+<tr class="memitem:a629157eb4793cd5fd40238e3197ef3c5" id="r_a629157eb4793cd5fd40238e3197ef3c5"><td class="memItemLeft"><a id="a629157eb4793cd5fd40238e3197ef3c5" name="a629157eb4793cd5fd40238e3197ef3c5"></a>
+virtual void&#160;</td><td class="memItemRight"><b>CollectNodeData</b> (FMMTree_t *tree, std::vector&lt; sctl::Iterator&lt; FMMNode &gt; &gt; &amp;nodes, std::vector&lt; sctl::Matrix&lt; Real_t &gt; &gt; &amp;buff, std::vector&lt; sctl::Vector&lt; sctl::Iterator&lt; FMMNode_t &gt; &gt; &gt; &amp;n_list, std::vector&lt; std::vector&lt; sctl::Vector&lt; Real_t &gt; * &gt; &gt; vec_list=std::vector&lt; std::vector&lt; sctl::Vector&lt; Real_t &gt; * &gt; &gt;(0))</td></tr>
+<tr class="memitem:aa87ba83f0848c51a806a97c8a1fc7db4" id="r_aa87ba83f0848c51a806a97c8a1fc7db4"><td class="memItemLeft"><a id="aa87ba83f0848c51a806a97c8a1fc7db4" name="aa87ba83f0848c51a806a97c8a1fc7db4"></a>
+void&#160;</td><td class="memItemRight"><b>SetupPrecomp</b> (<a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; FMMNode_t &gt; &amp;setup_data, bool device=false)</td></tr>
+<tr class="memitem:acc2f408a28cb3c71179d074f90f4bdb9" id="r_acc2f408a28cb3c71179d074f90f4bdb9"><td class="memItemLeft"><a id="acc2f408a28cb3c71179d074f90f4bdb9" name="acc2f408a28cb3c71179d074f90f4bdb9"></a>
+void&#160;</td><td class="memItemRight"><b>SetupInterac</b> (<a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; FMMNode_t &gt; &amp;setup_data, bool device=false)</td></tr>
+<tr class="memitem:a22f90cc3143f1d61a5dff2c84a43840b" id="r_a22f90cc3143f1d61a5dff2c84a43840b"><td class="memTemplParams" colspan="2"><a id="a22f90cc3143f1d61a5dff2c84a43840b" name="a22f90cc3143f1d61a5dff2c84a43840b"></a>
 template&lt;int SYNC = PVFMM_DEVICE_SYNC&gt; </td></tr>
-<tr class="memitem:a1b4530456fb3a10b94835b7476e474b2 template"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><b>EvalList</b> (<a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; Real_t &gt; &amp;setup_data, bool device=false)</td></tr>
-<tr class="memitem:a02bea4cf57af435db60867fa66837256" id="r_a02bea4cf57af435db60867fa66837256"><td class="memItemLeft"><a id="a02bea4cf57af435db60867fa66837256" name="a02bea4cf57af435db60867fa66837256"></a>
-void&#160;</td><td class="memItemRight"><b>PtSetup</b> (<a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; Real_t &gt; &amp;setup_data, void *data_)</td></tr>
-<tr class="memitem:ada373c8597253ab254b16876dc0915c0" id="r_ada373c8597253ab254b16876dc0915c0"><td class="memTemplParams" colspan="2"><a id="ada373c8597253ab254b16876dc0915c0" name="ada373c8597253ab254b16876dc0915c0"></a>
+<tr class="memitem:a22f90cc3143f1d61a5dff2c84a43840b template"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><b>EvalList</b> (<a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; FMMNode_t &gt; &amp;setup_data, bool device=false)</td></tr>
+<tr class="memitem:add3b8f729185385f3418ccaabd7f1f92" id="r_add3b8f729185385f3418ccaabd7f1f92"><td class="memItemLeft"><a id="add3b8f729185385f3418ccaabd7f1f92" name="add3b8f729185385f3418ccaabd7f1f92"></a>
+void&#160;</td><td class="memItemRight"><b>PtSetup</b> (<a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; FMMNode_t &gt; &amp;setup_data, void *data_)</td></tr>
+<tr class="memitem:af000f3d6ef06ec980f4eb683396db857" id="r_af000f3d6ef06ec980f4eb683396db857"><td class="memTemplParams" colspan="2"><a id="af000f3d6ef06ec980f4eb683396db857" name="af000f3d6ef06ec980f4eb683396db857"></a>
 template&lt;int SYNC = PVFMM_DEVICE_SYNC&gt; </td></tr>
-<tr class="memitem:ada373c8597253ab254b16876dc0915c0 template"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><b>EvalListPts</b> (<a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; Real_t &gt; &amp;setup_data, bool device=false)</td></tr>
-<tr class="memitem:a8399c6262b000c785ced1710e30c2198" id="r_a8399c6262b000c785ced1710e30c2198"><td class="memItemLeft">virtual void&#160;</td><td class="memItemRight"><a class="el" href="#a8399c6262b000c785ced1710e30c2198">Source2UpSetup</a> (<a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; Real_t &gt; &amp;setup_data, FMMTree_t *tree, std::vector&lt; <a class="el" href="classpvfmm_1_1Matrix.html">Matrix</a>&lt; Real_t &gt; &gt; &amp;node_data, std::vector&lt; <a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt; FMMNode_t * &gt; &gt; &amp;n_list, int level, bool device)</td></tr>
-<tr class="memdesc:a8399c6262b000c785ced1710e30c2198"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize multipole expansions for the given array of leaf nodes at a given level.  <br /></td></tr>
-<tr class="memitem:ae506c849a6923fbca632402382cd188f" id="r_ae506c849a6923fbca632402382cd188f"><td class="memItemLeft"><a id="ae506c849a6923fbca632402382cd188f" name="ae506c849a6923fbca632402382cd188f"></a>
-virtual void&#160;</td><td class="memItemRight"><b>Source2Up</b> (<a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; Real_t &gt; &amp;setup_data, bool device=false)</td></tr>
-<tr class="memitem:ac42aec7f1befc05bb3e0d72ff2e8876c" id="r_ac42aec7f1befc05bb3e0d72ff2e8876c"><td class="memItemLeft"><a id="ac42aec7f1befc05bb3e0d72ff2e8876c" name="ac42aec7f1befc05bb3e0d72ff2e8876c"></a>
-virtual void&#160;</td><td class="memItemRight"><b>Up2UpSetup</b> (<a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; Real_t &gt; &amp;setup_data, FMMTree_t *tree, std::vector&lt; <a class="el" href="classpvfmm_1_1Matrix.html">Matrix</a>&lt; Real_t &gt; &gt; &amp;node_data, std::vector&lt; <a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt; FMMNode_t * &gt; &gt; &amp;n_list, int level, bool device)</td></tr>
-<tr class="memdesc:ac42aec7f1befc05bb3e0d72ff2e8876c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize multipole expansions for the given array of non-leaf nodes from that of its children. <br /></td></tr>
-<tr class="memitem:a6747bf4fb37308ec9320cfc30b20ad6f" id="r_a6747bf4fb37308ec9320cfc30b20ad6f"><td class="memItemLeft"><a id="a6747bf4fb37308ec9320cfc30b20ad6f" name="a6747bf4fb37308ec9320cfc30b20ad6f"></a>
-virtual void&#160;</td><td class="memItemRight"><b>Up2Up</b> (<a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; Real_t &gt; &amp;setup_data, bool device=false)</td></tr>
+<tr class="memitem:af000f3d6ef06ec980f4eb683396db857 template"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><b>EvalListPts</b> (<a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; FMMNode_t &gt; &amp;setup_data, bool device=false)</td></tr>
+<tr class="memitem:aa92bf4ce2efb05ee01a4c2968b5e63bd" id="r_aa92bf4ce2efb05ee01a4c2968b5e63bd"><td class="memItemLeft">virtual void&#160;</td><td class="memItemRight"><a class="el" href="#aa92bf4ce2efb05ee01a4c2968b5e63bd">Source2UpSetup</a> (<a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; FMMNode_t &gt; &amp;setup_data, FMMTree_t *tree, std::vector&lt; sctl::Matrix&lt; Real_t &gt; &gt; &amp;node_data, std::vector&lt; sctl::Vector&lt; sctl::Iterator&lt; FMMNode_t &gt; &gt; &gt; &amp;n_list, int level, bool device)</td></tr>
+<tr class="memdesc:aa92bf4ce2efb05ee01a4c2968b5e63bd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize multipole expansions for the given array of leaf nodes at a given level.  <br /></td></tr>
+<tr class="memitem:a0c80bcbd6efa47b949711e6e32359807" id="r_a0c80bcbd6efa47b949711e6e32359807"><td class="memItemLeft"><a id="a0c80bcbd6efa47b949711e6e32359807" name="a0c80bcbd6efa47b949711e6e32359807"></a>
+virtual void&#160;</td><td class="memItemRight"><b>Source2Up</b> (<a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; FMMNode_t &gt; &amp;setup_data, bool device=false)</td></tr>
+<tr class="memitem:a786ece221d2461c785fc409d632921e5" id="r_a786ece221d2461c785fc409d632921e5"><td class="memItemLeft"><a id="a786ece221d2461c785fc409d632921e5" name="a786ece221d2461c785fc409d632921e5"></a>
+virtual void&#160;</td><td class="memItemRight"><b>Up2UpSetup</b> (<a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; FMMNode_t &gt; &amp;setup_data, FMMTree_t *tree, std::vector&lt; sctl::Matrix&lt; Real_t &gt; &gt; &amp;node_data, std::vector&lt; sctl::Vector&lt; sctl::Iterator&lt; FMMNode_t &gt; &gt; &gt; &amp;n_list, int level, bool device)</td></tr>
+<tr class="memdesc:a786ece221d2461c785fc409d632921e5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize multipole expansions for the given array of non-leaf nodes from that of its children. <br /></td></tr>
+<tr class="memitem:a60466545b29e5497c712fe277cb988d6" id="r_a60466545b29e5497c712fe277cb988d6"><td class="memItemLeft"><a id="a60466545b29e5497c712fe277cb988d6" name="a60466545b29e5497c712fe277cb988d6"></a>
+virtual void&#160;</td><td class="memItemRight"><b>Up2Up</b> (<a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; FMMNode_t &gt; &amp;setup_data, bool device=false)</td></tr>
 <tr class="memitem:a80071f571f56beb620196d1e538bf358" id="r_a80071f571f56beb620196d1e538bf358"><td class="memItemLeft"><a id="a80071f571f56beb620196d1e538bf358" name="a80071f571f56beb620196d1e538bf358"></a>
 virtual void&#160;</td><td class="memItemRight"><b>PeriodicBC</b> (FMMNode *node, BoundaryType bndry_cond)</td></tr>
 <tr class="memitem:a396e11781ea2e57dda9f3fc1c2d96d15" id="r_a396e11781ea2e57dda9f3fc1c2d96d15"><td class="memItemLeft"><a id="a396e11781ea2e57dda9f3fc1c2d96d15" name="a396e11781ea2e57dda9f3fc1c2d96d15"></a>
 virtual void&#160;</td><td class="memItemRight"><b>SetM2C</b> (Real_t *dataPtr)</td></tr>
-<tr class="memitem:abb0c2514340e8c397c52c3ac50dfb2e9" id="r_abb0c2514340e8c397c52c3ac50dfb2e9"><td class="memItemLeft"><a id="abb0c2514340e8c397c52c3ac50dfb2e9" name="abb0c2514340e8c397c52c3ac50dfb2e9"></a>
-virtual void&#160;</td><td class="memItemRight"><b>V_ListSetup</b> (<a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; Real_t &gt; &amp;setup_data, FMMTree_t *tree, std::vector&lt; <a class="el" href="classpvfmm_1_1Matrix.html">Matrix</a>&lt; Real_t &gt; &gt; &amp;node_data, std::vector&lt; <a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt; FMMNode_t * &gt; &gt; &amp;n_list, int level, bool device)</td></tr>
-<tr class="memdesc:abb0c2514340e8c397c52c3ac50dfb2e9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute V-List interactions. <br /></td></tr>
-<tr class="memitem:a40eea157bf5bb5259024d813b6c98d1d" id="r_a40eea157bf5bb5259024d813b6c98d1d"><td class="memItemLeft"><a id="a40eea157bf5bb5259024d813b6c98d1d" name="a40eea157bf5bb5259024d813b6c98d1d"></a>
-virtual void&#160;</td><td class="memItemRight"><b>V_List</b> (<a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; Real_t &gt; &amp;setup_data, bool device=false)</td></tr>
-<tr class="memitem:a7f28a3d990a9a5210dc1b2627bd14de3" id="r_a7f28a3d990a9a5210dc1b2627bd14de3"><td class="memItemLeft">virtual void&#160;</td><td class="memItemRight"><a class="el" href="#a7f28a3d990a9a5210dc1b2627bd14de3">X_ListSetup</a> (<a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; Real_t &gt; &amp;setup_data, FMMTree_t *tree, std::vector&lt; <a class="el" href="classpvfmm_1_1Matrix.html">Matrix</a>&lt; Real_t &gt; &gt; &amp;node_data, std::vector&lt; <a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt; FMMNode_t * &gt; &gt; &amp;n_list, int level, bool device)</td></tr>
-<tr class="memdesc:a7f28a3d990a9a5210dc1b2627bd14de3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute X-List interactions.  <br /></td></tr>
-<tr class="memitem:ae8155e98865fb01cec37a9403118ea9d" id="r_ae8155e98865fb01cec37a9403118ea9d"><td class="memItemLeft"><a id="ae8155e98865fb01cec37a9403118ea9d" name="ae8155e98865fb01cec37a9403118ea9d"></a>
-virtual void&#160;</td><td class="memItemRight"><b>X_List</b> (<a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; Real_t &gt; &amp;setup_data, bool device=false)</td></tr>
-<tr class="memitem:a8a5fbdd2e3d4dc42a2c2d95d3661cf7f" id="r_a8a5fbdd2e3d4dc42a2c2d95d3661cf7f"><td class="memItemLeft"><a id="a8a5fbdd2e3d4dc42a2c2d95d3661cf7f" name="a8a5fbdd2e3d4dc42a2c2d95d3661cf7f"></a>
-virtual void&#160;</td><td class="memItemRight"><b>Down2DownSetup</b> (<a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; Real_t &gt; &amp;setup_data, FMMTree_t *tree, std::vector&lt; <a class="el" href="classpvfmm_1_1Matrix.html">Matrix</a>&lt; Real_t &gt; &gt; &amp;node_data, std::vector&lt; <a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt; FMMNode_t * &gt; &gt; &amp;n_list, int level, bool device)</td></tr>
-<tr class="memdesc:a8a5fbdd2e3d4dc42a2c2d95d3661cf7f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute contribution of local expansion from the parent. <br /></td></tr>
-<tr class="memitem:a37290ce0200ffdadc9bb0322777b5140" id="r_a37290ce0200ffdadc9bb0322777b5140"><td class="memItemLeft"><a id="a37290ce0200ffdadc9bb0322777b5140" name="a37290ce0200ffdadc9bb0322777b5140"></a>
-virtual void&#160;</td><td class="memItemRight"><b>Down2Down</b> (<a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; Real_t &gt; &amp;setup_data, bool device=false)</td></tr>
-<tr class="memitem:a6976573a6c8def0e9b4b4da99be4c2e3" id="r_a6976573a6c8def0e9b4b4da99be4c2e3"><td class="memItemLeft">virtual void&#160;</td><td class="memItemRight"><a class="el" href="#a6976573a6c8def0e9b4b4da99be4c2e3">Down2TargetSetup</a> (<a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; Real_t &gt; &amp;setup_data, FMMTree_t *tree, std::vector&lt; <a class="el" href="classpvfmm_1_1Matrix.html">Matrix</a>&lt; Real_t &gt; &gt; &amp;node_data, std::vector&lt; <a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt; FMMNode_t * &gt; &gt; &amp;n_list, int level, bool device)</td></tr>
-<tr class="memdesc:a6976573a6c8def0e9b4b4da99be4c2e3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute target potential from the local expansion.  <br /></td></tr>
-<tr class="memitem:a5fdd80185e1f08d803884194a9fe0c0d" id="r_a5fdd80185e1f08d803884194a9fe0c0d"><td class="memItemLeft"><a id="a5fdd80185e1f08d803884194a9fe0c0d" name="a5fdd80185e1f08d803884194a9fe0c0d"></a>
-virtual void&#160;</td><td class="memItemRight"><b>Down2Target</b> (<a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; Real_t &gt; &amp;setup_data, bool device=false)</td></tr>
-<tr class="memitem:ad28121abb30f43081dc6aa6542d01e03" id="r_ad28121abb30f43081dc6aa6542d01e03"><td class="memItemLeft">virtual void&#160;</td><td class="memItemRight"><a class="el" href="#ad28121abb30f43081dc6aa6542d01e03">W_ListSetup</a> (<a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; Real_t &gt; &amp;setup_data, FMMTree_t *tree, std::vector&lt; <a class="el" href="classpvfmm_1_1Matrix.html">Matrix</a>&lt; Real_t &gt; &gt; &amp;node_data, std::vector&lt; <a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt; FMMNode_t * &gt; &gt; &amp;n_list, int level, bool device)</td></tr>
-<tr class="memdesc:ad28121abb30f43081dc6aa6542d01e03"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute W-List interactions.  <br /></td></tr>
-<tr class="memitem:af8cc61ca39a3d8bab689a8a8a58da68b" id="r_af8cc61ca39a3d8bab689a8a8a58da68b"><td class="memItemLeft"><a id="af8cc61ca39a3d8bab689a8a8a58da68b" name="af8cc61ca39a3d8bab689a8a8a58da68b"></a>
-virtual void&#160;</td><td class="memItemRight"><b>W_List</b> (<a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; Real_t &gt; &amp;setup_data, bool device=false)</td></tr>
-<tr class="memitem:ae96e5095623203b507e8756a1a5080e2" id="r_ae96e5095623203b507e8756a1a5080e2"><td class="memItemLeft">virtual void&#160;</td><td class="memItemRight"><a class="el" href="#ae96e5095623203b507e8756a1a5080e2">U_ListSetup</a> (<a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; Real_t &gt; &amp;setup_data, FMMTree_t *tree, std::vector&lt; <a class="el" href="classpvfmm_1_1Matrix.html">Matrix</a>&lt; Real_t &gt; &gt; &amp;node_data, std::vector&lt; <a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt; FMMNode_t * &gt; &gt; &amp;n_list, int level, bool device)</td></tr>
-<tr class="memdesc:ae96e5095623203b507e8756a1a5080e2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute U-List interactions.  <br /></td></tr>
-<tr class="memitem:a48a3b67556ede9860811666ce0569949" id="r_a48a3b67556ede9860811666ce0569949"><td class="memItemLeft"><a id="a48a3b67556ede9860811666ce0569949" name="a48a3b67556ede9860811666ce0569949"></a>
-virtual void&#160;</td><td class="memItemRight"><b>U_List</b> (<a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; Real_t &gt; &amp;setup_data, bool device=false)</td></tr>
+<tr class="memitem:a273fb390177a5d770a578e97863e5ec4" id="r_a273fb390177a5d770a578e97863e5ec4"><td class="memItemLeft"><a id="a273fb390177a5d770a578e97863e5ec4" name="a273fb390177a5d770a578e97863e5ec4"></a>
+virtual void&#160;</td><td class="memItemRight"><b>V_ListSetup</b> (<a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; FMMNode_t &gt; &amp;setup_data, FMMTree_t *tree, std::vector&lt; sctl::Matrix&lt; Real_t &gt; &gt; &amp;node_data, std::vector&lt; sctl::Vector&lt; sctl::Iterator&lt; FMMNode_t &gt; &gt; &gt; &amp;n_list, int level, bool device)</td></tr>
+<tr class="memdesc:a273fb390177a5d770a578e97863e5ec4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute V-List interactions. <br /></td></tr>
+<tr class="memitem:a24218525ef3dd96f31bc01e2227c927d" id="r_a24218525ef3dd96f31bc01e2227c927d"><td class="memItemLeft"><a id="a24218525ef3dd96f31bc01e2227c927d" name="a24218525ef3dd96f31bc01e2227c927d"></a>
+virtual void&#160;</td><td class="memItemRight"><b>V_List</b> (<a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; FMMNode_t &gt; &amp;setup_data, bool device=false)</td></tr>
+<tr class="memitem:aa82b9b2148b55d3b216a00bb6d10af43" id="r_aa82b9b2148b55d3b216a00bb6d10af43"><td class="memItemLeft">virtual void&#160;</td><td class="memItemRight"><a class="el" href="#aa82b9b2148b55d3b216a00bb6d10af43">X_ListSetup</a> (<a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; FMMNode_t &gt; &amp;setup_data, FMMTree_t *tree, std::vector&lt; sctl::Matrix&lt; Real_t &gt; &gt; &amp;node_data, std::vector&lt; sctl::Vector&lt; sctl::Iterator&lt; FMMNode_t &gt; &gt; &gt; &amp;n_list, int level, bool device)</td></tr>
+<tr class="memdesc:aa82b9b2148b55d3b216a00bb6d10af43"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute X-List interactions.  <br /></td></tr>
+<tr class="memitem:a353b5909afe53a04a63564dbe46a6493" id="r_a353b5909afe53a04a63564dbe46a6493"><td class="memItemLeft"><a id="a353b5909afe53a04a63564dbe46a6493" name="a353b5909afe53a04a63564dbe46a6493"></a>
+virtual void&#160;</td><td class="memItemRight"><b>X_List</b> (<a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; FMMNode_t &gt; &amp;setup_data, bool device=false)</td></tr>
+<tr class="memitem:add8cddb64ad86083163eda3dac6612bc" id="r_add8cddb64ad86083163eda3dac6612bc"><td class="memItemLeft"><a id="add8cddb64ad86083163eda3dac6612bc" name="add8cddb64ad86083163eda3dac6612bc"></a>
+virtual void&#160;</td><td class="memItemRight"><b>Down2DownSetup</b> (<a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; FMMNode_t &gt; &amp;setup_data, FMMTree_t *tree, std::vector&lt; sctl::Matrix&lt; Real_t &gt; &gt; &amp;node_data, std::vector&lt; sctl::Vector&lt; sctl::Iterator&lt; FMMNode_t &gt; &gt; &gt; &amp;n_list, int level, bool device)</td></tr>
+<tr class="memdesc:add8cddb64ad86083163eda3dac6612bc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute contribution of local expansion from the parent. <br /></td></tr>
+<tr class="memitem:a8211d193ef8ffaa9880d265457dc13cd" id="r_a8211d193ef8ffaa9880d265457dc13cd"><td class="memItemLeft"><a id="a8211d193ef8ffaa9880d265457dc13cd" name="a8211d193ef8ffaa9880d265457dc13cd"></a>
+virtual void&#160;</td><td class="memItemRight"><b>Down2Down</b> (<a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; FMMNode_t &gt; &amp;setup_data, bool device=false)</td></tr>
+<tr class="memitem:a7ae957eeb68348869da881f0346cb45d" id="r_a7ae957eeb68348869da881f0346cb45d"><td class="memItemLeft">virtual void&#160;</td><td class="memItemRight"><a class="el" href="#a7ae957eeb68348869da881f0346cb45d">Down2TargetSetup</a> (<a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; FMMNode_t &gt; &amp;setup_data, FMMTree_t *tree, std::vector&lt; sctl::Matrix&lt; Real_t &gt; &gt; &amp;node_data, std::vector&lt; sctl::Vector&lt; sctl::Iterator&lt; FMMNode_t &gt; &gt; &gt; &amp;n_list, int level, bool device)</td></tr>
+<tr class="memdesc:a7ae957eeb68348869da881f0346cb45d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute target potential from the local expansion.  <br /></td></tr>
+<tr class="memitem:ab07c7c0fba5028b2b8162f3719e54fa1" id="r_ab07c7c0fba5028b2b8162f3719e54fa1"><td class="memItemLeft"><a id="ab07c7c0fba5028b2b8162f3719e54fa1" name="ab07c7c0fba5028b2b8162f3719e54fa1"></a>
+virtual void&#160;</td><td class="memItemRight"><b>Down2Target</b> (<a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; FMMNode_t &gt; &amp;setup_data, bool device=false)</td></tr>
+<tr class="memitem:afe0aa9400a186f3bf60cee29dffbc031" id="r_afe0aa9400a186f3bf60cee29dffbc031"><td class="memItemLeft">virtual void&#160;</td><td class="memItemRight"><a class="el" href="#afe0aa9400a186f3bf60cee29dffbc031">W_ListSetup</a> (<a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; FMMNode_t &gt; &amp;setup_data, FMMTree_t *tree, std::vector&lt; sctl::Matrix&lt; Real_t &gt; &gt; &amp;node_data, std::vector&lt; sctl::Vector&lt; sctl::Iterator&lt; FMMNode_t &gt; &gt; &gt; &amp;n_list, int level, bool device)</td></tr>
+<tr class="memdesc:afe0aa9400a186f3bf60cee29dffbc031"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute W-List interactions.  <br /></td></tr>
+<tr class="memitem:a690c296737e41c729caac7011025c2de" id="r_a690c296737e41c729caac7011025c2de"><td class="memItemLeft"><a id="a690c296737e41c729caac7011025c2de" name="a690c296737e41c729caac7011025c2de"></a>
+virtual void&#160;</td><td class="memItemRight"><b>W_List</b> (<a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; FMMNode_t &gt; &amp;setup_data, bool device=false)</td></tr>
+<tr class="memitem:aa1f60251cf4b023d11ba23ea692b1030" id="r_aa1f60251cf4b023d11ba23ea692b1030"><td class="memItemLeft">virtual void&#160;</td><td class="memItemRight"><a class="el" href="#aa1f60251cf4b023d11ba23ea692b1030">U_ListSetup</a> (<a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; FMMNode_t &gt; &amp;setup_data, FMMTree_t *tree, std::vector&lt; sctl::Matrix&lt; Real_t &gt; &gt; &amp;node_data, std::vector&lt; sctl::Vector&lt; sctl::Iterator&lt; FMMNode_t &gt; &gt; &gt; &amp;n_list, int level, bool device)</td></tr>
+<tr class="memdesc:aa1f60251cf4b023d11ba23ea692b1030"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute U-List interactions.  <br /></td></tr>
+<tr class="memitem:a474f86a77c7d69c9aec747b70787b7a5" id="r_a474f86a77c7d69c9aec747b70787b7a5"><td class="memItemLeft"><a id="a474f86a77c7d69c9aec747b70787b7a5" name="a474f86a77c7d69c9aec747b70787b7a5"></a>
+virtual void&#160;</td><td class="memItemRight"><b>U_List</b> (<a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; FMMNode_t &gt; &amp;setup_data, bool device=false)</td></tr>
 <tr class="memitem:a2d93d4bf4f124c7b016c5f9875b6f09a" id="r_a2d93d4bf4f124c7b016c5f9875b6f09a"><td class="memItemLeft"><a id="a2d93d4bf4f124c7b016c5f9875b6f09a" name="a2d93d4bf4f124c7b016c5f9875b6f09a"></a>
 virtual void&#160;</td><td class="memItemRight"><b>PostProcessing</b> (FMMTree_t *tree, std::vector&lt; FMMNode_t * &gt; &amp;nodes, BoundaryType bndry=FreeSpace)</td></tr>
 <tr class="memitem:ab3af2c0615a87cd718d1caf5dd37caad" id="r_ab3af2c0615a87cd718d1caf5dd37caad"><td class="memItemLeft">virtual void&#160;</td><td class="memItemRight"><a class="el" href="#ab3af2c0615a87cd718d1caf5dd37caad">CopyOutput</a> (FMMNode **nodes, size_t n)</td></tr>
@@ -213,44 +217,48 @@ virtual void&#160;</td><td class="memItemRight"><b>PostProcessing</b> (FMMTree_t
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-attribs" class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:ae1feb2ac3e086c9880d2bcdc5182c28c" id="r_ae1feb2ac3e086c9880d2bcdc5182c28c"><td class="memItemLeft"><a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt; char &gt;&#160;</td><td class="memItemRight"><a class="el" href="#ae1feb2ac3e086c9880d2bcdc5182c28c">dev_buffer</a></td></tr>
-<tr class="memitem:ac07432c75a146e332c3da10c244919b7" id="r_ac07432c75a146e332c3da10c244919b7"><td class="memItemLeft"><a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt; char &gt;&#160;</td><td class="memItemRight"><a class="el" href="#ac07432c75a146e332c3da10c244919b7">staging_buffer</a></td></tr>
+<tr class="memitem:af81ec491ae8426dee411302d266d85bb" id="r_af81ec491ae8426dee411302d266d85bb"><td class="memItemLeft">sctl::Vector&lt; char &gt;&#160;</td><td class="memItemRight"><a class="el" href="#af81ec491ae8426dee411302d266d85bb">dev_buffer</a></td></tr>
+<tr class="memitem:abc1562d881b195dd9e96450e2a448819" id="r_abc1562d881b195dd9e96450e2a448819"><td class="memItemLeft">sctl::Vector&lt; char &gt;&#160;</td><td class="memItemRight"><a class="el" href="#abc1562d881b195dd9e96450e2a448819">staging_buffer</a></td></tr>
+<tr class="memitem:a3a7cc59be1921658ed1b0ffb3ec44596" id="r_a3a7cc59be1921658ed1b0ffb3ec44596"><td class="memItemLeft"><a class="el" href="classpvfmm_1_1DeviceMirror.html">DeviceMirror</a>&#160;</td><td class="memItemRight"><a class="el" href="#a3a7cc59be1921658ed1b0ffb3ec44596">dev_buffer_mirror</a></td></tr>
+<tr class="memitem:aacc354d87a829c8d9888ec6bed2074e1" id="r_aacc354d87a829c8d9888ec6bed2074e1"><td class="memItemLeft"><a class="el" href="classpvfmm_1_1DeviceMirror.html">DeviceMirror</a>&#160;</td><td class="memItemRight"><a class="el" href="#aacc354d87a829c8d9888ec6bed2074e1">staging_buffer_mirror</a></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pro-methods" class="groupheader"><a id="pro-methods" name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
 <tr class="memitem:a5a64f597d3a3217eb4d13864c4314579" id="r_a5a64f597d3a3217eb4d13864c4314579"><td class="memItemLeft"><a id="a5a64f597d3a3217eb4d13864c4314579" name="a5a64f597d3a3217eb4d13864c4314579"></a>
 virtual void&#160;</td><td class="memItemRight"><b>PrecompAll</b> (Mat_Type type, int level=-1)</td></tr>
-<tr class="memitem:a1d35f621780d1c0c34b5f64ad6c21f55" id="r_a1d35f621780d1c0c34b5f64ad6c21f55"><td class="memItemLeft"><a id="a1d35f621780d1c0c34b5f64ad6c21f55" name="a1d35f621780d1c0c34b5f64ad6c21f55"></a>
-virtual <a class="el" href="classpvfmm_1_1Permutation.html">Permutation</a>&lt; Real_t &gt; &amp;&#160;</td><td class="memItemRight"><b>PrecompPerm</b> (Mat_Type type, Perm_Type perm_indx)</td></tr>
-<tr class="memitem:a4e8a28cece9f862c4aaed087277b1dcd" id="r_a4e8a28cece9f862c4aaed087277b1dcd"><td class="memItemLeft"><a id="a4e8a28cece9f862c4aaed087277b1dcd" name="a4e8a28cece9f862c4aaed087277b1dcd"></a>
-virtual <a class="el" href="classpvfmm_1_1Matrix.html">Matrix</a>&lt; Real_t &gt; &amp;&#160;</td><td class="memItemRight"><b>Precomp</b> (int level, Mat_Type type, size_t mat_indx)</td></tr>
-<tr class="memitem:a60430b9fda7867973d1a2436a4061f95" id="r_a60430b9fda7867973d1a2436a4061f95"><td class="memItemLeft"><a id="a60430b9fda7867973d1a2436a4061f95" name="a60430b9fda7867973d1a2436a4061f95"></a>
-void&#160;</td><td class="memItemRight"><b>FFT_UpEquiv</b> (size_t dof, size_t m, size_t ker_dim0, <a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt; size_t &gt; &amp;fft_vec, <a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt; Real_t &gt; &amp;fft_scl, <a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt; Real_t &gt; &amp;input_data, <a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt; Real_t &gt; &amp;output_data, <a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt; Real_t &gt; &amp;buffer_)</td></tr>
-<tr class="memitem:aac2761a20105088cb9e74c4242842583" id="r_aac2761a20105088cb9e74c4242842583"><td class="memItemLeft"><a id="aac2761a20105088cb9e74c4242842583" name="aac2761a20105088cb9e74c4242842583"></a>
-void&#160;</td><td class="memItemRight"><b>FFT_Check2Equiv</b> (size_t dof, size_t m, size_t ker_dim0, <a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt; size_t &gt; &amp;ifft_vec, <a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt; Real_t &gt; &amp;ifft_scl, <a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt; Real_t &gt; &amp;input_data, <a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt; Real_t &gt; &amp;output_data, <a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt; Real_t &gt; &amp;buffer_)</td></tr>
+<tr class="memitem:ad7133a0f6e591410564434e6825097f1" id="r_ad7133a0f6e591410564434e6825097f1"><td class="memItemLeft"><a id="ad7133a0f6e591410564434e6825097f1" name="ad7133a0f6e591410564434e6825097f1"></a>
+virtual sctl::Permutation&lt; Real_t &gt; &amp;&#160;</td><td class="memItemRight"><b>PrecompPerm</b> (Mat_Type type, Perm_Type perm_indx)</td></tr>
+<tr class="memitem:ae3c4bffc707bf87dc4ce74b840d85ed8" id="r_ae3c4bffc707bf87dc4ce74b840d85ed8"><td class="memItemLeft"><a id="ae3c4bffc707bf87dc4ce74b840d85ed8" name="ae3c4bffc707bf87dc4ce74b840d85ed8"></a>
+virtual sctl::Matrix&lt; Real_t &gt; &amp;&#160;</td><td class="memItemRight"><b>Precomp</b> (int level, Mat_Type type, size_t mat_indx)</td></tr>
+<tr class="memitem:a8b8e0f4a28dd56173360fbb88715bcda" id="r_a8b8e0f4a28dd56173360fbb88715bcda"><td class="memItemLeft"><a id="a8b8e0f4a28dd56173360fbb88715bcda" name="a8b8e0f4a28dd56173360fbb88715bcda"></a>
+void&#160;</td><td class="memItemRight"><b>FFT_UpEquiv</b> (size_t dof, size_t m, size_t ker_dim0, sctl::Vector&lt; size_t &gt; &amp;fft_vec, sctl::Vector&lt; Real_t &gt; &amp;fft_scl, sctl::Vector&lt; Real_t &gt; &amp;input_data, sctl::Vector&lt; Real_t &gt; &amp;output_data, sctl::Vector&lt; Real_t &gt; &amp;buffer_)</td></tr>
+<tr class="memitem:ad5053fb5e13a658f11ea5e7eb1f2ccb0" id="r_ad5053fb5e13a658f11ea5e7eb1f2ccb0"><td class="memItemLeft"><a id="ad5053fb5e13a658f11ea5e7eb1f2ccb0" name="ad5053fb5e13a658f11ea5e7eb1f2ccb0"></a>
+void&#160;</td><td class="memItemRight"><b>FFT_Check2Equiv</b> (size_t dof, size_t m, size_t ker_dim0, sctl::Vector&lt; size_t &gt; &amp;ifft_vec, sctl::Vector&lt; Real_t &gt; &amp;ifft_scl, sctl::Vector&lt; Real_t &gt; &amp;input_data, sctl::Vector&lt; Real_t &gt; &amp;output_data, sctl::Vector&lt; Real_t &gt; &amp;buffer_)</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pro-attribs" class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
-<tr class="memitem:a3301f011ebaa1d1882ea5d57aa71d0e2" id="r_a3301f011ebaa1d1882ea5d57aa71d0e2"><td class="memItemLeft"><a class="el" href="structpvfmm_1_1FFTW__t.html">FFTW_t</a>&lt; Real_t &gt;::plan&#160;</td><td class="memItemRight"><a class="el" href="#a3301f011ebaa1d1882ea5d57aa71d0e2">vprecomp_fftplan</a></td></tr>
+<tr class="memitem:a6abb80ab89d423e0bd5c8a5171e35577" id="r_a6abb80ab89d423e0bd5c8a5171e35577"><td class="memItemLeft">sctl::FFT&lt; Real_t &gt;&#160;</td><td class="memItemRight"><a class="el" href="#a6abb80ab89d423e0bd5c8a5171e35577">vprecomp_fft</a></td></tr>
 <tr class="memitem:a433fd5b300ecc4a449a61831287cd2bc" id="r_a433fd5b300ecc4a449a61831287cd2bc"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a433fd5b300ecc4a449a61831287cd2bc">vprecomp_fft_flag</a></td></tr>
-<tr class="memitem:ae646e534bcfef5441ce21bf4a0371cc4" id="r_ae646e534bcfef5441ce21bf4a0371cc4"><td class="memItemLeft"><a class="el" href="structpvfmm_1_1FFTW__t.html">FFTW_t</a>&lt; Real_t &gt;::plan&#160;</td><td class="memItemRight"><a class="el" href="#ae646e534bcfef5441ce21bf4a0371cc4">vlist_fftplan</a></td></tr>
+<tr class="memitem:a1001071ea3306718c8cf69075eb803a7" id="r_a1001071ea3306718c8cf69075eb803a7"><td class="memItemLeft">sctl::FFT&lt; Real_t &gt;&#160;</td><td class="memItemRight"><a class="el" href="#a1001071ea3306718c8cf69075eb803a7">vlist_fft</a></td></tr>
 <tr class="memitem:a51e87506558bc68f502ba1b19d02c5c1" id="r_a51e87506558bc68f502ba1b19d02c5c1"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a51e87506558bc68f502ba1b19d02c5c1">vlist_fft_flag</a></td></tr>
-<tr class="memitem:a6cce32dd362b903e25b043f52e4c5449" id="r_a6cce32dd362b903e25b043f52e4c5449"><td class="memItemLeft"><a class="el" href="structpvfmm_1_1FFTW__t.html">FFTW_t</a>&lt; Real_t &gt;::plan&#160;</td><td class="memItemRight"><a class="el" href="#a6cce32dd362b903e25b043f52e4c5449">vlist_ifftplan</a></td></tr>
+<tr class="memitem:a8a4e4fe74b71ca1b650d8bd585ec3f55" id="r_a8a4e4fe74b71ca1b650d8bd585ec3f55"><td class="memItemLeft">sctl::Vector&lt; size_t &gt;&#160;</td><td class="memItemRight"><a class="el" href="#a8a4e4fe74b71ca1b650d8bd585ec3f55">vlist_fft_map</a></td></tr>
+<tr class="memitem:a6f8b49ea8b6bca5417fb72fb35517086" id="r_a6f8b49ea8b6bca5417fb72fb35517086"><td class="memItemLeft">sctl::FFT&lt; Real_t &gt;&#160;</td><td class="memItemRight"><a class="el" href="#a6f8b49ea8b6bca5417fb72fb35517086">vlist_ifft</a></td></tr>
 <tr class="memitem:a64fd517bddf91f7dd0450b585438947c" id="r_a64fd517bddf91f7dd0450b585438947c"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a64fd517bddf91f7dd0450b585438947c">vlist_ifft_flag</a></td></tr>
-<tr class="memitem:ae8a286d73eb1d5d85c6784d537a3453f" id="r_ae8a286d73eb1d5d85c6784d537a3453f"><td class="memItemLeft"><a class="el" href="classpvfmm_1_1mem_1_1MemoryManager.html">mem::MemoryManager</a> *&#160;</td><td class="memItemRight"><a class="el" href="#ae8a286d73eb1d5d85c6784d537a3453f">mem_mgr</a></td></tr>
+<tr class="memitem:a95d9d92705c89463b870ea226f69e948" id="r_a95d9d92705c89463b870ea226f69e948"><td class="memItemLeft">sctl::Vector&lt; size_t &gt;&#160;</td><td class="memItemRight"><a class="el" href="#a95d9d92705c89463b870ea226f69e948">vlist_ifft_map</a></td></tr>
 <tr class="memitem:a73dac4d9e1e17260e3456608085991b2" id="r_a73dac4d9e1e17260e3456608085991b2"><td class="memItemLeft"><a class="el" href="classpvfmm_1_1InteracList.html">InteracList</a>&lt; FMMNode &gt;&#160;</td><td class="memItemRight"><a class="el" href="#a73dac4d9e1e17260e3456608085991b2">interac_list</a></td></tr>
 <tr class="memitem:a86119883b69c9f3bae8951c530b7eb81" id="r_a86119883b69c9f3bae8951c530b7eb81"><td class="memItemLeft">const <a class="el" href="structpvfmm_1_1Kernel.html">Kernel</a>&lt; Real_t &gt; *&#160;</td><td class="memItemRight"><a class="el" href="#a86119883b69c9f3bae8951c530b7eb81">kernel</a></td></tr>
 <tr class="memitem:a9ddab65bc486378bf8adf082cf760653" id="r_a9ddab65bc486378bf8adf082cf760653"><td class="memItemLeft"><a class="el" href="classpvfmm_1_1PrecompMat.html">PrecompMat</a>&lt; Real_t &gt; *&#160;</td><td class="memItemRight"><a class="el" href="#a9ddab65bc486378bf8adf082cf760653">mat</a></td></tr>
 <tr class="memitem:a5586ff41f5dc5b0d4ea49cbea007d37c" id="r_a5586ff41f5dc5b0d4ea49cbea007d37c"><td class="memItemLeft">std::string&#160;</td><td class="memItemRight"><a class="el" href="#a5586ff41f5dc5b0d4ea49cbea007d37c">mat_fname</a></td></tr>
+<tr class="memitem:aaeda257c4e68c5471c4de46207e730c9" id="r_aaeda257c4e68c5471c4de46207e730c9"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#aaeda257c4e68c5471c4de46207e730c9">mat_fname_auto</a></td></tr>
 <tr class="memitem:a966878629cee5e0092afd0dbb9d86195" id="r_a966878629cee5e0092afd0dbb9d86195"><td class="memItemLeft">int&#160;</td><td class="memItemRight"><a class="el" href="#a966878629cee5e0092afd0dbb9d86195">multipole_order</a></td></tr>
-<tr class="memitem:a8e299f51c9e218388c9db5916b67b82a" id="r_a8e299f51c9e218388c9db5916b67b82a"><td class="memItemLeft">MPI_Comm&#160;</td><td class="memItemRight"><a class="el" href="#a8e299f51c9e218388c9db5916b67b82a">comm</a></td></tr>
+<tr class="memitem:a206dc7e530382b9f83e6154098e4390b" id="r_a206dc7e530382b9f83e6154098e4390b"><td class="memItemLeft">sctl::Comm&#160;</td><td class="memItemRight"><a class="el" href="#a206dc7e530382b9f83e6154098e4390b">sctl_comm</a></td></tr>
 <tr class="memitem:aa41b0e5d3657970f820453b28562affd" id="r_aa41b0e5d3657970f820453b28562affd"><td class="memItemLeft">Real_t *&#160;</td><td class="memItemRight"><a class="el" href="#aa41b0e5d3657970f820453b28562affd">m2c</a></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><div class="compoundTemplParams">template&lt;class FMMNode&gt;<br />
 class pvfmm::FMM_Pts&lt; FMMNode &gt;</div><p>This class manages all the translation operators for particle FMM. </p>
 
-<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00097">97</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00106">106</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
 </div><a name="doc-typedef-members" id="doc-typedef-members"></a><h2 id="header-doc-typedef-members" class="groupheader">Member Typedef Documentation</h2>
 <a id="ad604cffebfd9a21acd3ca932fd823317" name="ad604cffebfd9a21acd3ca932fd823317"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ad604cffebfd9a21acd3ca932fd823317">&#9670;&#160;</a></span>FMMNode_t</h2>
@@ -266,7 +274,7 @@ template&lt;class FMMNode&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00103">103</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00112">112</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
 
 </div>
 </div>
@@ -279,12 +287,12 @@ template&lt;class FMMNode&gt; </div>
 template&lt;class FMMNode&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">typedef <a class="el" href="classpvfmm_1_1FMM__Tree.html">FMM_Tree</a>&lt;<a class="el" href="#a798dbd1fdf43f29f2bef3e9158b10e40">FMM_Pts</a>&lt;FMMNode&gt; &gt; <a class="el" href="classpvfmm_1_1FMM__Pts.html">pvfmm::FMM_Pts</a>&lt; FMMNode &gt;::FMMTree_t</td>
+          <td class="memname">typedef <a class="el" href="classpvfmm_1_1FMM__Tree.html">FMM_Tree</a>&lt;<a class="el" href="#af803d249cdea84a6f21959ec949f4582">FMM_Pts</a>&lt;FMMNode&gt; &gt; <a class="el" href="classpvfmm_1_1FMM__Pts.html">pvfmm::FMM_Pts</a>&lt; FMMNode &gt;::FMMTree_t</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00101">101</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00110">110</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
 
 </div>
 </div>
@@ -302,13 +310,13 @@ template&lt;class FMMNode&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00102">102</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00111">111</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
 
 </div>
 </div>
 <a name="doc-constructors" id="doc-constructors"></a><h2 id="header-doc-constructors" class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a798dbd1fdf43f29f2bef3e9158b10e40" name="a798dbd1fdf43f29f2bef3e9158b10e40"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a798dbd1fdf43f29f2bef3e9158b10e40">&#9670;&#160;</a></span>FMM_Pts()</h2>
+<a id="af803d249cdea84a6f21959ec949f4582" name="af803d249cdea84a6f21959ec949f4582"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af803d249cdea84a6f21959ec949f4582">&#9670;&#160;</a></span>FMM_Pts()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -321,7 +329,7 @@ template&lt;class FMMNode&gt; </div>
         <tr>
           <td class="memname"><a class="el" href="classpvfmm_1_1FMM__Pts.html">pvfmm::FMM_Pts</a>&lt; FMMNode &gt;::FMM_Pts </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classpvfmm_1_1mem_1_1MemoryManager.html">mem::MemoryManager</a> *</td>          <td class="paramname"><span class="paramname"><em>mem_mgr_</em></span><span class="paramdefsep"> = </span><span class="paramdefval">NULL</span></td><td>)</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -334,7 +342,7 @@ template&lt;class FMMNode&gt; </div>
 
 <p>Constructor. </p>
 
-<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00117">117</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00126">126</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
 
 </div>
 </div>
@@ -374,8 +382,8 @@ template&lt;class FMMNode&gt; </div>
 
 </div>
 </div>
-<a id="a6976573a6c8def0e9b4b4da99be4c2e3" name="a6976573a6c8def0e9b4b4da99be4c2e3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6976573a6c8def0e9b4b4da99be4c2e3">&#9670;&#160;</a></span>Down2TargetSetup()</h2>
+<a id="a7ae957eeb68348869da881f0346cb45d" name="a7ae957eeb68348869da881f0346cb45d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7ae957eeb68348869da881f0346cb45d">&#9670;&#160;</a></span>Down2TargetSetup()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -388,7 +396,7 @@ template&lt;class FMMNode&gt; </div>
         <tr>
           <td class="memname">virtual void <a class="el" href="classpvfmm_1_1FMM__Pts.html">pvfmm::FMM_Pts</a>&lt; FMMNode &gt;::Down2TargetSetup </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; Real_t &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>setup_data</em></span>, </td>
+          <td class="paramtype"><a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; FMMNode_t &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>setup_data</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -398,12 +406,12 @@ template&lt;class FMMNode&gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">std::vector&lt; <a class="el" href="classpvfmm_1_1Matrix.html">Matrix</a>&lt; Real_t &gt; &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>node_data</em></span>, </td>
+          <td class="paramtype">std::vector&lt; sctl::Matrix&lt; Real_t &gt; &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>node_data</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">std::vector&lt; <a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt; FMMNode_t * &gt; &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>n_list</em></span>, </td>
+          <td class="paramtype">std::vector&lt; sctl::Vector&lt; sctl::Iterator&lt; FMMNode_t &gt; &gt; &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>n_list</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -425,12 +433,12 @@ template&lt;class FMMNode&gt; </div>
 
 <p>Compute target potential from the local expansion. </p>
 
-<p>Reimplemented in <a class="el" href="classpvfmm_1_1FMM__Cheb.html#a3144dc385db60ed5f5a1dea89a91ca90">pvfmm::FMM_Cheb&lt; FMMNode &gt;</a>.</p>
+<p>Reimplemented in <a class="el" href="classpvfmm_1_1FMM__Cheb.html#a2d5361424f33d523fc5bed482f2198be">pvfmm::FMM_Cheb&lt; FMMNode &gt;</a>.</p>
 
 </div>
 </div>
-<a id="a977f530f27bb7287512c4aebf193ab65" name="a977f530f27bb7287512c4aebf193ab65"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a977f530f27bb7287512c4aebf193ab65">&#9670;&#160;</a></span>Initialize()</h2>
+<a id="a9a2a1fd984d68008e59e32d61d2b8d70" name="a9a2a1fd984d68008e59e32d61d2b8d70"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9a2a1fd984d68008e59e32d61d2b8d70">&#9670;&#160;</a></span>Initialize()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -445,7 +453,7 @@ template&lt;class FMMNode&gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const MPI_Comm &amp;</td>          <td class="paramname"><span class="paramname"><em>comm</em></span>, </td>
+          <td class="paramtype">const sctl::Comm &amp;</td>          <td class="paramname"><span class="paramname"><em>comm</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -494,7 +502,7 @@ template&lt;class FMMNode&gt; </div>
 
 <p>Order for the multipole expansion. </p>
 
-<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00136">136</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00153">153</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
 
 </div>
 </div>
@@ -525,12 +533,12 @@ template&lt;class FMMNode&gt; </div>
 
 <p>Whether using scale-invariant kernel? </p>
 
-<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00141">141</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00158">158</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
 
 </div>
 </div>
-<a id="a8399c6262b000c785ced1710e30c2198" name="a8399c6262b000c785ced1710e30c2198"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8399c6262b000c785ced1710e30c2198">&#9670;&#160;</a></span>Source2UpSetup()</h2>
+<a id="aa92bf4ce2efb05ee01a4c2968b5e63bd" name="aa92bf4ce2efb05ee01a4c2968b5e63bd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa92bf4ce2efb05ee01a4c2968b5e63bd">&#9670;&#160;</a></span>Source2UpSetup()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -543,7 +551,7 @@ template&lt;class FMMNode&gt; </div>
         <tr>
           <td class="memname">virtual void <a class="el" href="classpvfmm_1_1FMM__Pts.html">pvfmm::FMM_Pts</a>&lt; FMMNode &gt;::Source2UpSetup </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; Real_t &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>setup_data</em></span>, </td>
+          <td class="paramtype"><a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; FMMNode_t &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>setup_data</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -553,12 +561,12 @@ template&lt;class FMMNode&gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">std::vector&lt; <a class="el" href="classpvfmm_1_1Matrix.html">Matrix</a>&lt; Real_t &gt; &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>node_data</em></span>, </td>
+          <td class="paramtype">std::vector&lt; sctl::Matrix&lt; Real_t &gt; &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>node_data</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">std::vector&lt; <a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt; FMMNode_t * &gt; &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>n_list</em></span>, </td>
+          <td class="paramtype">std::vector&lt; sctl::Vector&lt; sctl::Iterator&lt; FMMNode_t &gt; &gt; &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>n_list</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -580,12 +588,12 @@ template&lt;class FMMNode&gt; </div>
 
 <p>Initialize multipole expansions for the given array of leaf nodes at a given level. </p>
 
-<p>Reimplemented in <a class="el" href="classpvfmm_1_1FMM__Cheb.html#a0410a2cfdfd33698a8c7ab36e9a863f1">pvfmm::FMM_Cheb&lt; FMMNode &gt;</a>.</p>
+<p>Reimplemented in <a class="el" href="classpvfmm_1_1FMM__Cheb.html#a477d80aa4414f15c5164bb9866867a11">pvfmm::FMM_Cheb&lt; FMMNode &gt;</a>.</p>
 
 </div>
 </div>
-<a id="ae96e5095623203b507e8756a1a5080e2" name="ae96e5095623203b507e8756a1a5080e2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae96e5095623203b507e8756a1a5080e2">&#9670;&#160;</a></span>U_ListSetup()</h2>
+<a id="aa1f60251cf4b023d11ba23ea692b1030" name="aa1f60251cf4b023d11ba23ea692b1030"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa1f60251cf4b023d11ba23ea692b1030">&#9670;&#160;</a></span>U_ListSetup()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -598,7 +606,7 @@ template&lt;class FMMNode&gt; </div>
         <tr>
           <td class="memname">virtual void <a class="el" href="classpvfmm_1_1FMM__Pts.html">pvfmm::FMM_Pts</a>&lt; FMMNode &gt;::U_ListSetup </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; Real_t &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>setup_data</em></span>, </td>
+          <td class="paramtype"><a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; FMMNode_t &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>setup_data</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -608,12 +616,12 @@ template&lt;class FMMNode&gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">std::vector&lt; <a class="el" href="classpvfmm_1_1Matrix.html">Matrix</a>&lt; Real_t &gt; &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>node_data</em></span>, </td>
+          <td class="paramtype">std::vector&lt; sctl::Matrix&lt; Real_t &gt; &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>node_data</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">std::vector&lt; <a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt; FMMNode_t * &gt; &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>n_list</em></span>, </td>
+          <td class="paramtype">std::vector&lt; sctl::Vector&lt; sctl::Iterator&lt; FMMNode_t &gt; &gt; &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>n_list</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -635,12 +643,12 @@ template&lt;class FMMNode&gt; </div>
 
 <p>Compute U-List interactions. </p>
 
-<p>Reimplemented in <a class="el" href="classpvfmm_1_1FMM__Cheb.html#a4e88ba68e561780413e7901cf10c65b0">pvfmm::FMM_Cheb&lt; FMMNode &gt;</a>.</p>
+<p>Reimplemented in <a class="el" href="classpvfmm_1_1FMM__Cheb.html#af342c3cb2004db86993a37c9f1bc0cc0">pvfmm::FMM_Cheb&lt; FMMNode &gt;</a>.</p>
 
 </div>
 </div>
-<a id="ad28121abb30f43081dc6aa6542d01e03" name="ad28121abb30f43081dc6aa6542d01e03"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad28121abb30f43081dc6aa6542d01e03">&#9670;&#160;</a></span>W_ListSetup()</h2>
+<a id="afe0aa9400a186f3bf60cee29dffbc031" name="afe0aa9400a186f3bf60cee29dffbc031"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afe0aa9400a186f3bf60cee29dffbc031">&#9670;&#160;</a></span>W_ListSetup()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -653,7 +661,7 @@ template&lt;class FMMNode&gt; </div>
         <tr>
           <td class="memname">virtual void <a class="el" href="classpvfmm_1_1FMM__Pts.html">pvfmm::FMM_Pts</a>&lt; FMMNode &gt;::W_ListSetup </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; Real_t &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>setup_data</em></span>, </td>
+          <td class="paramtype"><a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; FMMNode_t &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>setup_data</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -663,12 +671,12 @@ template&lt;class FMMNode&gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">std::vector&lt; <a class="el" href="classpvfmm_1_1Matrix.html">Matrix</a>&lt; Real_t &gt; &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>node_data</em></span>, </td>
+          <td class="paramtype">std::vector&lt; sctl::Matrix&lt; Real_t &gt; &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>node_data</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">std::vector&lt; <a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt; FMMNode_t * &gt; &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>n_list</em></span>, </td>
+          <td class="paramtype">std::vector&lt; sctl::Vector&lt; sctl::Iterator&lt; FMMNode_t &gt; &gt; &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>n_list</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -690,12 +698,12 @@ template&lt;class FMMNode&gt; </div>
 
 <p>Compute W-List interactions. </p>
 
-<p>Reimplemented in <a class="el" href="classpvfmm_1_1FMM__Cheb.html#a5764682a19d9cc71a3add35729e9cb5a">pvfmm::FMM_Cheb&lt; FMMNode &gt;</a>.</p>
+<p>Reimplemented in <a class="el" href="classpvfmm_1_1FMM__Cheb.html#a4c07914f7327949d399a2cb9ecec9ecd">pvfmm::FMM_Cheb&lt; FMMNode &gt;</a>.</p>
 
 </div>
 </div>
-<a id="a7f28a3d990a9a5210dc1b2627bd14de3" name="a7f28a3d990a9a5210dc1b2627bd14de3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7f28a3d990a9a5210dc1b2627bd14de3">&#9670;&#160;</a></span>X_ListSetup()</h2>
+<a id="aa82b9b2148b55d3b216a00bb6d10af43" name="aa82b9b2148b55d3b216a00bb6d10af43"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa82b9b2148b55d3b216a00bb6d10af43">&#9670;&#160;</a></span>X_ListSetup()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -708,7 +716,7 @@ template&lt;class FMMNode&gt; </div>
         <tr>
           <td class="memname">virtual void <a class="el" href="classpvfmm_1_1FMM__Pts.html">pvfmm::FMM_Pts</a>&lt; FMMNode &gt;::X_ListSetup </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; Real_t &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>setup_data</em></span>, </td>
+          <td class="paramtype"><a class="el" href="structpvfmm_1_1SetupData.html">SetupData</a>&lt; FMMNode_t &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>setup_data</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -718,12 +726,12 @@ template&lt;class FMMNode&gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">std::vector&lt; <a class="el" href="classpvfmm_1_1Matrix.html">Matrix</a>&lt; Real_t &gt; &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>node_data</em></span>, </td>
+          <td class="paramtype">std::vector&lt; sctl::Matrix&lt; Real_t &gt; &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>node_data</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">std::vector&lt; <a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt; FMMNode_t * &gt; &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>n_list</em></span>, </td>
+          <td class="paramtype">std::vector&lt; sctl::Vector&lt; sctl::Iterator&lt; FMMNode_t &gt; &gt; &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>n_list</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -745,39 +753,13 @@ template&lt;class FMMNode&gt; </div>
 
 <p>Compute X-List interactions. </p>
 
-<p>Reimplemented in <a class="el" href="classpvfmm_1_1FMM__Cheb.html#ab0548571ee5c39b5f4bc442a3b14da9e">pvfmm::FMM_Cheb&lt; FMMNode &gt;</a>.</p>
+<p>Reimplemented in <a class="el" href="classpvfmm_1_1FMM__Cheb.html#a15e9c380d7f83e904199fa5bc861b11b">pvfmm::FMM_Cheb&lt; FMMNode &gt;</a>.</p>
 
 </div>
 </div>
 <a name="doc-variable-members" id="doc-variable-members"></a><h2 id="header-doc-variable-members" class="groupheader">Member Data Documentation</h2>
-<a id="a8e299f51c9e218388c9db5916b67b82a" name="a8e299f51c9e218388c9db5916b67b82a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8e299f51c9e218388c9db5916b67b82a">&#9670;&#160;</a></span>comm</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;class FMMNode&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">MPI_Comm <a class="el" href="classpvfmm_1_1FMM__Pts.html">pvfmm::FMM_Pts</a>&lt; FMMNode &gt;::comm</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel protected">protected</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00243">243</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
-
-</div>
-</div>
-<a id="ae1feb2ac3e086c9880d2bcdc5182c28c" name="ae1feb2ac3e086c9880d2bcdc5182c28c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae1feb2ac3e086c9880d2bcdc5182c28c">&#9670;&#160;</a></span>dev_buffer</h2>
+<a id="af81ec491ae8426dee411302d266d85bb" name="af81ec491ae8426dee411302d266d85bb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af81ec491ae8426dee411302d266d85bb">&#9670;&#160;</a></span>dev_buffer</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -785,12 +767,30 @@ template&lt;class FMMNode&gt; </div>
 template&lt;class FMMNode&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt;char&gt; <a class="el" href="classpvfmm_1_1FMM__Pts.html">pvfmm::FMM_Pts</a>&lt; FMMNode &gt;::dev_buffer</td>
+          <td class="memname">sctl::Vector&lt;char&gt; <a class="el" href="classpvfmm_1_1FMM__Pts.html">pvfmm::FMM_Pts</a>&lt; FMMNode &gt;::dev_buffer</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00214">214</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00231">231</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
+
+</div>
+</div>
+<a id="a3a7cc59be1921658ed1b0ffb3ec44596" name="a3a7cc59be1921658ed1b0ffb3ec44596"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3a7cc59be1921658ed1b0ffb3ec44596">&#9670;&#160;</a></span>dev_buffer_mirror</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class FMMNode&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classpvfmm_1_1DeviceMirror.html">DeviceMirror</a> <a class="el" href="classpvfmm_1_1FMM__Pts.html">pvfmm::FMM_Pts</a>&lt; FMMNode &gt;::dev_buffer_mirror</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00233">233</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
 
 </div>
 </div>
@@ -816,7 +816,7 @@ template&lt;class FMMNode&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00238">238</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00258">258</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
 
 </div>
 </div>
@@ -842,7 +842,7 @@ template&lt;class FMMNode&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00239">239</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00259">259</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
 
 </div>
 </div>
@@ -868,7 +868,7 @@ template&lt;class FMMNode&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00244">244</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00265">265</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
 
 </div>
 </div>
@@ -894,7 +894,7 @@ template&lt;class FMMNode&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00240">240</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00260">260</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
 
 </div>
 </div>
@@ -920,12 +920,12 @@ template&lt;class FMMNode&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00241">241</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00261">261</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
 
 </div>
 </div>
-<a id="ae8a286d73eb1d5d85c6784d537a3453f" name="ae8a286d73eb1d5d85c6784d537a3453f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae8a286d73eb1d5d85c6784d537a3453f">&#9670;&#160;</a></span>mem_mgr</h2>
+<a id="aaeda257c4e68c5471c4de46207e730c9" name="aaeda257c4e68c5471c4de46207e730c9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaeda257c4e68c5471c4de46207e730c9">&#9670;&#160;</a></span>mat_fname_auto</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -936,7 +936,7 @@ template&lt;class FMMNode&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classpvfmm_1_1mem_1_1MemoryManager.html">mem::MemoryManager</a>* <a class="el" href="classpvfmm_1_1FMM__Pts.html">pvfmm::FMM_Pts</a>&lt; FMMNode &gt;::mem_mgr</td>
+          <td class="memname">bool <a class="el" href="classpvfmm_1_1FMM__Pts.html">pvfmm::FMM_Pts</a>&lt; FMMNode &gt;::mat_fname_auto</td>
         </tr>
       </table>
   </td>
@@ -946,7 +946,7 @@ template&lt;class FMMNode&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00237">237</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00262">262</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
 
 </div>
 </div>
@@ -972,12 +972,38 @@ template&lt;class FMMNode&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00242">242</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00263">263</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
 
 </div>
 </div>
-<a id="ac07432c75a146e332c3da10c244919b7" name="ac07432c75a146e332c3da10c244919b7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac07432c75a146e332c3da10c244919b7">&#9670;&#160;</a></span>staging_buffer</h2>
+<a id="a206dc7e530382b9f83e6154098e4390b" name="a206dc7e530382b9f83e6154098e4390b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a206dc7e530382b9f83e6154098e4390b">&#9670;&#160;</a></span>sctl_comm</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class FMMNode&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">sctl::Comm <a class="el" href="classpvfmm_1_1FMM__Pts.html">pvfmm::FMM_Pts</a>&lt; FMMNode &gt;::sctl_comm</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel protected">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00264">264</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
+
+</div>
+</div>
+<a id="abc1562d881b195dd9e96450e2a448819" name="abc1562d881b195dd9e96450e2a448819"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abc1562d881b195dd9e96450e2a448819">&#9670;&#160;</a></span>staging_buffer</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -985,12 +1011,56 @@ template&lt;class FMMNode&gt; </div>
 template&lt;class FMMNode&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classpvfmm_1_1Vector.html">Vector</a>&lt;char&gt; <a class="el" href="classpvfmm_1_1FMM__Pts.html">pvfmm::FMM_Pts</a>&lt; FMMNode &gt;::staging_buffer</td>
+          <td class="memname">sctl::Vector&lt;char&gt; <a class="el" href="classpvfmm_1_1FMM__Pts.html">pvfmm::FMM_Pts</a>&lt; FMMNode &gt;::staging_buffer</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00215">215</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00232">232</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
+
+</div>
+</div>
+<a id="aacc354d87a829c8d9888ec6bed2074e1" name="aacc354d87a829c8d9888ec6bed2074e1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aacc354d87a829c8d9888ec6bed2074e1">&#9670;&#160;</a></span>staging_buffer_mirror</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class FMMNode&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classpvfmm_1_1DeviceMirror.html">DeviceMirror</a> <a class="el" href="classpvfmm_1_1FMM__Pts.html">pvfmm::FMM_Pts</a>&lt; FMMNode &gt;::staging_buffer_mirror</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00234">234</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
+
+</div>
+</div>
+<a id="a1001071ea3306718c8cf69075eb803a7" name="a1001071ea3306718c8cf69075eb803a7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1001071ea3306718c8cf69075eb803a7">&#9670;&#160;</a></span>vlist_fft</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class FMMNode&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">sctl::FFT&lt;Real_t&gt; <a class="el" href="classpvfmm_1_1FMM__Pts.html">pvfmm::FMM_Pts</a>&lt; FMMNode &gt;::vlist_fft</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel protected">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00248">248</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
 
 </div>
 </div>
@@ -1016,12 +1086,12 @@ template&lt;class FMMNode&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00230">230</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00249">249</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
 
 </div>
 </div>
-<a id="ae646e534bcfef5441ce21bf4a0371cc4" name="ae646e534bcfef5441ce21bf4a0371cc4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae646e534bcfef5441ce21bf4a0371cc4">&#9670;&#160;</a></span>vlist_fftplan</h2>
+<a id="a8a4e4fe74b71ca1b650d8bd585ec3f55" name="a8a4e4fe74b71ca1b650d8bd585ec3f55"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8a4e4fe74b71ca1b650d8bd585ec3f55">&#9670;&#160;</a></span>vlist_fft_map</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1032,7 +1102,7 @@ template&lt;class FMMNode&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="structpvfmm_1_1FFTW__t.html">FFTW_t</a>&lt;Real_t&gt;::plan <a class="el" href="classpvfmm_1_1FMM__Pts.html">pvfmm::FMM_Pts</a>&lt; FMMNode &gt;::vlist_fftplan</td>
+          <td class="memname">sctl::Vector&lt;size_t&gt; <a class="el" href="classpvfmm_1_1FMM__Pts.html">pvfmm::FMM_Pts</a>&lt; FMMNode &gt;::vlist_fft_map</td>
         </tr>
       </table>
   </td>
@@ -1042,7 +1112,33 @@ template&lt;class FMMNode&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00229">229</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00250">250</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
+
+</div>
+</div>
+<a id="a6f8b49ea8b6bca5417fb72fb35517086" name="a6f8b49ea8b6bca5417fb72fb35517086"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6f8b49ea8b6bca5417fb72fb35517086">&#9670;&#160;</a></span>vlist_ifft</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class FMMNode&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">sctl::FFT&lt;Real_t&gt; <a class="el" href="classpvfmm_1_1FMM__Pts.html">pvfmm::FMM_Pts</a>&lt; FMMNode &gt;::vlist_ifft</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel protected">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00254">254</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
 
 </div>
 </div>
@@ -1068,12 +1164,12 @@ template&lt;class FMMNode&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00235">235</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00255">255</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
 
 </div>
 </div>
-<a id="a6cce32dd362b903e25b043f52e4c5449" name="a6cce32dd362b903e25b043f52e4c5449"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6cce32dd362b903e25b043f52e4c5449">&#9670;&#160;</a></span>vlist_ifftplan</h2>
+<a id="a95d9d92705c89463b870ea226f69e948" name="a95d9d92705c89463b870ea226f69e948"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a95d9d92705c89463b870ea226f69e948">&#9670;&#160;</a></span>vlist_ifft_map</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1084,7 +1180,7 @@ template&lt;class FMMNode&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="structpvfmm_1_1FFTW__t.html">FFTW_t</a>&lt;Real_t&gt;::plan <a class="el" href="classpvfmm_1_1FMM__Pts.html">pvfmm::FMM_Pts</a>&lt; FMMNode &gt;::vlist_ifftplan</td>
+          <td class="memname">sctl::Vector&lt;size_t&gt; <a class="el" href="classpvfmm_1_1FMM__Pts.html">pvfmm::FMM_Pts</a>&lt; FMMNode &gt;::vlist_ifft_map</td>
         </tr>
       </table>
   </td>
@@ -1094,7 +1190,33 @@ template&lt;class FMMNode&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00234">234</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00256">256</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
+
+</div>
+</div>
+<a id="a6abb80ab89d423e0bd5c8a5171e35577" name="a6abb80ab89d423e0bd5c8a5171e35577"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6abb80ab89d423e0bd5c8a5171e35577">&#9670;&#160;</a></span>vprecomp_fft</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class FMMNode&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">sctl::FFT&lt;Real_t&gt; <a class="el" href="classpvfmm_1_1FMM__Pts.html">pvfmm::FMM_Pts</a>&lt; FMMNode &gt;::vprecomp_fft</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel protected">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00243">243</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
 
 </div>
 </div>
@@ -1120,33 +1242,7 @@ template&lt;class FMMNode&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00225">225</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
-
-</div>
-</div>
-<a id="a3301f011ebaa1d1882ea5d57aa71d0e2" name="a3301f011ebaa1d1882ea5d57aa71d0e2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3301f011ebaa1d1882ea5d57aa71d0e2">&#9670;&#160;</a></span>vprecomp_fftplan</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;class FMMNode&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="structpvfmm_1_1FFTW__t.html">FFTW_t</a>&lt;Real_t&gt;::plan <a class="el" href="classpvfmm_1_1FMM__Pts.html">pvfmm::FMM_Pts</a>&lt; FMMNode &gt;::vprecomp_fftplan</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel protected">protected</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00224">224</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="fmm__pts_8hpp_source.html#l00244">244</a> of file <a class="el" href="fmm__pts_8hpp_source.html">fmm_pts.hpp</a>.</p>
 
 </div>
 </div>
