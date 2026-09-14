@@ -526,8 +526,8 @@ template<typename Real> static void PVFMMEval(const Real* src_pos, const Real* s
 
         sctl::StaticArray<double,PVFMM_COORD_DIM> min_x;
         sctl::StaticArray<double,PVFMM_COORD_DIM> max_x;
-        comm.Allreduce<double>(loc_min_x, min_x, PVFMM_COORD_DIM, sctl::CommOp::MIN);
-        comm.Allreduce<double>(loc_max_x, max_x, PVFMM_COORD_DIM, sctl::CommOp::MAX);
+        comm.Allreduce(loc_min_x + 0, min_x + 0, PVFMM_COORD_DIM, sctl::CommOp::MIN);
+        comm.Allreduce(loc_max_x + 0, max_x + 0, PVFMM_COORD_DIM, sctl::CommOp::MAX);
 
         Real eps=sctl::machine_eps<Real>()*64; // Points should be well within the box.
         scale_x=1/(Real)(max_x[0]-min_x[0]+2*eps);

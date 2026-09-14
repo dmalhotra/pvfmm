@@ -585,7 +585,7 @@ void MPI_Tree<TreeNode>::RedistNodes(sctl::ConstIterator<MortonId> loc_min) {
       std::memcpy(data_ptr[i], (char*)data[i].data, data[i].length);
   }
 
-  Comm().template Alltoallv<char>(send_buff_scratch.begin(), send_size.begin(), sdisp.begin(),
+  Comm().Alltoallv(send_buff_scratch.begin(), send_size.begin(), sdisp.begin(),
     recv_buff_scratch.begin(), recv_size.begin(), rdisp.begin());
 
   char* r_ptr=recv_buff;
@@ -901,7 +901,7 @@ inline int balanceOctree (sctl::Vector<MortonId > &in, sctl::Vector<MortonId > &
 
 #ifdef SCTL_VERBOSE
   sctl::StaticArray<long long,3> loc_sizes{locInSize, locTmpSize, (long long)out.Dim()}, glb_sizes;
-  comm.Allreduce<long long>(loc_sizes, glb_sizes, 3, sctl::CommOp::SUM);
+  comm.Allreduce(loc_sizes + 0, glb_sizes + 0, 3, sctl::CommOp::SUM);
   if(!comm.Rank()) std::cout<<"Balance Octree. inpSize: "<<glb_sizes[0]
                                     <<" tmpSize: "<<glb_sizes[1]
                                     <<" outSize: "<<glb_sizes[2]
@@ -951,7 +951,7 @@ void MPI_Tree<TreeNode>::Balance21(BoundaryType bndry) {
     sctl::omp_par::scan(recv_cnt.begin(),recv_dsp.begin(),num_proc);
 
     in.ReInit(recv_cnt[num_proc-1]+recv_dsp[num_proc-1]);
-    Comm().template Alltoallv<MortonId>(out.begin(), cnt.begin(), dsp.begin(),
+    Comm().Alltoallv(out.begin(), cnt.begin(), dsp.begin(),
               in.begin(), recv_cnt.begin(), recv_dsp.begin());
     in.Swap(out);
   }
@@ -1762,7 +1762,7 @@ void MPI_Tree<TreeNode>::ConstructLET_Sparse(BoundaryType bndry){
     if((size_t)recv_buff.Dim()<recv_length){
       recv_buff.ReInit(recv_length);
     }
-    Comm().template Alltoallv<char>(send_buff.begin(), send_size.begin(), send_disp.begin(),
+    Comm().Alltoallv(send_buff.begin(), send_size.begin(), send_disp.begin(),
               recv_buff.begin(), recv_size.begin(), recv_disp.begin());
   }
   //sctl::Profile::Toc();
