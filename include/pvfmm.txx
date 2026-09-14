@@ -72,7 +72,7 @@ inline ChebFMM_Tree<Real>* ChebFMM_CreateTree(int cheb_deg, const std::vector<Re
   { // Set data_dof
     sctl::StaticArray<long long,2> glb_size, loc_size;
     loc_size[0]=(long long)node_coord.size()/PVFMM_COORD_DIM; loc_size[1]=(long long)fn_coeff.size()/Ncoeff;
-    comm.Allreduce<long long>(loc_size, glb_size, 2, sctl::CommOp::SUM);
+    comm.Allreduce(loc_size + 0, glb_size + 0, 2, sctl::CommOp::SUM);
     tree_data.data_dof = glb_size[1]/glb_size[0];
   }
   assert(node_coord.size() && (node_coord.size()/PVFMM_COORD_DIM)*PVFMM_COORD_DIM == node_coord.size());
