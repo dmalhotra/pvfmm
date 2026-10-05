@@ -1408,7 +1408,7 @@ struct stokes_sym_dip_ {
       VecType rinv3 = rinv2*rinv;
       VecType r_dot_f = (v_src[0]*r[0] + v_src[1]*r[1] + v_src[2]*r[2]);
       VecType r_dot_n = (v_src[3]*r[0] + v_src[4]*r[1] + v_src[5]*r[2]);
-      VecType n_dot_f = (v_src[0]*v_src[3] + v_src[1]*v_src[1] + v_src[2]*v_src[2]);
+      VecType n_dot_f = (v_src[0]*v_src[3] + v_src[1]*v_src[4] + v_src[2]*v_src[5]);
       VecType three = (typename VecType::ScalarType)(3.0);
 
       VecType common = (n_dot_f - three * r_dot_n*r_dot_f*rinv2)*rinv3;
