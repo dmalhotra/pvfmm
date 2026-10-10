@@ -827,7 +827,7 @@ std::vector<T> integ_pyramid(int m, T* s, T r, int nx, const Kernel<T>& kernel, 
                      +2*m*(m+1)*k_dim
                      +m*(m+1)*(m+2)/3*k_dim)*nx*(x_.size()-1));
 
-  std::vector<T> I2_(&I2[0], &I2[0]+I2.Dim());  // I2.Dim() == m*m*m*k_dim
+  std::vector<T> I2_(&I2[0], &I2[0]+I2.size());  // I2.size() == m*m*m*k_dim
   // k_out, I0, I1, I2 freed automatically by ScratchBuf destructors in reverse
   // declaration order at scope exit.
   return I2_;
