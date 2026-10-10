@@ -84,7 +84,6 @@ subdirheaders_HEADERS = \
 												SCTL/include/sctl/blas.h \
 												SCTL/include/sctl/boundary_integral.hpp \
 												SCTL/include/sctl/boundary_integral.txx \
-												SCTL/include/sctl/boundary_quadrature.hpp \
 												SCTL/include/sctl/cheb_utils.hpp \
 												SCTL/include/sctl/comm.hpp \
 												SCTL/include/sctl/comm.txx \
@@ -124,6 +123,12 @@ subdirheaders_HEADERS = \
 												SCTL/include/sctl/profile.txx \
 												SCTL/include/sctl/quadrule.hpp \
 												SCTL/include/sctl/quadrule.txx \
+												SCTL/include/sctl/scratch_pool.hpp \
+												SCTL/include/sctl/scratch_pool.txx \
+												SCTL/include/sctl/small_gemm.hpp \
+												SCTL/include/sctl/small_gemm.txx \
+												SCTL/include/sctl/sort-scatter.hpp \
+												SCTL/include/sctl/sort-scatter.txx \
 												SCTL/include/sctl/sph_harm.hpp \
 												SCTL/include/sctl/sph_harm.txx \
 												SCTL/include/sctl/sse2neon.h \
