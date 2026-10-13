@@ -71,6 +71,7 @@ pvfmm_cpp_header_files = \
 									include/mpi_tree.txx \
 									include/precomp_mat.txx \
 									include/tree.txx \
+									include/tree_node.txx \
 									SCTL/include/sctl.hpp
 
 lib_libpvfmm_la_HEADERS = \
