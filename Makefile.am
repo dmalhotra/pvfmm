@@ -92,6 +92,8 @@ subdirheaders_HEADERS = \
 												SCTL/include/sctl/fft_wrapper.txx \
 												SCTL/include/sctl/fmm-wrapper.hpp \
 												SCTL/include/sctl/fmm-wrapper.txx \
+												SCTL/include/sctl/function-table.hpp \
+												SCTL/include/sctl/function-table.txx \
 												SCTL/include/sctl/generic-kernel.hpp \
 												SCTL/include/sctl/generic-kernel.txx \
 												SCTL/include/sctl/intrin-wrapper.hpp \
