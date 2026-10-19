@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "pvfmm"
 readme = "README.md"
-authors = [{ "name" = "Brian Ward", "email" = "bward@flatironinstitute.org" }]
+authors = [{ "name" = "Brian Ward", "email" = "bward@flatironinstitute.org" }, { "name" = "Dhairya Malhotra" }]
 dependencies = ["numpy", "mpi4py"]
 requires-python = ">=3.8"
 license = { text = "BSD-3-Clause" }

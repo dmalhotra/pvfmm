@@ -1,12 +1,13 @@
-Current developers:
+PVFMM authors (see NOTICE for each person's part):
 
-Dhairya Malhotra
+Dhairya Malhotra (lead author)
 George Biros
+Chenhan D. Yu
+Brian Ward
+Xuanzhao Gao
+Robert Blackwell
+Wen Yan
 
-PvFMM has been developed and is maintained by Parallel Algorithms for Data
-Analysis and Simulation Group (PADAS) at the Institute for Computational 
-Engineering and Sciences at the University of Texas at Austin.
-
-More information about the authors is available at the PADAS Group webpage:
-http://padas.ices.utexas.edu
-
+PVFMM was started in the Parallel Algorithms for Data Analysis and Simulation
+(PADAS) group at the University of Texas at Austin, continued at New York
+University, and is now developed at the Flatiron Institute.
