@@ -1,3 +1,7 @@
+% Copyright (C) 2010-2026 The Simons Foundation, Inc. and the PVFMM authors (see NOTICE)
+% Authors: Dhairya Malhotra, Brian Ward, Xuanzhao Gao
+% SPDX-License-Identifier: LGPL-3.0-only
+
 # Using the Python and Julia bindings
 
 Both bindings wrap the {doc}`C interface <../api/c>` and require the shared

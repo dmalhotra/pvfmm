@@ -1,3 +1,7 @@
+% Copyright (C) 2010-2026 The Simons Foundation, Inc. and the PVFMM authors (see NOTICE)
+% Author: Dhairya Malhotra
+% SPDX-License-Identifier: LGPL-3.0-only
+
 # API reference
 
 PVFMM exposes the same functionality through five language surfaces. The C++

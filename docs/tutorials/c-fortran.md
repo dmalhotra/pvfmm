@@ -1,3 +1,7 @@
+% Copyright (C) 2010-2026 The Simons Foundation, Inc. and the PVFMM authors (see NOTICE)
+% Author: Dhairya Malhotra
+% SPDX-License-Identifier: LGPL-3.0-only
+
 # Using the C and Fortran interfaces
 
 Four example programs demonstrate the {doc}`C <../api/c>` and
