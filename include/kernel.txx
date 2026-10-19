@@ -1,3 +1,7 @@
+// Copyright (C) 2010-2026 The Simons Foundation, Inc. and the PVFMM authors (see NOTICE)
+// Authors: Dhairya Malhotra, Robert Blackwell
+// SPDX-License-Identifier: LGPL-3.0-only
+
 /**
  * \file kernel.txx
  * \author Dhairya Malhotra
