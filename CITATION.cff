@@ -1,0 +1,115 @@
+cff-version: 1.2.0
+message: "If you use PVFMM, please cite the software and both papers below: the preferred citation and Algorithm 967 (ACM TOMS) in references."
+type: software
+title: "PVFMM: Parallel Volume Fast Multipole Method"
+authors:
+  - given-names: Dhairya
+    family-names: Malhotra
+  - given-names: George
+    family-names: Biros
+  - given-names: Chenhan D.
+    family-names: Yu
+  - given-names: Brian
+    family-names: Ward
+  - given-names: Xuanzhao
+    family-names: Gao
+  - given-names: Robert
+    family-names: Blackwell
+  - given-names: Wen
+    family-names: Yan
+abstract: "A parallel kernel-independent FMM library for particle and volume potentials. It solves Stokes, Poisson and Helmholtz problems on the unit cube, with free-space or periodic boundary conditions, by a volume potential integral equation formulation accelerated by the kernel-independent fast multipole method."
+repository-code: "https://github.com/dmalhotra/pvfmm"
+url: "https://pvfmm.readthedocs.io"
+license: LGPL-3.0-only
+preferred-citation:
+  type: article
+  title: "PVFMM: A Parallel Kernel Independent FMM for Particle and Volume Potentials"
+  authors:
+    - given-names: Dhairya
+      family-names: Malhotra
+    - given-names: George
+      family-names: Biros
+  journal: "Communications in Computational Physics"
+  publisher:
+    name: "Global Science Press"
+  volume: 18
+  issue: 3
+  start: 808
+  end: 830
+  year: 2015
+  doi: "10.4208/cicp.020215.150515sw"
+references:
+  - type: article
+    title: "Algorithm 967: A Distributed-Memory Fast Multipole Method for Volume Potentials"
+    authors:
+      - given-names: Dhairya
+        family-names: Malhotra
+      - given-names: George
+        family-names: Biros
+    journal: "ACM Transactions on Mathematical Software"
+    publisher:
+      name: ACM
+    volume: 43
+    issue: 2
+    start: 1
+    end: 27
+    year: 2016
+    doi: "10.1145/2898349"
+    notes: "The volume potential FMM."
+  - type: article
+    title: "A kernel-independent adaptive fast multipole algorithm in two and three dimensions"
+    authors:
+      - given-names: Lexing
+        family-names: Ying
+      - given-names: George
+        family-names: Biros
+      - given-names: Denis
+        family-names: Zorin
+    journal: "Journal of Computational Physics"
+    publisher:
+      name: "Elsevier BV"
+    volume: 196
+    issue: 2
+    start: 591
+    end: 626
+    year: 2004
+    doi: "10.1016/j.jcp.2003.11.021"
+    notes: "The kernel-independent FMM that PVFMM implements."
+  - type: software
+    title: "SCTL: Scientific Computing Template Library"
+    authors:
+      - given-names: Dhairya
+        family-names: Malhotra
+      - given-names: Tianyue
+        family-names: Li
+      - given-names: Robert
+        family-names: Blackwell
+      - given-names: Wen
+        family-names: Yan
+      - given-names: Xuanzhao
+        family-names: Gao
+    repository-code: "https://github.com/dmalhotra/SCTL"
+    url: "https://sctl.readthedocs.io"
+    license: Apache-2.0
+    notes: "PVFMM is built on SCTL (git submodule SCTL/)."
+  - type: conference-paper
+    title: "Dendro: Parallel algorithms for multigrid and AMR methods on 2:1 balanced octrees"
+    authors:
+      - given-names: Rahul S.
+        family-names: Sampath
+      - given-names: Santi S.
+        family-names: Adavani
+      - given-names: Hari
+        family-names: Sundar
+      - given-names: Ilya
+        family-names: Lashuk
+      - given-names: George
+        family-names: Biros
+    collection-title: "2008 SC - International Conference for High Performance Computing, Networking, Storage and Analysis"
+    publisher:
+      name: IEEE
+    start: 1
+    end: 12
+    year: 2008
+    doi: "10.1109/SC.2008.5218558"
+    repository-code: "https://github.com/hsundar/dendro"

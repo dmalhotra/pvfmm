@@ -1,3 +1,7 @@
+# Copyright (C) 2010-2026 The Simons Foundation, Inc. and the PVFMM authors (see NOTICE)
+# Authors: Brian Ward, Dhairya Malhotra
+# SPDX-License-Identifier: BSD-3-Clause
+
 import ctypes
 import ctypes.util
 import os

@@ -1,3 +1,7 @@
+# Copyright (C) 2010-2026 The Simons Foundation, Inc. and the PVFMM authors (see NOTICE)
+# Author: Dhairya Malhotra
+# SPDX-License-Identifier: LGPL-3.0-only
+#
 # Sphinx configuration for the PVFMM documentation (https://readthedocs.org).
 #
 # Build locally with:
@@ -34,8 +38,8 @@ run_doxygen()
 # -- Project information ------------------------------------------------------
 
 project = "PVFMM"
-author = "Dhairya Malhotra"
-copyright = "2010-2026, Dhairya Malhotra"
+author = "Dhairya Malhotra, George Biros, Chenhan D. Yu, Brian Ward, Xuanzhao Gao, Robert Blackwell, Wen Yan"
+copyright = "2010-2026, The Simons Foundation, Inc. and the PVFMM authors"
 # Single-sourced from version.txt (see scripts/release.sh), like the
 # autotools and CMake builds.
 with open(os.path.join(DOCS_DIR, "..", "version.txt")) as f:
@@ -75,6 +79,10 @@ html_theme_options = {
     "collapse_navigation": False,
     "navigation_depth": 3,
 }
+
+# robots.txt, which Read the Docs serves from the default version: blocks AI
+# crawlers and agents, allows search engines.
+html_extra_path = ["robots.txt"]
 
 # Don't require the example/binding code blocks to be valid highlight targets.
 highlight_language = "none"

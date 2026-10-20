@@ -1,6 +1,10 @@
+// Copyright (C) 2010-2026 The Simons Foundation, Inc. and the PVFMM authors (see NOTICE)
+// Authors: Dhairya Malhotra, Chenhan D. Yu
+// SPDX-License-Identifier: LGPL-3.0-only
+
 /**
  * \file device_wrapper.hpp
- * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
+ * \author Dhairya Malhotra
  * \date 6-5-2013
  * \brief This file contains definition of DeviceWrapper.
  */

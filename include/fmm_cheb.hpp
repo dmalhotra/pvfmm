@@ -1,6 +1,10 @@
+// Copyright (C) 2010-2026 The Simons Foundation, Inc. and the PVFMM authors (see NOTICE)
+// Author: Dhairya Malhotra
+// SPDX-License-Identifier: LGPL-3.0-only
+
 /**
  * \file fmm_cheb.hpp
- * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
+ * \author Dhairya Malhotra
  * \date 3-07-2011
  * \brief This file contains the definition of the FMM_Cheb class.
  * This handles all the translations through matrix multiplications.

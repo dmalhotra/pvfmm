@@ -1,3 +1,7 @@
+# Copyright (C) 2010-2026 The Simons Foundation, Inc. and the PVFMM authors (see NOTICE)
+# Author: Xuanzhao Gao
+# SPDX-License-Identifier: LGPL-3.0-only
+
 using Test
 using PVFMM
 

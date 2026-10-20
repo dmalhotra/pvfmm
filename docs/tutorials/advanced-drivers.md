@@ -1,3 +1,7 @@
+% Copyright (C) 2010-2026 The Simons Foundation, Inc. and the PVFMM authors (see NOTICE)
+% Author: Dhairya Malhotra
+% SPDX-License-Identifier: LGPL-3.0-only
+
 # Test drivers and advanced usage
 
 Beyond the minimal examples, `examples/src/` contains two full-featured test

@@ -1,6 +1,10 @@
+// Copyright (C) 2010-2026 The Simons Foundation, Inc. and the PVFMM authors (see NOTICE)
+// Author: Dhairya Malhotra
+// SPDX-License-Identifier: LGPL-3.0-only
+
 /**
  * \file pvfmm.txx
- * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
+ * \author Dhairya Malhotra
  * \date 26-10-2018
  * \brief This file contains the definitions of the wrapper functions for PVFMM.
  */

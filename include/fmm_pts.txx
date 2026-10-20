@@ -1,6 +1,10 @@
+// Copyright (C) 2010-2026 The Simons Foundation, Inc. and the PVFMM authors (see NOTICE)
+// Authors: Dhairya Malhotra, Chenhan D. Yu, Wen Yan
+// SPDX-License-Identifier: LGPL-3.0-only
+
 /**
  * \file fmm_pts.txx
- * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
+ * \author Dhairya Malhotra
  * \date 3-07-2011
  * \brief This file contains the implementation of the FMM_Pts class.
  */

@@ -1,3 +1,7 @@
+// Copyright (C) 2010-2026 The Simons Foundation, Inc. and the PVFMM authors (see NOTICE)
+// Authors: Dhairya Malhotra, Xuanzhao Gao
+// SPDX-License-Identifier: LGPL-3.0-only
+
 #include <cstring>
 #include <pvfmm.hpp>
 #include <pvfmm.h>

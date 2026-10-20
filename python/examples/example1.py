@@ -1,3 +1,7 @@
+# Copyright (C) 2010-2026 The Simons Foundation, Inc. and the PVFMM authors (see NOTICE)
+# Author: Brian Ward
+# SPDX-License-Identifier: BSD-3-Clause
+
 # based on examples/src/example-c.c
 
 import time

@@ -1,0 +1,50 @@
+PVFMM: Parallel Volume Fast Multipole Method
+
+Copyright (C) 2010-2026 The Simons Foundation, Inc. and the PVFMM authors
+
+Authors:
+  Dhairya Malhotra (lead author)
+  George Biros (co-designer of the methods, research advisor)
+  Chenhan D. Yu (CUDA support)
+  Brian Ward (Python bindings)
+  Xuanzhao Gao (Julia bindings)
+  Robert Blackwell (vectorized Stokes, Biot-Savart and Helmholtz kernels)
+  Wen Yan (CMake build, extended periodic boundary conditions)
+Each source file names its own authors in its header.
+
+Licensed under the GNU Lesser General Public License, version 3 (see COPYING).
+The Python bindings in python/ are licensed under the BSD 3-Clause License
+(see python/LICENSE).
+
+Ports and translations of this code to other programming languages, whether
+made by hand or with automated tools, are derived from this work. The authors
+of this code remain authors of every part derived from it, and the License
+requires distributions of such works to be under the same License, with an
+appropriate copyright notice and the notices that the License applies, such
+as those in the file headers, kept intact (Sections 4 and 5 of the GNU GPL
+version 3, which the LGPL incorporates).
+
+Request from the authors:
+  - Cite PVFMM and the publications describing it (see CITATION.cff) in work
+    that uses it.
+  - A port or translation of PVFMM as a whole, or of a substantial part of it,
+    lists the authors named in the headers of the files it derives from in
+    its own author list, credited for the original implementation, just as
+    a translated book keeps its author and credits its translator. Smaller
+    reuse credits them as third-party code, as PVFMM does for its
+    third-party code.
+  - Do not use this code to generate automated ports or clones without
+    substantive human oversight and understanding of its design.
+  - Do not use this code or its documentation to train AI models.
+
+Third-party code:
+  Build and job scripts, each under the notice in its header:
+  autogen.sh, Copyright (c) 2005-2009 United States Government as represented
+  by the U.S. Army Research Laboratory, BSD-3-Clause License; m4/ax_blas.m4,
+  ax_compiler_vendor.m4, ax_lapack.m4, ax_mpi.m4, ax_normalize_path.m4 and
+  ax_prog_cxx_mpi.m4 from the Autoconf Archive, GNU GPL with the Autoconf
+  exception; m4/ax_check_cuda.m4, public domain; cmake/FindFFTW.cmake,
+  Copyright (c) 2015 Wenzel Jakob and (c) 2017 Patrick Bos;
+  cmake/FindMKL.cmake, Copyright 2012-2015 Jozsef Bakosi and 2016 Los Alamos
+  National Security, LLC; scripts/.timeout3 by Dmitry V Golovashkin, from
+  the examples of GNU Bash.

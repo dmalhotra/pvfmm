@@ -1,6 +1,10 @@
+// Copyright (C) 2010-2026 The Simons Foundation, Inc. and the PVFMM authors (see NOTICE)
+// Author: Dhairya Malhotra
+// SPDX-License-Identifier: LGPL-3.0-only
+
 /**
  * \file kernel.hpp
- * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
+ * \author Dhairya Malhotra
  * \date 12-20-2011
  * \brief This file contains the definition of the struct Kernel and also the
  * implementation of various kernels for FMM.

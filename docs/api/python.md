@@ -1,3 +1,7 @@
+% Copyright (C) 2010-2026 The Simons Foundation, Inc. and the PVFMM authors (see NOTICE)
+% Authors: Dhairya Malhotra, Brian Ward
+% SPDX-License-Identifier: LGPL-3.0-only
+
 # Python interface
 
 The `pvfmm` Python package (in

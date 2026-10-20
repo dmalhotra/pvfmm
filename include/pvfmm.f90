@@ -1,5 +1,9 @@
+! Copyright (C) 2010-2026 The Simons Foundation, Inc. and the PVFMM authors (see NOTICE)
+! Author: Dhairya Malhotra
+! SPDX-License-Identifier: LGPL-3.0-only
+
 !> @file pvfmm.f90
-!> @author Dhairya Malhotra, dhairya.malhotra@gmail.com
+!> @author Dhairya Malhotra
 !> @date 8-5-2018
 !> @brief This file contains the declarations for the Fortran interface to PVFMM.
 

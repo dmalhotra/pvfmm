@@ -25,8 +25,10 @@
 
 ### License
 
-   PVFMM is distributed under the LGPLv3 licence. See COPYING in
-   the top-level directory of the distribution.
+   PVFMM is licensed under the [GNU Lesser General Public License,
+   version 3](COPYING). The [NOTICE](NOTICE) file lists the authors, who
+   ask that it be kept in any redistribution, including ports to other
+   languages. It also has their requests on crediting them and on AI use.
 
 ### Installing PVFMM
 
@@ -60,6 +62,13 @@
    Python bindings are available under `python/`.
    Julia bindings are available under `julia/` (see `julia/README.md`).
 
+
+### Citing PVFMM
+
+If you use PVFMM, please cite:
+
+- D. Malhotra and G. Biros, "PVFMM: A Parallel Kernel Independent FMM for Particle and Volume Potentials", *Commun. Comput. Phys.* 18(3), 808–830 (2015). [doi:10.4208/cicp.020215.150515sw](https://doi.org/10.4208/cicp.020215.150515sw)
+- D. Malhotra and G. Biros, "Algorithm 967: A Distributed-Memory Fast Multipole Method for Volume Potentials", *ACM Trans. Math. Softw.* 43(2), 1–27 (2016). [doi:10.1145/2898349](https://doi.org/10.1145/2898349)
 
 ### Acknowledgment
 
