@@ -16,7 +16,8 @@ git rev-parse "v$VER" >/dev/null 2>&1 && { echo "error: tag v$VER already exists
 echo "$VER" > version.txt
 sed -i.bak "s/^__version__ = \".*\"/__version__ = \"$VER\"/" python/src/pvfmm/__init__.py
 sed -i.bak "s/^version = \".*\"/version = \"$VER\"/" julia/Project.toml
-rm -f python/src/pvfmm/__init__.py.bak julia/Project.toml.bak
+sed -i.bak -e "s/^version: \".*\"/version: \"$VER\"/" -e "s/^date-released: \".*\"/date-released: \"$(date +%F)\"/" CITATION.cff
+rm -f python/src/pvfmm/__init__.py.bak julia/Project.toml.bak CITATION.cff.bak
 
 git commit -am "Release v$VER"
 git tag -a "v$VER" -m "PVFMM v$VER"
