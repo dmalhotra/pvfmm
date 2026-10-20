@@ -494,7 +494,6 @@ void MPI_Tree<TreeNode>::RedistNodes(sctl::ConstIterator<MortonId> loc_min) {
   int np = Comm().Size();
   if(np==1)return;
 
-  //Create a linear tree in dendro format.
   sctl::Iterator<Node_t> curr_node=this->PreorderFirst();
   std::vector<MortonId> in;
   std::vector<Node_t*> node_lst;
@@ -670,61 +669,59 @@ sctl::Iterator<TreeNode> MPI_Tree<TreeNode>::FindNode(MortonId& key, bool subdiv
 }
 
 
-//list must be sorted.
-inline int lineariseList(sctl::Vector<MortonId> & list, const sctl::Comm& comm) {
-  //Remove empty processors...
-  const sctl::Comm new_comm = comm.Split(list.Dim()==0 ? 0 : 1);
-  const int new_rank = new_comm.Rank();
-  const int new_size = new_comm.Size();
-  if(list.Dim()) {
-    //Send the last octant to the next processor.
-    MortonId lastOctant = list[list.Dim()-1];
-    MortonId lastOnPrev;
+/**
+ * The octants adjacent to this process's list in the global order: the last octant of the nearest
+ * preceding process with a non-empty list, and the first octant of the nearest following one.
+ * Collective. Returns the number of processes with a non-empty list.
+ */
+inline int neighborOctants(const sctl::Vector<MortonId>& list, const sctl::Comm& comm,
+    bool& has_prev, MortonId& prev_last, bool& has_next, MortonId& next_first) {
+  const int np = comm.Size(), rank = comm.Rank();
+  const sctl::Integer nonempty = (list.Dim() > 0 ? 1 : 0);
+  sctl::Vector<sctl::Integer> nonempty_all(np);
+  comm.Allgather(sctl::Ptr2ConstItr<sctl::Integer>(&nonempty, 1), 1, nonempty_all.begin(), 1);
 
-    sctl::Comm::Request recvRequest, sendRequest;
+  int prev = rank - 1, next = rank + 1, active = 0;
+  while (prev >= 0 && !nonempty_all[prev]) prev--;
+  while (next < np && !nonempty_all[next]) next++;
+  for (int i = 0; i < np; i++) active += (int)nonempty_all[i];
+  has_prev = (nonempty && prev >= 0);
+  has_next = (nonempty && next < np);
 
-    if(new_rank > 0) {
-      recvRequest = new_comm.Irecv(sctl::Ptr2Itr<MortonId>(&lastOnPrev,1), 1, new_rank-1, 1);
-    }
-    if(new_rank < (new_size-1)) {
-      sendRequest = new_comm.Issend(sctl::Ptr2ConstItr<MortonId>(&lastOctant,1), 1, new_rank+1, 1);
-    }
+  // Each non-empty process trades its first octant with the previous one and its last octant with the next.
+  std::vector<sctl::Comm::Request> reqs;
+  if (has_prev) {
+    reqs.push_back(comm.Irecv(sctl::Ptr2Itr<MortonId>(&prev_last, 1), 1, prev, 1));
+    reqs.push_back(comm.Isend(sctl::Ptr2ConstItr<MortonId>(&list[0], 1), 1, prev, 2));
+  }
+  if (has_next) {
+    reqs.push_back(comm.Irecv(sctl::Ptr2Itr<MortonId>(&next_first, 1), 1, next, 2));
+    reqs.push_back(comm.Isend(sctl::Ptr2ConstItr<MortonId>(&list[list.Dim()-1], 1), 1, next, 1));
+  }
+  for (auto& r : reqs) comm.Wait(std::move(r));
+  return active;
+}
 
-    if(new_rank > 0) {
-      sctl::Vector<MortonId> tmp(list.Dim()+1);
-      for(size_t i = 0; i < (size_t)list.Dim(); i++) {
-        tmp[i+1] = list[i];
-      }
+/**
+ * Removes every octant that equals, or is an ancestor of, the octant after it in the global order,
+ * keeping each octant on its process. list must be globally sorted. Collective.
+ */
+inline int lineariseList(sctl::Vector<MortonId>& list, const sctl::Comm& comm) {
+  bool has_prev, has_next;
+  MortonId prev_last, next_first;
+  neighborOctants(list, comm, has_prev, prev_last, has_next, next_first);
 
-      new_comm.Wait(std::move(recvRequest));
-      tmp[0] = lastOnPrev;
-
-      list.Swap(tmp);
-    }
-
-    {// Remove duplicates and ancestors.
-      sctl::Vector<MortonId> tmp;
-      if(list.Dim()) {
-        for(unsigned int i = 0; i < (list.Dim()-1); i++) {
-          if( (!(list[i].isAncestor(list[i+1]))) && (list[i] != list[i+1]) ) {
-            tmp.PushBack(list[i]);
-          }
-        }
-        if(new_rank == (new_size-1)) {
-          tmp.PushBack(list[list.Dim()-1]);
-        }
-      }
-      list.Swap(tmp);
-    }
-
-    if(new_rank < (new_size-1)) {
-      new_comm.Wait(std::move(sendRequest));
-    }
-  }//not empty procs only
-
-  // new_comm freed automatically when sctl::Comm destructor fires.
+  sctl::Vector<MortonId> leaves;
+  const sctl::Long n = list.Dim();
+  for (sctl::Long i = 0; i < n; i++) {
+    const bool has_succ = (i + 1 < n || has_next);
+    const MortonId& succ = (i + 1 < n ? list[i+1] : next_first);
+    if (has_succ && (list[i] == succ || list[i].isAncestor(succ))) continue;
+    leaves.PushBack(list[i]);
+  }
+  list.Swap(leaves);
   return 1;
-}//end fn.
+}
 
 inline int balanceOctree (sctl::Vector<MortonId > &in, sctl::Vector<MortonId > &out,
     unsigned int dim, unsigned int maxDepth, bool periodic, const sctl::Comm& comm) {
@@ -833,38 +830,12 @@ inline int balanceOctree (sctl::Vector<MortonId > &in, sctl::Vector<MortonId > &
   lineariseList(out, comm);
   comm.PartitionW(out);
   { // Add children
-
-    //Remove empty processors...
-    const sctl::Comm new_comm = comm.Split(out.Dim()==0 ? 0 : 1);
-    const int new_rank = new_comm.Rank();
-    const int new_size = new_comm.Size();
+    bool has_prev, has_next;
+    MortonId prev_last, next_first;
+    const int active = neighborOctants(out, comm, has_prev, prev_last, has_next, next_first);
     if(out.Dim()) {
-      MortonId nxt_mid{}; // root (origin, depth 0)
-      { // Get last octant from previous process.
-        assert(out.Dim());
-
-        //Send the last octant to the next processor.
-        MortonId lastOctant = out[out.Dim()-1];
-        MortonId lastOnPrev;
-
-        sctl::Comm::Request recvRequest, sendRequest;
-
-        if(new_rank > 0) {
-          recvRequest = new_comm.Irecv(sctl::Ptr2Itr<MortonId>(&lastOnPrev,1), 1, new_rank-1, 1);
-        }
-        if(new_rank < (new_size-1)) {
-          sendRequest = new_comm.Issend(sctl::Ptr2ConstItr<MortonId>(&lastOctant,1), 1, new_rank+1, 1);
-        }
-
-        if(new_rank > 0) {
-          new_comm.Wait(std::move(recvRequest));
-          nxt_mid = lastOnPrev.Next();
-        }
-
-        if(new_rank < (new_size-1)) {
-          new_comm.Wait(std::move(sendRequest));
-        }
-      }
+      MortonId nxt_mid{}; // root (origin, depth 0); continues after the last octant on the previous process
+      if(has_prev) nxt_mid = prev_last.Next();
 
       sctl::Vector<MortonId> out1;
       for(size_t i=0;i<(size_t)out.Dim();i++){
@@ -882,7 +853,7 @@ inline int balanceOctree (sctl::Vector<MortonId > &in, sctl::Vector<MortonId > &
         }
         nxt_mid=out[i].Next();
       }
-      if(new_rank==new_size-1){
+      if(!has_next){
         while(nxt_mid.Depth()>0){
           out1.PushBack(nxt_mid);
           nxt_mid=nxt_mid.Next();
@@ -890,11 +861,9 @@ inline int balanceOctree (sctl::Vector<MortonId > &in, sctl::Vector<MortonId > &
       }
       out.Swap(out1);
     }
-    if(new_size<size){
+    if(active<comm.Size()){
       comm.PartitionW(out);
     }
-
-    // new_comm freed automatically when sctl::Comm destructor fires.
   }
 
   //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -918,8 +887,7 @@ void MPI_Tree<TreeNode>::Balance21(BoundaryType bndry) {
   myrank = Comm().Rank();
   num_proc = Comm().Size();
 
-  //Using Dendro for balancing
-  //Create a linear tree in dendro format.
+  //Create a linear tree (its leaf octants) for balancing.
   sctl::Iterator<Node_t> curr_node=this->PreorderFirst();
   sctl::Vector<MortonId> in;
   while(curr_node!=sctl::NullIterator<Node_t>()){
