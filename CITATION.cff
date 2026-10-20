@@ -21,8 +21,8 @@ abstract: "A parallel kernel-independent FMM library for particle and volume pot
 repository-code: "https://github.com/dmalhotra/pvfmm"
 url: "https://pvfmm.readthedocs.io"
 license: LGPL-3.0-only
-version: "1.3.0"
-date-released: "2021-11-04"
+version: "2.0.0"
+date-released: "2026-10-20"
 preferred-citation:
   type: article
   title: "PVFMM: A Parallel Kernel Independent FMM for Particle and Volume Potentials"
