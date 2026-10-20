@@ -1,6 +1,6 @@
 /**
  * \file pvfmm.txx
- * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
+ * \author Dhairya Malhotra
  * \date 26-10-2018
  * \brief This file contains the definitions of the wrapper functions for PVFMM.
  */

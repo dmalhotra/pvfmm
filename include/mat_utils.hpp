@@ -1,6 +1,6 @@
 /**
  * \file mat_utils.hpp
- * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
+ * \author Dhairya Malhotra
  * \date 2-11-2011
  * \brief pvfmm-specific Matrix helpers: MatrixTranspose and the device GEMM
  * wrappers (CUBLASGEMM / mat::cublasgemm).

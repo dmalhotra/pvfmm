@@ -1,6 +1,6 @@
 /**
  * \file cheb_utils.hpp
- * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
+ * \author Dhairya Malhotra
  * \date 2-11-2011
  * \brief This file contains chebyshev related functions.
  */

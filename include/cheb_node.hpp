@@ -1,6 +1,6 @@
 /**
  * \file cheb_node.hpp
- * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
+ * \author Dhairya Malhotra
  * \date 1-22-2011
  * \brief This is a derived cheb class of MPI_Node.
  */

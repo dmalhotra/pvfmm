@@ -1,6 +1,6 @@
 /**
  * \file interac_list.hpp
- * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
+ * \author Dhairya Malhotra
  * \date 6-11-2012
  * \brief This file contains the definition of the InteracList class.
  * Handles the logic for different interaction lists, and determines the

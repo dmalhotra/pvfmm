@@ -1,6 +1,6 @@
 /**
  * \file mpi_node.txx
- * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
+ * \author Dhairya Malhotra
  * \date 12-11-2010
  * \brief This file contains the implementation of the class MPI_Node.
  */

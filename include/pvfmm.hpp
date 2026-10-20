@@ -1,6 +1,6 @@
 /**
  * \file pvfmm.hpp
- * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
+ * \author Dhairya Malhotra
  * \date 1-2-2014
  * \brief This file contains the declaration of wrapper functions for PVFMM.
  */

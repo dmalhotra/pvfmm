@@ -1,6 +1,6 @@
 /**
  * \file kernel.txx
- * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
+ * \author Dhairya Malhotra
  * \date 12-20-2011
  * \brief This file contains the implementation of the struct Kernel and also the
  * implementation of various kernels for FMM.

@@ -1,6 +1,6 @@
 /**
  * \file precomp_mat.hpp
- * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
+ * \author Dhairya Malhotra
  * \date 3-07-2011
  * \brief This file contains the definition of the PrecompMat class.
  * Handles storage of precomputed translation matrices.

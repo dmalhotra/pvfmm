@@ -1,6 +1,6 @@
 /**
  * \file fmm_tree.hpp
- * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
+ * \author Dhairya Malhotra
  * \date 12-11-2010
  * \brief This file contains the definition of the FMM_Tree class.
  */

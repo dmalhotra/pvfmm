@@ -1,5 +1,5 @@
 !> @file pvfmm.f90
-!> @author Dhairya Malhotra, dhairya.malhotra@gmail.com
+!> @author Dhairya Malhotra
 !> @date 8-5-2018
 !> @brief This file contains the declarations for the Fortran interface to PVFMM.
 

@@ -1,6 +1,6 @@
 /**
  * \file pvfmm_common.hpp
- * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
+ * \author Dhairya Malhotra
  * \date 12-10-2010
  * \brief This file contains common definitions.
  */

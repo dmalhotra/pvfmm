@@ -1,6 +1,6 @@
 /**
  * \file mpi_node.hpp
- * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
+ * \author Dhairya Malhotra
  * \date 12-10-2010
  * \brief This file contains the definition of a virtual base class for a
  * locally essential tree node.

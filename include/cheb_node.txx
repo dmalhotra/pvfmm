@@ -1,6 +1,6 @@
 /**
  * \file cheb_node.txx
- * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
+ * \author Dhairya Malhotra
  * \date 1-22-2010
  * \brief This file contains the implementation of the class Cheb_Node.
  */

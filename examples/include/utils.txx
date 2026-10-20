@@ -1,6 +1,6 @@
 /**
  * \file utils.txx
- * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
+ * \author Dhairya Malhotra
  * \date 1-1-2013
  */
 

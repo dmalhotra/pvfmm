@@ -1,6 +1,6 @@
 /**
  * \file device_wrapper.txx
- * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
+ * \author Dhairya Malhotra
  * \date 6-5-2013
  * \brief This file contains implementation of DeviceWrapper.
  *

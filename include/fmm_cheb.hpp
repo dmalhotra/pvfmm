@@ -1,6 +1,6 @@
 /**
  * \file fmm_cheb.hpp
- * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
+ * \author Dhairya Malhotra
  * \date 3-07-2011
  * \brief This file contains the definition of the FMM_Cheb class.
  * This handles all the translations through matrix multiplications.

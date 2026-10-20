@@ -1,6 +1,6 @@
 /**
  * \file interac_list.txx
- * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
+ * \author Dhairya Malhotra
  * \date 6-11-2012
  * \brief This file contains the implementation of the InteracList class.
  * Handles the logic for different interaction lists, and determines the

@@ -1,6 +1,6 @@
 /**
  * \file utils.hpp
- * \author Dhairya Malhotra, dhairya.malhotra@gmail.com
+ * \author Dhairya Malhotra
  * \date 1-1-2011
  */
 
