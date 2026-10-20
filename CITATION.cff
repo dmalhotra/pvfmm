@@ -23,6 +23,7 @@ url: "https://pvfmm.readthedocs.io"
 license: LGPL-3.0-only
 version: "2.0.0"
 date-released: "2026-10-20"
+doi: "10.5281/zenodo.23511939"
 preferred-citation:
   type: article
   title: "PVFMM: A Parallel Kernel Independent FMM for Particle and Volume Potentials"
