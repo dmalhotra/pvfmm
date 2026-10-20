@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['what_20is_20pvfmm_0',['What is PVFMM?',['../index.html#autotoc_md1',1,'']]]
+  ['using_20pvfmm_0',['Using PVFMM',['../index.html#autotoc_md6',1,'']]]
 ];
