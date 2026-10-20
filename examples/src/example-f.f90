@@ -2,6 +2,9 @@
 ! Author: Dhairya Malhotra
 ! SPDX-License-Identifier: LGPL-3.0-only
 
+! Run on one MPI process: every process generates the same points, and the error
+! check sums only its own sources. example2-f.f90 runs on any number of processes.
+
 program main
   use iso_c_binding
   implicit none

@@ -2,6 +2,9 @@
 // Author: Dhairya Malhotra
 // SPDX-License-Identifier: LGPL-3.0-only
 
+// Run on one MPI process: every process generates the same points, and the error
+// check sums only its own sources. example2-c.c runs on any number of processes.
+
 #include <omp.h>
 #include <math.h>
 #include <stdio.h>

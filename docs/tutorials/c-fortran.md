@@ -15,6 +15,10 @@ Four example programs demonstrate the {doc}`C <../api/c>` and
 | `example-f.f90` | Fortran | particle FMM, Biot–Savart kernel |
 | `example2-f.f90` | Fortran | volume FMM, Stokes velocity kernel |
 
+`example-c` and `example-f` are single-process examples (`mpirun -n 1`): every
+process generates the same points, and the error check sums only its own sources.
+`example2-c` and `example2-f` run on any number of processes.
+
 ## Particle FMM in C (`example-c.c`)
 
 The whole workflow is three calls — create a context, evaluate, destroy:
