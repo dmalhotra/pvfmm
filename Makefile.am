@@ -21,7 +21,8 @@ EXTRA_DIST = \
 									$(EX_DIR)/include \
 									$(EX_DIR)/Makefile \
 									Doxyfile \
-									scripts
+									scripts \
+									SCTL/include
 
 # additional include paths necessary to compile the C++ library
 AM_CXXFLAGS =
@@ -71,85 +72,12 @@ pvfmm_cpp_header_files = \
 									include/mpi_tree.txx \
 									include/precomp_mat.txx \
 									include/tree.txx \
-									include/tree_node.txx \
-									SCTL/include/sctl.hpp
+									include/tree_node.txx
 
 lib_libpvfmm_la_HEADERS = \
 									$(pvfmm_cpp_header_files) \
 									include/pvfmm.f90 \
 									include/pvfmm.h
-
-subdirheadersdir = $(includedir)/pvfmm/sctl
-
-subdirheaders_HEADERS = \
-												SCTL/include/sctl/blas.h \
-												SCTL/include/sctl/boundary_integral.hpp \
-												SCTL/include/sctl/boundary_integral.txx \
-												SCTL/include/sctl/cheb_utils.hpp \
-												SCTL/include/sctl/comm.hpp \
-												SCTL/include/sctl/comm.txx \
-												SCTL/include/sctl/common.hpp \
-												SCTL/include/sctl/fft_wrapper.hpp \
-												SCTL/include/sctl/fft_wrapper.txx \
-												SCTL/include/sctl/fmm-wrapper.hpp \
-												SCTL/include/sctl/fmm-wrapper.txx \
-												SCTL/include/sctl/function-table.hpp \
-												SCTL/include/sctl/function-table.txx \
-												SCTL/include/sctl/generic-kernel.hpp \
-												SCTL/include/sctl/generic-kernel.txx \
-												SCTL/include/sctl/intrin-wrapper.hpp \
-												SCTL/include/sctl/iterator.hpp \
-												SCTL/include/sctl/iterator.txx \
-												SCTL/include/sctl/kernel_functions.hpp \
-												SCTL/include/sctl/lagrange-interp.hpp \
-												SCTL/include/sctl/lagrange-interp.txx \
-												SCTL/include/sctl/lapack.h \
-												SCTL/include/sctl/lin-solve.hpp \
-												SCTL/include/sctl/lin-solve.txx \
-												SCTL/include/sctl/mat_utils.hpp \
-												SCTL/include/sctl/mat_utils.txx \
-												SCTL/include/sctl/math_utils.hpp \
-												SCTL/include/sctl/math_utils.txx \
-												SCTL/include/sctl/matrix.hpp \
-												SCTL/include/sctl/matrix.txx \
-												SCTL/include/sctl/mem_mgr.hpp \
-												SCTL/include/sctl/mem_mgr.txx \
-												SCTL/include/sctl/morton.hpp \
-												SCTL/include/sctl/morton.txx \
-												SCTL/include/sctl/ode-solver.hpp \
-												SCTL/include/sctl/ode-solver.txx \
-												SCTL/include/sctl/ompUtils.hpp \
-												SCTL/include/sctl/ompUtils.txx \
-												SCTL/include/sctl/permutation.hpp \
-												SCTL/include/sctl/permutation.txx \
-												SCTL/include/sctl/profile.hpp \
-												SCTL/include/sctl/profile.txx \
-												SCTL/include/sctl/quadrule.hpp \
-												SCTL/include/sctl/quadrule.txx \
-												SCTL/include/sctl/scratch_pool.hpp \
-												SCTL/include/sctl/scratch_pool.txx \
-												SCTL/include/sctl/small_gemm.hpp \
-												SCTL/include/sctl/small_gemm.txx \
-												SCTL/include/sctl/sort-scatter.hpp \
-												SCTL/include/sctl/sort-scatter.txx \
-												SCTL/include/sctl/sph_harm.hpp \
-												SCTL/include/sctl/sph_harm.txx \
-												SCTL/include/sctl/sse2neon.h \
-												SCTL/include/sctl/stacktrace.h \
-												SCTL/include/sctl/static-array.hpp \
-												SCTL/include/sctl/static-array.txx \
-												SCTL/include/sctl/tensor.hpp \
-												SCTL/include/sctl/tensor.txx \
-												SCTL/include/sctl/tree.hpp \
-												SCTL/include/sctl/tree.txx \
-												SCTL/include/sctl/vec-test.hpp \
-												SCTL/include/sctl/vec.hpp \
-												SCTL/include/sctl/vec.txx \
-												SCTL/include/sctl/vector.hpp \
-												SCTL/include/sctl/vector.txx \
-												SCTL/include/sctl/vtudata.hpp \
-												SCTL/include/sctl/vtudata.txx
-
 
 # the sources to add to the library and to add to the source distribution
 lib_libpvfmm_la_SOURCES = \
@@ -216,12 +144,30 @@ endif
 
 
 ###############################################################################
+# INSTALL/UNINSTALL SCTL headers: the whole SCTL/include tree, next to the
+# PVFMM headers (no file list here to go stale when SCTL changes)
+#------------------------------------------------------------------------------
+
+install-sctl-headers:
+	for f in `cd $(srcdir)/SCTL/include && find . -type f ! -name '.*'`; do \
+	  $(MKDIR_P) "$(DESTDIR)$(pkgincludedir)/`dirname $$f`" && \
+	  $(INSTALL_DATA) "$(srcdir)/SCTL/include/$$f" "$(DESTDIR)$(pkgincludedir)/$$f" || exit 1; \
+	done
+
+uninstall-sctl-headers:
+	$(RM) -r "$(DESTDIR)$(pkgincludedir)/sctl" "$(DESTDIR)$(pkgincludedir)/sctl.hpp"
+
+
+###############################################################################
 # INSTALL/UNINSTALL MakeVariables
 #------------------------------------------------------------------------------
 
+# The installed SCTL headers are in the PVFMM include dir, so drop the -I for
+# the SCTL submodule.
 install-make-variables:
 	$(MKDIR_P) $(INSTALL_DIR)
-	sed -e 's/(TOP_SRCDIR_PVFMM)/(INSTALL_DIR_PVFMM)/' \
+	sed -e '/(TOP_SRCDIR_PVFMM)\/SCTL\/include/d' \
+		-e 's/(TOP_SRCDIR_PVFMM)/(INSTALL_DIR_PVFMM)/' \
 		-e "s/PKG_SUBDIR_PVFMM =/PKG_SUBDIR_PVFMM = \/$(PACKAGE)/" \
 		MakeVariables > $(INSTALL_DIR)/MakeVariables
 
@@ -255,9 +201,9 @@ install: install-am
 	@echo 'use the variables CXXFLAGS_PVFMM and LDLIBS_PVFMM for compiling your code.'
 	@echo '======================================================================='
 
-install-data-local: install-make-variables install-libtool
+install-data-local: install-sctl-headers install-make-variables install-libtool
 
-uninstall-local: uninstall-make-variables uninstall-libtool
+uninstall-local: uninstall-sctl-headers uninstall-make-variables uninstall-libtool
 
 
 ###############################################################################
