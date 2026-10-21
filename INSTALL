@@ -94,6 +94,10 @@ are given below:
 `GCC-4.9 on OS X Yosemite'
      ./configure CXXFLAGS="-Wa,-q -fabi-version=6 -mavx" --with-fftw="$FFTW_DIR"
 
+`macOS with Apple clang' (configure takes OpenMP from Homebrew's libomp)
+     brew install libomp
+     ./configure --with-fftw="$(brew --prefix fftw)"
+
 
 `configure' Invocation
 ======================

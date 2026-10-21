@@ -87,6 +87,7 @@ if $USE_OPENMP; then
 	      [OPENMP_FLAG=""])
 
   # Check if OpenMP flag is already specified.
+  OPENMP_LIB=""
   CHECK_OPENMP($OPENMP_FLAG)
 
   # Check for all common OpenMP flags.
@@ -97,6 +98,15 @@ if $USE_OPENMP; then
       ;;
       clang)
       CHECK_OPENMP(-fopenmp)
+      # Apple clang has no -fopenmp: preprocess with it and link libomp (brew
+      # install libomp). -Wp,-fopenmp is -Xpreprocessor -fopenmp as one word,
+      # which libtool does not reduce to a bare -fopenmp when linking libpvfmm.
+      if test "$cv_openmp" = no; then
+        libomp=`brew --prefix libomp 2>/dev/null`
+        OPENMP_LIB="${libomp:+-L$libomp/lib }-lomp"
+        LIBS="$LIBS $OPENMP_LIB"
+        CHECK_OPENMP([-Wp,-fopenmp${libomp:+ -I$libomp/include}])
+      fi
       ;;
       intel)
       CHECK_OPENMP(-openmp)
@@ -125,7 +135,6 @@ if $USE_OPENMP; then
   # __kmpc_* undefined for non-clang-driven links (e.g. the C/Fortran examples
   # linked via mpicc). Resolve the runtime file the -fopenmp link test actually
   # uses; fall back to probing common library names.
-  OPENMP_LIB=""
   AC_MSG_CHECKING([for the OpenMP runtime library])
   AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <omp.h>]],
                                   [[omp_get_num_threads();]])],

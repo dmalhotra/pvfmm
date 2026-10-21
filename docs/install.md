@@ -29,6 +29,9 @@ On macOS with Homebrew:
 brew install gcc open-mpi openblas fftw autoconf automake libtool
 ```
 
+With Apple clang (the default compiler of Homebrew's `mpicxx`), also
+`brew install libomp`; `configure` then enables OpenMP through it.
+
 Start by cloning the repository including the SCTL submodule:
 
 ```bash
