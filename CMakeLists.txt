@@ -95,7 +95,7 @@ add_library(pvfmm SHARED ${pvfmm_SRC} ${pvfmm_SRC_CUDA})
 set_target_properties(pvfmm PROPERTIES OUTPUT_NAME pvfmm)
 target_include_directories(
   pvfmm
-  PUBLIC $<INSTALL_INTERFACE:include>
+  PUBLIC $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/pvfmm>
          $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/>
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/SCTL/include/>
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
@@ -108,7 +108,7 @@ add_library(pvfmmStatic STATIC ${pvfmm_SRC}  ${pvfmm_SRC_CUDA})
 set_target_properties(pvfmmStatic PROPERTIES OUTPUT_NAME pvfmm)
 target_include_directories(
   pvfmmStatic
-  PUBLIC $<INSTALL_INTERFACE:include>
+  PUBLIC $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/pvfmm>
          $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/>
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/SCTL/include/>
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
