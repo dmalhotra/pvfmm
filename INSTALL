@@ -71,7 +71,8 @@ Troubleshooting
 ===============
 Make sure that if you use special directories for compilers etc, that
 your LIBRARY_PATH enviroment variables are set correctly (e.g.,
-LD_LIBRARY_PATH on linux and DYLD_LIBRARY_PATH on macosx)
+LD_LIBRARY_PATH on linux and DYLD_LIBRARY_PATH on macosx). Programs
+linked with LDLIBS_PVFMM find libpvfmm itself through an rpath.
 
 
 Particular systems

@@ -90,9 +90,10 @@ endif()
 # part 1, core library
 file(GLOB pvfmm_SRC "src/*.cpp")
 
-# shared lib
+# shared lib, installed with the rpath to its dependencies so it loads without
+# LD_LIBRARY_PATH (also when dlopen'd by python/ or julia/)
 add_library(pvfmm SHARED ${pvfmm_SRC} ${pvfmm_SRC_CUDA})
-set_target_properties(pvfmm PROPERTIES OUTPUT_NAME pvfmm)
+set_target_properties(pvfmm PROPERTIES OUTPUT_NAME pvfmm INSTALL_RPATH_USE_LINK_PATH TRUE)
 target_include_directories(
   pvfmm
   PUBLIC $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/pvfmm>

@@ -11,9 +11,11 @@ CXX_PVFMM = @MPICXX@
 CC_PVFMM = @MPICC@
 FC_PVFMM = @MPIFC@
 
-# The PVFMM library and headers.
+# The PVFMM library and headers; the rpath lets programs find the shared
+# libpvfmm at run time without LD_LIBRARY_PATH.
 PVFMM_INCLUDES = -I$(TOP_SRCDIR_PVFMM)/include$(PKG_SUBDIR_PVFMM)
-PVFMM_LIBS = -L$(TOP_SRCDIR_PVFMM)/lib$(PKG_SUBDIR_PVFMM) -lpvfmm
+PVFMM_LIBDIR = $(TOP_SRCDIR_PVFMM)/lib$(PKG_SUBDIR_PVFMM)
+PVFMM_LIBS = -L$(PVFMM_LIBDIR) -Wl,-rpath,$(PVFMM_LIBDIR) -lpvfmm
 
 # Add FFTW include and lib paths.
 FFTW_INCLUDES_PVFMM = @FFTW_INCLUDE@

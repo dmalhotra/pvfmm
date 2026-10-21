@@ -94,7 +94,8 @@ my_program: my_program.cpp
 ```
 
 `CXXFLAGS_PVFMM` carries the include paths and feature macros the library
-was configured with; `LDLIBS_PVFMM` carries `-lpvfmm` and all numerical
+was configured with; `LDLIBS_PVFMM` carries `-lpvfmm` (with an rpath, so
+programs find the shared library without `LD_LIBRARY_PATH`) and all numerical
 dependencies. `CXX_PVFMM`, `CC_PVFMM`, and `FC_PVFMM` are the MPI C++/C/
 Fortran compiler wrappers detected by configure (used by the C and Fortran
 examples).
@@ -152,8 +153,8 @@ module load fftw && module swap PrgEnv-pgi PrgEnv-intel
             --with-lapack="-L$(brew --prefix openblas)/lib -lopenblas"
 ```
 
-If shared libraries are not found at run time, check `LD_LIBRARY_PATH`
-(Linux) or `DYLD_LIBRARY_PATH` (macOS).
+If the shared libraries of the dependencies (FFTW, BLAS, MPI) are not found at
+run time, check `LD_LIBRARY_PATH` (Linux) or `DYLD_LIBRARY_PATH` (macOS).
 
 ## Building this documentation
 
