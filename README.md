@@ -65,10 +65,49 @@
 
 ### Citing PVFMM
 
-If you use PVFMM, please cite:
+If you use PVFMM, or code derived from it, please cite the software and the papers below (also listed in [CITATION.cff](CITATION.cff)):
 
+- D. Malhotra, G. Biros, C. D. Yu, B. Ward, X. Gao, R. Blackwell, W. Yan, *PVFMM: Parallel Volume Fast Multipole Method*, https://github.com/dmalhotra/pvfmm, [doi:10.5281/zenodo.23511939](https://doi.org/10.5281/zenodo.23511939).
 - D. Malhotra and G. Biros, "PVFMM: A Parallel Kernel Independent FMM for Particle and Volume Potentials", *Commun. Comput. Phys.* 18(3), 808–830 (2015). [doi:10.4208/cicp.020215.150515sw](https://doi.org/10.4208/cicp.020215.150515sw)
 - D. Malhotra and G. Biros, "Algorithm 967: A Distributed-Memory Fast Multipole Method for Volume Potentials", *ACM Trans. Math. Softw.* 43(2), 1–27 (2016). [doi:10.1145/2898349](https://doi.org/10.1145/2898349)
+
+<details>
+<summary>BibTeX</summary>
+
+```bibtex
+@software{pvfmm,
+  author    = {Malhotra, Dhairya and Biros, George and Yu, Chenhan D. and Ward, Brian and Gao, Xuanzhao and Blackwell, Robert and Yan, Wen},
+  title     = {{PVFMM}: Parallel Volume Fast Multipole Method},
+  url       = {https://github.com/dmalhotra/pvfmm},
+  doi       = {10.5281/zenodo.23511939},
+  version   = {2.0.0},
+  year      = {2026}
+}
+
+@article{malhotra2015pvfmm,
+  author  = {Malhotra, Dhairya and Biros, George},
+  title   = {{PVFMM}: A Parallel Kernel Independent {FMM} for Particle and Volume Potentials},
+  journal = {Communications in Computational Physics},
+  volume  = {18},
+  number  = {3},
+  pages   = {808--830},
+  year    = {2015},
+  doi     = {10.4208/cicp.020215.150515sw}
+}
+
+@article{malhotra2016algorithm967,
+  author  = {Malhotra, Dhairya and Biros, George},
+  title   = {Algorithm 967: A Distributed-Memory Fast Multipole Method for Volume Potentials},
+  journal = {ACM Transactions on Mathematical Software},
+  volume  = {43},
+  number  = {2},
+  pages   = {1--27},
+  year    = {2016},
+  doi     = {10.1145/2898349}
+}
+```
+
+</details>
 
 ### Acknowledgment
 
