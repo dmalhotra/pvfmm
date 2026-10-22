@@ -75,5 +75,7 @@ The method and implementation are described in:
   multipole algorithm in two and three dimensions*, Journal of Computational
   Physics, 196 (2004), pp. 591–626.
 
-Please cite the first paper (and the second for the volume FMM) when using
-PVFMM in published work.
+Please cite the software
+([doi:10.5281/zenodo.23511939](https://doi.org/10.5281/zenodo.23511939)) and
+the first two papers when using PVFMM in published work; see
+[Citing PVFMM](index.md#citing-pvfmm) for BibTeX.
