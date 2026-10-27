@@ -65,9 +65,10 @@ Useful `configure` options (see `./configure --help` for the full list):
 | `--with-cuda=PATH` | enable the CUDA path (plus `NVCCFLAGS=...`) |
 | `--with-precomp-dir=DIR` | default directory for {doc}`precomputed data <concepts/precomputed-data>` |
 
-The build is compiled with `-O3 -march=native` by default, so the kernels use
-the best SIMD instruction set of the build host; override `CXXFLAGS` to
-target a different ISA.
+The build is compiled with `-O3 -march=native` by default (or `-mcpu=native`
+where the compiler takes only that, such as on POWER), so the kernels use the
+best SIMD instruction set of the build host; override `CXXFLAGS` to target a
+different ISA.
 
 `make install` installs the library under `PREFIX/lib/pvfmm`, headers under
 `PREFIX/include/pvfmm`, and a `MakeVariables` fragment plus data files under
@@ -114,6 +115,7 @@ examples. Options:
 | Option | Default | Purpose |
 |---|---|---|
 | `-DPVFMM_ENABLE_CUDA=ON` | `OFF` | build the CUDA/GPU path |
+| `-DPVFMM_NATIVE_ARCH=OFF` | `ON` | don't tune for the build host's CPU (`-march=native`); for binaries that run on other machines, or to set the ISA with `CMAKE_CXX_FLAGS` |
 
 MKL is detected and used for BLAS/LAPACK/FFTW when present; otherwise
 standard BLAS, LAPACK, and FFTW are located. The install places a package

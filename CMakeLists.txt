@@ -11,16 +11,35 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_EXTENSIONS OFF)
 include(GNUInstallDirs)
 
-# Optimization / ISA (C++17 comes from CMAKE_CXX_STANDARD above). -mno-avx512fp16
-# works around pre-2.38 binutils that can't assemble the AVX-512-FP16 ops
-# -march=native emits on new Intel CPUs (GCC/non-Apple Clang only).
-add_compile_options(-O3 -march=native)
-if(NOT APPLE AND (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang"))
-  add_compile_options(-mno-avx512fp16)
+# Optimization / ISA; each ISA flag only if the compiler accepts it (ARM rejects
+# -mno-avx512fp16, POWER takes -mcpu=native). -mno-avx512fp16: pre-2.38 binutils
+# can't assemble the AVX-512-FP16 ops of -march=native.
+include(CheckCXXCompilerFlag)
+include(CheckCXXSourceCompiles)
+option(PVFMM_NATIVE_ARCH "Tune for the build host's CPU (-march=native); OFF for portable binaries" ON)
+add_compile_options(-O3)
+if(PVFMM_NATIVE_ARCH)
+  check_cxx_compiler_flag(-march=native PVFMM_HAS_MARCH_NATIVE)
+  check_cxx_compiler_flag(-mcpu=native PVFMM_HAS_MCPU_NATIVE)
+  check_cxx_compiler_flag(-mno-avx512fp16 PVFMM_HAS_MNO_AVX512FP16)
+  if(PVFMM_HAS_MARCH_NATIVE)
+    add_compile_options(-march=native)
+  elseif(PVFMM_HAS_MCPU_NATIVE)
+    add_compile_options(-mcpu=native)
+  endif()
+  if(PVFMM_HAS_MNO_AVX512FP16)
+    add_compile_options(-mno-avx512fp16)
+  endif()
 endif()
 
 # SCTL always-on flags (FFTW/FFTWF and SVML/libmvec are added conditionally below)
-add_compile_options(-DSCTL_HAVE_PVFMM -DSCTL_QUAD_T=__float128 -DSCTL_HAVE_MPI -DSCTL_HAVE_BLAS -DSCTL_HAVE_LAPACK -DSCTL_HAVE_FFTWL)
+add_compile_options(-DSCTL_HAVE_PVFMM -DSCTL_HAVE_MPI -DSCTL_HAVE_BLAS -DSCTL_HAVE_LAPACK -DSCTL_HAVE_FFTWL)
+
+# Quad precision for SCTL, if the compiler has __float128 (most ARM compilers don't)
+check_cxx_source_compiles("int main(){ __float128 x = 1; return (int)x - 1; }" PVFMM_HAVE_FLOAT128)
+if(PVFMM_HAVE_FLOAT128)
+  add_compile_options(-DSCTL_QUAD_T=__float128)
+endif()
 
 set(MPI_CXX_SKIP_MPICXX
     true
@@ -66,7 +85,6 @@ endif()
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
   list(APPEND PVFMM_DEFINES "SCTL_HAVE_SVML")
 else()
-  include(CheckCXXSourceCompiles)
   set(CMAKE_REQUIRED_LIBRARIES "-lmvec" "-lm")
   check_cxx_source_compiles([=[
 extern "C" double _ZGVbN2v_sin(double);
