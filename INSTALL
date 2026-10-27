@@ -151,9 +151,10 @@ operates.
      `PVFMM_DIR' environment variable if defined, or the current
      directory at execution.
 
-   The build is compiled with `-O3 -march=native' by default, so the
-kernel functions use the best SIMD instructions available on the build
-host automatically. To target a different ISA, override on the command
+   The build is compiled with `-O3 -march=native' by default (or
+`-mcpu=native' where the compiler takes only that), so the kernel
+functions use the best SIMD instructions available on the build host
+automatically. To target a different ISA, override on the command
 line, e.g. `CXXFLAGS=-mavx'.
 
 `configure' also accepts some other, not widely useful, options.  Run

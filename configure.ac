@@ -194,16 +194,28 @@ AX_CHECK_LIBMVEC
 # instead of hard-coding the list.
 #######################################################################
 
-# Optimization / ISA / language-standard flags (the -O3 overrides autoconf's -O2).
-# -mno-avx512fp16 works around pre-2.38 binutils that can't assemble the
-# AVX-512-FP16 ops -march=native emits on new Intel CPUs; skipped on macOS where
-# clang neither emits them nor recognizes the flag. Set as a shell conditional
-# here (not in MakeVariables.in) because automake parses that included fragment.
-PVFMM_OPT_FLAGS="-std=c++17 -O3 -march=native"
-case "`uname -s`" in
-  Darwin) ;;
-  *) PVFMM_OPT_FLAGS="$PVFMM_OPT_FLAGS -mno-avx512fp16" ;;
-esac
+# Optimization / ISA / language-standard flags (-O3 overrides autoconf's -O2);
+# each ISA flag only if the compiler accepts it (ARM rejects -mno-avx512fp16,
+# POWER takes -mcpu=native). -mno-avx512fp16: pre-2.38 binutils can't assemble
+# the AVX-512-FP16 ops of -march=native. Set here, not in MakeVariables.in,
+# because automake parses that fragment.
+PVFMM_OPT_FLAGS="-std=c++17 -O3"
+AC_LANG_WERROR([on])
+XCXXFLAGS="$CXXFLAGS"
+pvfmm_native_ok=no
+for flag in -march=native -mcpu=native -mno-avx512fp16; do
+  if test "x$flag" = x-mcpu=native && test "x$pvfmm_native_ok" = xyes; then continue; fi
+  AC_MSG_CHECKING([whether $CXX accepts $flag])
+  CXXFLAGS="$XCXXFLAGS $flag"
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [])], [pvfmm_flag_ok=yes], [pvfmm_flag_ok=no])
+  AC_MSG_RESULT([$pvfmm_flag_ok])
+  if test "x$pvfmm_flag_ok" = xyes; then
+    PVFMM_OPT_FLAGS="$PVFMM_OPT_FLAGS $flag"
+    case $flag in *=native) pvfmm_native_ok=yes ;; esac
+  fi
+done
+CXXFLAGS="$XCXXFLAGS"
+AC_LANG_WERROR([off])
 AC_SUBST(PVFMM_OPT_FLAGS)
 
 # Assemble the -D flags. MPI is mandatory for pvfmm (AX_MPI errors out
