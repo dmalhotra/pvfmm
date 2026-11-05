@@ -27,7 +27,8 @@ using MortonId = sctl::Morton<PVFMM_COORD_DIM>;
 /**
  * \brief Wire header for the hypercube exchange in MultipoleReduceBcast:
  * each message is a MultipoleMsgHeader followed by, for each node, a
- * MidPayloadHeader and then rec.length bytes of multipole payload.
+ * MidPayloadHeader and then rec.length bytes of multipole payload starting
+ * at the next PVFMM_MEM_ALIGN offset of the message.
  */
 struct MultipoleMsgHeader{
   size_t node_cnt[2]; // number of nodes along each of the two root-paths
@@ -414,7 +415,7 @@ void FMM_Tree<FMM_Mat_t>::MultipoleReduceBcast() {
 
     //Initialize send data.
     size_t s_node_cnt[2]={send_nodes[0].size(),send_nodes[1].size()};
-    int send_size=sizeof(MultipoleMsgHeader)+(s_node_cnt[0]+s_node_cnt[1])*sizeof(MidPayloadHeader);
+    int send_size=sizeof(MultipoleMsgHeader);
     std::vector<PackedData> send_data(s_node_cnt[0]+s_node_cnt[1]);
 
     size_t s_iter=0;
@@ -422,7 +423,7 @@ void FMM_Tree<FMM_Mat_t>::MultipoleReduceBcast() {
     for(size_t j=0;j<s_node_cnt[i];j++){
       assert(send_nodes[i][j]!=sctl::NullIterator<Node_t>());
       send_data[s_iter]=send_nodes[i][j]->PackMultipole();
-      send_size+=send_data[s_iter].length;
+      send_size=(int)mem::align_ptr(send_size+sizeof(MidPayloadHeader))+send_data[s_iter].length; // payloads start at PVFMM_MEM_ALIGN offsets (QuadReal needs 16 bytes)
       s_iter++;
     }
 
@@ -445,6 +446,7 @@ void FMM_Tree<FMM_Mat_t>::MultipoleReduceBcast() {
       rec.length=send_data[s_iter].length;
       std::memcpy(buff_iter, &rec, sizeof(MidPayloadHeader));
       buff_iter+=sizeof(MidPayloadHeader);
+      buff_iter=send_buff+mem::align_ptr(buff_iter-send_buff);
 
       sctl::omp_par::memcpy((char*)buff_iter, (char*)send_data[s_iter].data, send_data[s_iter].length);
       buff_iter+=send_data[s_iter].length;
@@ -515,6 +517,7 @@ void FMM_Tree<FMM_Mat_t>::MultipoleReduceBcast() {
         MidPayloadHeader rec;
         std::memcpy(&rec, buff_iter, sizeof(MidPayloadHeader));
         buff_iter+=sizeof(MidPayloadHeader);
+        buff_iter=&recv_buff[0]+mem::align_ptr(buff_iter-&recv_buff[0]);
 
         r_mid[i][j]=rec.mid;
         recv_data[i][j].length=rec.length;
