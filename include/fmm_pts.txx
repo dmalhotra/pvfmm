@@ -3696,8 +3696,8 @@ void FMM_Pts<FMMNode>::V_ListSetup(SetupData<FMMNode_t>&  setup_data, FMMTree_t*
       for(size_t blk0=0;blk0<n_blk0;blk0++){
         data_size+=sizeof(size_t)+    fft_vec[blk0].size()*sizeof(size_t);
         data_size+=sizeof(size_t)+   ifft_vec[blk0].size()*sizeof(size_t);
-        data_size+=sizeof(size_t)+((    fft_scl[blk0].size()*sizeof(Real_t)+sizeof(size_t)-1)/sizeof(size_t))*sizeof(size_t); // Real_t segments are padded to size_t alignment
-        data_size+=sizeof(size_t)+((   ifft_scl[blk0].size()*sizeof(Real_t)+sizeof(size_t)-1)/sizeof(size_t))*sizeof(size_t);
+        data_size+=sizeof(size_t)+PVFMM_MEM_ALIGN+((    fft_scl[blk0].size()*sizeof(Real_t)+sizeof(size_t)-1)/sizeof(size_t))*sizeof(size_t); // Real_t segments start at a PVFMM_MEM_ALIGN offset (QuadReal needs 16 bytes) and are padded to size_t alignment
+        data_size+=sizeof(size_t)+PVFMM_MEM_ALIGN+((   ifft_scl[blk0].size()*sizeof(Real_t)+sizeof(size_t)-1)/sizeof(size_t))*sizeof(size_t);
         data_size+=sizeof(size_t)+interac_vec[blk0].size()*sizeof(size_t);
         data_size+=sizeof(size_t)+interac_dsp[blk0].size()*sizeof(size_t);
       }
@@ -3734,10 +3734,12 @@ void FMM_Pts<FMMNode>::V_ListSetup(SetupData<FMMNode_t>&  setup_data, FMMTree_t*
         data_ptr+=ifft_vec[blk0].size()*sizeof(size_t);
 
         ((size_t*)data_ptr)[0]= fft_scl[blk0].size(); data_ptr+=sizeof(size_t);
+        data_ptr=&interac_data[0][0]+mem::align_ptr(data_ptr-&interac_data[0][0]);
         if (fft_scl[blk0].size()) memcpy(data_ptr, & fft_scl[blk0][0],  fft_scl[blk0].size()*sizeof(Real_t));
         data_ptr+=(( fft_scl[blk0].size()*sizeof(Real_t)+sizeof(size_t)-1)/sizeof(size_t))*sizeof(size_t);
 
         ((size_t*)data_ptr)[0]=ifft_scl[blk0].size(); data_ptr+=sizeof(size_t);
+        data_ptr=&interac_data[0][0]+mem::align_ptr(data_ptr-&interac_data[0][0]);
         if (ifft_scl[blk0].size()) memcpy(data_ptr, &ifft_scl[blk0][0], ifft_scl[blk0].size()*sizeof(Real_t));
         data_ptr+=((ifft_scl[blk0].size()*sizeof(Real_t)+sizeof(size_t)-1)/sizeof(size_t))*sizeof(size_t);
 
@@ -3865,12 +3867,14 @@ void FMM_Pts<FMMNode>::V_List     (SetupData<FMMNode_t>&  setup_data, bool devic
         data_ptr+=sizeof(size_t)+ifft_vec[blk0].Dim()*sizeof(size_t);
 
         { size_t N=((size_t*)data_ptr)[0];
-          fft_scl[blk0].ReInit(N,sctl::Ptr2Itr<Real_t>((Real_t*)(data_ptr+sizeof(size_t)),N),false); }
-        data_ptr+=sizeof(size_t)+((fft_scl[blk0].Dim()*sizeof(Real_t)+sizeof(size_t)-1)/sizeof(size_t))*sizeof(size_t);
+          data_ptr=&interac_data[0][0]+mem::align_ptr(data_ptr+sizeof(size_t)-&interac_data[0][0]);
+          fft_scl[blk0].ReInit(N,sctl::Ptr2Itr<Real_t>((Real_t*)data_ptr,N),false); }
+        data_ptr+=((fft_scl[blk0].Dim()*sizeof(Real_t)+sizeof(size_t)-1)/sizeof(size_t))*sizeof(size_t);
 
         { size_t N=((size_t*)data_ptr)[0];
-          ifft_scl[blk0].ReInit(N,sctl::Ptr2Itr<Real_t>((Real_t*)(data_ptr+sizeof(size_t)),N),false); }
-        data_ptr+=sizeof(size_t)+((ifft_scl[blk0].Dim()*sizeof(Real_t)+sizeof(size_t)-1)/sizeof(size_t))*sizeof(size_t);
+          data_ptr=&interac_data[0][0]+mem::align_ptr(data_ptr+sizeof(size_t)-&interac_data[0][0]);
+          ifft_scl[blk0].ReInit(N,sctl::Ptr2Itr<Real_t>((Real_t*)data_ptr,N),false); }
+        data_ptr+=((ifft_scl[blk0].Dim()*sizeof(Real_t)+sizeof(size_t)-1)/sizeof(size_t))*sizeof(size_t);
 
         { size_t N=((size_t*)data_ptr)[0];
           interac_vec[blk0].ReInit(N,sctl::Ptr2Itr<size_t>((size_t*)(data_ptr+sizeof(size_t)),N),false); }
