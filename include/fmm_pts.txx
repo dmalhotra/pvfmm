@@ -87,9 +87,9 @@ std::vector<Real_t> surface(int p, Real_t* c, Real_t alpha, int depth){
   Real_t r = (Real_t)0.5*sctl::pow<Real_t>(0.5,depth);
   Real_t b = alpha*r;
   for(size_t i=0;i<n_;i++){
-    coord[i*3+0]=(coord[i*3+0]+1)*b+c[0];
-    coord[i*3+1]=(coord[i*3+1]+1)*b+c[1];
-    coord[i*3+2]=(coord[i*3+2]+1)*b+c[2];
+    coord[i*3+0]=(Real_t)((coord[i*3+0]+1.0)*b+c[0]);
+    coord[i*3+1]=(Real_t)((coord[i*3+1]+1.0)*b+c[1]);
+    coord[i*3+2]=(Real_t)((coord[i*3+2]+1.0)*b+c[2]);
   }
   return coord;
 }
